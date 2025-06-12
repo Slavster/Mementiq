@@ -24,9 +24,7 @@ export default function HeroSection() {
               <span className="text-accent font-bold text-2xl">video editing services</span>{" "}
               - all at the touch of a button.
             </p>
-            <p className="text-2xl font-bold text-accent mb-8 text-center">
-              For you. For All. Forever.
-            </p>
+            <p className="text-2xl mb-8 text-left text-[#ffffff] font-semibold">For You. For All. Forever.</p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 onClick={() => scrollToSection('pricing')}
