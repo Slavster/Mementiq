@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Smartphone, Package, Megaphone, Palette, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Smartphone, Gem, Megaphone, Palette, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useState, useRef } from "react";
 
 const services = [
@@ -18,7 +18,7 @@ const services = [
     iconColor: "text-primary"
   },
   {
-    iconName: "Package",
+    iconName: "Gem",
     title: "Treasured Memories",
     description: "Transform your personal moments into beautiful cinematic masterpieces - from travel vlogs, community gatherings, life milestones, once-in-a-lifetime events, and more.",
     features: [
@@ -160,7 +160,7 @@ export default function ServicesSection() {
                       <div className="flex items-start gap-4 mb-4">
                         <div className="flex-shrink-0 mt-1">
                           {service.iconName === "Smartphone" && <Smartphone className={`h-8 w-8 ${service.iconColor}`} />}
-                          {service.iconName === "Package" && <Package className={`h-8 w-8 ${service.iconColor}`} />}
+                          {service.iconName === "Gem" && <Gem className={`h-8 w-8 ${service.iconColor}`} />}
                           {service.iconName === "Megaphone" && <Megaphone className={`h-8 w-8 ${service.iconColor}`} />}
                           {service.iconName === "Palette" && <Palette className={`h-8 w-8 ${service.iconColor}`} />}
                         </div>
