@@ -155,7 +155,8 @@ export default function ServicesSection() {
                     opacity: Math.abs(offset) > 1 ? 0 : Math.abs(offset) > 0 ? 0.7 : 1,
                   }}
                 >
-                  <Card className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 w-96">
+                  <Card className="bg-dark-card border-2 border-dashed border-gray-600 hover:border-accent rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 w-96 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-purple-500"></div>
                     <CardContent className="p-8">
                       <div className="flex items-start gap-4 mb-4">
                         <div className="flex-shrink-0 mt-1">
