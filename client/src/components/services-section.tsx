@@ -168,7 +168,7 @@ export default function ServicesSection() {
                           <h3 className="text-2xl font-semibold text-light mb-4">{service.title}</h3>
                         </div>
                       </div>
-                      <p className="text-charcoal mb-6">{service.description}</p>
+                      <p className="text-gray-400 text-sm font-normal mb-6">{service.description}</p>
                       <ul className="space-y-2">
                         {service.features.map((feature, featureIndex) => (
                           <li key={featureIndex} className="flex items-center text-charcoal text-[15px] font-medium">
