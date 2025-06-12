@@ -147,7 +147,7 @@ export default function ServicesSection() {
                 <div
                   key={index}
                   className={`absolute transition-all duration-700 ease-out ${
-                    isActive ? 'scale-100' : 'scale-90'
+                    isActive ? 'scale-105' : 'scale-90'
                   }`}
                   style={{
                     transform: `translateX(${offset * 400}px)`,
