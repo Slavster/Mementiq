@@ -146,11 +146,9 @@ export default function ServicesSection() {
               return (
                 <div
                   key={index}
-                  className={`absolute transition-all duration-700 ease-out ${
-                    isActive ? 'scale-105' : 'scale-90'
-                  }`}
+                  className="absolute transition-all duration-700 ease-out"
                   style={{
-                    transform: `translateX(${offset * 400}px)`,
+                    transform: `translateX(${offset * 400}px) scale(${isActive ? '1.05' : '0.9'})`,
                     zIndex,
                     opacity: Math.abs(offset) > 1 ? 0 : Math.abs(offset) > 0 ? 0.7 : 1,
                   }}
