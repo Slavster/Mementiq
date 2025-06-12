@@ -14,12 +14,12 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50">
+    <nav className="bg-secondary/90 backdrop-blur-sm shadow-xl sticky top-0 z-50 border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-primary">VideoForge</h1>
+              <h1 className="text-2xl font-bold text-primary">CreativeEdge</h1>
             </div>
           </div>
           
@@ -28,31 +28,31 @@ export default function Navigation() {
             <div className="ml-10 flex items-baseline space-x-8">
               <button 
                 onClick={() => scrollToSection('services')} 
-                className="text-charcoal hover:text-primary transition-colors duration-200"
+                className="text-light hover:text-accent transition-colors duration-200"
               >
                 Services
               </button>
               <button 
                 onClick={() => scrollToSection('portfolio')} 
-                className="text-charcoal hover:text-primary transition-colors duration-200"
+                className="text-light hover:text-accent transition-colors duration-200"
               >
                 Portfolio
               </button>
               <button 
                 onClick={() => scrollToSection('testimonials')} 
-                className="text-charcoal hover:text-primary transition-colors duration-200"
+                className="text-light hover:text-accent transition-colors duration-200"
               >
                 Testimonials
               </button>
               <button 
                 onClick={() => scrollToSection('pricing')} 
-                className="text-charcoal hover:text-primary transition-colors duration-200"
+                className="text-light hover:text-accent transition-colors duration-200"
               >
                 Pricing
               </button>
               <Button 
                 onClick={() => scrollToSection('contact')}
-                className="bg-primary text-white hover:bg-blue-700"
+                className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
               >
                 Get Started
               </Button>
@@ -65,6 +65,7 @@ export default function Navigation() {
               variant="ghost" 
               size="sm"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-light hover:text-accent"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -74,34 +75,34 @@ export default function Navigation() {
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-secondary border-t border-gray-800">
               <button 
                 onClick={() => scrollToSection('services')}
-                className="block w-full text-left px-3 py-2 text-charcoal hover:text-primary transition-colors duration-200"
+                className="block w-full text-left px-3 py-2 text-light hover:text-accent transition-colors duration-200"
               >
                 Services
               </button>
               <button 
                 onClick={() => scrollToSection('portfolio')}
-                className="block w-full text-left px-3 py-2 text-charcoal hover:text-primary transition-colors duration-200"
+                className="block w-full text-left px-3 py-2 text-light hover:text-accent transition-colors duration-200"
               >
                 Portfolio
               </button>
               <button 
                 onClick={() => scrollToSection('testimonials')}
-                className="block w-full text-left px-3 py-2 text-charcoal hover:text-primary transition-colors duration-200"
+                className="block w-full text-left px-3 py-2 text-light hover:text-accent transition-colors duration-200"
               >
                 Testimonials
               </button>
               <button 
                 onClick={() => scrollToSection('pricing')}
-                className="block w-full text-left px-3 py-2 text-charcoal hover:text-primary transition-colors duration-200"
+                className="block w-full text-left px-3 py-2 text-light hover:text-accent transition-colors duration-200"
               >
                 Pricing
               </button>
               <Button 
                 onClick={() => scrollToSection('contact')}
-                className="w-full mt-2 bg-primary text-white hover:bg-blue-700"
+                className="w-full mt-2 bg-accent text-secondary hover:bg-yellow-500 font-semibold"
               >
                 Get Started
               </Button>
