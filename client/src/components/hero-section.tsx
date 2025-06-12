@@ -19,9 +19,7 @@ export default function HeroSection() {
               Bring Your Stories to{" "}
               <span className="text-accent">Life</span>
             </h1>
-            <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-              Professional video editing services for creators, influencers, and individuals who want cinematic-quality content that stands out.
-            </p>
+            <p className="text-xl text-gray-300 mb-8 leading-relaxed">Professional quality, transparently priced, and hassle-free video editing services at the touch of a button.</p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 onClick={() => scrollToSection('pricing')}
