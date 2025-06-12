@@ -149,22 +149,23 @@ export default function PortfolioSection() {
             <ChevronRight className="h-5 w-5" />
           </Button>
 
-          <div className="relative w-full max-w-4xl h-full flex items-center justify-center portfolio-3d">
+          <div className="relative w-full max-w-5xl h-full flex items-center justify-center">
             {portfolioItems.map((item, index) => {
               const offset = index - selectedVideo;
               const isActive = index === selectedVideo;
-              const zIndex = portfolioItems.length - Math.abs(offset);
+              const isHovered = hoveredVideo === item.id;
+              const zIndex = isActive || isHovered ? 50 : portfolioItems.length - Math.abs(offset);
               
               return (
                 <div
                   key={item.id}
-                  className={`absolute transition-all duration-700 ease-out cursor-pointer portfolio-card ${
-                    isActive ? 'scale-100' : 'scale-95'
+                  className={`absolute transition-all duration-700 ease-out cursor-pointer ${
+                    isActive || isHovered ? 'scale-110' : 'scale-90'
                   }`}
                   style={{
-                    transform: `translateX(${offset * 160}px) rotateY(${offset * 8}deg)`,
+                    transform: `translateX(${offset * 200}px)`,
                     zIndex,
-                    opacity: Math.abs(offset) > 2 ? 0 : 1 - Math.abs(offset) * 0.15,
+                    opacity: Math.abs(offset) > 2 ? 0 : Math.abs(offset) > 1 ? 0.6 : 1,
                   }}
                   onClick={() => handleVideoPlay(item.id)}
                   onMouseEnter={() => handleVideoHover(item.id)}
