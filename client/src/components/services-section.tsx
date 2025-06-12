@@ -1,11 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Share2, Heart, Megaphone, Palette, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Video, Camera, Megaphone, Palette, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useState, useRef } from "react";
 
 const services = [
   {
-    icon: Share2,
+    icon: Video,
     title: "Social Media Content",
     description: "Eye-catching edits perfect for Instagram, TikTok, YouTube, and other platforms that get you noticed.",
     features: [
@@ -18,7 +18,7 @@ const services = [
     iconColor: "text-primary"
   },
   {
-    icon: Heart,
+    icon: Camera,
     title: "Treasured Memories",
     description: "Transform your personal moments into beautiful cinematic masterpieces - from travel vlogs, community gatherings, life milestones, once-in-a-lifetime events, and more.",
     features: [
