@@ -7,13 +7,13 @@ export default function CompetitiveAdvantageSection() {
       type: "Agencies",
       icon: Building,
       problems: [
-        "Exclusionary, only interested in high margin \"whales\" clients",
+        'Exclusionary, only interested in high margin "whale" clients',
         "Don't accept one-off video projects",
         "Require large upfront payments of hundreds of dollars",
         "High hourly rates with high minimums",
         "Charge for services you don't need or use",
-        "Time wasted in calls, consultations, and revisions"
-      ]
+        "Time wasted in calls, consultations, and revisions",
+      ],
     },
     {
       type: "Freelancers",
@@ -22,20 +22,20 @@ export default function CompetitiveAdvantageSection() {
         "Spotty availability and constant delays",
         "Marketplaces take a big cut, forcing higher prices",
         "Too many options, hard to vet everyone",
-        "Time zone, language, and cultural barriers",
-        "Confusing pricing structures",
-        "Variable quality, hard to find one that \"does it all\""
-      ]
-    }
+        "Time zone, language, payment, and cultural barriers",
+        "Confusing pricing options, cost overruns",
+        'Variable quality, hard to find one that "does it all"',
+      ],
+    },
   ];
 
   const solutions = [
-    "Pre-vetted editor always available",
+    "Pre-vetted editors, always available",
     "Automatically matched to your style and content",
     "White-glove, hands-off approach",
     "No searching, vetting, or endless chats",
     "Upload footage → push button → get results",
-    "Low and transparent per-video rate"
+    "Low and transparent per-video rate",
   ];
 
   return (
@@ -46,13 +46,16 @@ export default function CompetitiveAdvantageSection() {
             Why Choose <span className="text-accent">CreativeEdge</span>?
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Stop wasting time and money on outdated solutions. Here's why we're different.
+            Stop wasting time and money on outdated solutions. Here's why we're
+            different.
           </p>
         </div>
 
         {/* Competitors Section */}
         <div className="mb-12">
-          <h3 className="text-3xl font-bold text-light text-center mb-8">The Competition</h3>
+          <h3 className="text-3xl font-bold text-light text-center mb-8">
+            The Competition
+          </h3>
           <div className="overflow-x-auto pb-4">
             <div className="flex gap-6 min-w-max px-4">
               {/* Agencies Card */}
@@ -62,7 +65,9 @@ export default function CompetitiveAdvantageSection() {
                     <div className="bg-red-800/30 p-3 rounded-xl">
                       <Building className="h-8 w-8 text-red-400" />
                     </div>
-                    <h3 className="text-2xl font-semibold text-light">Agencies</h3>
+                    <h3 className="text-2xl font-semibold text-light">
+                      Agencies
+                    </h3>
                   </div>
                   <ul className="space-y-3">
                     {competitors[0].problems.map((problem, index) => (
@@ -82,7 +87,9 @@ export default function CompetitiveAdvantageSection() {
                     <div className="bg-amber-700/40 p-3 rounded-xl">
                       <User className="h-8 w-8 text-amber-300" />
                     </div>
-                    <h3 className="text-2xl font-semibold text-light">Freelancers</h3>
+                    <h3 className="text-2xl font-semibold text-light">
+                      Freelancers
+                    </h3>
                   </div>
                   <ul className="space-y-3">
                     {competitors[1].problems.map((problem, index) => (
@@ -108,13 +115,17 @@ export default function CompetitiveAdvantageSection() {
                   <div className="bg-accent/20 p-3 rounded-xl">
                     <Zap className="h-8 w-8 text-accent" />
                   </div>
-                  <h3 className="text-2xl font-semibold text-light">Our Solution</h3>
+                  <h3 className="text-2xl font-semibold text-light">
+                    Our Solution
+                  </h3>
                 </div>
-                <ul className="space-y-3">
+                <ul className="space-y-3 flex flex-col items-center">
                   {solutions.map((solution, index) => (
                     <li key={index} className="flex items-start gap-3">
                       <Check className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-300 text-sm font-medium">{solution}</span>
+                      <span className="text-gray-300 text-sm font-medium">
+                        {solution}
+                      </span>
                     </li>
                   ))}
                 </ul>
