@@ -1,11 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Video, Camera, Megaphone, Palette, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Smartphone, Package, Megaphone, Palette, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useState, useRef } from "react";
 
 const services = [
   {
-    iconName: "Video",
+    iconName: "Smartphone",
     title: "Social Media Content",
     description: "Eye-catching edits perfect for Instagram, TikTok, YouTube, and other platforms that get you noticed.",
     features: [
@@ -18,7 +18,7 @@ const services = [
     iconColor: "text-primary"
   },
   {
-    iconName: "Camera",
+    iconName: "Package",
     title: "Treasured Memories",
     description: "Transform your personal moments into beautiful cinematic masterpieces - from travel vlogs, community gatherings, life milestones, once-in-a-lifetime events, and more.",
     features: [
@@ -145,16 +145,16 @@ export default function ServicesSection() {
               
               const renderIcon = () => {
                 switch (service.iconName) {
-                  case "Video":
-                    return <Video className={`h-8 w-8 ${service.iconColor}`} />;
-                  case "Camera":
-                    return <Camera className={`h-8 w-8 ${service.iconColor}`} />;
+                  case "Smartphone":
+                    return <Smartphone className={`h-8 w-8 ${service.iconColor}`} />;
+                  case "Package":
+                    return <Package className={`h-8 w-8 ${service.iconColor}`} />;
                   case "Megaphone":
                     return <Megaphone className={`h-8 w-8 ${service.iconColor}`} />;
                   case "Palette":
                     return <Palette className={`h-8 w-8 ${service.iconColor}`} />;
                   default:
-                    return null;
+                    return <div className="text-white text-xs">No Icon</div>;
                 }
               };
               
