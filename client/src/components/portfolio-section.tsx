@@ -63,6 +63,7 @@ export default function PortfolioSection() {
   const [selectedVideo, setSelectedVideo] = useState<number>(0);
   const [hoveredVideo, setHoveredVideo] = useState<number | null>(null);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleVideoPlay = (videoId: number) => {
     console.log(`Playing video ${videoId}`);
@@ -98,6 +99,25 @@ export default function PortfolioSection() {
     setSelectedVideo((prev) => (prev - 1 + portfolioItems.length) % portfolioItems.length);
   };
 
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      // Horizontal scroll
+      if (e.deltaX > 0) {
+        nextVideo();
+      } else {
+        prevVideo();
+      }
+    } else {
+      // Vertical scroll converted to horizontal
+      if (e.deltaY > 0) {
+        nextVideo();
+      } else {
+        prevVideo();
+      }
+    }
+  };
+
   return (
     <section id="portfolio" className="py-20 bg-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -108,7 +128,11 @@ export default function PortfolioSection() {
           </p>
         </div>
 
-        <div className="relative h-[600px] flex items-center justify-center">
+        <div 
+          className="relative h-[600px] flex items-center justify-center"
+          onWheel={handleWheel}
+          ref={containerRef}
+        >
           <Button
             onClick={prevVideo}
             className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
@@ -135,12 +159,12 @@ export default function PortfolioSection() {
                 <div
                   key={item.id}
                   className={`absolute transition-all duration-700 ease-out cursor-pointer portfolio-card ${
-                    isActive ? 'scale-100' : 'scale-90'
+                    isActive ? 'scale-100' : 'scale-95'
                   }`}
                   style={{
-                    transform: `translateX(${offset * 120}px) rotateY(${offset * 25}deg)`,
+                    transform: `translateX(${offset * 160}px) rotateY(${offset * 8}deg)`,
                     zIndex,
-                    opacity: Math.abs(offset) > 2 ? 0 : 1 - Math.abs(offset) * 0.2,
+                    opacity: Math.abs(offset) > 2 ? 0 : 1 - Math.abs(offset) * 0.15,
                   }}
                   onClick={() => handleVideoPlay(item.id)}
                   onMouseEnter={() => handleVideoHover(item.id)}
