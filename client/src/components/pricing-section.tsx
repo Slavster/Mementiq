@@ -4,50 +4,48 @@ import { Check } from "lucide-react";
 
 const packages = [
   {
-    name: "Starter",
-    price: "$2,499",
-    description: "Perfect for small businesses and startups",
+    name: "Quick Edit",
+    price: "$199",
+    description: "Perfect for social media content",
     features: [
-      "Up to 60 seconds",
-      "Professional script writing",
-      "1-day filming",
-      "Basic animation & graphics",
-      "3 rounds of revisions",
-      "HD delivery"
+      "Up to 3 minutes",
+      "Basic color correction",
+      "Music & sound effects",
+      "Text overlays & titles",
+      "2 rounds of revisions",
+      "1080p delivery"
     ],
     highlighted: false,
     buttonText: "Get Started",
     buttonVariant: "outline" as const
   },
   {
-    name: "Professional",
-    price: "$4,999",
-    description: "Ideal for growing businesses",
+    name: "Pro Edit",
+    price: "$499",
+    description: "Ideal for content creators",
     features: [
-      "Up to 2 minutes",
-      "Professional script & storyboard",
-      "2-day filming",
-      "Advanced animation & graphics",
-      "Professional voiceover",
+      "Up to 10 minutes",
+      "Advanced color grading",
+      "Motion graphics & transitions",
+      "Audio mixing & cleanup",
       "5 rounds of revisions",
-      "4K delivery + social media cuts"
+      "4K delivery + multiple formats"
     ],
     highlighted: true,
     buttonText: "Get Started",
     buttonVariant: "default" as const
   },
   {
-    name: "Enterprise",
-    price: "$9,999",
-    description: "For large-scale video campaigns",
+    name: "Cinematic",
+    price: "$999",
+    description: "For premium content & films",
     features: [
-      "Up to 5 minutes",
-      "Complete creative development",
-      "Multi-day filming",
-      "Premium animation & VFX",
-      "Celebrity voiceover options",
+      "Up to 30 minutes",
+      "Professional color grading",
+      "Custom motion graphics",
+      "Professional audio mixing",
       "Unlimited revisions",
-      "Complete video asset package"
+      "4K delivery + project files"
     ],
     highlighted: false,
     buttonText: "Get Started",
@@ -69,12 +67,12 @@ export default function PricingSection() {
   };
 
   return (
-    <section id="pricing" className="py-20">
+    <section id="pricing" className="py-20 bg-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-secondary mb-4">Transparent Pricing</h2>
+          <h2 className="text-4xl font-bold text-light mb-4">Simple Pricing</h2>
           <p className="text-xl text-charcoal max-w-3xl mx-auto">
-            Choose the package that fits your needs. All packages include professional production and unlimited revisions.
+            Professional video editing at transparent prices. Choose the package that fits your content needs.
           </p>
         </div>
 
@@ -82,15 +80,15 @@ export default function PricingSection() {
           {packages.map((pkg, index) => (
             <Card 
               key={index} 
-              className={`relative rounded-xl shadow-lg transition-colors duration-300 ${
+              className={`relative rounded-xl shadow-xl transition-all duration-300 bg-dark-card border ${
                 pkg.highlighted 
-                  ? 'border-2 border-primary shadow-xl' 
-                  : 'border-2 border-gray-100 hover:border-primary'
+                  ? 'border-2 border-primary shadow-2xl scale-105' 
+                  : 'border-gray-700 hover:border-primary/50'
               }`}
             >
               {pkg.highlighted && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-primary text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  <span className="bg-accent text-secondary px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
                     Most Popular
                   </span>
                 </div>
@@ -98,10 +96,10 @@ export default function PricingSection() {
               
               <CardContent className="p-8">
                 <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-secondary mb-2">{pkg.name}</h3>
+                  <h3 className="text-2xl font-bold text-light mb-2">{pkg.name}</h3>
                   <p className="text-charcoal mb-6">{pkg.description}</p>
                   <div className="text-4xl font-bold text-primary mb-2">{pkg.price}</div>
-                  <p className="text-sm text-charcoal">per video</p>
+                  <p className="text-sm text-charcoal">per project</p>
                 </div>
                 
                 <ul className="space-y-4 mb-8">
@@ -116,10 +114,10 @@ export default function PricingSection() {
                 <Button 
                   onClick={() => handlePackageSelect(pkg.name)}
                   variant={pkg.buttonVariant}
-                  className={`w-full py-3 font-semibold transition-colors duration-200 ${
+                  className={`w-full py-3 font-semibold transition-all duration-200 ${
                     pkg.highlighted 
-                      ? 'bg-primary text-white hover:bg-blue-700' 
-                      : 'bg-gray-100 text-charcoal hover:bg-gray-200'
+                      ? 'bg-primary text-light hover:bg-purple-600 shadow-lg' 
+                      : 'bg-gray-700 text-light hover:bg-gray-600 border-gray-600'
                   }`}
                 >
                   {pkg.buttonText}
@@ -130,12 +128,12 @@ export default function PricingSection() {
         </div>
 
         <div className="text-center mt-12">
-          <p className="text-charcoal mb-4">Need a custom solution? We'd love to discuss your unique requirements.</p>
+          <p className="text-charcoal mb-4">Need something custom? Let's discuss your creative vision and requirements.</p>
           <Button 
             onClick={scrollToContact}
-            className="bg-accent text-white px-8 py-3 text-lg font-semibold hover:bg-green-600 transition-colors duration-200"
+            className="bg-accent text-secondary px-8 py-3 text-lg font-semibold hover:bg-yellow-500 transition-colors duration-200"
           >
-            Schedule Free Consultation
+            Get Custom Quote
           </Button>
         </div>
       </div>

@@ -103,7 +103,7 @@ export default function PortfolioSection() {
 
           <div 
             ref={scrollRef}
-            className="flex gap-6 overflow-x-auto scrollbar-hide pb-4"
+            className="flex gap-6 overflow-x-auto pb-4"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {portfolioItems.map((item) => (
@@ -143,11 +143,7 @@ export default function PortfolioSection() {
           </Button>
         </div>
       </div>
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+
     </section>
   );
 }

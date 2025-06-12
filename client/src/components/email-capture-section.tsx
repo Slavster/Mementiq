@@ -62,40 +62,41 @@ export default function EmailCaptureSection() {
   };
 
   return (
-    <section id="contact" className="py-20 bg-primary">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-4xl font-bold text-white mb-4">Ready to Transform Your Vision?</h2>
-        <p className="text-xl text-blue-100 mb-8">
-          Join over 500+ businesses that trust VideoForge for their video production needs. Get started with a free consultation and project quote.
+    <section id="contact" className="py-20 bg-gradient-to-br from-primary via-purple-800 to-secondary relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent"></div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <h2 className="text-4xl font-bold text-white mb-4">Ready to Create Something Amazing?</h2>
+        <p className="text-xl text-gray-300 mb-8">
+          Join 1000+ creators who trust CreativeEdge for their video editing needs. Get started with a free sample edit and project quote.
         </p>
         
-        <Card className="max-w-md mx-auto bg-white/10 border-white/20">
+        <Card className="max-w-md mx-auto bg-dark-card/80 backdrop-blur-sm border border-gray-600">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <Input 
                   type="email" 
-                  placeholder="Enter your business email" 
+                  placeholder="Enter your email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="flex-1 bg-white text-charcoal placeholder-gray-400 border-white/20 focus:border-accent"
+                  className="flex-1 bg-gray-800 text-light placeholder-gray-400 border-gray-600 focus:border-accent"
                   disabled={emailSignupMutation.isPending}
                 />
                 <Button 
                   type="submit" 
                   disabled={emailSignupMutation.isPending}
-                  className="bg-accent text-white px-8 py-3 font-semibold hover:bg-green-600 transition-colors duration-200 whitespace-nowrap"
+                  className="bg-accent text-secondary px-8 py-3 font-semibold hover:bg-yellow-500 transition-colors duration-200 whitespace-nowrap"
                 >
-                  {emailSignupMutation.isPending ? "Submitting..." : "Get Free Quote"}
+                  {emailSignupMutation.isPending ? "Submitting..." : "Get Free Sample"}
                 </Button>
               </div>
             </form>
-            <p className="text-blue-200 text-sm mt-4">No spam, ever. Unsubscribe anytime.</p>
+            <p className="text-gray-400 text-sm mt-4">No spam, ever. Unsubscribe anytime.</p>
           </CardContent>
         </Card>
 
-        <div className="flex justify-center items-center space-x-8 mt-12 text-blue-200">
+        <div className="flex justify-center items-center space-x-8 mt-12 text-gray-300">
           <div className="flex items-center">
             <Shield className="h-5 w-5 mr-2" />
             <span className="text-sm">SSL Secured</span>
@@ -106,7 +107,7 @@ export default function EmailCaptureSection() {
           </div>
           <div className="flex items-center">
             <Clock className="h-5 w-5 mr-2" />
-            <span className="text-sm">24hr Response</span>
+            <span className="text-sm">Fast Turnaround</span>
           </div>
         </div>
       </div>
