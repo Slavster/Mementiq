@@ -1,34 +1,111 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Video, Megaphone, GraduationCap, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Video, Megaphone, GraduationCap, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useRef } from "react";
 
 const services = [
   {
     icon: Video,
     title: "Social Media Content",
     description: "Eye-catching edits perfect for Instagram, TikTok, YouTube, and other platforms that get you noticed.",
-    features: ["Short-form content", "Reels & Stories", "YouTube videos"],
+    features: [
+      "For the busy professional",
+      "For the budding creator",
+      "For the new entrepreneur",
+      "For a top dating profile"
+    ],
     bgColor: "bg-primary bg-opacity-20",
     iconColor: "text-primary"
   },
   {
-    icon: Megaphone,
-    title: "Personal Projects",
-    description: "Transform your personal moments into cinematic masterpieces - from travel vlogs to life events.",
-    features: ["Travel videos", "Event highlights", "Personal branding"],
+    icon: Heart,
+    title: "Treasured Memories",
+    description: "Transform your personal moments into beautiful cinematic masterpieces - from travel vlogs, community gatherings, life milestones, once-in-a-lifetime events, and more.",
+    features: [
+      "For the jet setter",
+      "For the hobbyist",
+      "For the family archivist",
+      "For the community connector",
+      "For tasteful keepsakes"
+    ],
     bgColor: "bg-accent bg-opacity-20",
     iconColor: "text-accent"
+  },
+  {
+    icon: Megaphone,
+    title: "Promotional Content",
+    description: "Skip the Editing Headache and quickly transform your raw footage into high-converting ads and captivating content.",
+    features: [
+      "For the small business owner",
+      "For the freelancer",
+      "For the digital nomad",
+      "For the marketer",
+      "For effective branding"
+    ],
+    bgColor: "bg-purple-500 bg-opacity-20",
+    iconColor: "text-purple-400"
   },
   {
     icon: GraduationCap,
     title: "Creative Storytelling",
     description: "Bring your creative vision to life with professional editing that captures emotion and tells your story.",
-    features: ["Music videos", "Short films", "Creative content"],
-    bgColor: "bg-purple-500 bg-opacity-20",
-    iconColor: "text-purple-400"
+    features: [
+      "For the musician",
+      "For the film maker",
+      "For the artisan",
+      "For the performer",
+      "For creative expression"
+    ],
+    bgColor: "bg-emerald-500 bg-opacity-20",
+    iconColor: "text-emerald-400"
   }
 ];
 
 export default function ServicesSection() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTime = useRef<number>(0);
+  const scrollThreshold = 300;
+
+  const nextService = () => {
+    setCurrentIndex((prev) => (prev + 1) % services.length);
+  };
+
+  const prevService = () => {
+    setCurrentIndex((prev) => (prev - 1 + services.length) % services.length);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    
+    const now = Date.now();
+    if (now - lastScrollTime.current < scrollThreshold) {
+      return;
+    }
+    
+    const deltaThreshold = 50;
+    
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      if (Math.abs(e.deltaX) > deltaThreshold) {
+        lastScrollTime.current = now;
+        if (e.deltaX > 0) {
+          nextService();
+        } else {
+          prevService();
+        }
+      }
+    } else {
+      if (Math.abs(e.deltaY) > deltaThreshold) {
+        lastScrollTime.current = now;
+        if (e.deltaY > 0) {
+          nextService();
+        } else {
+          prevService();
+        }
+      }
+    }
+  };
+
   return (
     <section id="services" className="py-20 bg-lightgray">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,29 +116,81 @@ export default function ServicesSection() {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => {
-            const IconComponent = service.icon;
-            return (
-              <Card key={index} className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300">
-                <CardContent className="p-8">
-                  <div className={`${service.bgColor} rounded-lg p-4 w-16 h-16 flex items-center justify-center mb-6 border border-gray-600`}>
-                    <IconComponent className={`h-8 w-8 ${service.iconColor}`} />
-                  </div>
-                  <h3 className="text-2xl font-semibold text-light mb-4">{service.title}</h3>
-                  <p className="text-charcoal mb-6">{service.description}</p>
-                  <ul className="space-y-2">
-                    {service.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center text-sm text-charcoal">
-                        <Check className="h-4 w-4 text-accent mr-2 flex-shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div 
+          className="relative h-[500px] flex items-center justify-center"
+          onWheel={handleWheel}
+          ref={containerRef}
+        >
+          <Button
+            onClick={prevService}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
+            size="sm"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          
+          <Button
+            onClick={nextService}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
+            size="sm"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+
+          <div className="relative w-full max-w-6xl h-full flex items-center justify-center">
+            {services.map((service, index) => {
+              const offset = index - currentIndex;
+              const isActive = index === currentIndex;
+              const zIndex = services.length - Math.abs(offset);
+              const IconComponent = service.icon;
+              
+              return (
+                <div
+                  key={index}
+                  className={`absolute transition-all duration-700 ease-out ${
+                    isActive ? 'scale-100' : 'scale-90'
+                  }`}
+                  style={{
+                    transform: `translateX(${offset * 400}px)`,
+                    zIndex,
+                    opacity: Math.abs(offset) > 1 ? 0 : Math.abs(offset) > 0 ? 0.7 : 1,
+                  }}
+                >
+                  <Card className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 w-96">
+                    <CardContent className="p-8">
+                      <div className={`${service.bgColor} rounded-lg p-4 w-16 h-16 flex items-center justify-center mb-6 border border-gray-600`}>
+                        <IconComponent className={`h-8 w-8 ${service.iconColor}`} />
+                      </div>
+                      <h3 className="text-2xl font-semibold text-light mb-4">{service.title}</h3>
+                      <p className="text-charcoal mb-6">{service.description}</p>
+                      <ul className="space-y-2">
+                        {service.features.map((feature, featureIndex) => (
+                          <li key={featureIndex} className="flex items-start text-sm text-charcoal">
+                            <span className="text-accent mr-2 mt-1">•</span>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="text-center mt-12">
+          <div className="flex justify-center space-x-2 mb-6">
+            {services.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  index === currentIndex ? 'bg-accent' : 'bg-gray-600 hover:bg-gray-500'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
