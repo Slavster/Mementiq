@@ -52,42 +52,81 @@ const testimonials = [
 ];
 
 export default function TestimonialsSection() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -350, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 350, behavior: 'smooth' });
+    }
+  };
+
   return (
     <section id="testimonials" className="py-20 bg-lightgray">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-secondary mb-4">What Our Clients Say</h2>
+          <h2 className="text-4xl font-bold text-light mb-4">Client Stories</h2>
           <p className="text-xl text-charcoal max-w-3xl mx-auto">
-            Don't just take our word for it. Here's what business leaders say about working with VideoForge.
+            Hear from creators, influencers, and content makers who've transformed their videos with our editing services.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial) => (
-            <Card key={testimonial.id} className="bg-white rounded-xl shadow-lg border-0">
-              <CardContent className="p-8">
-                <div className="flex items-center mb-4">
-                  <div className="flex text-yellow-400">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-current" />
-                    ))}
+        <div className="relative">
+          <Button
+            onClick={scrollLeft}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
+            size="sm"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          
+          <Button
+            onClick={scrollRight}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
+            size="sm"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+
+          <div 
+            ref={scrollRef}
+            className="flex gap-6 overflow-x-auto pb-4"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {testimonials.map((testimonial) => (
+              <Card key={testimonial.id} className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 flex-shrink-0 w-80">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex text-accent">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <Star key={i} className="h-4 w-4 fill-current" />
+                      ))}
+                    </div>
+                    <span className="bg-primary/20 text-primary px-2 py-1 rounded-full text-xs font-semibold">
+                      {testimonial.platform}
+                    </span>
                   </div>
-                </div>
-                <p className="text-charcoal mb-6 italic">"{testimonial.content}"</p>
-                <div className="flex items-center">
-                  <img 
-                    src={testimonial.avatar} 
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full object-cover mr-4" 
-                  />
-                  <div>
-                    <p className="font-semibold text-secondary">{testimonial.name}</p>
-                    <p className="text-sm text-charcoal">{testimonial.title}</p>
+                  <p className="text-charcoal mb-6 italic text-sm leading-relaxed">"{testimonial.content}"</p>
+                  <div className="flex items-center">
+                    <img 
+                      src={testimonial.avatar} 
+                      alt={testimonial.name}
+                      className="w-10 h-10 rounded-full object-cover mr-3 border-2 border-primary/30" 
+                    />
+                    <div>
+                      <p className="font-semibold text-light text-sm">{testimonial.name}</p>
+                      <p className="text-xs text-charcoal">{testimonial.title}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     </section>
