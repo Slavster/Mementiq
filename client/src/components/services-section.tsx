@@ -143,21 +143,6 @@ export default function ServicesSection() {
               const isActive = index === currentIndex;
               const zIndex = services.length - Math.abs(offset);
               
-              const renderIcon = () => {
-                switch (service.iconName) {
-                  case "Smartphone":
-                    return <Smartphone className={`h-8 w-8 ${service.iconColor}`} />;
-                  case "Package":
-                    return <Package className={`h-8 w-8 ${service.iconColor}`} />;
-                  case "Megaphone":
-                    return <Megaphone className={`h-8 w-8 ${service.iconColor}`} />;
-                  case "Palette":
-                    return <Palette className={`h-8 w-8 ${service.iconColor}`} />;
-                  default:
-                    return <div className="text-white text-xs">No Icon</div>;
-                }
-              };
-              
               return (
                 <div
                   key={index}
@@ -173,7 +158,10 @@ export default function ServicesSection() {
                   <Card className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 w-96">
                     <CardContent className="p-8">
                       <div className={`${service.bgColor} rounded-lg p-4 w-16 h-16 flex items-center justify-center mb-6 border border-gray-600`}>
-                        {renderIcon()}
+                        {service.iconName === "Smartphone" && <Smartphone className={`h-8 w-8 ${service.iconColor}`} />}
+                        {service.iconName === "Package" && <Package className={`h-8 w-8 ${service.iconColor}`} />}
+                        {service.iconName === "Megaphone" && <Megaphone className={`h-8 w-8 ${service.iconColor}`} />}
+                        {service.iconName === "Palette" && <Palette className={`h-8 w-8 ${service.iconColor}`} />}
                       </div>
                       <h3 className="text-2xl font-semibold text-light mb-4">{service.title}</h3>
                       <p className="text-charcoal mb-6">{service.description}</p>
