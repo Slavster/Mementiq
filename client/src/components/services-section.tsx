@@ -20,7 +20,7 @@ const services = [
   {
     iconName: "Gem",
     title: "Treasured Memories",
-    description: "Transform your personal moments into beautiful cinematic masterpieces - from travel vlogs, community gatherings, life milestones, once-in-a-lifetime events, and more.",
+    description: "Your special moments transformed into cinematic masterpieces - from travel vlogs, community gatherings, life milestones, to once-in-a-lifetime events, and more.",
     features: [
       "For the jet setter",
       "For the hobbyist",
