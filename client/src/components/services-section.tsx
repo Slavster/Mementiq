@@ -157,7 +157,7 @@ export default function ServicesSection() {
                 >
                   <Card className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 w-96">
                     <CardContent className="p-8">
-                      <div className="flex items-start gap-4 mb-6">
+                      <div className="flex items-start gap-4 mb-4">
                         <div className="flex-shrink-0 mt-1">
                           {service.iconName === "Smartphone" && <Smartphone className={`h-8 w-8 ${service.iconColor}`} />}
                           {service.iconName === "Package" && <Package className={`h-8 w-8 ${service.iconColor}`} />}
@@ -166,9 +166,9 @@ export default function ServicesSection() {
                         </div>
                         <div className="flex-1">
                           <h3 className="text-2xl font-semibold text-light mb-4">{service.title}</h3>
-                          <p className="text-charcoal mb-6">{service.description}</p>
                         </div>
                       </div>
+                      <p className="text-charcoal mb-6">{service.description}</p>
                       <ul className="space-y-2">
                         {service.features.map((feature, featureIndex) => (
                           <li key={featureIndex} className="flex items-center text-charcoal text-[15px] font-medium">
