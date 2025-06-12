@@ -50,67 +50,77 @@ export default function CompetitiveAdvantageSection() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 mb-16">
-          {/* Agencies Card */}
-          <Card className="bg-red-900/20 border-2 border-red-800/50 rounded-2xl hover:border-red-600/70 transition-all duration-300">
-            <CardContent className="p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="bg-red-800/30 p-3 rounded-xl">
-                  <Building className="h-8 w-8 text-red-400" />
-                </div>
-                <h3 className="text-2xl font-semibold text-light">Agencies</h3>
-              </div>
-              <ul className="space-y-3">
-                {competitors[0].problems.map((problem, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <X className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300 text-sm">{problem}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+        {/* Competitors Section */}
+        <div className="mb-12">
+          <h3 className="text-3xl font-bold text-light text-center mb-8">The Competition</h3>
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-6 min-w-max px-4">
+              {/* Agencies Card */}
+              <Card className="bg-red-900/20 border-2 border-red-800/50 rounded-2xl hover:border-red-600/70 transition-all duration-300 w-96 flex-shrink-0">
+                <CardContent className="p-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="bg-red-800/30 p-3 rounded-xl">
+                      <Building className="h-8 w-8 text-red-400" />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-light">Agencies</h3>
+                  </div>
+                  <ul className="space-y-3">
+                    {competitors[0].problems.map((problem, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <X className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-300 text-sm">{problem}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
 
-          {/* Freelancers Card */}
-          <Card className="bg-orange-900/20 border-2 border-orange-800/50 rounded-2xl hover:border-orange-600/70 transition-all duration-300">
-            <CardContent className="p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="bg-orange-800/30 p-3 rounded-xl">
-                  <User className="h-8 w-8 text-orange-400" />
-                </div>
-                <h3 className="text-2xl font-semibold text-light">Freelancers</h3>
-              </div>
-              <ul className="space-y-3">
-                {competitors[1].problems.map((problem, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <X className="h-5 w-5 text-orange-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300 text-sm">{problem}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+              {/* Freelancers Card */}
+              <Card className="bg-amber-900/25 border-2 border-amber-700/60 rounded-2xl hover:border-amber-500/80 transition-all duration-300 w-96 flex-shrink-0">
+                <CardContent className="p-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="bg-amber-700/40 p-3 rounded-xl">
+                      <User className="h-8 w-8 text-amber-300" />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-light">Freelancers</h3>
+                  </div>
+                  <ul className="space-y-3">
+                    {competitors[1].problems.map((problem, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <X className="h-5 w-5 text-amber-300 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-300 text-sm">{problem}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
 
-          {/* Our Solution Card */}
-          <Card className="bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-accent/50 rounded-2xl hover:border-accent transition-all duration-300 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-purple-500"></div>
-            <CardContent className="p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="bg-accent/20 p-3 rounded-xl">
-                  <Zap className="h-8 w-8 text-accent" />
+        {/* Our Solution Section */}
+        <div className="mb-16">
+          <div className="max-w-2xl mx-auto">
+            <Card className="bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-accent/50 rounded-2xl hover:border-accent transition-all duration-300 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-purple-500"></div>
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-6 justify-center">
+                  <div className="bg-accent/20 p-3 rounded-xl">
+                    <Zap className="h-8 w-8 text-accent" />
+                  </div>
+                  <h3 className="text-2xl font-semibold text-light">Our Solution</h3>
                 </div>
-                <h3 className="text-2xl font-semibold text-light">Our Solution</h3>
-              </div>
-              <ul className="space-y-3">
-                {solutions.map((solution, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300 text-sm font-medium">{solution}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+                <ul className="space-y-3">
+                  {solutions.map((solution, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300 text-sm font-medium">{solution}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Bottom CTA */}
