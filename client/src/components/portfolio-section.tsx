@@ -64,6 +64,8 @@ export default function PortfolioSection() {
   const [hoveredVideo, setHoveredVideo] = useState<number | null>(null);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTime = useRef<number>(0);
+  const scrollThreshold = 300; // Minimum time between scroll events in ms
 
   const handleVideoPlay = (videoId: number) => {
     console.log(`Playing video ${videoId}`);
@@ -101,19 +103,33 @@ export default function PortfolioSection() {
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
+    
+    const now = Date.now();
+    if (now - lastScrollTime.current < scrollThreshold) {
+      return; // Throttle rapid scroll events
+    }
+    
+    const deltaThreshold = 50; // Minimum delta to trigger scroll
+    
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       // Horizontal scroll
-      if (e.deltaX > 0) {
-        nextVideo();
-      } else {
-        prevVideo();
+      if (Math.abs(e.deltaX) > deltaThreshold) {
+        lastScrollTime.current = now;
+        if (e.deltaX > 0) {
+          nextVideo();
+        } else {
+          prevVideo();
+        }
       }
     } else {
       // Vertical scroll converted to horizontal
-      if (e.deltaY > 0) {
-        nextVideo();
-      } else {
-        prevVideo();
+      if (Math.abs(e.deltaY) > deltaThreshold) {
+        lastScrollTime.current = now;
+        if (e.deltaY > 0) {
+          nextVideo();
+        } else {
+          prevVideo();
+        }
       }
     }
   };
