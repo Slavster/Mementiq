@@ -171,7 +171,7 @@ export default function ServicesSection() {
                       <p className="text-gray-400 text-sm font-normal mb-6">{service.description}</p>
                       <ul className="space-y-2">
                         {service.features.map((feature, featureIndex) => (
-                          <li key={featureIndex} className="flex items-center text-charcoal text-[15px] font-medium">
+                          <li key={featureIndex} className="flex items-center text-charcoal font-medium text-[16px]">
                             <Check className="h-4 w-4 text-accent mr-2 flex-shrink-0" />
                             {feature}
                           </li>
