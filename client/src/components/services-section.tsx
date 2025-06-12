@@ -1,11 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Video, Megaphone, GraduationCap, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Smartphone, Camera, Megaphone, Palette, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useState, useRef } from "react";
 
 const services = [
   {
-    icon: Video,
+    icon: Smartphone,
     title: "Social Media Content",
     description: "Eye-catching edits perfect for Instagram, TikTok, YouTube, and other platforms that get you noticed.",
     features: [
@@ -18,7 +18,7 @@ const services = [
     iconColor: "text-primary"
   },
   {
-    icon: Heart,
+    icon: Camera,
     title: "Treasured Memories",
     description: "Transform your personal moments into beautiful cinematic masterpieces - from travel vlogs, community gatherings, life milestones, once-in-a-lifetime events, and more.",
     features: [
@@ -46,7 +46,7 @@ const services = [
     iconColor: "text-purple-400"
   },
   {
-    icon: GraduationCap,
+    icon: Palette,
     title: "Creative Storytelling",
     description: "Bring your creative vision to life with professional editing that captures emotion and tells your story.",
     features: [
@@ -165,8 +165,8 @@ export default function ServicesSection() {
                       <p className="text-charcoal mb-6">{service.description}</p>
                       <ul className="space-y-2">
                         {service.features.map((feature, featureIndex) => (
-                          <li key={featureIndex} className="flex items-start text-sm text-charcoal">
-                            <span className="text-accent mr-2 mt-1">•</span>
+                          <li key={featureIndex} className="flex items-center text-sm text-charcoal">
+                            <Check className="h-4 w-4 text-accent mr-2 flex-shrink-0" />
                             {feature}
                           </li>
                         ))}
