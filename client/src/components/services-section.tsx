@@ -5,7 +5,7 @@ import { useState, useRef } from "react";
 
 const services = [
   {
-    icon: Video,
+    iconName: "Video",
     title: "Social Media Content",
     description: "Eye-catching edits perfect for Instagram, TikTok, YouTube, and other platforms that get you noticed.",
     features: [
@@ -18,7 +18,7 @@ const services = [
     iconColor: "text-primary"
   },
   {
-    icon: Camera,
+    iconName: "Camera",
     title: "Treasured Memories",
     description: "Transform your personal moments into beautiful cinematic masterpieces - from travel vlogs, community gatherings, life milestones, once-in-a-lifetime events, and more.",
     features: [
@@ -32,7 +32,7 @@ const services = [
     iconColor: "text-accent"
   },
   {
-    icon: Megaphone,
+    iconName: "Megaphone",
     title: "Promotional Content",
     description: "Skip the Editing Headache and quickly transform your raw footage into high-converting ads and captivating content.",
     features: [
@@ -46,7 +46,7 @@ const services = [
     iconColor: "text-purple-400"
   },
   {
-    icon: Palette,
+    iconName: "Palette",
     title: "Creative Storytelling",
     description: "Bring your creative vision to life with professional editing that captures emotion and tells your story.",
     features: [
@@ -142,7 +142,21 @@ export default function ServicesSection() {
               const offset = index - currentIndex;
               const isActive = index === currentIndex;
               const zIndex = services.length - Math.abs(offset);
-              const IconComponent = service.icon;
+              
+              const renderIcon = () => {
+                switch (service.iconName) {
+                  case "Video":
+                    return <Video className={`h-8 w-8 ${service.iconColor}`} />;
+                  case "Camera":
+                    return <Camera className={`h-8 w-8 ${service.iconColor}`} />;
+                  case "Megaphone":
+                    return <Megaphone className={`h-8 w-8 ${service.iconColor}`} />;
+                  case "Palette":
+                    return <Palette className={`h-8 w-8 ${service.iconColor}`} />;
+                  default:
+                    return null;
+                }
+              };
               
               return (
                 <div
@@ -159,7 +173,7 @@ export default function ServicesSection() {
                   <Card className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 w-96">
                     <CardContent className="p-8">
                       <div className={`${service.bgColor} rounded-lg p-4 w-16 h-16 flex items-center justify-center mb-6 border border-gray-600`}>
-                        <IconComponent className={`h-8 w-8 ${service.iconColor}`} />
+                        {renderIcon()}
                       </div>
                       <h3 className="text-2xl font-semibold text-light mb-4">{service.title}</h3>
                       <p className="text-charcoal mb-6">{service.description}</p>
