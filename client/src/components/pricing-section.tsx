@@ -1,54 +1,60 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 
-const packages = [
+const subscriptionPlans = [
   {
-    name: "Quick Edit",
-    price: "$199",
-    description: "Perfect for social media content",
+    name: "Daily Delivery",
+    cadence: "1 video per day",
+    price: "$20",
+    monthlyTotal: "$600/month",
+    description: "Perfect for content creators who need consistent daily output",
     features: [
-      "Up to 3 minutes",
-      "Basic color correction",
-      "Music & sound effects",
-      "Text overlays & titles",
-      "2 rounds of revisions",
-      "1080p delivery"
+      "1 professionally edited video daily",
+      "4K delivery with multiple formats", 
+      "Professional color grading",
+      "Audio mixing & cleanup",
+      "Motion graphics & transitions",
+      "48-hour turnaround guaranteed"
     ],
     highlighted: false,
-    buttonText: "Get Started",
+    buttonText: "Start Daily Plan",
     buttonVariant: "outline" as const
   },
   {
-    name: "Pro Edit",
-    price: "$499",
-    description: "Ideal for content creators",
+    name: "Weekly Delivery", 
+    cadence: "1 video per week",
+    price: "$20",
+    monthlyTotal: "$80/month",
+    description: "Ideal for businesses and personal projects",
     features: [
-      "Up to 10 minutes",
-      "Advanced color grading",
-      "Motion graphics & transitions",
+      "1 professionally edited video weekly",
+      "4K delivery with multiple formats",
+      "Professional color grading", 
       "Audio mixing & cleanup",
-      "5 rounds of revisions",
-      "4K delivery + multiple formats"
+      "Motion graphics & transitions",
+      "7-day turnaround guaranteed"
     ],
     highlighted: true,
-    buttonText: "Get Started",
+    buttonText: "Start Weekly Plan",
     buttonVariant: "default" as const
   },
   {
-    name: "Cinematic",
-    price: "$999",
-    description: "For premium content & films",
+    name: "Monthly Delivery",
+    cadence: "1 video per month", 
+    price: "$20",
+    monthlyTotal: "$20/month",
+    description: "Great for occasional high-quality content",
     features: [
-      "Up to 30 minutes",
+      "1 professionally edited video monthly",
+      "4K delivery with multiple formats",
       "Professional color grading",
-      "Custom motion graphics",
-      "Professional audio mixing",
-      "Unlimited revisions",
-      "4K delivery + project files"
+      "Audio mixing & cleanup", 
+      "Motion graphics & transitions",
+      "14-day turnaround guaranteed"
     ],
     highlighted: false,
-    buttonText: "Get Started",
+    buttonText: "Start Monthly Plan",
     buttonVariant: "outline" as const
   }
 ];
@@ -61,34 +67,36 @@ export default function PricingSection() {
     }
   };
 
-  const handlePackageSelect = (packageName: string) => {
-    console.log(`Selected package: ${packageName}`);
+  const handlePlanSelect = (planName: string) => {
+    console.log(`Selected plan: ${planName}`);
     scrollToContact();
   };
 
   return (
-    <section id="pricing" className="py-20 bg-dark">
+    <section id="pricing" className="py-20 bg-gradient-to-b from-darker via-dark to-darker">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-light mb-4">Simple Pricing</h2>
-          <p className="text-xl text-charcoal max-w-3xl mx-auto">
-            Professional video editing at transparent prices. Choose the package that fits your content needs.
+          <h2 className="text-5xl font-bold text-light mb-6">
+            Transparent <span className="text-accent">Subscription</span> Pricing
+          </h2>
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+            $20 per video. Choose your delivery cadence. No hidden fees, no surprises.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {packages.map((pkg, index) => (
+        <div className="grid md:grid-cols-3 gap-8 mb-12">
+          {subscriptionPlans.map((plan, index) => (
             <Card 
               key={index} 
-              className={`relative rounded-xl shadow-xl transition-all duration-300 bg-dark-card border ${
-                pkg.highlighted 
-                  ? 'border-2 border-primary shadow-2xl scale-105' 
-                  : 'border-gray-700 hover:border-primary/50'
+              className={`relative rounded-2xl shadow-xl transition-all duration-300 bg-dark-card border-2 ${
+                plan.highlighted 
+                  ? 'border-accent shadow-2xl scale-105 bg-gradient-to-br from-primary/10 to-accent/10' 
+                  : 'border-gray-700 hover:border-accent/50'
               }`}
             >
-              {pkg.highlighted && (
+              {plan.highlighted && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-accent text-secondary px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                  <span className="bg-accent text-dark px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
                     Most Popular
                   </span>
                 </div>
@@ -96,44 +104,83 @@ export default function PricingSection() {
               
               <CardContent className="p-8">
                 <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-light mb-2">{pkg.name}</h3>
-                  <p className="text-charcoal mb-6">{pkg.description}</p>
-                  <div className="text-4xl font-bold text-primary mb-2">{pkg.price}</div>
-                  <p className="text-sm text-charcoal">per project</p>
+                  <h3 className="text-2xl font-bold text-light mb-2">{plan.name}</h3>
+                  <p className="text-gray-400 mb-4">{plan.description}</p>
+                  <div className="text-sm text-accent font-medium mb-2">{plan.cadence}</div>
+                  <div className="text-4xl font-bold text-primary mb-1">{plan.price}</div>
+                  <p className="text-sm text-gray-400 mb-2">per video</p>
+                  <p className="text-lg font-semibold text-accent">{plan.monthlyTotal}</p>
                 </div>
                 
-                <ul className="space-y-4 mb-8">
-                  {pkg.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center">
-                      <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0" />
-                      <span className="text-charcoal">{feature}</span>
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-start">
+                      <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300 text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 
                 <Button 
-                  onClick={() => handlePackageSelect(pkg.name)}
-                  variant={pkg.buttonVariant}
-                  className={`w-full py-3 font-semibold transition-all duration-200 ${
-                    pkg.highlighted 
-                      ? 'bg-primary text-light hover:bg-purple-600 shadow-lg' 
-                      : 'bg-gray-700 text-light hover:bg-gray-600 border-gray-600'
+                  onClick={() => handlePlanSelect(plan.name)}
+                  variant={plan.buttonVariant}
+                  className={`w-full py-3 font-semibold transition-all duration-300 ${
+                    plan.highlighted 
+                      ? 'bg-gradient-to-r from-primary to-accent text-dark hover:shadow-lg hover:shadow-accent/25 transform hover:scale-105' 
+                      : 'bg-gray-700 text-light hover:bg-gray-600 border-gray-600 hover:border-accent/50'
                   }`}
                 >
-                  {pkg.buttonText}
+                  {plan.buttonText}
                 </Button>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="text-center mt-12">
-          <p className="text-charcoal mb-4">Need something custom? Let's discuss your creative vision and requirements.</p>
+        {/* Revision Add-on Section */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <Card className="bg-gradient-to-r from-orange-900/20 to-red-900/20 border-2 border-orange-700/50 rounded-2xl">
+            <CardContent className="p-8 text-center">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Plus className="h-6 w-6 text-orange-400" />
+                <h3 className="text-2xl font-bold text-light">Revision Add-on</h3>
+              </div>
+              <p className="text-gray-400 mb-4">
+                Need changes to your video? Add revisions a-la-carte for any subscription plan.
+              </p>
+              <div className="text-3xl font-bold text-orange-400 mb-2">$5</div>
+              <p className="text-sm text-gray-400 mb-6">per revision request</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+                <div className="flex items-center">
+                  <Check className="h-4 w-4 text-orange-400 mr-2" />
+                  Minor tweaks & adjustments
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-4 w-4 text-orange-400 mr-2" />
+                  48-hour turnaround
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-4 w-4 text-orange-400 mr-2" />
+                  Color & audio changes
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-4 w-4 text-orange-400 mr-2" />
+                  Text & graphic updates
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="text-center">
+          <p className="text-gray-400 mb-6">
+            Questions about our subscription plans? Let's find the perfect fit for your content needs.
+          </p>
           <Button 
             onClick={scrollToContact}
-            className="bg-accent text-secondary px-8 py-3 text-lg font-semibold hover:bg-yellow-500 transition-colors duration-200"
+            className="bg-accent text-dark px-8 py-4 text-lg font-semibold hover:bg-yellow-400 transition-all duration-300 transform hover:scale-105"
           >
-            Get Custom Quote
+            Get Started Today
           </Button>
         </div>
       </div>
