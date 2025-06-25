@@ -300,20 +300,17 @@ export default function PricingSection() {
           ))}
         </div>
 
-        {selectedTab === "subscription" && (
-          <div className="text-center text-sm text-gray-400 mb-12">
-            <p>
-              Need more than 2x weekly delivery?{" "}
-              <a href="#contact" className="text-accent hover:underline">
-                Contact sales
-              </a>{" "}
-              for a custom package.
-            </p>
-          </div>
-        )}
+        <div className="text-center mb-12">
+          <Button
+            onClick={scrollToContact}
+            className="bg-accent text-dark px-8 py-4 text-lg font-semibold hover:bg-yellow-400 transition-all duration-300 transform hover:scale-105"
+          >
+            Get Started Today
+          </Button>
+        </div>
 
         {/* Revision Add-on Section */}
-        <div className="max-w-2xl mx-auto mb-12">
+        <div className="max-w-2xl mx-auto mb-8">
           <Card className="bg-gradient-to-r from-orange-900/20 to-red-900/20 border-2 border-orange-700/50 rounded-2xl">
             <CardContent className="p-8 text-center">
               <div className="flex items-center justify-center gap-3 mb-4">
@@ -323,8 +320,7 @@ export default function PricingSection() {
                 </h3>
               </div>
               <p className="text-gray-400 mb-4">
-                Need changes to your video? Add revisions as needed to any plan
-                or package.
+                Need changes to your video? Add revisions a-la-carte for any plan or package.
               </p>
               <div className="text-3xl font-bold text-orange-400 mb-2">$5</div>
               <p className="text-sm text-gray-400 mb-6">per revision request</p>
@@ -350,23 +346,9 @@ export default function PricingSection() {
           </Card>
         </div>
 
-        <div className="text-center mb-8">
-          <p className="text-gray-400 mb-6">
-            Questions about pricing or need a custom solution? Let's find the
-            perfect fit for your content needs.
-          </p>
-          <Button
-            onClick={scrollToContact}
-            className="bg-accent text-dark px-8 py-4 text-lg font-semibold hover:bg-yellow-400 transition-all duration-300 transform hover:scale-105"
-          >
-            Get Started Today
-          </Button>
-        </div>
-
-        {/* Asterisks at bottom */}
-        <div className="text-center text-xs text-gray-500 space-y-1">
-          <p>*Pricing limited to videos with max length of 3 minutes</p>
-          <p>*For longer content or custom packages, contact sales</p>
+        {/* Custom Package Info */}
+        <div className="text-center text-gray-400">
+          <p>Making videos longer than 3 minutes? Need more than 2x videos per week? <a href="#contact" className="text-accent hover:underline">Contact sales</a> for a custom package to meet your exact content needs.</p>
         </div>
       </div>
     </section>
