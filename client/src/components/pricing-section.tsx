@@ -283,7 +283,7 @@ export default function PricingSection() {
                         ? "bg-gradient-to-r from-primary to-accent text-dark hover:shadow-lg hover:shadow-accent/25 transform hover:scale-105"
                         : "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/25 transform hover:scale-105"
                       : selectedTab === "subscription"
-                        ? "bg-primary text-white hover:bg-primary/80 border-primary hover:border-primary/80"
+                        ? "bg-cyan-500 text-white hover:bg-cyan-400 border-cyan-400 hover:border-cyan-300"
                         : "bg-purple-600 text-white hover:bg-purple-500 border-purple-500 hover:border-purple-400"
                   }`}
                 >
