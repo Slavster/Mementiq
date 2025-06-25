@@ -125,9 +125,9 @@ export default function PricingSection() {
                   }`}
                 >
                   <Calendar className="h-5 w-5" />
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-center">
                     <span>Subscription Plans</span>
-                    <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">28% cheaper</span>
+                    <span className="text-xs text-green-400 border border-green-400 px-2 py-0.5 rounded-full mt-1">28% cheaper</span>
                   </div>
                 </button>
                 <button
@@ -210,7 +210,7 @@ export default function PricingSection() {
               }`}
             >
               {plan.highlighted && (
-                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
                   <span
                     className={`px-4 py-2 rounded-xl text-sm font-semibold shadow-lg whitespace-nowrap ${
                       selectedTab === "subscription"
