@@ -348,9 +348,9 @@ export default function PricingSection() {
               <p className="text-lg text-gray-400 mb-4 max-w-2xl mx-auto">
                 Making videos longer than 3 minutes? Need more than 2x videos per week?
               </p>
-              <h4 className="text-2xl font-bold text-light mb-8 max-w-2xl mx-auto">
+              <p className="text-lg font-medium text-light mb-8 max-w-2xl mx-auto">
                 We'll create a custom package to meet your exact content needs.
-              </h4>
+              </p>
 
               <div className="grid md:grid-cols-2 gap-8 mb-8">
                 <div className="text-left">
