@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Plus, CreditCard, Calendar } from "lucide-react";
+import { useState } from "react";
 
 const subscriptionPlans = [
   {
@@ -12,17 +13,12 @@ const subscriptionPlans = [
     savings: "28% cheaper",
     description: "Perfect for active content creators who need consistent output",
     features: [
-      "2 professionally edited videos weekly",
-      "4K delivery with multiple formats", 
-      "Professional color grading",
-      "Audio mixing & cleanup",
-      "Motion graphics & transitions",
+      "2 videos weekly",
       "48-hour turnaround guaranteed"
     ],
     highlighted: true,
     buttonText: "Start 2x Weekly Plan",
-    buttonVariant: "default" as const,
-    minCommitment: "2 month minimum*"
+    buttonVariant: "default" as const
   },
   {
     name: "Weekly Delivery", 
@@ -32,17 +28,12 @@ const subscriptionPlans = [
     savings: "24% cheaper",
     description: "Ideal for businesses and personal projects",
     features: [
-      "1 professionally edited video weekly",
-      "4K delivery with multiple formats",
-      "Professional color grading", 
-      "Audio mixing & cleanup",
-      "Motion graphics & transitions",
+      "1 video weekly",
       "7-day turnaround guaranteed"
     ],
     highlighted: false,
     buttonText: "Start Weekly Plan",
-    buttonVariant: "outline" as const,
-    minCommitment: "2 month minimum*"
+    buttonVariant: "outline" as const
   },
   {
     name: "Monthly Delivery",
@@ -52,17 +43,12 @@ const subscriptionPlans = [
     savings: "20% cheaper",
     description: "Great for occasional high-quality content",
     features: [
-      "1 professionally edited video monthly",
-      "4K delivery with multiple formats",
-      "Professional color grading",
-      "Audio mixing & cleanup", 
-      "Motion graphics & transitions",
+      "1 video monthly",
       "14-day turnaround guaranteed"
     ],
     highlighted: false,
     buttonText: "Start Monthly Plan",
-    buttonVariant: "outline" as const,
-    minCommitment: "2 month minimum*"
+    buttonVariant: "outline" as const
   }
 ];
 
@@ -75,11 +61,7 @@ const prepaidPackages = [
     description: "Perfect for trying us out",
     features: [
       "5 video editing credits",
-      "Use anytime within 1 year",
-      "4K delivery with multiple formats",
-      "Professional color grading",
-      "Audio mixing & cleanup",
-      "Motion graphics & transitions"
+      "Use anytime within 1 year"
     ],
     highlighted: false,
     buttonText: "Buy 5 Credits",
@@ -90,40 +72,34 @@ const prepaidPackages = [
     videoCount: 10,
     price: "$24",
     totalPrice: "$240",
-    description: "Great for regular content creators",
+    description: "For budding content creators",
     features: [
       "10 video editing credits",
-      "Use anytime within 1 year",
-      "4K delivery with multiple formats",
-      "Professional color grading",
-      "Audio mixing & cleanup",
-      "Motion graphics & transitions"
+      "Use anytime within 1 year"
     ],
-    highlighted: true,
+    highlighted: false,
     buttonText: "Buy 10 Credits",
-    buttonVariant: "default" as const
+    buttonVariant: "outline" as const
   },
   {
     name: "20 Video Package",
     videoCount: 20,
     price: "$23",
     totalPrice: "$460",
-    description: "Best value for heavy users",
+    description: "Clear your content backlogs",
     features: [
       "20 video editing credits",
-      "Use anytime within 1 year",
-      "4K delivery with multiple formats",
-      "Professional color grading",
-      "Audio mixing & cleanup",
-      "Motion graphics & transitions"
+      "Use anytime within 1 year"
     ],
-    highlighted: false,
+    highlighted: true,
     buttonText: "Buy 20 Credits",
-    buttonVariant: "outline" as const
+    buttonVariant: "default" as const
   }
 ];
 
 export default function PricingSection() {
+  const [selectedTab, setSelectedTab] = useState<"subscription" | "prepaid">("subscription");
+
   const scrollToContact = () => {
     const element = document.getElementById('contact');
     if (element) {
@@ -136,6 +112,8 @@ export default function PricingSection() {
     scrollToContact();
   };
 
+  const currentPlans = selectedTab === "subscription" ? subscriptionPlans : prepaidPackages;
+
   return (
     <section id="pricing" className="py-20 bg-gradient-to-b from-darker via-dark to-darker">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -143,144 +121,161 @@ export default function PricingSection() {
           <h2 className="text-5xl font-bold text-light mb-6">
             Choose How You <span className="text-accent">Pay</span>
           </h2>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-6">
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
             Subscriptions or prepaid packages. Tired of subscriptions? No worries! Buy credits and use them anytime in the next year.
           </p>
-          <p className="text-sm text-gray-400 italic">
-            *Pricing limited to videos with max length of 3 minutes. For longer content or custom packages, contact sales.
-          </p>
+
+          {/* Pricing Selector */}
+          <div className="flex justify-center mb-12">
+            <div className="bg-gray-800 rounded-xl p-1 border border-gray-700">
+              <div className="flex">
+                <button
+                  onClick={() => setSelectedTab("subscription")}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                    selectedTab === "subscription"
+                      ? "bg-accent text-dark shadow-lg"
+                      : "text-gray-400 hover:text-light"
+                  }`}
+                >
+                  <Calendar className="h-5 w-5" />
+                  Subscription Plans
+                </button>
+                <button
+                  onClick={() => setSelectedTab("prepaid")}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                    selectedTab === "prepaid"
+                      ? "bg-accent text-dark shadow-lg"
+                      : "text-gray-400 hover:text-light"
+                  }`}
+                >
+                  <CreditCard className="h-5 w-5" />
+                  Prepaid Packages
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Subscription Plans */}
-        <div className="mb-16">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <Calendar className="h-6 w-6 text-accent" />
-            <h3 className="text-3xl font-bold text-light">Subscription Plans</h3>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
-            {subscriptionPlans.map((plan, index) => (
-              <Card 
-                key={index} 
-                className={`relative rounded-2xl shadow-xl transition-all duration-300 bg-dark-card border-2 ${
-                  plan.highlighted 
-                    ? 'border-accent shadow-2xl scale-105 bg-gradient-to-br from-primary/10 to-accent/10' 
-                    : 'border-gray-700 hover:border-accent/50'
-                }`}
-              >
-                {plan.highlighted && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-accent text-dark px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
+        {/* What's Included Section */}
+        <div className="mb-12">
+          <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-accent/30 rounded-2xl">
+            <CardContent className="p-8">
+              <h3 className="text-2xl font-bold text-light text-center mb-6">What's Included with Every Video</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0" />
+                  <span className="text-gray-300">4K delivery with multiple formats</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0" />
+                  <span className="text-gray-300">Professional color grading</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0" />
+                  <span className="text-gray-300">Audio mixing & cleanup</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0" />
+                  <span className="text-gray-300">Motion graphics & transitions</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0" />
+                  <span className="text-gray-300">Text overlays & titles</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0" />
+                  <span className="text-gray-300">Music & sound effects</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Plans Grid */}
+        <div className="grid md:grid-cols-3 gap-8 mb-12">
+          {currentPlans.map((plan, index) => (
+            <Card 
+              key={index} 
+              className={`relative rounded-2xl shadow-xl transition-all duration-300 bg-dark-card border-2 ${
+                plan.highlighted 
+                  ? selectedTab === "subscription"
+                    ? 'border-accent shadow-2xl scale-105 bg-gradient-to-br from-primary/10 to-accent/10'
+                    : 'border-purple-500 shadow-2xl scale-105 bg-gradient-to-br from-purple-900/20 to-pink-900/20'
+                  : 'border-gray-700 hover:border-accent/50'
+              }`}
+            >
+              {plan.highlighted && (
+                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                  <span className={`px-4 py-2 rounded-xl text-sm font-semibold shadow-lg whitespace-nowrap ${
+                    selectedTab === "subscription"
+                      ? "bg-accent text-dark"
+                      : "bg-purple-500 text-white"
+                  }`}>
+                    {selectedTab === "subscription" ? "Most Popular" : "Best Value"}
+                  </span>
+                </div>
+              )}
+              
+              <CardContent className="p-8">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-light mb-2">{plan.name}</h3>
+                  <p className="text-gray-400 mb-4">{plan.description}</p>
+                  {selectedTab === "subscription" && (
+                    <>
+                      <div className="text-sm text-accent font-medium mb-2">{(plan as any).cadence}</div>
+                      <div className="text-4xl font-bold text-primary mb-1">{plan.price}</div>
+                      <p className="text-sm text-gray-400 mb-2">per video</p>
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Badge variant="secondary" className="bg-green-900/30 text-green-400 border-green-600">
+                          {(plan as any).savings}
+                        </Badge>
+                      </div>
+                      <p className="text-lg font-semibold text-accent">{(plan as any).monthlyTotal}</p>
+                    </>
+                  )}
+                  {selectedTab === "prepaid" && (
+                    <>
+                      <div className="text-4xl font-bold text-purple-400 mb-1">{plan.price}</div>
+                      <p className="text-sm text-gray-400 mb-2">per video</p>
+                      <p className="text-lg font-semibold text-purple-300">Total: {(plan as any).totalPrice}</p>
+                    </>
+                  )}
+                </div>
                 
-                <CardContent className="p-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-light mb-2">{plan.name}</h3>
-                    <p className="text-gray-400 mb-4">{plan.description}</p>
-                    <div className="text-sm text-accent font-medium mb-2">{plan.cadence}</div>
-                    <div className="text-4xl font-bold text-primary mb-1">{plan.price}</div>
-                    <p className="text-sm text-gray-400 mb-2">per video</p>
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Badge variant="secondary" className="bg-green-900/30 text-green-400 border-green-600">
-                        {plan.savings}
-                      </Badge>
-                    </div>
-                    <p className="text-lg font-semibold text-accent">{plan.monthlyTotal}</p>
-                    <p className="text-xs text-orange-400 mt-1">{plan.minCommitment}</p>
-                  </div>
-                  
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start">
-                        <Check className="h-5 w-5 text-accent mr-3 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-300 text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button 
-                    onClick={() => handlePlanSelect(plan.name)}
-                    variant={plan.buttonVariant}
-                    className={`w-full py-3 font-semibold transition-all duration-300 ${
-                      plan.highlighted 
-                        ? 'bg-gradient-to-r from-primary to-accent text-dark hover:shadow-lg hover:shadow-accent/25 transform hover:scale-105' 
-                        : 'bg-gray-700 text-light hover:bg-gray-600 border-gray-600 hover:border-accent/50'
-                    }`}
-                  >
-                    {plan.buttonText}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          <div className="text-center text-sm text-gray-400">
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-start">
+                      <Check className={`h-5 w-5 mr-3 flex-shrink-0 mt-0.5 ${
+                        selectedTab === "subscription" ? "text-accent" : "text-purple-400"
+                      }`} />
+                      <span className="text-gray-300 text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                
+                <Button 
+                  onClick={() => handlePlanSelect(plan.name)}
+                  variant={plan.buttonVariant}
+                  className={`w-full py-3 font-semibold transition-all duration-300 ${
+                    plan.highlighted 
+                      ? selectedTab === "subscription"
+                        ? 'bg-gradient-to-r from-primary to-accent text-dark hover:shadow-lg hover:shadow-accent/25 transform hover:scale-105'
+                        : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/25 transform hover:scale-105'
+                      : 'bg-gray-700 text-light hover:bg-gray-600 border-gray-600 hover:border-accent/50'
+                  }`}
+                >
+                  {plan.buttonText}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {selectedTab === "subscription" && (
+          <div className="text-center text-sm text-gray-400 mb-12">
             <p>Need more than 2x weekly delivery? <a href="#contact" className="text-accent hover:underline">Contact sales</a> for a custom package.</p>
           </div>
-        </div>
-
-        {/* Prepaid Packages */}
-        <div className="mb-12">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <CreditCard className="h-6 w-6 text-accent" />
-            <h3 className="text-3xl font-bold text-light">Prepaid Video Packages</h3>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {prepaidPackages.map((pkg, index) => (
-              <Card 
-                key={index} 
-                className={`relative rounded-2xl shadow-xl transition-all duration-300 bg-dark-card border-2 ${
-                  pkg.highlighted 
-                    ? 'border-purple-500 shadow-2xl scale-105 bg-gradient-to-br from-purple-900/20 to-pink-900/20' 
-                    : 'border-gray-700 hover:border-purple-500/50'
-                }`}
-              >
-                {pkg.highlighted && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-purple-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
-                      Best Value
-                    </span>
-                  </div>
-                )}
-                
-                <CardContent className="p-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-light mb-2">{pkg.name}</h3>
-                    <p className="text-gray-400 mb-4">{pkg.description}</p>
-                    <div className="text-4xl font-bold text-purple-400 mb-1">{pkg.price}</div>
-                    <p className="text-sm text-gray-400 mb-2">per video</p>
-                    <p className="text-lg font-semibold text-purple-300">Total: {pkg.totalPrice}</p>
-                  </div>
-                  
-                  <ul className="space-y-3 mb-8">
-                    {pkg.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start">
-                        <Check className="h-5 w-5 text-purple-400 mr-3 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-300 text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button 
-                    onClick={() => handlePlanSelect(pkg.name)}
-                    variant={pkg.buttonVariant}
-                    className={`w-full py-3 font-semibold transition-all duration-300 ${
-                      pkg.highlighted 
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/25 transform hover:scale-105' 
-                        : 'bg-gray-700 text-light hover:bg-gray-600 border-gray-600 hover:border-purple-500/50'
-                    }`}
-                  >
-                    {pkg.buttonText}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* Revision Add-on Section */}
         <div className="max-w-2xl mx-auto mb-12">
@@ -317,7 +312,7 @@ export default function PricingSection() {
           </Card>
         </div>
 
-        <div className="text-center">
+        <div className="text-center mb-8">
           <p className="text-gray-400 mb-6">
             Questions about pricing or need a custom solution? Let's find the perfect fit for your content needs.
           </p>
@@ -327,6 +322,13 @@ export default function PricingSection() {
           >
             Get Started Today
           </Button>
+        </div>
+
+        {/* Asterisks at bottom */}
+        <div className="text-center text-xs text-gray-500 space-y-1">
+          <p>*Subscription plans require a 2-month minimum commitment</p>
+          <p>*Pricing limited to videos with max length of 3 minutes</p>
+          <p>*For longer content or custom packages, contact sales</p>
         </div>
       </div>
     </section>
