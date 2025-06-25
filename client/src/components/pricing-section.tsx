@@ -125,7 +125,10 @@ export default function PricingSection() {
                   }`}
                 >
                   <Calendar className="h-5 w-5" />
-                  Subscription Plans
+                  <div className="flex flex-col items-start">
+                    <span>Subscription Plans</span>
+                    <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">28% cheaper</span>
+                  </div>
                 </button>
                 <button
                   onClick={() => setSelectedTab("prepaid")}
@@ -144,22 +147,8 @@ export default function PricingSection() {
 
           {/* Subscription Disclaimer */}
           {selectedTab === "subscription" && (
-            <div className="text-center mb-4">
+            <div className="text-center mb-12">
               <p className="text-gray-400 text-sm">Change plans or cancel anytime</p>
-            </div>
-          )}
-
-          {/* Subscription Savings Badge */}
-          {selectedTab === "subscription" && (
-            <div className="flex justify-center mb-8">
-              <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-accent/30 rounded-xl px-6 py-3">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-green-900/30 text-green-400 border-green-600">
-                    28% cheaper
-                  </Badge>
-                  <span className="text-gray-300">than prepaid packages</span>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -347,8 +336,21 @@ export default function PricingSection() {
         </div>
 
         {/* Custom Package Info */}
-        <div className="text-center text-gray-400">
-          <p>Making videos longer than 3 minutes? Need more than 2x videos per week? <a href="#contact" className="text-accent hover:underline">Contact sales</a> for a custom package to meet your exact content needs.</p>
+        <div className="text-center mb-8">
+          <Card className="bg-gradient-to-r from-gray-800 to-gray-700 border-2 border-gray-600 rounded-xl max-w-2xl mx-auto">
+            <CardContent className="p-6">
+              <p className="text-light text-lg">Making videos longer than 3 minutes? Need more than 2x videos per week? <a href="#contact" className="text-accent hover:underline font-semibold">Contact sales</a> for a custom package to meet your exact content needs.</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="text-center">
+          <Button
+            onClick={scrollToContact}
+            className="bg-accent text-dark px-8 py-4 text-lg font-semibold hover:bg-yellow-400 transition-all duration-300 transform hover:scale-105"
+          >
+            Get Started Today
+          </Button>
         </div>
       </div>
     </section>
