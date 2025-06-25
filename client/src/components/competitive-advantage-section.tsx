@@ -46,8 +46,9 @@ export default function CompetitiveAdvantageSection() {
             Why Choose <span className="text-accent">CreativeEdge</span>?
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Stop wasting time and money on outdated solutions. Here's why we're
-            different.
+            Stop wasting time and money on outdated solutions. <br />
+            Here's why we're different.
+            <br />
           </p>
         </div>
 
@@ -138,7 +139,8 @@ export default function CompetitiveAdvantageSection() {
         <div className="text-center">
           <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-purple-500/10 rounded-2xl p-8 border border-accent/30">
             <h3 className="text-3xl font-bold text-light mb-4">
-              Upload footage → Push button → Get results
+              Upload Footage → Push Button → <br />
+              Get Results
             </h3>
             <p className="text-xl text-gray-400 mb-6">
               That simple. All for a low and transparent per-video rate.
