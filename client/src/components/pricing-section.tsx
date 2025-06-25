@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Plus, CreditCard, Calendar, Settings } from "lucide-react";
+import { Check, Plus, CreditCard, Calendar, Scissors } from "lucide-react";
 import { useState } from "react";
 
 const subscriptionPlans = [
@@ -115,29 +115,27 @@ export default function PricingSection() {
 
           {/* Pricing Selector */}
           <div className="flex justify-center mb-8">
-            <div className="bg-gray-800 rounded-xl p-1 border border-gray-700">
+            <div className="bg-gray-800 rounded-xl p-1 border border-gray-700 relative">
               <div className="flex">
                 <button
                   onClick={() => setSelectedTab("subscription")}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative ${
                     selectedTab === "subscription"
                       ? "bg-accent text-dark shadow-lg"
                       : "text-gray-400 hover:text-light"
                   }`}
                 >
                   <Calendar className="h-5 w-5" />
-                  <div className="flex flex-col items-center">
-                    <span>Subscription Plans</span>
-                    <span className="text-xs text-green-400 border border-green-400 px-2 py-0.5 rounded-full mt-1">
-                      28% cheaper
-                    </span>
+                  <span>Subscription Plans</span>
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                    <span className="text-xs text-green-400 bg-dark border border-green-400 px-2 py-1 rounded-full whitespace-nowrap shadow-lg">28% cheaper</span>
                   </div>
                 </button>
                 <button
                   onClick={() => setSelectedTab("prepaid")}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                     selectedTab === "prepaid"
-                      ? "bg-accent text-dark shadow-lg"
+                      ? "bg-purple-500 text-white shadow-lg"
                       : "text-gray-400 hover:text-light"
                   }`}
                 >
@@ -285,7 +283,7 @@ export default function PricingSection() {
                         ? "bg-gradient-to-r from-primary to-accent text-dark hover:shadow-lg hover:shadow-accent/25 transform hover:scale-105"
                         : "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/25 transform hover:scale-105"
                       : selectedTab === "subscription"
-                        ? "bg-blue-600 text-white hover:bg-blue-500 border-blue-500 hover:border-blue-400"
+                        ? "bg-primary/70 text-white hover:bg-primary/80 border-primary/60 hover:border-primary/70"
                         : "bg-purple-600 text-white hover:bg-purple-500 border-purple-500 hover:border-purple-400"
                   }`}
                 >
@@ -339,40 +337,55 @@ export default function PricingSection() {
           <Card className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-500/50 rounded-2xl max-w-4xl mx-auto">
             <CardContent className="p-12 text-center">
               <div className="flex items-center justify-center gap-3 mb-6">
-                <Settings className="h-8 w-8 text-indigo-400" />
-                <h3 className="text-3xl font-bold text-light">Tailored Packages</h3>
+                <Scissors className="h-8 w-8 text-indigo-400" />
+                <h3 className="text-3xl font-bold text-light">
+                  Tailored Packages
+                </h3>
               </div>
-              
+
               <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Making videos longer than 3 minutes? Need more than 2x videos per week? 
-                We'll create a custom package to meet your exact content needs.
+                Making videos longer than 3 minutes? Need more than 2x videos
+                per week? We'll create a custom package to meet your exact
+                content needs.
               </p>
 
               <div className="grid md:grid-cols-2 gap-8 mb-8">
                 <div className="text-left">
-                  <h4 className="text-lg font-semibold text-indigo-400 mb-4">Perfect for:</h4>
+                  <h4 className="text-lg font-semibold text-indigo-400 mb-4">
+                    Perfect for:
+                  </h4>
                   <div className="space-y-3">
                     <div className="flex items-center">
                       <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-300">Long-form content creators</span>
+                      <span className="text-gray-300">
+                        Long-form content creators
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-300">High-volume producers</span>
+                      <span className="text-gray-300">
+                        High-volume producers
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-300">Unique workflow requirements</span>
+                      <span className="text-gray-300">
+                        Unique workflow requirements
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-300">Specialized editing needs</span>
+                      <span className="text-gray-300">
+                        Specialized editing needs
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-left">
-                  <h4 className="text-lg font-semibold text-indigo-400 mb-4">What we'll discuss:</h4>
+                  <h4 className="text-lg font-semibold text-indigo-400 mb-4">
+                    What we'll discuss:
+                  </h4>
                   <div className="space-y-3">
                     <div className="flex items-center">
                       <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
@@ -380,11 +393,15 @@ export default function PricingSection() {
                     </div>
                     <div className="flex items-center">
                       <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-300">Custom turnaround times</span>
+                      <span className="text-gray-300">
+                        Custom turnaround times
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-300">Dedicated project manager</span>
+                      <span className="text-gray-300">
+                        Dedicated project manager & strategist
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
@@ -402,15 +419,6 @@ export default function PricingSection() {
               </Button>
             </CardContent>
           </Card>
-        </div>
-
-        <div className="text-center">
-          <Button
-            onClick={scrollToContact}
-            className="bg-accent text-dark px-8 py-4 text-lg font-semibold hover:bg-yellow-400 transition-all duration-300 transform hover:scale-105"
-          >
-            Get Started Today
-          </Button>
         </div>
       </div>
     </section>
