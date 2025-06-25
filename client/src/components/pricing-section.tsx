@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Plus, CreditCard, Calendar } from "lucide-react";
+import { Check, Plus, CreditCard, Calendar, Settings } from "lucide-react";
 import { useState } from "react";
 
 const subscriptionPlans = [
@@ -10,7 +10,8 @@ const subscriptionPlans = [
     cadence: "2 videos per week",
     price: "$18",
     monthlyTotal: "$144/month",
-    description: "Perfect for active content creators who need consistent output",
+    description:
+      "Perfect for active content creators who need consistent output",
     features: ["2 videos weekly", "48-hour turnaround guaranteed"],
     highlighted: true,
     buttonText: "Start 2x Weekly Plan",
@@ -114,29 +115,29 @@ export default function PricingSection() {
 
           {/* Pricing Selector */}
           <div className="flex justify-center mb-8">
-            <div className="bg-gray-800 rounded-xl p-1 border border-gray-700 relative">
+            <div className="bg-gray-800 rounded-xl p-1 border border-gray-700">
               <div className="flex">
                 <button
                   onClick={() => setSelectedTab("subscription")}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative ${
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                     selectedTab === "subscription"
                       ? "bg-accent text-dark shadow-lg"
                       : "text-gray-400 hover:text-light"
                   }`}
                 >
                   <Calendar className="h-5 w-5" />
-                  <span>Subscription Plans</span>
-                  {selectedTab === "subscription" && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-                      <span className="text-xs text-green-400 bg-dark border border-green-400 px-2 py-1 rounded-full whitespace-nowrap shadow-lg">28% cheaper</span>
-                    </div>
-                  )}
+                  <div className="flex flex-col items-center">
+                    <span>Subscription Plans</span>
+                    <span className="text-xs text-green-400 border border-green-400 px-2 py-0.5 rounded-full mt-1">
+                      28% cheaper
+                    </span>
+                  </div>
                 </button>
                 <button
                   onClick={() => setSelectedTab("prepaid")}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                     selectedTab === "prepaid"
-                      ? "bg-purple-500 text-white shadow-lg"
+                      ? "bg-accent text-dark shadow-lg"
                       : "text-gray-400 hover:text-light"
                   }`}
                 >
@@ -150,7 +151,9 @@ export default function PricingSection() {
           {/* Subscription Disclaimer */}
           {selectedTab === "subscription" && (
             <div className="text-center mb-12">
-              <p className="text-gray-400 text-sm">Change plans or cancel anytime</p>
+              <p className="text-gray-400 text-sm">
+                Change plans or cancel anytime
+              </p>
             </div>
           )}
         </div>
@@ -281,7 +284,9 @@ export default function PricingSection() {
                       ? selectedTab === "subscription"
                         ? "bg-gradient-to-r from-primary to-accent text-dark hover:shadow-lg hover:shadow-accent/25 transform hover:scale-105"
                         : "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/25 transform hover:scale-105"
-                      : "bg-gray-700 text-light hover:bg-gray-600 border-gray-600 hover:border-accent/50"
+                      : selectedTab === "subscription"
+                        ? "bg-blue-600 text-white hover:bg-blue-500 border-blue-500 hover:border-blue-400"
+                        : "bg-purple-600 text-white hover:bg-purple-500 border-purple-500 hover:border-purple-400"
                   }`}
                 >
                   {plan.buttonText}
@@ -289,15 +294,6 @@ export default function PricingSection() {
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        <div className="text-center mb-12">
-          <Button
-            onClick={scrollToContact}
-            className="bg-accent text-dark px-8 py-4 text-lg font-semibold hover:bg-yellow-400 transition-all duration-300 transform hover:scale-105"
-          >
-            Get Started Today
-          </Button>
         </div>
 
         {/* Revision Add-on Section */}
@@ -311,7 +307,8 @@ export default function PricingSection() {
                 </h3>
               </div>
               <p className="text-gray-400 mb-4">
-                Need changes to your video? Add revisions a-la-carte for any plan or package.
+                Need changes to your video? Add revisions a-la-carte for any
+                plan or package.
               </p>
               <div className="text-3xl font-bold text-orange-400 mb-2">$5</div>
               <p className="text-sm text-gray-400 mb-6">per revision request</p>
@@ -337,11 +334,72 @@ export default function PricingSection() {
           </Card>
         </div>
 
-        {/* Custom Package Info */}
-        <div className="text-center mb-8">
-          <Card className="bg-gradient-to-r from-gray-800 to-gray-700 border-2 border-gray-600 rounded-xl max-w-2xl mx-auto">
-            <CardContent className="p-6">
-              <p className="text-light text-lg">Making videos longer than 3 minutes? Need more than 2x videos per week? <a href="#contact" className="text-accent hover:underline font-semibold">Contact sales</a> for a custom package to meet your exact content needs.</p>
+        {/* Tailored Packages Section */}
+        <div className="mb-12">
+          <Card className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border-2 border-indigo-500/50 rounded-2xl max-w-4xl mx-auto">
+            <CardContent className="p-12 text-center">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <Settings className="h-8 w-8 text-indigo-400" />
+                <h3 className="text-3xl font-bold text-light">Tailored Packages</h3>
+              </div>
+              
+              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                Making videos longer than 3 minutes? Need more than 2x videos per week? 
+                We'll create a custom package to meet your exact content needs.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-8 mb-8">
+                <div className="text-left">
+                  <h4 className="text-lg font-semibold text-indigo-400 mb-4">Perfect for:</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">Long-form content creators</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">High-volume producers</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">Unique workflow requirements</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">Specialized editing needs</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-left">
+                  <h4 className="text-lg font-semibold text-indigo-400 mb-4">What we'll discuss:</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">Volume discounts</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">Custom turnaround times</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">Dedicated project manager</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-indigo-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">Priority support</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={scrollToContact}
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 text-lg font-semibold hover:from-indigo-500 hover:to-purple-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              >
+                Contact Sales
+              </Button>
             </CardContent>
           </Card>
         </div>
