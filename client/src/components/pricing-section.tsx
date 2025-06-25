@@ -114,27 +114,29 @@ export default function PricingSection() {
 
           {/* Pricing Selector */}
           <div className="flex justify-center mb-8">
-            <div className="bg-gray-800 rounded-xl p-1 border border-gray-700">
+            <div className="bg-gray-800 rounded-xl p-1 border border-gray-700 relative">
               <div className="flex">
                 <button
                   onClick={() => setSelectedTab("subscription")}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative ${
                     selectedTab === "subscription"
                       ? "bg-accent text-dark shadow-lg"
                       : "text-gray-400 hover:text-light"
                   }`}
                 >
                   <Calendar className="h-5 w-5" />
-                  <div className="flex flex-col items-center">
-                    <span>Subscription Plans</span>
-                    <span className="text-xs text-green-400 border border-green-400 px-2 py-0.5 rounded-full mt-1">28% cheaper</span>
-                  </div>
+                  <span>Subscription Plans</span>
+                  {selectedTab === "subscription" && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                      <span className="text-xs text-green-400 bg-dark border border-green-400 px-2 py-1 rounded-full whitespace-nowrap shadow-lg">28% cheaper</span>
+                    </div>
+                  )}
                 </button>
                 <button
                   onClick={() => setSelectedTab("prepaid")}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                     selectedTab === "prepaid"
-                      ? "bg-accent text-dark shadow-lg"
+                      ? "bg-purple-500 text-white shadow-lg"
                       : "text-gray-400 hover:text-light"
                   }`}
                 >
