@@ -128,7 +128,9 @@ export default function PricingSection() {
                   <Calendar className="h-5 w-5" />
                   <span>Subscription Plans</span>
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-                    <span className="text-xs text-green-400 bg-dark border border-green-400 px-2 py-1 rounded-full whitespace-nowrap shadow-lg">28% cheaper</span>
+                    <span className="text-xs text-green-400 bg-dark border border-green-400 px-2 py-1 rounded-full whitespace-nowrap shadow-lg">
+                      28% cheaper
+                    </span>
                   </div>
                 </button>
                 <button
@@ -343,11 +345,12 @@ export default function PricingSection() {
                 </h3>
               </div>
 
-              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Making videos longer than 3 minutes? Need more than 2x videos
-                per week? We'll create a custom package to meet your exact
-                content needs.
+              <p className="text-lg text-gray-400 mb-4 max-w-2xl mx-auto">
+                Making videos longer than 3 minutes? Need more than 2x videos per week?
               </p>
+              <h4 className="text-2xl font-bold text-light mb-8 max-w-2xl mx-auto">
+                We'll create a custom package to meet your exact content needs.
+              </h4>
 
               <div className="grid md:grid-cols-2 gap-8 mb-8">
                 <div className="text-left">
