@@ -18,7 +18,7 @@ export default function EmailCaptureSection() {
     onSuccess: () => {
       toast({
         title: "Success!",
-        description: "Thank you for your interest! We'll be in touch within 24 hours with your free quote.",
+        description: "You're all set! We'll keep you updated with our latest news and special offers.",
       });
       setEmail("");
     },
@@ -65,9 +65,9 @@ export default function EmailCaptureSection() {
     <section id="contact" className="py-20 bg-gradient-to-br from-primary via-purple-800 to-secondary relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent"></div>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <h2 className="text-4xl font-bold text-white mb-4">Ready to Create Something Amazing?</h2>
+        <h2 className="text-4xl font-bold text-white mb-4">Not Ready to Send Us a Video Yet?</h2>
         <p className="text-xl text-gray-300 mb-8">
-          Join 1000+ creators who trust CreativeEdge for their video editing needs. Get started with a free sample edit and project quote.
+          No worries! Join our mailing list for product updates, discounts, and highlights from our community.
         </p>
         
         <Card className="max-w-md mx-auto bg-dark-card/80 backdrop-blur-sm border border-gray-600">
@@ -88,7 +88,7 @@ export default function EmailCaptureSection() {
                   disabled={emailSignupMutation.isPending}
                   className="bg-accent text-secondary px-8 py-3 font-semibold hover:bg-yellow-500 transition-colors duration-200 whitespace-nowrap"
                 >
-                  {emailSignupMutation.isPending ? "Submitting..." : "Get Free Sample"}
+                  {emailSignupMutation.isPending ? "Submitting..." : "Join Mailing List"}
                 </Button>
               </div>
             </form>
