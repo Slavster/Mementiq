@@ -279,7 +279,7 @@ export default function PortfolioSection() {
                         muted
                         loop
                         playsInline
-                        preload="auto"
+                        preload="none"
                         onLoadStart={() => console.log(`Video ${item.id} load started`)}
                         onLoadedData={() => console.log(`Video ${item.id} data loaded (readyState: ${videoRefs.current[item.id]?.readyState})`)}
                         onCanPlay={() => console.log(`Video ${item.id} can play (readyState: ${videoRefs.current[item.id]?.readyState})`)}
