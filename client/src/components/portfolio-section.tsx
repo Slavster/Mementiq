@@ -120,32 +120,37 @@ export default function PortfolioSection() {
     setHoveredVideo(videoId);
     const video = videoRefs.current[videoId];
     if (video) {
+      // Reset video state completely
+      video.pause();
       video.currentTime = 0;
       
-      // Force immediate loading and wait for enough buffer
+      // Remove any existing event listeners
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadeddata', handleLoadedData);
+      
+      // Force reload to ensure fresh video loading
       video.load();
       
-      // Wait for sufficient buffering before playing
-      const tryPlay = () => {
-        if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-          video.play().catch(() => {
-            // Ignore autoplay errors
-          });
-        } else {
-          // Wait for more buffering
-          video.addEventListener('canplaythrough', () => {
-            video.play().catch(() => {
-              // Ignore autoplay errors  
-            });
-          }, { once: true });
+      // Simple play strategy - wait for basic readiness
+      const handleCanPlay = () => {
+        console.log(`Video ${videoId} ready to play`);
+        video.play().catch((error) => {
+          console.log(`Video ${videoId} play error:`, error);
+        });
+      };
+      
+      const handleLoadedData = () => {
+        console.log(`Video ${videoId} loaded data`);
+        if (video.readyState >= 2) { // HAVE_CURRENT_DATA
+          handleCanPlay();
         }
       };
       
-      // Try immediately or wait for loading
-      if (video.readyState >= 3) {
-        tryPlay();
+      if (video.readyState >= 2) {
+        handleCanPlay();
       } else {
-        video.addEventListener('loadeddata', tryPlay, { once: true });
+        video.addEventListener('canplay', handleCanPlay, { once: true });
+        video.addEventListener('loadeddata', handleLoadedData, { once: true });
       }
     }
   };
@@ -156,6 +161,9 @@ export default function PortfolioSection() {
       if (video) {
         video.pause();
         video.currentTime = 0;
+        // Clear the video source to stop any ongoing loading
+        video.removeAttribute('src');
+        video.load();
       }
     }
     setHoveredVideo(null);
@@ -280,28 +288,23 @@ export default function PortfolioSection() {
                         loop
                         playsInline
                         preload="none"
+                        src={item.preview}
                         onLoadStart={() => console.log(`Video ${item.id} load started`)}
-                        onLoadedData={() => console.log(`Video ${item.id} data loaded (readyState: ${videoRefs.current[item.id]?.readyState})`)}
-                        onCanPlay={() => console.log(`Video ${item.id} can play (readyState: ${videoRefs.current[item.id]?.readyState})`)}
-                        onCanPlayThrough={() => console.log(`Video ${item.id} can play through (readyState: ${videoRefs.current[item.id]?.readyState})`)}
-                        onProgress={() => {
-                          const video = videoRefs.current[item.id];
-                          if (video && video.buffered.length > 0) {
-                            const buffered = video.buffered.end(0);
-                            const duration = video.duration || 1;
-                            console.log(`Video ${item.id} buffered: ${(buffered/duration*100).toFixed(1)}%`);
-                          }
-                        }}
+                        onLoadedData={() => console.log(`Video ${item.id} data loaded`)}
+                        onCanPlay={() => console.log(`Video ${item.id} can play`)}
+                        onError={(e) => console.log(`Video ${item.id} error:`, e)}
+                        onStalled={() => console.log(`Video ${item.id} stalled`)}
+                        onWaiting={() => console.log(`Video ${item.id} waiting`)}
                         onEnded={() => {
                           const video = videoRefs.current[item.id];
                           if (video) {
                             video.currentTime = 0;
-                            video.play();
+                            video.play().catch(() => {
+                              // Ignore replay errors
+                            });
                           }
                         }}
-                      >
-                        <source src={item.preview} type="video/mp4" />
-                      </video>
+                      />
                     ) : (
                       <img
                         src={item.thumbnail}
