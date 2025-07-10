@@ -126,8 +126,8 @@ export default function TestimonialsSection() {
                 key={testimonial.id}
                 className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 flex-shrink-0 w-80"
               >
-                <CardContent className="px-6 py-4">
-                  <div className="flex items-center justify-between mb-3 mt-2">
+                <CardContent className="px-6 pt-6 pb-3">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex text-accent">
                       {[...Array(testimonial.rating)].map((_, i) => (
                         <Star key={i} className="h-4 w-4 fill-current" />
