@@ -10,8 +10,11 @@ const objectStorageClient = new Client({ bucketId: "replit-objstore-b07cef7e-47a
 
 // In-memory cache for assets (thumbnails only - videos are too large)
 const assetCache = new Map<string, { content: Uint8Array; contentType: string; timestamp: number }>();
+const videoCache = new Map<string, { content: Uint8Array; contentType: string; timestamp: number }>();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
-const MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50MB max cache size
+const VIDEO_CACHE_TTL = 30 * 60 * 1000; // 30 minutes for videos
+const MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50MB max cache
+const MAX_VIDEO_CACHE_SIZE = 100 * 1024 * 1024; // 100MB max video cache size
 
 // Request deduplication for ongoing downloads
 const pendingRequests = new Map<string, Promise<{ content: Uint8Array; contentType: string }>>();
@@ -19,10 +22,11 @@ const pendingRequests = new Map<string, Promise<{ content: Uint8Array; contentTy
 // Clean expired cache entries
 function cleanCache() {
   const now = Date.now();
+  
+  // Clean thumbnail cache
   let totalSize = 0;
   const entries = Array.from(assetCache.entries());
   
-  // Remove expired entries
   for (const [key, value] of entries) {
     if (now - value.timestamp > CACHE_TTL) {
       assetCache.delete(key);
@@ -31,7 +35,7 @@ function cleanCache() {
     }
   }
   
-  // Remove oldest entries if cache is too large
+  // Remove oldest thumbnail entries if cache is too large
   if (totalSize > MAX_CACHE_SIZE) {
     const sortedEntries = entries
       .filter(([_, value]) => now - value.timestamp <= CACHE_TTL)
@@ -40,7 +44,32 @@ function cleanCache() {
     for (const [key, value] of sortedEntries) {
       totalSize -= value.content.length;
       assetCache.delete(key);
-      if (totalSize <= MAX_CACHE_SIZE * 0.8) break; // Remove until 80% of max size
+      if (totalSize <= MAX_CACHE_SIZE * 0.8) break;
+    }
+  }
+  
+  // Clean video cache
+  let videoTotalSize = 0;
+  const videoEntries = Array.from(videoCache.entries());
+  
+  for (const [key, value] of videoEntries) {
+    if (now - value.timestamp > VIDEO_CACHE_TTL) {
+      videoCache.delete(key);
+    } else {
+      videoTotalSize += value.content.length;
+    }
+  }
+  
+  // Remove oldest video entries if cache is too large
+  if (videoTotalSize > MAX_VIDEO_CACHE_SIZE) {
+    const sortedVideoEntries = videoEntries
+      .filter(([_, value]) => now - value.timestamp <= VIDEO_CACHE_TTL)
+      .sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    for (const [key, value] of sortedVideoEntries) {
+      videoTotalSize -= value.content.length;
+      videoCache.delete(key);
+      if (videoTotalSize <= MAX_VIDEO_CACHE_SIZE * 0.8) break;
     }
   }
 }
@@ -124,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve Object Storage assets
+  // Serve Object Storage assets with HTTP Range support for video streaming
   app.get("/api/assets/*", async (req, res) => {
     try {
       // Strip EditingPortfolioAssets prefix and keep the full Objects/ path
@@ -135,33 +164,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const isVideo = assetPath.includes('Videos/');
       const isThumbnail = assetPath.includes('Thumbnails/');
+      const range = req.headers.range;
       
       // Clean cache periodically
       if (Math.random() < 0.1) cleanCache(); // 10% chance to clean on each request
       
-      // Check cache for thumbnails only (videos are too large to cache)
+      // Check cache for thumbnails and videos
       if (isThumbnail && assetCache.has(assetPath)) {
         const cached = assetCache.get(assetPath)!;
         if (Date.now() - cached.timestamp < CACHE_TTL) {
-          console.log(`Cache hit for: ${assetPath}`);
+          console.log(`Thumbnail cache hit for: ${assetPath}`);
           res.set({
             'Content-Type': cached.contentType,
-            'Cache-Control': 'public, max-age=600', // 10 minutes browser cache
+            'Cache-Control': 'public, max-age=600',
             'ETag': `"${assetPath}-${cached.timestamp}"`,
           });
           return res.send(Buffer.from(cached.content));
         } else {
-          assetCache.delete(assetPath); // Remove expired entry
+          assetCache.delete(assetPath);
         }
       }
       
+      // Check video cache
+      if (isVideo && videoCache.has(assetPath)) {
+        const cached = videoCache.get(assetPath)!;
+        if (Date.now() - cached.timestamp < VIDEO_CACHE_TTL) {
+          console.log(`Video cache hit for: ${assetPath}`);
+          
+          // Handle range request for cached videos
+          if (range) {
+            return handleVideoRange(req, res, cached.content, cached.contentType);
+          }
+          
+          res.set({
+            'Content-Type': cached.contentType,
+            'Cache-Control': 'public, max-age=3600',
+            'Accept-Ranges': 'bytes',
+            'ETag': `"${assetPath}-${cached.timestamp}"`,
+          });
+          return res.send(Buffer.from(cached.content));
+        } else {
+          videoCache.delete(assetPath);
+        }
+      }
+      
+      // For video range requests, we need to download full file first
       // Check for ongoing request (deduplication)
       if (pendingRequests.has(assetPath)) {
         console.log(`Waiting for ongoing request: ${assetPath}`);
         const result = await pendingRequests.get(assetPath)!;
+        
+        // Handle range request for videos
+        if (isVideo && range) {
+          return handleVideoRange(req, res, result.content, result.contentType);
+        }
+        
         res.set({
           'Content-Type': result.contentType,
-          'Cache-Control': isVideo ? 'public, max-age=3600' : 'public, max-age=600', // Videos cache longer
+          'Cache-Control': isVideo ? 'public, max-age=3600' : 'public, max-age=600',
+          'Accept-Ranges': isVideo ? 'bytes' : 'none',
         });
         return res.send(Buffer.from(result.content));
       }
@@ -175,19 +236,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const result = await downloadPromise;
         
-        // Cache thumbnails only
-        if (isThumbnail && result.content.length < 10 * 1024 * 1024) { // Cache only if < 10MB
+        // Cache thumbnails and videos
+        if (isThumbnail && result.content.length < 10 * 1024 * 1024) {
           assetCache.set(assetPath, {
             content: result.content,
             contentType: result.contentType,
             timestamp: Date.now()
           });
+        } else if (isVideo && result.content.length < 50 * 1024 * 1024) { // Cache videos up to 50MB
+          videoCache.set(assetPath, {
+            content: result.content,
+            contentType: result.contentType,
+            timestamp: Date.now()
+          });
+          console.log(`Cached video: ${assetPath} (${result.content.length} bytes)`);
+        }
+        
+        // Handle range request for videos
+        if (isVideo && range) {
+          return handleVideoRange(req, res, result.content, result.contentType);
         }
         
         res.set({
           'Content-Type': result.contentType,
           'Cache-Control': isVideo ? 'public, max-age=3600' : 'public, max-age=600',
           'ETag': `"${assetPath}-${Date.now()}"`,
+          'Accept-Ranges': isVideo ? 'bytes' : 'none',
         });
         
         res.send(Buffer.from(result.content));
@@ -199,6 +273,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to serve asset' });
     }
   });
+
+  // Helper function to handle video range requests
+  function handleVideoRange(req: Request, res: Response, content: Uint8Array, contentType: string) {
+    const range = req.headers.range!;
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 1024 * 1024, content.length - 1); // 1MB chunks
+    const chunksize = (end - start) + 1;
+    const chunk = content.slice(start, end + 1);
+    
+    console.log(`Range request: ${start}-${end}/${content.length} (${chunksize} bytes)`);
+    
+    res.status(206); // Partial Content
+    res.set({
+      'Content-Range': `bytes ${start}-${end}/${content.length}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize.toString(),
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=3600',
+    });
+    
+    res.send(Buffer.from(chunk));
+  }
 
 async function downloadAsset(assetPath: string): Promise<{ content: Uint8Array; contentType: string }> {
   let content: Uint8Array;
