@@ -126,13 +126,19 @@ export default function PortfolioSection() {
   }, [playingVideo]);
 
   const nextVideo = () => {
-    setSelectedVideo((prev) => (prev + 1) % portfolioItems.length);
+    setSelectedVideo((prev) => {
+      const next = (prev + 1) % portfolioItems.length;
+      console.log(`Moving from video ${prev} to ${next}`);
+      return next;
+    });
   };
 
   const prevVideo = () => {
-    setSelectedVideo(
-      (prev) => (prev - 1 + portfolioItems.length) % portfolioItems.length,
-    );
+    setSelectedVideo((prev) => {
+      const next = (prev - 1 + portfolioItems.length) % portfolioItems.length;
+      console.log(`Moving from video ${prev} to ${next}`);
+      return next;
+    });
   };
 
   const handleWheel = (e: React.WheelEvent) => {
