@@ -43,7 +43,7 @@ export default function CompetitiveAdvantageSection() {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-light mb-6">
-            Why Choose <span className="text-accent">CreativeEdge</span>?
+            Why Choose <span className="text-accent">Mementiq</span>?
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             Stop wasting time and money on outdated solutions. <br />
