@@ -8,52 +8,50 @@ const portfolioItems = [
     title: "Travel Vlog Magic",
     description:
       "Turn your vacation footage into cinematic experiences. Moving music and smooth transitions capture your special moments",
-    thumbnail: "https://object-storage.example.com/thumbnails/travel-vlog.jpg",
+    thumbnail: "/EditingPortfolioAssets/Thumbnails/travel-vlog-thumbnail.jpg",
     alt: "Highlighting beutiful travel destinations and moments",
     category: "Travel",
-    preview: "https://object-storage.example.com/previews/travel-vlog.mp4",
+    preview: "/EditingPortfolioAssets/Videos/travel-vlog.mp4",
   },
   {
     id: 2,
     title: "Coaching Ad",
     description:
       "Advertise your services with dynamic cuts, animations, and eye-catching effects",
-    thumbnail: "https://object-storage.example.com/thumbnails/coaching-ad.jpg",
+    thumbnail: "/EditingPortfolioAssets/Thumbnails/coaching-ad-thumbnail.jpg",
     alt: "Engaging ad reel for coaching services",
     category: "Social Media",
-    preview: "https://object-storage.example.com/previews/coaching-ad.mp4",
+    preview: "/EditingPortfolioAssets/Videos/coaching-ad.mp4",
   },
   {
     id: 3,
     title: "Captivating Interviews",
     description:
       "Enhance your best interview moments with clean audio, dynamic framing, and speaker captions.",
-    thumbnail: "https://object-storage.example.com/thumbnails/interviews.jpg",
+    thumbnail: "/EditingPortfolioAssets/Thumbnails/interviews-thumbnail.jpg",
     alt: "Conference Interviews",
     category: "Interviews",
-    preview: "https://object-storage.example.com/previews/interviews.mp4",
+    preview: "/EditingPortfolioAssets/Videos/interviews.mp4",
   },
   {
     id: 4,
     title: "Event Highlights",
     description:
       "Turn any event into a vibrant highlight reel that perfectly captures emotional moments, energy, and celebration",
-    thumbnail:
-      "https://object-storage.example.com/thumbnails/event-highlights.jpg",
+    thumbnail: "/EditingPortfolioAssets/Thumbnails/event-highlights-thumbnail.jpg",
     alt: "Fun highlight reel of a clothing swap event",
     category: "Events",
-    preview: "https://object-storage.example.com/previews/event-highlights.mp4",
+    preview: "/EditingPortfolioAssets/Videos/event-highlights.mp4",
   },
   {
     id: 5,
     title: "Product Showcase",
     description:
       "Make your product shine with vibrant color correction, and precise scene transitions",
-    thumbnail:
-      "https://object-storage.example.com/thumbnails/product-showcase.jpg",
+    thumbnail: "/EditingPortfolioAssets/Thumbnails/product-showcase-thumbnail.jpg",
     alt: "Product video ad",
     category: "Commercial",
-    preview: "https://object-storage.example.com/previews/product-showcase.mp4",
+    preview: "/EditingPortfolioAssets/Videos/product-showcase.mp4",
   },
 ];
 
