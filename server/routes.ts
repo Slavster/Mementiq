@@ -185,20 +185,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Check video cache
+      // Check video cache - serve full video for cached content
       if (isVideo && videoCache.has(assetPath)) {
         const cached = videoCache.get(assetPath)!;
         if (Date.now() - cached.timestamp < VIDEO_CACHE_TTL) {
-          console.log(`Video cache hit for: ${assetPath}`);
-          
-          // Handle range request for cached videos
-          if (range) {
-            return handleVideoRange(req, res, cached.content, cached.contentType);
-          }
+          console.log(`Video cache hit for: ${assetPath} - serving full video`);
           
           res.set({
             'Content-Type': cached.contentType,
             'Cache-Control': 'public, max-age=3600',
+            'Content-Length': cached.content.length.toString(),
             'Accept-Ranges': 'bytes',
             'ETag': `"${assetPath}-${cached.timestamp}"`,
           });
@@ -214,14 +210,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Waiting for ongoing request: ${assetPath}`);
         const result = await pendingRequests.get(assetPath)!;
         
-        // Handle range request for videos
-        if (isVideo && range) {
-          return handleVideoRange(req, res, result.content, result.contentType);
-        }
-        
+        // For videos from pending requests, serve full content
         res.set({
           'Content-Type': result.contentType,
           'Cache-Control': isVideo ? 'public, max-age=3600' : 'public, max-age=600',
+          'Content-Length': result.content.length.toString(),
           'Accept-Ranges': isVideo ? 'bytes' : 'none',
         });
         return res.send(Buffer.from(result.content));
@@ -252,14 +245,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Cached video: ${assetPath} (${result.content.length} bytes)`);
         }
         
-        // Handle range request for videos
-        if (isVideo && range) {
-          return handleVideoRange(req, res, result.content, result.contentType);
-        }
-        
+        // For new video downloads, serve full content for smooth playback
         res.set({
           'Content-Type': result.contentType,
           'Cache-Control': isVideo ? 'public, max-age=3600' : 'public, max-age=600',
+          'Content-Length': result.content.length.toString(),
           'ETag': `"${assetPath}-${Date.now()}"`,
           'Accept-Ranges': isVideo ? 'bytes' : 'none',
           'Connection': 'keep-alive',
