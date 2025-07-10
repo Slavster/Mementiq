@@ -182,7 +182,7 @@ export default function PortfolioSection() {
         </div>
 
         <div
-          className="relative h-[600px] flex items-center justify-center overflow-hidden"
+          className="relative h-[800px] flex items-center justify-center overflow-hidden"
           onWheel={handleWheel}
           ref={containerRef}
         >
@@ -216,7 +216,7 @@ export default function PortfolioSection() {
                 <div
                   key={item.id}
                   className={`absolute transition-all duration-700 ease-out cursor-pointer ${
-                    isActive ? "scale-100" : "scale-75"
+                    isActive ? "scale-100" : "scale-50"
                   }`}
                   style={{
                     transform: `translateX(${offset * 420}px)`,
@@ -234,9 +234,11 @@ export default function PortfolioSection() {
                     {/* Always render video element for preloading */}
                     <video
                       ref={(el) => (videoRefs.current[item.id] = el)}
-                      className={`w-80 h-96 object-cover ${
+                      className={`${
+                        isActive ? "w-[600px] h-[700px]" : "w-80 h-96"
+                      } object-cover ${
                         playingVideo === item.id ? "block" : "hidden"
-                      }`}
+                      } transition-all duration-700`}
                       muted
                       loop
                       playsInline
@@ -262,9 +264,11 @@ export default function PortfolioSection() {
                     <img
                       src={item.thumbnail}
                       alt={item.alt}
-                      className={`w-80 h-96 object-cover ${
+                      className={`${
+                        isActive ? "w-[600px] h-[700px]" : "w-80 h-96"
+                      } object-cover ${
                         playingVideo === item.id ? "hidden" : "block"
-                      }`}
+                      } transition-all duration-700`}
                       loading="lazy"
                       decoding="async"
                     />
