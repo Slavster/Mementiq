@@ -74,6 +74,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // List files endpoint for debugging
+  app.get("/api/list-files", async (req, res) => {
+    try {
+      console.log('Attempting to list Object Storage files...');
+      const listResult = await objectStorageClient.list();
+      console.log('List result:', JSON.stringify(listResult, null, 2));
+      res.json(listResult);
+    } catch (error) {
+      console.error('Object Storage list error:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   // Serve Object Storage assets
   app.get("/api/assets/*", async (req, res) => {
     try {
@@ -89,13 +102,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try with Objects/ prefix first (current structure)
       try {
+        console.log('Attempting downloadAsBytes for:', assetPath);
         const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
+        console.log('BytesResult structure:', Object.keys(bytesResult));
+        console.log('BytesResult ok:', bytesResult.ok);
         
         if (!bytesResult.ok) {
           throw new Error(`Object Storage error: ${JSON.stringify(bytesResult.error)}`);
         }
         
-        content = bytesResult.value;
+        // Check the actual structure of the response
+        console.log('BytesResult.value type:', typeof bytesResult.value);
+        console.log('BytesResult.value instanceof Uint8Array:', bytesResult.value instanceof Uint8Array);
+        console.log('BytesResult.value keys:', Object.keys(bytesResult.value));
+        console.log('BytesResult.value constructor:', bytesResult.value.constructor.name);
+        
+        if (bytesResult.value instanceof Uint8Array) {
+          content = bytesResult.value;
+        } else if (Array.isArray(bytesResult.value)) {
+          // Handle array case first - it's an array - let's check what's inside
+          console.log('Array detected, length:', bytesResult.value.length);
+          console.log('First element type:', typeof bytesResult.value[0]);
+          console.log('First element constructor:', bytesResult.value[0]?.constructor?.name);
+          
+          if (bytesResult.value[0] instanceof Uint8Array) {
+            content = bytesResult.value[0];
+          } else if (bytesResult.value[0] && typeof bytesResult.value[0].arrayBuffer === 'function') {
+            const arrayBuffer = await bytesResult.value[0].arrayBuffer();
+            content = new Uint8Array(arrayBuffer);
+          } else {
+            // Try converting the array itself to Uint8Array
+            content = new Uint8Array(bytesResult.value);
+          }
+        } else if (typeof bytesResult.value === 'string') {
+          content = new TextEncoder().encode(bytesResult.value);
+        } else if (bytesResult.value && typeof bytesResult.value.arrayBuffer === 'function') {
+          // Handle Response-like object
+          const arrayBuffer = await bytesResult.value.arrayBuffer();
+          content = new Uint8Array(arrayBuffer);
+        } else if (bytesResult.value && typeof bytesResult.value.stream === 'function') {
+          // Handle stream response
+          const response = new Response(bytesResult.value.stream());
+          const arrayBuffer = await response.arrayBuffer();
+          content = new Uint8Array(arrayBuffer);
+        } else if (bytesResult.value && bytesResult.value.bytes) {
+          // Maybe bytes field?
+          content = bytesResult.value.bytes;
+        } else {
+          // Last resort: try converting whatever we got to Uint8Array
+          try {
+            content = new Uint8Array(bytesResult.value);
+          } catch (e) {
+            console.error('Failed to convert to Uint8Array:', e);
+            throw new Error(`Unsupported bytesResult.value format: ${typeof bytesResult.value}`);
+          }
+        }
+        
+        console.log('Final content length:', content.length);
       } catch (bytesError) {
         console.log(`First attempt failed for ${assetPath}:`, bytesError.message);
         
@@ -105,14 +168,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Trying fallback path: ${fallbackPath}`);
           
           try {
+            console.log('Attempting fallback downloadAsBytes for:', fallbackPath);
             const fallbackResult = await objectStorageClient.downloadAsBytes(fallbackPath);
+            console.log('Fallback BytesResult ok:', fallbackResult.ok);
             
             if (!fallbackResult.ok) {
               throw new Error(`Fallback also failed: ${JSON.stringify(fallbackResult.error)}`);
             }
             
-            content = fallbackResult.value;
+            console.log('Fallback BytesResult.value type:', typeof fallbackResult.value);
+            console.log('Fallback BytesResult.value keys:', fallbackResult.value ? Object.keys(fallbackResult.value) : 'null');
+            console.log('Fallback BytesResult full structure:', JSON.stringify(fallbackResult, null, 2));
+            
+            // Check if value has a nested structure
+            if (fallbackResult.value && fallbackResult.value.content) {
+              content = fallbackResult.value.content;
+            } else if (fallbackResult.value && fallbackResult.value.data) {
+              content = fallbackResult.value.data;
+            } else if (fallbackResult.value instanceof Uint8Array) {
+              content = fallbackResult.value;
+            } else if (typeof fallbackResult.value === 'string') {
+              content = new TextEncoder().encode(fallbackResult.value);
+            } else if (fallbackResult.content) {
+              content = fallbackResult.content;
+            } else if (fallbackResult.data) {
+              content = fallbackResult.data;
+            } else {
+              // Try converting whatever we got to Uint8Array
+              content = new Uint8Array(fallbackResult.value);
+            }
+            
             finalPath = fallbackPath;
+            console.log('Fallback final content length:', content?.length || 'undefined');
           } catch (fallbackError) {
             console.log('Both paths failed:', fallbackError.message);
             return res.status(404).json({ 
