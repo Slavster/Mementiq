@@ -72,67 +72,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug endpoint to list Object Storage contents
-  app.get("/api/debug/storage", async (req, res) => {
-    try {
-      const rootList = await objectStorageClient.list();
-      console.log('Object Storage root contents:', rootList);
-      
-      const editingList = await objectStorageClient.list({ prefix: "EditingPortfolioAssets" });
-      console.log('EditingPortfolioAssets contents:', editingList);
-      
-      res.json({
-        root: rootList,
-        editingAssets: editingList
-      });
-    } catch (error) {
-      console.error('Storage debug error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
+
 
   // Serve Object Storage assets
   app.get("/api/assets/*", async (req, res) => {
     try {
-      const assetPath = req.params[0]; // Gets everything after /api/assets/
+      // Strip EditingPortfolioAssets prefix since files are at root level
+      let assetPath = req.params[0];
+      if (assetPath.startsWith('EditingPortfolioAssets/')) {
+        assetPath = assetPath.replace('EditingPortfolioAssets/', '');
+      }
       console.log(`Fetching asset: ${assetPath}`);
       
-      // Try different download methods to see which one works
       let content;
       try {
-        console.log('Trying downloadAsBytes...');
         const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
-        console.log('Bytes result type:', typeof bytesResult);
-        console.log('Bytes result keys:', Object.keys(bytesResult));
-        console.log('Bytes result ok:', bytesResult.ok);
-        console.log('Bytes result error:', bytesResult.error);
         
         if (!bytesResult.ok) {
-          throw new Error(`Object Storage error: ${bytesResult.error}`);
+          throw new Error(`Object Storage error: ${JSON.stringify(bytesResult.error)}`);
         }
         
-        content = bytesResult.content || bytesResult.data;
+        content = bytesResult.value;
       } catch (bytesError) {
         console.log('downloadAsBytes failed:', bytesError.message);
-        
-        // Try list to see what files actually exist
-        try {
-          const listResult = await objectStorageClient.list({ prefix: "EditingPortfolioAssets/" });
-          console.log('Files in EditingPortfolioAssets:', listResult);
-          
-          // Also try the root directory
-          const rootList = await objectStorageClient.list();
-          console.log('Files in root:', rootList);
-          
-          return res.status(404).json({ 
-            error: "Asset not found in storage", 
-            requestedPath: assetPath,
-            availableFiles: listResult
-          });
-        } catch (listError) {
-          console.log('List also failed:', listError);
-          return res.status(404).json({ error: "Storage access failed" });
-        }
+        return res.status(404).json({ 
+          error: "Asset not found in storage", 
+          requestedPath: assetPath
+        });
       }
       
       if (!content) {
