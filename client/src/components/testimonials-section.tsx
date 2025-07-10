@@ -93,10 +93,10 @@ export default function TestimonialsSection() {
           </p>
         </div>
 
-        <div className="relative">
+        <div className="relative mx-8">
           <Button
             onClick={scrollLeft}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
+            className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
             size="sm"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -104,7 +104,7 @@ export default function TestimonialsSection() {
 
           <Button
             onClick={scrollRight}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
+            className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
             size="sm"
           >
             <ChevronRight className="h-5 w-5" />
