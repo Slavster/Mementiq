@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8">
           <div className="col-span-2">
-            <h3 className="text-2xl font-bold mb-4 text-primary">CreativeEdge</h3>
+            <h3 className="text-2xl font-bold mb-4 text-primary">Mementiq</h3>
             <p className="text-gray-300 mb-6">
               Professional video editing services for creators, influencers, and content makers who want cinematic-quality videos that stand out.
             </p>
@@ -47,7 +47,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center">
                 <Mail className="h-4 w-4 mr-2" />
-                <span>hello@creativeedge.com</span>
+                <span>hello@Mementiq.com</span>
               </li>
               <li className="flex items-center">
                 <MapPin className="h-4 w-4 mr-2" />
@@ -59,7 +59,7 @@ export default function Footer() {
         
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
           <p>
-            &copy; {currentYear} CreativeEdge. All rights reserved. |{" "}
+            &copy; {currentYear} Mementiq. All rights reserved. |{" "}
             <a href="#" className="hover:text-accent transition-colors duration-200">Privacy Policy</a> |{" "}
             <a href="#" className="hover:text-accent transition-colors duration-200">Terms of Service</a>
           </p>

@@ -2,7 +2,7 @@
 
 ## Overview
 
-CreativeEdge is a professional video editing services website built as a modern full-stack web application. The application serves as a landing page and lead generation platform for video editing services, featuring a subscription-based pricing model with email capture functionality.
+Mementiq is a professional video editing services website built as a modern full-stack web application. The application serves as a landing page and lead generation platform for video editing services, featuring a subscription-based pricing model with email capture functionality.
 
 ## System Architecture
 

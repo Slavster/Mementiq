@@ -8,7 +8,7 @@ const testimonials = [
     id: 1,
     name: "Alex Rivera",
     title: "Content Creator & Influencer",
-    content: "CreativeEdge turned my raw footage into cinematic gold! My engagement went through the roof and my followers can't stop asking about my editor.",
+    content: "Mementiq turned my raw footage into cinematic gold! My engagement went through the roof and my followers can't stop asking about my editor.",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100",
     rating: 5,
     platform: "YouTube"
@@ -35,7 +35,7 @@ const testimonials = [
     id: 4,
     name: "Emma Thompson",
     title: "Wedding Videographer",
-    content: "I send all my overflow work to CreativeEdge. Their attention to emotion and storytelling in wedding videos is unmatched.",
+    content: "I send all my overflow work to Mementiq. Their attention to emotion and storytelling in wedding videos is unmatched.",
     avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100",
     rating: 5,
     platform: "Vimeo"

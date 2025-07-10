@@ -23,7 +23,7 @@ const subscriptionPlans = [
     price: "$19",
     monthlyTotal: "$76/month",
     description: "Ideal for businesses and personal projects",
-    features: ["1 video weekly", "7-day turnaround guaranteed"],
+    features: ["1 video weekly", "4-day turnaround guaranteed"],
     highlighted: false,
     buttonText: "Start Weekly Plan",
     buttonVariant: "outline" as const,
@@ -34,7 +34,7 @@ const subscriptionPlans = [
     price: "$20",
     monthlyTotal: "$20/month",
     description: "Great for occasional high-quality content",
-    features: ["1 video monthly", "14-day turnaround guaranteed"],
+    features: ["1 video monthly", "7-day turnaround guaranteed"],
     highlighted: false,
     buttonText: "Start Monthly Plan",
     buttonVariant: "outline" as const,
@@ -48,7 +48,11 @@ const prepaidPackages = [
     price: "$25",
     totalPrice: "$125",
     description: "Great for highlighting those special moments",
-    features: ["5 video editing credits", "Use anytime within 1 year"],
+    features: [
+      "5 video editing credits",
+      "Great for longer content, 1 credit = 3 minutes of final video",
+      "Use anytime within 1 year",
+    ],
     highlighted: false,
     buttonText: "Buy 5 Credits",
     buttonVariant: "outline" as const,
@@ -59,7 +63,11 @@ const prepaidPackages = [
     price: "$24",
     totalPrice: "$240",
     description: "For budding content creators",
-    features: ["10 video editing credits", "Use anytime within 1 year"],
+    features: [
+      "10 video editing credits",
+      "Great for longer content, 1 credit = 3 minutes of final video",
+      "Use anytime within 1 year",
+    ],
     highlighted: false,
     buttonText: "Buy 10 Credits",
     buttonVariant: "outline" as const,
@@ -70,7 +78,11 @@ const prepaidPackages = [
     price: "$23",
     totalPrice: "$460",
     description: "Fast channel launches and backlog clearing",
-    features: ["20 video editing credits", "Use anytime within 1 year"],
+    features: [
+      "20 video editing credits",
+      "Great for longer content, 1 credit = 3 minutes of final video",
+      "Use anytime within 1 year",
+    ],
     highlighted: true,
     buttonText: "Buy 20 Credits",
     buttonVariant: "default" as const,
@@ -346,7 +358,8 @@ export default function PricingSection() {
               </div>
 
               <p className="text-lg text-gray-400 mb-4 max-w-2xl mx-auto">
-                Making videos longer than 3 minutes? Need more than 2x videos per week?
+                Making videos longer than 3 minutes? Need more than 2x videos
+                per week?
               </p>
               <p className="text-xl font-semibold text-light mb-8 max-w-2xl mx-auto">
                 We'll create a custom package to meet your exact content needs.
