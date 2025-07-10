@@ -128,7 +128,8 @@ export default function ServicesSection() {
             At the Push of a Button{" "}
           </h2>
           <p className="text-xl text-charcoal max-w-3xl mx-auto">
-            Bring your creative vision to life. <br />
+            Your footage shouldn’t be locked up in costly cloud storage. <br />
+            Your story deserves to be told - we let it see the light of day. <br />
             No endless chats. No exorbitant fees. No time wasted. <br />
             Just fast, high quality, RESULTS.
           </p>
