@@ -57,117 +57,71 @@ const portfolioItems = [
 
 export default function PortfolioSection() {
   const [selectedVideo, setSelectedVideo] = useState<number>(0);
-  const [hoveredVideo, setHoveredVideo] = useState<number | null>(null);
-  const [preloadedVideos, setPreloadedVideos] = useState<Set<number>>(new Set());
+  const [playingVideo, setPlayingVideo] = useState<number | null>(null);
+  const [videoProgress, setVideoProgress] = useState<{ [key: number]: number }>({});
   const [sectionInView, setSectionInView] = useState<boolean>(false);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastScrollTime = useRef<number>(0);
-  const scrollThreshold = 300; // Minimum time between scroll events in ms
 
-  const handleVideoPlay = (videoId: number) => {
-    console.log(`Playing video ${videoId}`);
-  };
-
-  // Preload first video chunk when section comes into view
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !sectionInView) {
-          setSectionInView(true);
-          // Prefetch the first video's larger initial chunk
-          fetch(`${portfolioItems[0].preview}`, {
-            headers: { 'Range': 'bytes=0-10485759' } // 10MB initial prefetch
-          }).then(() => {
-            console.log('Prefetched first video 10MB chunk');
-          }).catch(() => {
-            // Ignore prefetch errors
-          });
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [sectionInView]);
-
-  // Preload adjacent videos when hovering over portfolio items
-  const preloadAdjacentVideos = (currentId: number) => {
-    const adjacentIds = [currentId - 1, currentId + 1].filter(
-      id => id >= 0 && id < portfolioItems.length && !preloadedVideos.has(id)
-    );
-    
-    adjacentIds.forEach(id => {
-      if (!preloadedVideos.has(id)) {
-        // Prefetch larger chunk for faster startup
-        fetch(portfolioItems[id].preview, {
-          headers: { 'Range': 'bytes=0-5242879' } // 5MB chunk for adjacent videos
-        }).then(() => {
-          setPreloadedVideos(prev => new Set(prev).add(id));
-          console.log(`Preloaded video ${id} 5MB chunk`);
-        }).catch(() => {
-          // Ignore prefetch errors
-        });
-      }
-    });
-  };
-
-  const handleVideoHover = (videoId: number) => {
-    setHoveredVideo(videoId);
+  const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
-    if (video) {
-      // Reset video state completely
+    if (!video) return;
+
+    if (playingVideo === videoId) {
+      // Pause current video and save progress
       video.pause();
-      video.currentTime = 0;
-      
-      // Remove any existing event listeners
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('loadeddata', handleLoadedData);
-      
-      // Force reload to ensure fresh video loading
-      video.load();
-      
-      // Simple play strategy - wait for basic readiness
-      const handleCanPlay = () => {
-        console.log(`Video ${videoId} ready to play`);
-        video.play().catch((error) => {
-          console.log(`Video ${videoId} play error:`, error);
-        });
-      };
-      
-      const handleLoadedData = () => {
-        console.log(`Video ${videoId} loaded data`);
-        if (video.readyState >= 2) { // HAVE_CURRENT_DATA
-          handleCanPlay();
+      setVideoProgress(prev => ({
+        ...prev,
+        [videoId]: video.currentTime
+      }));
+      setPlayingVideo(null);
+      console.log(`Paused video ${videoId} at ${video.currentTime}s`);
+    } else {
+      // Stop any currently playing video
+      if (playingVideo !== null) {
+        const currentVideo = videoRefs.current[playingVideo];
+        if (currentVideo) {
+          currentVideo.pause();
+          setVideoProgress(prev => ({
+            ...prev,
+            [playingVideo]: currentVideo.currentTime
+          }));
         }
-      };
-      
-      if (video.readyState >= 2) {
-        handleCanPlay();
-      } else {
-        video.addEventListener('canplay', handleCanPlay, { once: true });
-        video.addEventListener('loadeddata', handleLoadedData, { once: true });
       }
+
+      // Start playing the new video
+      setPlayingVideo(videoId);
+      
+      // Resume from saved progress or start from beginning
+      const savedTime = videoProgress[videoId] || 0;
+      video.currentTime = savedTime;
+      
+      // Force load and play immediately
+      video.load();
+      video.play().then(() => {
+        console.log(`Playing video ${videoId} from ${savedTime}s`);
+      }).catch(error => {
+        console.error(`Error playing video ${videoId}:`, error);
+      });
     }
   };
 
-  const handleVideoLeave = () => {
-    if (hoveredVideo !== null) {
-      const video = videoRefs.current[hoveredVideo];
-      if (video) {
-        video.pause();
-        video.currentTime = 0;
-        // Clear the video source to stop any ongoing loading
-        video.removeAttribute('src');
-        video.load();
+  // Update video progress periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (playingVideo !== null) {
+        const video = videoRefs.current[playingVideo];
+        if (video && !video.paused) {
+          setVideoProgress(prev => ({
+            ...prev,
+            [playingVideo]: video.currentTime
+          }));
+        }
       }
-    }
-    setHoveredVideo(null);
-  };
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, [playingVideo]);
 
   const nextVideo = () => {
     setSelectedVideo((prev) => (prev + 1) % portfolioItems.length);
@@ -250,7 +204,7 @@ export default function PortfolioSection() {
             {portfolioItems.map((item, index) => {
               const offset = index - selectedVideo;
               const isActive = index === selectedVideo;
-              const isHovered = hoveredVideo === item.id;
+              const isHovered = playingVideo === item.id;
               const zIndex =
                 isActive || isHovered
                   ? 50
@@ -268,52 +222,50 @@ export default function PortfolioSection() {
                     opacity:
                       Math.abs(offset) > 2 ? 0 : Math.abs(offset) > 1 ? 0.6 : 1,
                   }}
-                  onClick={() => handleVideoPlay(item.id)}
-                  onMouseEnter={() => {
-                    handleVideoHover(item.id);
-                    preloadAdjacentVideos(item.id);
-                  }}
-                  onMouseLeave={handleVideoLeave}
+                  onClick={() => handleVideoClick(item.id)}
                 >
                   <div
                     className={`relative rounded-xl overflow-hidden shadow-2xl border-2 transition-all duration-300 ${
                       isActive ? "border-primary/70" : "border-gray-700/50"
-                    } ${hoveredVideo === item.id ? "border-accent" : ""}`}
+                    } ${playingVideo === item.id ? "border-accent" : ""}`}
                   >
-                    {hoveredVideo === item.id ? (
-                      <video
-                        ref={(el) => (videoRefs.current[item.id] = el)}
-                        className="w-80 h-96 object-cover"
-                        muted
-                        loop
-                        playsInline
-                        preload="none"
-                        src={item.preview}
-                        onLoadStart={() => console.log(`Video ${item.id} load started`)}
-                        onLoadedData={() => console.log(`Video ${item.id} data loaded`)}
-                        onCanPlay={() => console.log(`Video ${item.id} can play`)}
-                        onError={(e) => console.log(`Video ${item.id} error:`, e)}
-                        onStalled={() => console.log(`Video ${item.id} stalled`)}
-                        onWaiting={() => console.log(`Video ${item.id} waiting`)}
-                        onEnded={() => {
-                          const video = videoRefs.current[item.id];
-                          if (video) {
-                            video.currentTime = 0;
-                            video.play().catch(() => {
-                              // Ignore replay errors
-                            });
-                          }
-                        }}
-                      />
-                    ) : (
-                      <img
-                        src={item.thumbnail}
-                        alt={item.alt}
-                        className="w-80 h-96 object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )}
+                    {/* Always render video element for preloading */}
+                    <video
+                      ref={(el) => (videoRefs.current[item.id] = el)}
+                      className={`w-80 h-96 object-cover ${
+                        playingVideo === item.id ? "block" : "hidden"
+                      }`}
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      src={item.preview}
+                      onLoadStart={() => console.log(`Video ${item.id} load started`)}
+                      onLoadedData={() => console.log(`Video ${item.id} data loaded`)}
+                      onCanPlay={() => console.log(`Video ${item.id} can play`)}
+                      onError={(e) => console.log(`Video ${item.id} error:`, e)}
+                      onEnded={() => {
+                        // Loop video
+                        const video = videoRefs.current[item.id];
+                        if (video) {
+                          video.currentTime = 0;
+                          video.play().catch(() => {
+                            // Ignore replay errors
+                          });
+                        }
+                      }}
+                    />
+                    
+                    {/* Show thumbnail when video is not playing */}
+                    <img
+                      src={item.thumbnail}
+                      alt={item.alt}
+                      className={`w-80 h-96 object-cover ${
+                        playingVideo === item.id ? "hidden" : "block"
+                      }`}
+                      loading="lazy"
+                      decoding="async"
+                    />
 
                     <div className="absolute top-4 left-4">
                       <span className="bg-accent/90 text-secondary px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
@@ -321,13 +273,24 @@ export default function PortfolioSection() {
                       </span>
                     </div>
 
-                    {hoveredVideo !== item.id && (
+                    {playingVideo !== item.id && (
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
                         <Button
                           size="lg"
                           className="bg-accent/90 backdrop-blur-sm rounded-full p-4 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-cyan-400/30"
                         >
                           <Play className="h-6 w-6 text-secondary ml-1" />
+                        </Button>
+                      </div>
+                    )}
+
+                    {playingVideo === item.id && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
+                        <Button
+                          size="lg"
+                          className="bg-red-500/90 backdrop-blur-sm rounded-full p-4 hover:bg-red-500 transition-all duration-200 transform hover:scale-110 border border-red-400/30"
+                        >
+                          <div className="h-6 w-6 bg-white rounded-sm" />
                         </Button>
                       </div>
                     )}
