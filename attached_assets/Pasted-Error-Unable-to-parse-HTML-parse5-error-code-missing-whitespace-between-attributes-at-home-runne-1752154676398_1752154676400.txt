@@ -1,0 +1,21 @@
+Error: Unable to parse HTML; parse5 error code missing-whitespace-between-attributes
+ at /home/runner/workspace/client:7:155
+5  |      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+6  |      <title>Mementiq - Professional Video Editing Services</title>
+7  |      <meta name="description" content="Everyone deserves to have their story told. We bring your footage to life with professional video editing services."" />
+   |                                                                                                                                                            ^
+8  |      <link rel="preconnect" href="https://fonts.googleapis.com">
+9  |      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    at handleParseError (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-CHZK6zbr.js:35172:9)
+    at Parser.onParseError (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-CHZK6zbr.js:35097:7)
+    at Tokenizer._err (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:1155:89)
+    at Tokenizer._stateAfterAttributeValueQuoted (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:2760:22)
+    at Tokenizer._callState (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:1666:22)
+    at Tokenizer._runParsingLoop (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:1179:22)
+    at Tokenizer.write (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:1204:14)
+    at Parser.parse (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:4886:26)
+    at parse (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:7957:19)
+    at traverseHtml (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-CHZK6zbr.js:35092:15)
+    at async devHtmlHook (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-CHZK6zbr.js:62251:3)
+    at async applyHtmlTransforms (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-CHZK6zbr.js:35875:17)
+    at async <anonymous> (/home/runner/workspace/server/vite.ts:61:20)
