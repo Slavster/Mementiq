@@ -38,7 +38,8 @@ const portfolioItems = [
     title: "Event Highlights",
     description:
       "Turn any event into a vibrant highlight reel that perfectly captures emotional moments, energy, and celebration",
-    thumbnail: "https://object-storage.example.com/thumbnails/event-highlights.jpg",
+    thumbnail:
+      "https://object-storage.example.com/thumbnails/event-highlights.jpg",
     alt: "Fun highlight reel of a clothing swap event",
     category: "Events",
     preview: "https://object-storage.example.com/previews/event-highlights.mp4",
@@ -48,7 +49,8 @@ const portfolioItems = [
     title: "Product Showcase",
     description:
       "Make your product shine with vibrant color correction, and precise scene transitions",
-    thumbnail: "https://object-storage.example.com/thumbnails/product-showcase.jpg",
+    thumbnail:
+      "https://object-storage.example.com/thumbnails/product-showcase.jpg",
     alt: "Product video ad",
     category: "Commercial",
     preview: "https://object-storage.example.com/previews/product-showcase.mp4",
