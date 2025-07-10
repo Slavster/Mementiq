@@ -9,11 +9,11 @@ const portfolioItems = [
     description:
       "Turn your vacation footage into cinematic experiences. Moving music and smooth transitions capture your special moments",
     thumbnail:
-      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/tu_lan_cover.jpg",
+      "/api/assets/Thumbnails/tu_lan_cover.jpg",
     alt: "Highlighting beautiful travel destinations and moments",
     category: "Travel",
     preview:
-      "/api/assets/EditingPortfolioAssets/Objects/Videos/Travel video.mp4",
+      "/api/assets/Videos/Travel video.mp4",
   },
   {
     id: 2,
@@ -21,11 +21,11 @@ const portfolioItems = [
     description:
       "Advertise your services with dynamic cuts, animations, and eye-catching effects",
     thumbnail:
-      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/Coaching Ad Cover.png",
+      "/api/assets/Thumbnails/Coaching Ad Cover.png",
     alt: "Engaging ad reel for coaching services",
     category: "Social Media",
     preview:
-      "/api/assets/EditingPortfolioAssets/Objects/Videos/Coaching Ad 1 - 720.mp4",
+      "/api/assets/Videos/Coaching Ad 1 - 720.mp4",
   },
   {
     id: 3,
@@ -33,11 +33,11 @@ const portfolioItems = [
     description:
       "Enhance your best interview moments with clean audio, dynamic framing, and speaker captions.",
     thumbnail:
-      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/conference cover.png",
+      "/api/assets/Thumbnails/conference cover.png",
     alt: "Conference Interviews",
     category: "Interviews",
     preview:
-      "/api/assets/EditingPortfolioAssets/Objects/Videos/Conference Interviews.mp4",
+      "/api/assets/Videos/Conference Interviews.mp4",
   },
   {
     id: 4,
@@ -45,11 +45,11 @@ const portfolioItems = [
     description:
       "Turn any event into a vibrant highlight reel that perfectly captures emotional moments, energy, and celebration",
     thumbnail:
-      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/Swap_in_city_cover.png",
+      "/api/assets/Thumbnails/Swap_in_city_cover.png",
     alt: "Fun highlight reel of a clothing swap event",
     category: "Events",
     preview:
-      "/api/assets/EditingPortfolioAssets/Objects/Videos/Event promo video.mp4",
+      "/api/assets/Videos/Event promo video.mp4",
   },
   {
     id: 5,
@@ -57,10 +57,10 @@ const portfolioItems = [
     description:
       "Make your product shine with vibrant color correction, and precise scene transitions",
     thumbnail:
-      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/Sun a wear cover.png",
+      "/api/assets/Thumbnails/Sun a wear cover.png",
     alt: "Product video ad",
     category: "Commercial",
-    preview: "/api/assets/EditingPortfolioAssets/Objects/Videos/Product Ad.mp4",
+    preview: "/api/assets/Videos/Product Ad.mp4",
   },
 ];
 
