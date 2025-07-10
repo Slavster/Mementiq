@@ -50,7 +50,8 @@ const prepaidPackages = [
     description: "Great for highlighting those special moments",
     features: [
       "5 video editing credits",
-      "Great for longer content, 1 credit = 3 minutes of final video",
+      "Great for longer content",
+      "1 credit = 3 minutes of final video",
       "Use anytime within 1 year",
     ],
     highlighted: false,
@@ -65,7 +66,8 @@ const prepaidPackages = [
     description: "For budding content creators",
     features: [
       "10 video editing credits",
-      "Great for longer content, 1 credit = 3 minutes of final video",
+      "Great for longer content",
+      "1 credit = 3 minutes of final video",
       "Use anytime within 1 year",
     ],
     highlighted: false,
@@ -80,7 +82,8 @@ const prepaidPackages = [
     description: "Fast channel launches and backlog clearing",
     features: [
       "20 video editing credits",
-      "Great for longer content, 1 credit = 3 minutes of final video",
+      "Great for longer content",
+      "1 credit = 3 minutes of final video",
       "Use anytime within 1 year",
     ],
     highlighted: true,
