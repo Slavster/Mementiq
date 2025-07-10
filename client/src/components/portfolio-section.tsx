@@ -75,11 +75,11 @@ export default function PortfolioSection() {
       ([entry]) => {
         if (entry.isIntersecting && !sectionInView) {
           setSectionInView(true);
-          // Prefetch the first video's initial chunk
+          // Prefetch the first video's larger initial chunk
           fetch(`${portfolioItems[0].preview}`, {
-            headers: { 'Range': 'bytes=0-1048575' } // 1MB initial prefetch
+            headers: { 'Range': 'bytes=0-10485759' } // 10MB initial prefetch
           }).then(() => {
-            console.log('Prefetched first video chunk');
+            console.log('Prefetched first video 10MB chunk');
           }).catch(() => {
             // Ignore prefetch errors
           });
@@ -103,12 +103,12 @@ export default function PortfolioSection() {
     
     adjacentIds.forEach(id => {
       if (!preloadedVideos.has(id)) {
-        // Prefetch just the first chunk for faster startup
+        // Prefetch larger chunk for faster startup
         fetch(portfolioItems[id].preview, {
-          headers: { 'Range': 'bytes=0-1048575' } // 1MB chunk
+          headers: { 'Range': 'bytes=0-5242879' } // 5MB chunk for adjacent videos
         }).then(() => {
           setPreloadedVideos(prev => new Set(prev).add(id));
-          console.log(`Preloaded video ${id} chunk`);
+          console.log(`Preloaded video ${id} 5MB chunk`);
         }).catch(() => {
           // Ignore prefetch errors
         });
@@ -121,20 +121,32 @@ export default function PortfolioSection() {
     const video = videoRefs.current[videoId];
     if (video) {
       video.currentTime = 0;
-      // Start loading immediately and play when ready
-      video.load(); // Force reload to start range requests
       
-      // Try to play immediately, fallback to waiting for data
-      const playPromise = video.play().catch(() => {
-        // If immediate play fails, wait for some data
-        if (video.readyState < 3) {
-          video.addEventListener('canplay', () => {
+      // Force immediate loading and wait for enough buffer
+      video.load();
+      
+      // Wait for sufficient buffering before playing
+      const tryPlay = () => {
+        if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+          video.play().catch(() => {
+            // Ignore autoplay errors
+          });
+        } else {
+          // Wait for more buffering
+          video.addEventListener('canplaythrough', () => {
             video.play().catch(() => {
-              // Ignore autoplay errors
+              // Ignore autoplay errors  
             });
           }, { once: true });
         }
-      });
+      };
+      
+      // Try immediately or wait for loading
+      if (video.readyState >= 3) {
+        tryPlay();
+      } else {
+        video.addEventListener('loadeddata', tryPlay, { once: true });
+      }
     }
   };
 
@@ -269,8 +281,17 @@ export default function PortfolioSection() {
                         playsInline
                         preload="auto"
                         onLoadStart={() => console.log(`Video ${item.id} load started`)}
-                        onLoadedData={() => console.log(`Video ${item.id} data loaded`)}
-                        onCanPlay={() => console.log(`Video ${item.id} can play`)}
+                        onLoadedData={() => console.log(`Video ${item.id} data loaded (readyState: ${videoRefs.current[item.id]?.readyState})`)}
+                        onCanPlay={() => console.log(`Video ${item.id} can play (readyState: ${videoRefs.current[item.id]?.readyState})`)}
+                        onCanPlayThrough={() => console.log(`Video ${item.id} can play through (readyState: ${videoRefs.current[item.id]?.readyState})`)}
+                        onProgress={() => {
+                          const video = videoRefs.current[item.id];
+                          if (video && video.buffered.length > 0) {
+                            const buffered = video.buffered.end(0);
+                            const duration = video.duration || 1;
+                            console.log(`Video ${item.id} buffered: ${(buffered/duration*100).toFixed(1)}%`);
+                          }
+                        }}
                         onEnded={() => {
                           const video = videoRefs.current[item.id];
                           if (video) {

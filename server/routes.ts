@@ -286,11 +286,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (parts[1]) {
       end = parseInt(parts[1], 10);
     } else {
-      // For initial requests (start=0), send larger chunk for faster startup
+      // For initial requests (start=0), send much larger chunk for immediate playback
       if (start === 0) {
-        end = Math.min(start + 5 * 1024 * 1024, content.length - 1); // 5MB initial chunk
+        end = Math.min(start + 10 * 1024 * 1024, content.length - 1); // 10MB initial chunk
+      } else if (start < 5 * 1024 * 1024) {
+        end = Math.min(start + 5 * 1024 * 1024, content.length - 1); // 5MB for early chunks  
       } else {
-        end = Math.min(start + 2 * 1024 * 1024, content.length - 1); // 2MB subsequent chunks
+        end = Math.min(start + 2 * 1024 * 1024, content.length - 1); // 2MB for later chunks
       }
     }
     
