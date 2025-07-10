@@ -124,27 +124,24 @@ export default function TestimonialsSection() {
             {testimonials.map((testimonial) => (
               <Card
                 key={testimonial.id}
-                className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 flex-shrink-0 w-80"
+                className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 flex-shrink-0 w-80 h-full"
               >
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <CardContent className="p-6 flex flex-col justify-center h-full text-center">
+                  <div className="flex items-center justify-center mb-4">
                     <div className="flex text-accent">
                       {[...Array(testimonial.rating)].map((_, i) => (
                         <Star key={i} className="h-4 w-4 fill-current" />
                       ))}
                     </div>
-                    <span className="bg-primary/20 text-primary px-2 py-1 rounded-full text-xs font-semibold">
-                      {testimonial.platform}
-                    </span>
                   </div>
                   <p className="text-charcoal mb-6 italic text-sm leading-relaxed">
                     "{testimonial.content}"
                   </p>
-                  <div className="flex items-center">
+                  <div className="flex flex-col items-center">
                     <img
                       src={testimonial.avatar}
                       alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover mr-3 border-2 border-primary/30"
+                      className="w-16 h-16 rounded-full object-cover mb-3 border-2 border-primary/30"
                     />
                     <div>
                       <p className="font-semibold text-light text-sm">
