@@ -143,7 +143,7 @@ export default function PortfolioSection() {
       return; // Throttle rapid scroll events
     }
 
-    const deltaThreshold = 50; // Minimum delta to trigger scroll
+    const deltaThreshold = 80; // Higher threshold for more controlled swiping
 
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       // Horizontal scroll
@@ -270,7 +270,7 @@ export default function PortfolioSection() {
                     />
 
                     <div className="absolute top-4 left-4">
-                      <span className="bg-accent/90 text-secondary px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+                      <span className="bg-dark/90 text-light px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm border border-gray-500/30 shadow-lg">
                         {item.category}
                       </span>
                     </div>
