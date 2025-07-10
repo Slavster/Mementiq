@@ -1,4 +1,4 @@
-import { users, emailSignups, type User, type InsertUser, type EmailSignup, type InsertEmailSignup } from "@shared/schema";
+import { users, emailSignups, type User, type InsertUser, type EmailSignup, type InsertEmailSignup } from "../shared/schema.js";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
