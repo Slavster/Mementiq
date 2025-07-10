@@ -87,13 +87,14 @@ The application uses PostgreSQL with the following tables:
 ### July 10, 2025 - Object Storage Integration (COMPLETED)
 - **Issue**: Portfolio assets in Replit Object Storage (bucket: replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9) not accessible via direct URLs
 - **Problem**: Replit Object Storage requires authentication and doesn't provide direct public URLs
-- **Solution Implemented**: Backend API proxy endpoints at `/api/assets/*` using `@replit/object-storage` SDK
-- **Resolution**: Fixed path mapping - files exist at root level (`Thumbnails/`, `Videos/`) not with `EditingPortfolioAssets/` prefix
-- **Result**: All 5 portfolio videos and thumbnails now loading correctly via `/api/assets/*` endpoints
+- **Solution Implemented**: Backend API proxy endpoints at `/api/assets/*` using `@replit/object-storage` SDK with fallback mechanism
+- **Resolution**: Implemented dual-path resolution - frontend requests `Objects/Thumbnails/` structure, backend falls back to root-level `Thumbnails/` when needed
+- **Result**: All 5 portfolio videos and thumbnails now loading correctly via `/api/assets/*` endpoints with automatic path resolution
 
-### File Structure (Confirmed Working):
-- Thumbnails: `Thumbnails/tu_lan_cover.jpg`, `Coaching Ad Cover.png`, `conference cover.png`, `Swap_in_city_cover.png`, `Sun a wear cover.png`  
-- Videos: `Videos/Travel video.mp4`, `Coaching Ad 1 - 720.mp4`, `Conference Interviews.mp4`, `Event promo video.mp4`, `Product Ad.mp4`
+### File Structure (Working with Fallback):
+- Frontend URLs: `Objects/Thumbnails/`, `Objects/Videos/` (as shown in Replit Object Storage UI)
+- Actual Storage: `Thumbnails/`, `Videos/` (root level files accessed via fallback mechanism)
+- Files: `tu_lan_cover.jpg`, `Coaching Ad Cover.png`, `conference cover.png`, `Swap_in_city_cover.png`, `Sun a wear cover.png`, `Travel video.mp4`, etc.
 
 ### June 25, 2025 - Initial setup
 

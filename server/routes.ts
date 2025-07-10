@@ -77,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve Object Storage assets
   app.get("/api/assets/*", async (req, res) => {
     try {
-      // Strip EditingPortfolioAssets prefix since files are at root level
+      // Strip EditingPortfolioAssets prefix and keep the full Objects/ path
       let assetPath = req.params[0];
       if (assetPath.startsWith('EditingPortfolioAssets/')) {
         assetPath = assetPath.replace('EditingPortfolioAssets/', '');
@@ -85,6 +85,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Fetching asset: ${assetPath}`);
       
       let content;
+      let finalPath = assetPath;
+      
+      // Try with Objects/ prefix first (current structure)
       try {
         const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
         
@@ -94,11 +97,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         content = bytesResult.value;
       } catch (bytesError) {
-        console.log('downloadAsBytes failed:', bytesError.message);
-        return res.status(404).json({ 
-          error: "Asset not found in storage", 
-          requestedPath: assetPath
-        });
+        console.log(`First attempt failed for ${assetPath}:`, bytesError.message);
+        
+        // Try fallback: remove Objects/ prefix if it exists (legacy structure)
+        if (assetPath.startsWith('Objects/')) {
+          const fallbackPath = assetPath.replace('Objects/', '');
+          console.log(`Trying fallback path: ${fallbackPath}`);
+          
+          try {
+            const fallbackResult = await objectStorageClient.downloadAsBytes(fallbackPath);
+            
+            if (!fallbackResult.ok) {
+              throw new Error(`Fallback also failed: ${JSON.stringify(fallbackResult.error)}`);
+            }
+            
+            content = fallbackResult.value;
+            finalPath = fallbackPath;
+          } catch (fallbackError) {
+            console.log('Both paths failed:', fallbackError.message);
+            return res.status(404).json({ 
+              error: "Asset not found in storage", 
+              requestedPath: assetPath,
+              fallbackPath: fallbackPath
+            });
+          }
+        } else {
+          return res.status(404).json({ 
+            error: "Asset not found in storage", 
+            requestedPath: assetPath
+          });
+        }
       }
       
       if (!content) {
