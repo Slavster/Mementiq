@@ -182,7 +182,7 @@ export default function PortfolioSection() {
         </div>
 
         <div
-          className="relative h-[600px] flex items-center justify-center"
+          className="relative h-[600px] flex items-center justify-center overflow-hidden"
           onWheel={handleWheel}
           ref={containerRef}
         >
@@ -216,13 +216,13 @@ export default function PortfolioSection() {
                 <div
                   key={item.id}
                   className={`absolute transition-all duration-700 ease-out cursor-pointer ${
-                    isActive || isHovered ? "scale-110" : "scale-90"
+                    isActive ? "scale-100" : "scale-75"
                   }`}
                   style={{
-                    transform: `translateX(${offset * 200}px)`,
+                    transform: `translateX(${offset * 420}px)`,
                     zIndex,
                     opacity:
-                      Math.abs(offset) > 2 ? 0 : Math.abs(offset) > 1 ? 0.6 : 1,
+                      Math.abs(offset) > 2 ? 0 : Math.abs(offset) > 1 ? 0.7 : 1,
                   }}
                   onClick={() => handleVideoClick(item.id)}
                 >
