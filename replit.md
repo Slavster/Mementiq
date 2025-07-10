@@ -87,14 +87,16 @@ The application uses PostgreSQL with the following tables:
 ### July 10, 2025 - Object Storage Integration (COMPLETED)
 - **Issue**: Portfolio assets in Replit Object Storage (bucket: replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9) not accessible via direct URLs
 - **Problem**: Replit Object Storage requires authentication and doesn't provide direct public URLs
-- **Solution Implemented**: Backend API proxy endpoints at `/api/assets/*` using `@replit/object-storage` SDK with fallback mechanism
-- **Resolution**: Implemented dual-path resolution - frontend requests `Objects/Thumbnails/` structure, backend falls back to root-level `Thumbnails/` when needed
-- **Result**: All 5 portfolio videos and thumbnails now loading correctly via `/api/assets/*` endpoints with automatic path resolution
+- **Solution Implemented**: Backend API proxy endpoints at `/api/assets/*` using `@replit/object-storage` SDK
+- **Final Resolution**: Object Storage SDK returns Node.js Buffer objects wrapped in arrays - fixed by properly extracting binary data from `bytesResult.value[0]`
+- **Frontend Path Update**: Updated portfolio component URLs from `/Objects/Thumbnails/` to `/Thumbnails/` to match actual Object Storage structure
+- **Result**: API now serving full file content (3.6MB thumbnails, 25MB videos) via `/api/assets/*` endpoints
 
-### File Structure (Working with Fallback):
-- Frontend URLs: `Objects/Thumbnails/`, `Objects/Videos/` (as shown in Replit Object Storage UI)
-- Actual Storage: `Thumbnails/`, `Videos/` (root level files accessed via fallback mechanism)
+### File Structure (Final Working):
+- Frontend URLs: `/api/assets/Thumbnails/`, `/api/assets/Videos/` (direct paths matching Object Storage)
+- Actual Storage: `Thumbnails/`, `Videos/` (root level directories in Object Storage)
 - Files: `tu_lan_cover.jpg`, `Coaching Ad Cover.png`, `conference cover.png`, `Swap_in_city_cover.png`, `Sun a wear cover.png`, `Travel video.mp4`, etc.
+- **Technical Detail**: Object Storage SDK `downloadAsBytes()` returns `{ok: true, value: [Buffer]}` where Buffer contains actual file data
 
 ### June 25, 2025 - Initial setup
 
