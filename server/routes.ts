@@ -303,6 +303,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(Buffer.from(chunk));
   }
 
+  const httpServer = createServer(app);
+  return httpServer;
+}
+
 async function downloadAsset(assetPath: string): Promise<{ content: Uint8Array; contentType: string }> {
   let content: Uint8Array;
   let finalPath = assetPath;
@@ -426,8 +430,4 @@ async function downloadAsset(assetPath: string): Promise<{ content: Uint8Array; 
       const contentType = getContentType(extension);
       
       return { content, contentType };
-}
-
-  const httpServer = createServer(app);
-  return httpServer;
 }
