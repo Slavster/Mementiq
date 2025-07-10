@@ -63,7 +63,8 @@ export default function PortfolioSection() {
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
-  const scrollThreshold = 250; // Balanced timing for responsive navigation
+  const isNavigating = useRef<boolean>(false);
+  const scrollThreshold = 200; // Responsive timing
 
   const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
@@ -126,34 +127,50 @@ export default function PortfolioSection() {
   }, [playingVideo]);
 
   const nextVideo = () => {
+    if (isNavigating.current) return; // Prevent multiple rapid moves
+    
+    isNavigating.current = true;
     setSelectedVideo((prev) => {
       const next = (prev + 1) % portfolioItems.length;
       console.log(`Moving from video ${prev} to ${next}`);
       return next;
     });
+    
+    // Reset navigation lock after animation completes
+    setTimeout(() => {
+      isNavigating.current = false;
+    }, 700); // Match transition duration
   };
 
   const prevVideo = () => {
+    if (isNavigating.current) return; // Prevent multiple rapid moves
+    
+    isNavigating.current = true;
     setSelectedVideo((prev) => {
       const next = (prev - 1 + portfolioItems.length) % portfolioItems.length;
       console.log(`Moving from video ${prev} to ${next}`);
       return next;
     });
+    
+    // Reset navigation lock after animation completes
+    setTimeout(() => {
+      isNavigating.current = false;
+    }, 700); // Match transition duration
   };
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
+
+    // Block all navigation if currently moving
+    if (isNavigating.current) return;
 
     const now = Date.now();
     if (now - lastScrollTime.current < scrollThreshold) {
       return; // Throttle rapid scroll events
     }
 
-    // Slightly higher threshold only for wraparound cases
-    const isFirstGoingBackward = selectedVideo === 0 && (e.deltaX < 0 || e.deltaY < 0);
-    const isLastGoingForward = selectedVideo === portfolioItems.length - 1 && (e.deltaX > 0 || e.deltaY > 0);
-    const isWraparound = isFirstGoingBackward || isLastGoingForward;
-    const deltaThreshold = isWraparound ? 100 : 70; // Moderate increase only for wraparound
+    // Simple threshold - no special cases
+    const deltaThreshold = 60;
 
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       // Horizontal scroll
