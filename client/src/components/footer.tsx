@@ -14,10 +14,10 @@ export default function Footer() {
   return (
     <footer className="bg-secondary text-white py-12 border-t border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid md:grid-cols-4 gap-8">
-          <div className="col-span-2">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
             <h3 className="text-2xl font-bold mb-4 text-primary">Mementiq</h3>
-            <p className="text-gray-300 mb-6">
+            <p className="text-gray-300 mb-6 max-w-md">
               Professional video editing services. Everyone deserves to have
               their story told.
             </p>
