@@ -49,58 +49,12 @@ export default function Footer() {
             </div>
           </div>
 
-          <div>
-            <h4 className="text-lg font-semibold mb-4 text-light">Services</h4>
-            <ul className="space-y-2 text-gray-300">
-              <li>
-                <a
-                  href="#"
-                  className="hover:text-accent transition-colors duration-200"
-                >
-                  Social Media Content
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:text-accent transition-colors duration-200"
-                >
-                  Personal Projects
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:text-accent transition-colors duration-200"
-                >
-                  Creative Storytelling
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="hover:text-accent transition-colors duration-200"
-                >
-                  Music Videos
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div>
+          <div className="text-right">
             <h4 className="text-lg font-semibold mb-4 text-light">Contact</h4>
             <ul className="space-y-2 text-gray-300">
-              <li className="flex items-center">
-                <Phone className="h-4 w-4 mr-2" />
-                <span>(555) 987-6543</span>
-              </li>
-              <li className="flex items-center">
-                <Mail className="h-4 w-4 mr-2" />
-                <span>hello@Mementiq.com</span>
-              </li>
-              <li className="flex items-center">
-                <MapPin className="h-4 w-4 mr-2" />
-                <span>Los Angeles, CA</span>
+              <li className="flex items-center justify-end">
+                <Mail className="h-6 w-6 mr-2 text-gray-300 hover:text-accent transition-colors duration-200" />
+                <span>mementiq@seraphventures.net</span>
               </li>
             </ul>
           </div>
@@ -108,7 +62,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
           <p>
-            &copy; {currentYear} Mementiq. All rights reserved. |{" "}
+            &copy; {currentYear} Seraph Ventures LLC. All rights reserved. |{" "}
             <a
               href="#"
               className="hover:text-accent transition-colors duration-200"
