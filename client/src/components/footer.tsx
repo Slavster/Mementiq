@@ -51,12 +51,10 @@ export default function Footer() {
 
           <div className="text-right">
             <h4 className="text-lg font-semibold mb-4 text-light">Contact</h4>
-            <ul className="space-y-2 text-gray-300">
-              <li className="flex items-center justify-end">
-                <Mail className="h-6 w-6 mr-2 text-gray-300 hover:text-accent transition-colors duration-200" />
-                <span>mementiq@seraphventures.net</span>
-              </li>
-            </ul>
+            <div className="flex items-center justify-end space-x-2">
+              <Mail className="h-6 w-6 text-gray-300 hover:text-accent transition-colors duration-200" />
+              <span className="text-gray-300">mementiq@seraphventures.net</span>
+            </div>
           </div>
         </div>
 
