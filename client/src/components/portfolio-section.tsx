@@ -274,7 +274,7 @@ export default function PortfolioSection() {
                     />
 
                     <div className="absolute top-4 left-4">
-                      <span className="bg-dark/90 text-light px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm border border-gray-500/30 shadow-lg">
+                      <span className="bg-black/80 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border border-white/20 shadow-2xl ring-1 ring-black/50">
                         {item.category}
                       </span>
                     </div>
