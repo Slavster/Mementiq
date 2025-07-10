@@ -62,6 +62,8 @@ export default function PortfolioSection() {
   const [sectionInView, setSectionInView] = useState<boolean>(false);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTime = useRef<number>(0);
+  const scrollThreshold = 300; // Minimum time between scroll events in ms
 
   const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
