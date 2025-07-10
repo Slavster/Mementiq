@@ -8,50 +8,50 @@ const portfolioItems = [
     title: "Travel Vlog Magic",
     description:
       "Turn your vacation footage into cinematic experiences. Moving music and smooth transitions capture your special moments",
-    thumbnail: "/EditingPortfolioAssets/Thumbnails/tu_lan_cover.jpg",
+    thumbnail: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Thumbnails/tu_lan_cover.jpg",
     alt: "Highlighting beutiful travel destinations and moments",
     category: "Travel",
-    preview: "/EditingPortfolioAssets/Videos/Travel video.mp4",
+    preview: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Videos/Travel video.mp4",
   },
   {
     id: 2,
     title: "Coaching Ad",
     description:
       "Advertise your services with dynamic cuts, animations, and eye-catching effects",
-    thumbnail: "/EditingPortfolioAssets/Thumbnails/Coaching Ad Cover.png",
+    thumbnail: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Thumbnails/Coaching Ad Cover.png",
     alt: "Engaging ad reel for coaching services",
     category: "Social Media",
-    preview: "/EditingPortfolioAssets/Videos/Coaching Ad 1 - 720.mp4",
+    preview: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Videos/Coaching Ad 1 - 720.mp4",
   },
   {
     id: 3,
     title: "Captivating Interviews",
     description:
       "Enhance your best interview moments with clean audio, dynamic framing, and speaker captions.",
-    thumbnail: "/EditingPortfolioAssets/Thumbnails/conference cover.png",
+    thumbnail: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Thumbnails/conference cover.png",
     alt: "Conference Interviews",
     category: "Interviews",
-    preview: "/EditingPortfolioAssets/Videos/Conference Interviews.mp4",
+    preview: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Videos/Conference Interviews.mp4",
   },
   {
     id: 4,
     title: "Event Highlights",
     description:
       "Turn any event into a vibrant highlight reel that perfectly captures emotional moments, energy, and celebration",
-    thumbnail: "/EditingPortfolioAssets/Thumbnails/Swap_in_city_cover.png",
+    thumbnail: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Thumbnails/Swap_in_city_cover.png",
     alt: "Fun highlight reel of a clothing swap event",
     category: "Events",
-    preview: "/EditingPortfolioAssets/Videos/Event promo video.mp4",
+    preview: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Videos/Event promo video.mp4",
   },
   {
     id: 5,
     title: "Product Showcase",
     description:
       "Make your product shine with vibrant color correction, and precise scene transitions",
-    thumbnail: "/EditingPortfolioAssets/Thumbnails/Sun a wear cover.png",
+    thumbnail: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Thumbnails/Sun a wear cover.png",
     alt: "Product video ad",
     category: "Commercial",
-    preview: "/EditingPortfolioAssets/Videos/Product Ad.mp4",
+    preview: "https://storage.replit.com/replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9/EditingPortfolioAssets/Videos/Product Ad.mp4",
   },
 ];
 
