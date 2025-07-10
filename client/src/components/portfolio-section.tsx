@@ -38,29 +38,27 @@ const portfolioItems = [
     title: "Event Highlights",
     description:
       "Turn any event into a vibrant highlight reel that perfectly captures emotional moments, energy, and celebration",
-    thumbnail:
-      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/Swap_in_city_cover.png",
+    thumbnail: "/api/assets/Thumbnails/Swap_in_city_cover.png",
     alt: "Fun highlight reel of a clothing swap event",
     category: "Events Highlights",
-    preview:
-      "/api/assets/EditingPortfolioAssets/Objects/Videos/Event promo video.mp4",
+    preview: "/api/assets/Videos/Event promo video.mp4",
   },
   {
     id: 5,
     title: "Product Showcase",
     description:
       "Make your product shine with vibrant color correction, and precise scene transitions",
-    thumbnail:
-      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/Sun a wear cover.png",
+    thumbnail: "/api/assets/Thumbnails/Sun a wear cover.png",
     alt: "Product video ad",
     category: "Commercial",
-    preview: "/api/assets/EditingPortfolioAssets/Objects/Videos/Product Ad.mp4",
+    preview: "/api/assets/Videos/Product Ad.mp4",
   },
 ];
 
 export default function PortfolioSection() {
   const [selectedVideo, setSelectedVideo] = useState<number>(0);
   const [hoveredVideo, setHoveredVideo] = useState<number | null>(null);
+  const [preloadedVideos, setPreloadedVideos] = useState<Set<number>>(new Set());
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
@@ -70,17 +68,43 @@ export default function PortfolioSection() {
     console.log(`Playing video ${videoId}`);
   };
 
+  // Preload adjacent videos when hovering over portfolio items
+  const preloadAdjacentVideos = (currentId: number) => {
+    const adjacentIds = [currentId - 1, currentId + 1].filter(
+      id => id >= 0 && id < portfolioItems.length && !preloadedVideos.has(id)
+    );
+    
+    adjacentIds.forEach(id => {
+      if (!preloadedVideos.has(id)) {
+        // Create a temporary video element to trigger preloading
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        tempVideo.src = portfolioItems[id].preview;
+        tempVideo.load();
+        setPreloadedVideos(prev => new Set(prev).add(id));
+        console.log(`Preloading video ${id}`);
+      }
+    });
+  };
+
   const handleVideoHover = (videoId: number) => {
     setHoveredVideo(videoId);
     const video = videoRefs.current[videoId];
     if (video) {
       video.currentTime = 0;
-      // Add loading="lazy" equivalent behavior and prevent too frequent plays
-      setTimeout(() => {
+      // Only play if video has enough data loaded
+      if (video.readyState >= 3) { // HAVE_FUTURE_DATA
         video.play().catch(() => {
           // Ignore autoplay errors
         });
-      }, 100);
+      } else {
+        // Wait for enough data to be loaded
+        video.addEventListener('canplay', () => {
+          video.play().catch(() => {
+            // Ignore autoplay errors
+          });
+        }, { once: true });
+      }
     }
   };
 
@@ -195,7 +219,10 @@ export default function PortfolioSection() {
                       Math.abs(offset) > 2 ? 0 : Math.abs(offset) > 1 ? 0.6 : 1,
                   }}
                   onClick={() => handleVideoPlay(item.id)}
-                  onMouseEnter={() => handleVideoHover(item.id)}
+                  onMouseEnter={() => {
+                    handleVideoHover(item.id);
+                    preloadAdjacentVideos(item.id);
+                  }}
                   onMouseLeave={handleVideoLeave}
                 >
                   <div
@@ -210,7 +237,10 @@ export default function PortfolioSection() {
                         muted
                         loop
                         playsInline
-                        preload="metadata"
+                        preload="none"
+                        onLoadStart={() => console.log(`Video ${item.id} load started`)}
+                        onLoadedData={() => console.log(`Video ${item.id} data loaded`)}
+                        onCanPlay={() => console.log(`Video ${item.id} can play`)}
                         onEnded={() => {
                           const video = videoRefs.current[item.id];
                           if (video) {
