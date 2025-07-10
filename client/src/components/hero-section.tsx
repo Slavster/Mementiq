@@ -5,7 +5,7 @@ export default function HeroSection() {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -16,25 +16,28 @@ export default function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-6">
-              Bring Your Stories to{" "}
-              <span className="text-accent">Life</span>
+              Bring Your Stories to <span className="text-accent">Life</span>
             </h1>
             <p className="text-xl text-gray-300 mb-6 leading-relaxed">
-              Professional quality, transparently priced, and hassle-free{" "}
-              <span className="text-accent font-bold text-2xl">video editing services</span>{" "}
-              - all at the touch of a button.
+              Professional quality, transparently priced, and{" "}
+              <span className="text-accent font-bold text-2xl">
+                hassle-free video editing <br />
+              </span>{" "}
+              All at the touch of a button.
             </p>
-            <p className="text-2xl mb-8 text-left text-[#ffffff] font-semibold">For You. For All. Forever.</p>
+            <p className="text-2xl mb-8 text-left text-[#ffffff] font-semibold">
+              For You. For All. Forever.
+            </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                onClick={() => scrollToSection('pricing')}
+              <Button
+                onClick={() => scrollToSection("pricing")}
                 className="bg-accent text-secondary px-8 py-4 text-lg font-semibold hover:bg-yellow-500 transition-all duration-200 h-auto transform hover:scale-105"
               >
                 Start Creating
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button 
-                onClick={() => scrollToSection('portfolio')}
+              <Button
+                onClick={() => scrollToSection("portfolio")}
                 variant="outline"
                 className="border-2 border-accent text-accent px-8 py-4 text-lg font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200 h-auto"
               >
@@ -44,10 +47,10 @@ export default function HeroSection() {
           </div>
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30">
-              <img 
-                src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" 
-                alt="Professional video editing workspace with multiple monitors" 
-                className="w-full h-auto" 
+              <img
+                src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600"
+                alt="Professional video editing workspace with multiple monitors"
+                className="w-full h-auto"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
                 <Button

@@ -7,73 +7,51 @@ const portfolioItems = [
     id: 1,
     title: "Travel Vlog Magic",
     description:
-      "Cinematic travel edit featuring stunning landscapes and smooth transitions",
-    thumbnail:
-      "https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=600",
-    alt: "Beautiful travel destination with mountains and water",
+      "Turn your vacation footage into cinematic experiences. Moving music and smooth transitions capture your special moments",
+    thumbnail: "https://object-storage.example.com/thumbnails/travel-vlog.jpg",
+    alt: "Highlighting beutiful travel destinations and moments",
     category: "Travel",
-    preview:
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    preview: "https://object-storage.example.com/previews/travel-vlog.mp4",
   },
   {
     id: 2,
-    title: "Social Media Reel",
+    title: "Coaching Ad",
     description:
-      "High-energy Instagram reel with dynamic cuts and trendy effects",
-    thumbnail:
-      "https://images.unsplash.com/photo-1611162617474-5b21e879e113?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=600",
-    alt: "Creative smartphone content creation setup",
+      "Advertise your services with dynamic cuts, animations, and eye-catching effects",
+    thumbnail: "https://object-storage.example.com/thumbnails/coaching-ad.jpg",
+    alt: "Engaging ad reel for coaching services",
     category: "Social Media",
-    preview:
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    preview: "https://object-storage.example.com/previews/coaching-ad.mp4",
   },
   {
     id: 3,
-    title: "Music Video Edit",
+    title: "Captivating Interviews",
     description:
-      "Artistic music video with color grading and rhythm-synced cuts",
-    thumbnail:
-      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=600",
-    alt: "Professional music recording setup with instruments",
-    category: "Music",
-    preview:
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "Enhance your best interview moments with clean audio, dynamic framing, and speaker captions.",
+    thumbnail: "https://object-storage.example.com/thumbnails/interviews.jpg",
+    alt: "Conference Interviews",
+    category: "Interviews",
+    preview: "https://object-storage.example.com/previews/interviews.mp4",
   },
   {
     id: 4,
     title: "Event Highlights",
     description:
-      "Wedding highlight reel capturing emotional moments and celebrations",
-    thumbnail:
-      "https://images.unsplash.com/photo-1465495976277-4387d4b0e4a6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=600",
-    alt: "Beautiful wedding celebration moment",
+      "Turn any event into a vibrant highlight reel that perfectly captures emotional moments, energy, and celebration",
+    thumbnail: "https://object-storage.example.com/thumbnails/event-highlights.jpg",
+    alt: "Fun highlight reel of a clothing swap event",
     category: "Events",
-    preview:
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    preview: "https://object-storage.example.com/previews/event-highlights.mp4",
   },
   {
     id: 5,
-    title: "YouTube Channel Intro",
-    description:
-      "Branded intro sequence with motion graphics and logo animation",
-    thumbnail:
-      "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=600",
-    alt: "Creative video editing workspace with multiple monitors",
-    category: "Branding",
-    preview:
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-  },
-  {
-    id: 6,
     title: "Product Showcase",
     description:
-      "Sleek product video with professional lighting and smooth camera moves",
-    thumbnail:
-      "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=600",
-    alt: "Professional product photography setup",
+      "Make your product shine with vibrant color correction, and precise scene transitions",
+    thumbnail: "https://object-storage.example.com/thumbnails/product-showcase.jpg",
+    alt: "Product video ad",
     category: "Commercial",
-    preview:
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+    preview: "https://object-storage.example.com/previews/product-showcase.mp4",
   },
 ];
 
