@@ -153,7 +153,7 @@ export default function TestimonialsSection() {
                       <p className="text-xs text-charcoal">
                         {testimonial.title}
                       </p>
-                      <p className="text-lg mt-1">
+                      <p className="text-lg">
                         {testimonial.country}
                       </p>
                     </div>
