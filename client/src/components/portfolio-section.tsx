@@ -63,7 +63,7 @@ export default function PortfolioSection() {
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
-  const scrollThreshold = 400; // Longer time between scroll events for edge stability
+  const scrollThreshold = 250; // Balanced timing for responsive navigation
 
   const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
@@ -143,9 +143,11 @@ export default function PortfolioSection() {
       return; // Throttle rapid scroll events
     }
 
-    // Higher threshold for edge positions to prevent overshooting wraparound
-    const isAtEdge = selectedVideo === 0 || selectedVideo === portfolioItems.length - 1;
-    const deltaThreshold = isAtEdge ? 120 : 80; // Much higher threshold at edges
+    // Slightly higher threshold only for wraparound cases
+    const isFirstGoingBackward = selectedVideo === 0 && (e.deltaX < 0 || e.deltaY < 0);
+    const isLastGoingForward = selectedVideo === portfolioItems.length - 1 && (e.deltaX > 0 || e.deltaY > 0);
+    const isWraparound = isFirstGoingBackward || isLastGoingForward;
+    const deltaThreshold = isWraparound ? 100 : 70; // Moderate increase only for wraparound
 
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       // Horizontal scroll
