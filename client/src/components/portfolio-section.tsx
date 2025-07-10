@@ -8,36 +8,30 @@ const portfolioItems = [
     title: "Travel Vlog Magic",
     description:
       "Turn your vacation footage into cinematic experiences. Moving music and smooth transitions capture your special moments",
-    thumbnail:
-      "/api/assets/Thumbnails/tu_lan_cover.jpg",
+    thumbnail: "/api/assets/Thumbnails/tu_lan_cover.jpg",
     alt: "Highlighting beautiful travel destinations and moments",
-    category: "Travel",
-    preview:
-      "/api/assets/Videos/Travel video.mp4",
+    category: "Travel Reel",
+    preview: "/api/assets/Videos/Travel video.mp4",
   },
   {
     id: 2,
     title: "Coaching Ad",
     description:
       "Advertise your services with dynamic cuts, animations, and eye-catching effects",
-    thumbnail:
-      "/api/assets/Thumbnails/Coaching Ad Cover.png",
+    thumbnail: "/api/assets/Thumbnails/Coaching Ad Cover.png",
     alt: "Engaging ad reel for coaching services",
-    category: "Social Media",
-    preview:
-      "/api/assets/Videos/Coaching Ad 1 - 720.mp4",
+    category: "Services Ad",
+    preview: "/api/assets/Videos/Coaching Ad 1 - 720.mp4",
   },
   {
     id: 3,
     title: "Captivating Interviews",
     description:
       "Enhance your best interview moments with clean audio, dynamic framing, and speaker captions.",
-    thumbnail:
-      "/api/assets/Thumbnails/conference cover.png",
+    thumbnail: "/api/assets/Thumbnails/conference cover.png",
     alt: "Conference Interviews",
-    category: "Interviews",
-    preview:
-      "/api/assets/Videos/Conference Interviews.mp4",
+    category: "Interview",
+    preview: "/api/assets/Videos/Conference Interviews.mp4",
   },
   {
     id: 4,
@@ -45,11 +39,11 @@ const portfolioItems = [
     description:
       "Turn any event into a vibrant highlight reel that perfectly captures emotional moments, energy, and celebration",
     thumbnail:
-      "/api/assets/Thumbnails/Swap_in_city_cover.png",
+      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/Swap_in_city_cover.png",
     alt: "Fun highlight reel of a clothing swap event",
-    category: "Events",
+    category: "Events Highlights",
     preview:
-      "/api/assets/Videos/Event promo video.mp4",
+      "/api/assets/EditingPortfolioAssets/Objects/Videos/Event promo video.mp4",
   },
   {
     id: 5,
@@ -57,10 +51,10 @@ const portfolioItems = [
     description:
       "Make your product shine with vibrant color correction, and precise scene transitions",
     thumbnail:
-      "/api/assets/Thumbnails/Sun a wear cover.png",
+      "/api/assets/EditingPortfolioAssets/Objects/Thumbnails/Sun a wear cover.png",
     alt: "Product video ad",
     category: "Commercial",
-    preview: "/api/assets/Videos/Product Ad.mp4",
+    preview: "/api/assets/EditingPortfolioAssets/Objects/Videos/Product Ad.mp4",
   },
 ];
 
@@ -81,9 +75,12 @@ export default function PortfolioSection() {
     const video = videoRefs.current[videoId];
     if (video) {
       video.currentTime = 0;
-      video.play().catch(() => {
-        // Ignore autoplay errors
-      });
+      // Add loading="lazy" equivalent behavior and prevent too frequent plays
+      setTimeout(() => {
+        video.play().catch(() => {
+          // Ignore autoplay errors
+        });
+      }, 100);
     }
   };
 
@@ -213,6 +210,7 @@ export default function PortfolioSection() {
                         muted
                         loop
                         playsInline
+                        preload="metadata"
                         onEnded={() => {
                           const video = videoRefs.current[item.id];
                           if (video) {
@@ -228,6 +226,8 @@ export default function PortfolioSection() {
                         src={item.thumbnail}
                         alt={item.alt}
                         className="w-80 h-96 object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
 
