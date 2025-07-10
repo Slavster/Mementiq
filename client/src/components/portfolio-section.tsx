@@ -63,7 +63,7 @@ export default function PortfolioSection() {
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
-  const scrollThreshold = 300; // Minimum time between scroll events in ms
+  const scrollThreshold = 400; // Longer time between scroll events for edge stability
 
   const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
@@ -143,7 +143,9 @@ export default function PortfolioSection() {
       return; // Throttle rapid scroll events
     }
 
-    const deltaThreshold = 80; // Higher threshold for more controlled swiping
+    // Higher threshold for edge positions to prevent overshooting wraparound
+    const isAtEdge = selectedVideo === 0 || selectedVideo === portfolioItems.length - 1;
+    const deltaThreshold = isAtEdge ? 120 : 80; // Much higher threshold at edges
 
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       // Horizontal scroll
