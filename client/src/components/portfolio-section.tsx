@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -59,6 +59,7 @@ export default function PortfolioSection() {
   const [selectedVideo, setSelectedVideo] = useState<number>(0);
   const [hoveredVideo, setHoveredVideo] = useState<number | null>(null);
   const [preloadedVideos, setPreloadedVideos] = useState<Set<number>>(new Set());
+  const [sectionInView, setSectionInView] = useState<boolean>(false);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
@@ -68,6 +69,32 @@ export default function PortfolioSection() {
     console.log(`Playing video ${videoId}`);
   };
 
+  // Preload first video chunk when section comes into view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !sectionInView) {
+          setSectionInView(true);
+          // Prefetch the first video's initial chunk
+          fetch(`${portfolioItems[0].preview}`, {
+            headers: { 'Range': 'bytes=0-1048575' } // 1MB initial prefetch
+          }).then(() => {
+            console.log('Prefetched first video chunk');
+          }).catch(() => {
+            // Ignore prefetch errors
+          });
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [sectionInView]);
+
   // Preload adjacent videos when hovering over portfolio items
   const preloadAdjacentVideos = (currentId: number) => {
     const adjacentIds = [currentId - 1, currentId + 1].filter(
@@ -76,13 +103,15 @@ export default function PortfolioSection() {
     
     adjacentIds.forEach(id => {
       if (!preloadedVideos.has(id)) {
-        // Create a temporary video element to trigger preloading
-        const tempVideo = document.createElement('video');
-        tempVideo.preload = 'metadata';
-        tempVideo.src = portfolioItems[id].preview;
-        tempVideo.load();
-        setPreloadedVideos(prev => new Set(prev).add(id));
-        console.log(`Preloading video ${id}`);
+        // Prefetch just the first chunk for faster startup
+        fetch(portfolioItems[id].preview, {
+          headers: { 'Range': 'bytes=0-1048575' } // 1MB chunk
+        }).then(() => {
+          setPreloadedVideos(prev => new Set(prev).add(id));
+          console.log(`Preloaded video ${id} chunk`);
+        }).catch(() => {
+          // Ignore prefetch errors
+        });
       }
     });
   };
@@ -92,19 +121,20 @@ export default function PortfolioSection() {
     const video = videoRefs.current[videoId];
     if (video) {
       video.currentTime = 0;
-      // Only play if video has enough data loaded
-      if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-        video.play().catch(() => {
-          // Ignore autoplay errors
-        });
-      } else {
-        // Wait for enough data to be loaded
-        video.addEventListener('canplay', () => {
-          video.play().catch(() => {
-            // Ignore autoplay errors
-          });
-        }, { once: true });
-      }
+      // Start loading immediately and play when ready
+      video.load(); // Force reload to start range requests
+      
+      // Try to play immediately, fallback to waiting for data
+      const playPromise = video.play().catch(() => {
+        // If immediate play fails, wait for some data
+        if (video.readyState < 3) {
+          video.addEventListener('canplay', () => {
+            video.play().catch(() => {
+              // Ignore autoplay errors
+            });
+          }, { once: true });
+        }
+      });
     }
   };
 
@@ -237,7 +267,7 @@ export default function PortfolioSection() {
                         muted
                         loop
                         playsInline
-                        preload="metadata"
+                        preload="auto"
                         onLoadStart={() => console.log(`Video ${item.id} load started`)}
                         onLoadedData={() => console.log(`Video ${item.id} data loaded`)}
                         onCanPlay={() => console.log(`Video ${item.id} can play`)}

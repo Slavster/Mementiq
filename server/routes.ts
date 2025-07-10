@@ -262,6 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Cache-Control': isVideo ? 'public, max-age=3600' : 'public, max-age=600',
           'ETag': `"${assetPath}-${Date.now()}"`,
           'Accept-Ranges': isVideo ? 'bytes' : 'none',
+          'Connection': 'keep-alive',
         });
         
         res.send(Buffer.from(result.content));
@@ -274,16 +275,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Helper function to handle video range requests
+  // Helper function to handle video range requests with optimized chunk sizes
   function handleVideoRange(req: Request, res: Response, content: Uint8Array, contentType: string) {
     const range = req.headers.range!;
     const parts = range.replace(/bytes=/, "").split("-");
     const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 1024 * 1024, content.length - 1); // 1MB chunks
+    
+    // Optimize chunk size based on request
+    let end: number;
+    if (parts[1]) {
+      end = parseInt(parts[1], 10);
+    } else {
+      // For initial requests (start=0), send larger chunk for faster startup
+      if (start === 0) {
+        end = Math.min(start + 5 * 1024 * 1024, content.length - 1); // 5MB initial chunk
+      } else {
+        end = Math.min(start + 2 * 1024 * 1024, content.length - 1); // 2MB subsequent chunks
+      }
+    }
+    
     const chunksize = (end - start) + 1;
     const chunk = content.slice(start, end + 1);
     
-    console.log(`Range request: ${start}-${end}/${content.length} (${chunksize} bytes)`);
+    console.log(`Range request: ${start}-${end}/${content.length} (${chunksize} bytes) ${start === 0 ? '(INITIAL)' : ''}`);
     
     res.status(206); // Partial Content
     res.set({
