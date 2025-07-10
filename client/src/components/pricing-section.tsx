@@ -361,8 +361,8 @@ export default function PricingSection() {
               </div>
 
               <p className="text-lg text-gray-400 mb-4 max-w-2xl mx-auto">
-                Regularly making videos longer than 3 minutes? Need 3 or more
-                videos per week?
+                Regularly making videos longer than 3 minutes? <br />
+                Need 3 or more videos per week?
               </p>
               <p className="text-xl font-semibold text-light mb-8 max-w-2xl mx-auto">
                 We'll create a custom package to meet your exact content needs.
