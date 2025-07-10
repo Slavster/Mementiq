@@ -17,42 +17,58 @@ const testimonials = [
   },
   {
     id: 2,
-    name: "Maya Patel",
-    title: "Travel Blogger",
+    name: "Martin M",
+    title: "Developer",
+    country: "🇩🇰",
     content:
-      "The travel video they edited for me was absolutely stunning. Every transition was perfect and the color grading made my footage look professional.",
+      "The video was so amazing, exactly what I was looking for! Other editors have been so difficult to work with, but with Mementiq it was one take, one send, one revision, and we were done! Cuts really captured the essence of what people wanted to watch.",
     avatar:
       "https://images.unsplash.com/photo-1494790108755-2616b612b77c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100",
     rating: 5,
   },
   {
     id: 3,
-    name: "Jordan Kim",
-    title: "Musician & Artist",
+    name: "Elena E",
+    title: "Family Archivist",
+    country: "🇺🇸",
     content:
-      "They brought my music video vision to life beyond what I imagined. The editing style perfectly matched the vibe of my song.",
+      "I had two movies done using my photos and video clips from the past year. I didn’t have time to do it myself, so I decided to use Mementiq. I am impressed! Everything was done as I wanted and in a timely manner. I will use your service again and I highly recommend it to everyone.",
     avatar:
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100",
     rating: 5,
   },
+
   {
     id: 4,
-    name: "Emma Thompson",
-    title: "Wedding Videographer",
+    name: "Markos K",
+    title: "Entrepreneur",
+    country: "🇬🇷",
     content:
-      "I send all my overflow work to Mementiq. Their attention to emotion and storytelling in wedding videos is unmatched.",
+      "Mementiq did an incredible job editing and producing one of the most powerful reels from Vietnam Nomad Fest 2025. As Co-Founder of the festival, I sent over 30 raw interview clips, and what they delivered was beyond impressive. It captured our community's spirit, energy, and diversity that deeply resonated with our audience.",
     avatar:
-      "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100",
     rating: 5,
   },
   {
     id: 5,
-    name: "Carlos Santos",
-    title: "Fitness Coach",
+    name: "Ethan B",
+    title: "Coach",
+    country: "🇦🇺",
     content:
-      "My workout videos now look like they belong on a fitness channel! The dynamic cuts and energy they bring is incredible.",
+      "As someone who is new to advertising, I was not confident about how I came across on camera. I wanted my ad to look exceptional, Mementiq beautifully edited an ad which distracts from the parts I was a little bit critical of. I am now very excited and confident about posting the ad.",
     avatar:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100",
+    rating: 5,
+  },
+  {
+    id: 6,
+    name: "Jainkarn P",
+    title: "Outdoorsman",
+    country: "🇹🇭",
+    content:
+      "Big thanks to Mementiq for helping me out with video editing! Your eye for detail and smooth transitions made the video look amazing. Couldn’t have done it without you!",
+    avatar:
+      "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100",
     rating: 5,
   },
 ];
@@ -136,6 +152,9 @@ export default function TestimonialsSection() {
                       </p>
                       <p className="text-xs text-charcoal">
                         {testimonial.title}
+                      </p>
+                      <p className="text-lg mt-1">
+                        {testimonial.country}
                       </p>
                     </div>
                   </div>
