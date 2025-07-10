@@ -21,32 +21,7 @@ export default function Footer() {
               Professional video editing services. Everyone deserves to have
               their story told.
             </p>
-            <div className="flex space-x-4">
-              <a
-                href="#"
-                className="text-gray-300 hover:text-accent transition-colors duration-200"
-              >
-                <Linkedin className="h-6 w-6" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-300 hover:text-accent transition-colors duration-200"
-              >
-                <Twitter className="h-6 w-6" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-300 hover:text-accent transition-colors duration-200"
-              >
-                <Instagram className="h-6 w-6" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-300 hover:text-accent transition-colors duration-200"
-              >
-                <Youtube className="h-6 w-6" />
-              </a>
-            </div>
+
           </div>
 
           <div className="text-right">
