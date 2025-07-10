@@ -144,7 +144,7 @@ export default function TestimonialsSection() {
                     <img
                       src={testimonial.avatar}
                       alt={testimonial.name}
-                      className="w-10 h-10 rounded-full object-cover mr-3 border-2 border-primary/30"
+                      className="w-16 h-16 rounded-full object-cover mr-3 border-2 border-primary/30"
                     />
                     <div>
                       <p className="font-semibold text-light text-sm">
