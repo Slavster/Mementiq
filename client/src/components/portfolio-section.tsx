@@ -182,7 +182,7 @@ export default function PortfolioSection() {
         </div>
 
         <div
-          className="relative h-[700px] flex items-center justify-center overflow-hidden"
+          className="relative h-[650px] flex items-center justify-center overflow-hidden"
           onWheel={handleWheel}
           ref={containerRef}
         >
@@ -235,7 +235,7 @@ export default function PortfolioSection() {
                     <video
                       ref={(el) => (videoRefs.current[item.id] = el)}
                       className={`${
-                        isActive ? "w-[480px] h-[540px]" : "w-80 h-96"
+                        isActive ? "w-[420px] h-[470px]" : "w-80 h-96"
                       } object-cover ${
                         playingVideo === item.id ? "block" : "hidden"
                       } transition-all duration-700`}
@@ -265,7 +265,7 @@ export default function PortfolioSection() {
                       src={item.thumbnail}
                       alt={item.alt}
                       className={`${
-                        isActive ? "w-[480px] h-[540px]" : "w-80 h-96"
+                        isActive ? "w-[420px] h-[470px]" : "w-80 h-96"
                       } object-cover ${
                         playingVideo === item.id ? "hidden" : "block"
                       } transition-all duration-700`}
