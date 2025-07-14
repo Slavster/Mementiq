@@ -84,6 +84,26 @@ The application uses PostgreSQL with the following tables:
 
 ## Changelog
 
+### July 14, 2025 - Production Database Migration (COMPLETED)
+- **Problem**: In-memory storage for email signups wasn't production-ready - data lost on server restart
+- **User Requirement**: Production-ready email capture system with persistent storage
+- **Solution Implemented**: Complete migration from in-memory to PostgreSQL database storage
+- **Key Features**:
+  - PostgreSQL database with proper schema and constraints
+  - Drizzle ORM integration with type-safe database operations
+  - Persistent email storage that survives server restarts
+  - Duplicate email prevention via database unique constraints
+  - Ordered email retrieval by creation timestamp
+- **Technical Implementation**:
+  - Created `server/db.ts` with Neon serverless PostgreSQL connection
+  - Replaced `MemStorage` with `DatabaseStorage` class implementing same interface
+  - Used `npm run db:push` to sync schema with production database
+  - Maintained existing API endpoints with enhanced error handling
+- **Database Schema**: 
+  - `email_signups` table with id, email (unique), and created_at timestamp
+  - Proper foreign key relationships and constraints
+- **Production Benefits**: Scalable, persistent, backup-ready email collection system
+
 ### July 10, 2025 - Click-to-Play Video System (COMPLETED)
 - **Problem**: Videos were stuttering after first frame due to HTTP Range chunking and complex buffering strategies
 - **User Requirement**: Click-to-play videos with immediate playback, position tracking, and seamless switching between videos
