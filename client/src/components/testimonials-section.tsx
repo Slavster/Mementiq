@@ -88,8 +88,8 @@ export default function TestimonialsSection() {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-light mb-4">Client Stories</h2>
           <p className="text-xl text-charcoal max-w-3xl mx-auto">
-            Hear from creators, influencers, and content makers who've
-            transformed their videos with our editing services.
+            Hear from others who are already turning everyday moments into
+            unforgettable memories, beautiful stories, and powerful ads.
           </p>
         </div>
 
@@ -147,9 +147,7 @@ export default function TestimonialsSection() {
                       <p className="text-xs text-charcoal">
                         {testimonial.title}
                       </p>
-                      <p className="text-lg">
-                        {testimonial.country}
-                      </p>
+                      <p className="text-lg">{testimonial.country}</p>
                     </div>
                   </div>
                 </CardContent>
