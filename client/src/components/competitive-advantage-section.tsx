@@ -57,7 +57,7 @@ export default function CompetitiveAdvantageSection() {
           <h3 className="text-3xl font-bold text-light text-center mb-8">
             The Competition
           </h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 gap-4 md:gap-6 max-w-6xl mx-auto">
             {/* Agencies Card */}
             <Card className="bg-red-900/20 border-2 border-red-800/50 rounded-2xl hover:border-red-600/70 transition-all duration-300">
               <CardContent className="p-8">
