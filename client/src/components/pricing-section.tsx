@@ -6,35 +6,40 @@ import { useState } from "react";
 
 const subscriptionPlans = [
   {
-    name: "2x Weekly Delivery",
+    name: "Growth Accelerator",
     cadence: "2 videos per week",
     price: "$18",
-    monthlyTotal: "$144/month",
+    monthlyTotal: "$144 billed monthly",
     description:
-      "Perfect for active content creators who need consistent output",
-    features: ["2 videos weekly", "48-hour turnaround guaranteed"],
+      "Perfect for committed creators looking to increase their reach",
+    features: [
+      "2 videos delivered every week",
+      "48-hour turnaround guaranteed",
+    ],
     highlighted: true,
-    buttonText: "Start 2x Weekly Plan",
+    buttonText: "Start Bi-Weekly Plan",
     buttonVariant: "default" as const,
   },
   {
-    name: "Weekly Delivery",
+    name: "Consistency Club",
     cadence: "1 video per week",
     price: "$19",
-    monthlyTotal: "$76/month",
-    description: "Ideal for businesses and personal projects",
-    features: ["1 video weekly", "4-day turnaround guaranteed"],
+    monthlyTotal: "$76 billed monthly",
+    description:
+      "Ideal for progressing your business, hobby, and personal projects",
+    features: ["1 video delivered every week", "4-day turnaround guaranteed"],
     highlighted: false,
     buttonText: "Start Weekly Plan",
     buttonVariant: "outline" as const,
   },
   {
-    name: "Monthly Delivery",
+    name: "Creative Spark",
     cadence: "1 video per month",
     price: "$20",
-    monthlyTotal: "$20/month",
-    description: "Great for occasional high-quality content",
-    features: ["1 video monthly", "7-day turnaround guaranteed"],
+    monthlyTotal: "$20 billed monthly",
+    description:
+      "Our most accessible plan, designed to let everyone share their moments",
+    features: ["1 video delivered every month", "7-day turnaround guaranteed"],
     highlighted: false,
     buttonText: "Start Monthly Plan",
     buttonVariant: "outline" as const,
@@ -47,11 +52,11 @@ const prepaidPackages = [
     videoCount: 5,
     price: "$25",
     totalPrice: "$125",
-    description: "Great for highlighting those special moments",
+    description: "Great for letting those special moments shine",
     features: [
       "5 video editing credits",
       "Great for longer content",
-      "1 credit = 3 minutes of final video",
+      "1 credit = up to 3 minutes of final video",
       "Use anytime within 1 year",
     ],
     highlighted: false,
@@ -63,11 +68,11 @@ const prepaidPackages = [
     videoCount: 10,
     price: "$24",
     totalPrice: "$240",
-    description: "For budding content creators",
+    description: "Creative exploration and everyday storytelling",
     features: [
       "10 video editing credits",
       "Great for longer content",
-      "1 credit = 3 minutes of final video",
+      "1 credit = up to 3 minutes of final video",
       "Use anytime within 1 year",
     ],
     highlighted: false,
@@ -83,7 +88,7 @@ const prepaidPackages = [
     features: [
       "20 video editing credits",
       "Great for longer content",
-      "1 credit = 3 minutes of final video",
+      "1 credit = up to 3 minutes of final video",
       "Use anytime within 1 year",
     ],
     highlighted: true,
@@ -327,20 +332,20 @@ export default function PricingSection() {
               </p>
               <div className="text-3xl font-bold text-orange-400 mb-2">$5</div>
               <p className="text-sm text-gray-400 mb-6">per revision request</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
-                <div className="flex items-center">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300 max-w-md mx-auto">
+                <div className="flex items-center justify-center md:justify-start">
                   <Check className="h-4 w-4 text-orange-400 mr-2" />
                   Minor tweaks & adjustments
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center justify-center md:justify-start">
                   <Check className="h-4 w-4 text-orange-400 mr-2" />
                   48-hour turnaround
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center justify-center md:justify-start">
                   <Check className="h-4 w-4 text-orange-400 mr-2" />
                   Color & audio changes
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center justify-center md:justify-start">
                   <Check className="h-4 w-4 text-orange-400 mr-2" />
                   Text & graphic updates
                 </div>
