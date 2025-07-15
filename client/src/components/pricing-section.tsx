@@ -435,10 +435,8 @@ export default function PricingSection() {
                 </div>
               </div>
 
-              <Button
-                onClick={() => {
-                  const subject = "Custom Package Request";
-                  const body = `
+              <a
+                href={`mailto:mementiq@seraphventures.net?subject=${encodeURIComponent("Custom Package Request")}&body=${encodeURIComponent(`
 
 Name:
 Business Name:
@@ -454,14 +452,15 @@ Max Turnaround Time:
 Budget:
 
 Special / Custom Editing Requests:
-`;
-                  const mailtoLink = `mailto:mementiq@seraphventures.net?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                  window.location.href = mailtoLink;
-                }}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 text-lg font-semibold hover:from-indigo-500 hover:to-purple-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
+`)}`}
+                className="inline-block"
               >
-                Contact Sales
-              </Button>
+                <Button
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 text-lg font-semibold hover:from-indigo-500 hover:to-purple-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                >
+                  Contact Sales
+                </Button>
+              </a>
             </CardContent>
           </Card>
         </div>
