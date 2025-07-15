@@ -1,7 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { X, Check, Building, User, Zap } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function CompetitiveAdvantageSection() {
+  const [, setLocation] = useLocation();
+  
   const competitors = [
     {
       type: "Agencies",
@@ -143,7 +146,10 @@ export default function CompetitiveAdvantageSection() {
             <p className="text-xl text-gray-400 mb-6">
               That simple. All for a low and transparent per-video rate.
             </p>
-            <button className="bg-gradient-to-r from-primary to-accent text-dark font-semibold px-8 py-4 rounded-xl hover:shadow-lg hover:shadow-accent/25 transition-all duration-300 transform hover:scale-105">
+            <button 
+              onClick={() => setLocation('/auth')}
+              className="bg-gradient-to-r from-primary to-accent text-dark font-semibold px-8 py-4 rounded-xl hover:shadow-lg hover:shadow-accent/25 transition-all duration-300 transform hover:scale-105"
+            >
               Start Your First Video
             </button>
           </div>

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -51,10 +53,10 @@ export default function Navigation() {
                 Pricing
               </button>
               <Button 
-                onClick={() => scrollToSection('contact')}
+                onClick={() => setLocation('/auth')}
                 className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
               >
-                Get Started
+                Login or Get Started
               </Button>
             </div>
           </div>
@@ -101,10 +103,10 @@ export default function Navigation() {
                 Pricing
               </button>
               <Button 
-                onClick={() => scrollToSection('contact')}
+                onClick={() => setLocation('/auth')}
                 className="w-full mt-2 bg-accent text-secondary hover:bg-yellow-500 font-semibold"
               >
-                Get Started
+                Login or Get Started
               </Button>
             </div>
           </div>
