@@ -1,9 +1,19 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertEmailSignupSchema } from "../shared/schema.js";
+import { 
+  insertEmailSignupSchema, 
+  insertUserSchema, 
+  loginUserSchema,
+  insertProjectSchema,
+  updateProjectSchema,
+  insertProjectFileSchema 
+} from "../shared/schema.js";
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
+import bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
+import "./types"; // Import session types
 
 // Initialize Object Storage client
 const objectStorageClient = new Client({ bucketId: "replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9" });
@@ -135,6 +145,367 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: "Failed to retrieve email signups" 
       });
+    }
+  });
+
+  // User Registration
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "User with this email already exists"
+        });
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      
+      // Generate verification token
+      const verificationToken = randomBytes(32).toString('hex');
+      
+      // Create user
+      const user = await storage.createUser({
+        ...validatedData,
+        password: hashedPassword,
+        verificationToken
+      });
+      
+      res.status(201).json({
+        success: true,
+        message: "User registered successfully. Please check your email for verification.",
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          company: user.company,
+          verified: !!user.verifiedAt
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid input data",
+          errors: error.errors
+        });
+      } else {
+        console.error('Registration error:', error);
+        res.status(500).json({
+          success: false,
+          message: "Registration failed"
+        });
+      }
+    }
+  });
+
+  // User Login
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const validatedData = loginUserSchema.parse(req.body);
+      
+      // Find user
+      const user = await storage.getUserByEmail(validatedData.email);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid email or password"
+        });
+      }
+      
+      // Check password
+      const isPasswordValid = await bcrypt.compare(validatedData.password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid email or password"
+        });
+      }
+      
+      // Check if email is verified
+      if (!user.verifiedAt) {
+        return res.status(403).json({
+          success: false,
+          message: "Please verify your email before logging in"
+        });
+      }
+      
+      // Set session
+      req.session.userId = user.id;
+      
+      res.json({
+        success: true,
+        message: "Login successful",
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          company: user.company,
+          verified: true
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid input data",
+          errors: error.errors
+        });
+      } else {
+        console.error('Login error:', error);
+        res.status(500).json({
+          success: false,
+          message: "Login failed"
+        });
+      }
+    }
+  });
+
+  // User Logout
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Logout failed"
+        });
+      }
+      res.json({
+        success: true,
+        message: "Logged out successfully"
+      });
+    });
+  });
+
+  // Email Verification
+  app.get("/api/auth/verify-email/:token", async (req, res) => {
+    try {
+      const token = req.params.token;
+      
+      // Find user with this token
+      const user = await storage.verifyUser(token);
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired verification token"
+        });
+      }
+      
+      // Update user verification status
+      await storage.updateUserVerification(user.id, new Date());
+      
+      res.json({
+        success: true,
+        message: "Email verified successfully! You can now log in."
+      });
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Email verification failed"
+      });
+    }
+  });
+
+  // Get Current User
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated"
+        });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          company: user.company,
+          verified: !!user.verifiedAt
+        }
+      });
+    } catch (error) {
+      console.error('Get current user error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get user data"
+      });
+    }
+  });
+
+  // Project Management Routes
+  
+  // Get user's projects
+  app.get("/api/projects", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated"
+        });
+      }
+      
+      const projects = await storage.getProjectsByUser(req.session.userId);
+      res.json({
+        success: true,
+        projects
+      });
+    } catch (error) {
+      console.error('Get projects error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get projects"
+      });
+    }
+  });
+
+  // Create new project
+  app.post("/api/projects", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated"
+        });
+      }
+      
+      const validatedData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(req.session.userId, validatedData);
+      
+      res.status(201).json({
+        success: true,
+        message: "Project created successfully",
+        project
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid project data",
+          errors: error.errors
+        });
+      } else {
+        console.error('Create project error:', error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to create project"
+        });
+      }
+    }
+  });
+
+  // Get project by ID
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated"
+        });
+      }
+      
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found"
+        });
+      }
+      
+      // Check if user owns this project
+      if (project.userId !== req.session.userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied"
+        });
+      }
+      
+      // Get project files
+      const files = await storage.getProjectFiles(projectId);
+      
+      res.json({
+        success: true,
+        project: {
+          ...project,
+          files
+        }
+      });
+    } catch (error) {
+      console.error('Get project error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get project"
+      });
+    }
+  });
+
+  // Update project
+  app.put("/api/projects/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated"
+        });
+      }
+      
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found"
+        });
+      }
+      
+      // Check if user owns this project
+      if (project.userId !== req.session.userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied"
+        });
+      }
+      
+      const validatedData = updateProjectSchema.parse(req.body);
+      const updatedProject = await storage.updateProject(projectId, validatedData);
+      
+      res.json({
+        success: true,
+        message: "Project updated successfully",
+        project: updatedProject
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid project data",
+          errors: error.errors
+        });
+      } else {
+        console.error('Update project error:', error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to update project"
+        });
+      }
     }
   });
 
