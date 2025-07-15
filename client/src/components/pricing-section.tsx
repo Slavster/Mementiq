@@ -439,19 +439,21 @@ export default function PricingSection() {
                 href={`mailto:mementiq@seraphventures.net?subject=${encodeURIComponent("Custom Package Request")}&body=${encodeURIComponent(`
 
 Name:
-Business Name:
-Contact Number:
-Existing Channels:
+Business Name (if applicable):
+Email:
+Phone Number (including country code):
+Time Zone:
 
-Description of content and goals:
+Links to existing channels:
+Briefly describe your content goals:
 
-Expected Content Length:
-Platforms of Interest:
-Frequency of Posts:
-Max Turnaround Time:
-Budget:
+What platforms are you targeting? (e.g. TikTok, YouTube, Instagram)
+Typical video length (rough estimate):
+Posting frequency or number of videos needed:
+Max turnaround time required:
+Estimated monthly budget or budget range:
 
-Special / Custom Editing Requests:
+Any special editing or custom requests?
 `)}`}
                 className="inline-block"
               >
