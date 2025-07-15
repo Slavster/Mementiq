@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -27,18 +30,51 @@ interface Project {
   tallyFormUrl?: string;
 }
 
+// Helper functions for project status
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'draft':
+      return 'bg-gray-600';
+    case 'in_progress':
+      return 'bg-blue-600';
+    case 'review':
+      return 'bg-yellow-600';
+    case 'completed':
+      return 'bg-green-600';
+    case 'on_hold':
+      return 'bg-orange-600';
+    default:
+      return 'bg-gray-600';
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'draft':
+      return <AlertCircle className="h-3 w-3" />;
+    case 'in_progress':
+      return <Clock className="h-3 w-3" />;
+    case 'review':
+      return <Clock className="h-3 w-3" />;
+    case 'completed':
+      return <CheckCircle className="h-3 w-3" />;
+    case 'on_hold':
+      return <AlertCircle className="h-3 w-3" />;
+    default:
+      return <AlertCircle className="h-3 w-3" />;
+  }
+};
+
 export default function DashboardPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newProjectTitle, setNewProjectTitle] = useState("");
 
   // Get current user
   const { data: userData, isLoading: userLoading } = useQuery({
     queryKey: ['/api/auth/me'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/auth/me');
-      return response.json();
-    },
     retry: false,
     onError: () => {
       setLocation('/auth');
@@ -48,19 +84,45 @@ export default function DashboardPage() {
   // Get user projects
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
     queryKey: ['/api/projects'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/projects');
+    enabled: !!userData?.success
+  });
+
+  // Create project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: async (projectData: { title: string; tallyFormUrl?: string }) => {
+      const response = await apiRequest('POST', '/api/projects', projectData);
       return response.json();
     },
-    enabled: !!userData?.success
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+        toast({
+          title: "Project created!",
+          description: "Your new video project has been created successfully.",
+        });
+        setShowCreateForm(false);
+        setNewProjectTitle("");
+      } else {
+        toast({
+          title: "Failed to create project",
+          description: data.message || "Please try again.",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create project",
+        description: `An error occurred: ${error.message || 'Please try again.'}`,
+        variant: "destructive"
+      });
+    }
   });
 
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('/api/auth/logout', {
-        method: 'POST'
-      });
+      const response = await apiRequest('POST', '/api/auth/logout', {});
       return response.json();
     },
     onSuccess: () => {
@@ -77,31 +139,7 @@ export default function DashboardPage() {
     logoutMutation.mutate();
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-500';
-      case 'in_progress':
-        return 'bg-blue-500';
-      case 'review':
-        return 'bg-yellow-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'in_progress':
-        return <Clock className="h-4 w-4" />;
-      case 'review':
-        return <AlertCircle className="h-4 w-4" />;
-      default:
-        return <Video className="h-4 w-4" />;
-    }
-  };
 
   if (userLoading) {
     return (
@@ -182,15 +220,10 @@ export default function DashboardPage() {
             <h2 className="text-3xl font-bold text-white">Your Projects</h2>
             <Button 
               className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
-              onClick={() => {
-                toast({
-                  title: "Coming Soon",
-                  description: "Project creation will be available in the next phase!",
-                });
-              }}
+              onClick={() => setShowCreateForm(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              New Project
+              + New Video Request
             </Button>
           </div>
 
@@ -200,21 +233,16 @@ export default function DashboardPage() {
             <Card className="bg-black/20 backdrop-blur-xl border-gray-800/30 text-white">
               <CardContent className="py-16 text-center">
                 <Video className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
+                <h3 className="text-xl font-semibold mb-2">Ready to create something amazing?</h3>
                 <p className="text-gray-400 mb-6">
-                  Start your first video editing project to get started
+                  Transform your vision into professional video content. Start your first project and let our expert team bring your ideas to life.
                 </p>
                 <Button 
                   className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
-                  onClick={() => {
-                    toast({
-                      title: "Coming Soon",
-                      description: "Project creation will be available in the next phase!",
-                    });
-                  }}
+                  onClick={() => setShowCreateForm(true)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Project
+                  Create Your First Video Request
                 </Button>
               </CardContent>
             </Card>
@@ -258,6 +286,59 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Create Project Dialog */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-[#2abdee]">Create New Video Request</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Start a new video editing project. Give it a descriptive title that will help you track its progress.
+            </DialogDescription>
+          </DialogHeader>
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (newProjectTitle.trim()) {
+                createProjectMutation.mutate({ title: newProjectTitle.trim() });
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="project-title">Project Title</Label>
+              <Input
+                id="project-title"
+                placeholder="e.g., Product Launch Video, Conference Highlights, etc."
+                value={newProjectTitle}
+                onChange={(e) => setNewProjectTitle(e.target.value)}
+                className="bg-black/20 border-gray-700 text-white placeholder:text-gray-400"
+                required
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setNewProjectTitle("");
+                }}
+                className="border-gray-700 text-gray-300 hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
+                disabled={createProjectMutation.isPending || !newProjectTitle.trim()}
+              >
+                {createProjectMutation.isPending ? "Creating..." : "Create Project"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
