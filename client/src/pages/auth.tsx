@@ -39,10 +39,7 @@ export default function AuthPage() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
-      const response = await apiRequest('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      const response = await apiRequest('POST', '/api/auth/login', data);
       return response.json();
     },
     onSuccess: (data) => {
@@ -71,11 +68,11 @@ export default function AuthPage() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupData) => {
-      const response = await apiRequest('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
-      return response.json();
+      console.log('Sending signup data:', data);
+      const response = await apiRequest('POST', '/api/auth/register', data);
+      const result = await response.json();
+      console.log('Signup response:', result);
+      return result;
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -95,9 +92,10 @@ export default function AuthPage() {
       }
     },
     onError: (error) => {
+      console.error('Signup error:', error);
       toast({
-        title: "Signup failed",
-        description: "An error occurred during signup. Please try again.",
+        title: "Signup failed", 
+        description: `An error occurred during signup: ${error.message || 'Please try again.'}`,
         variant: "destructive"
       });
     }
