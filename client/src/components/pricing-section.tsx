@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Plus, CreditCard, Calendar, Scissors } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 const subscriptionPlans = [
   {
@@ -101,6 +102,7 @@ export default function PricingSection() {
   const [selectedTab, setSelectedTab] = useState<"subscription" | "prepaid">(
     "subscription",
   );
+  const [, setLocation] = useLocation();
 
   const scrollToContact = () => {
     const element = document.getElementById("contact");
@@ -111,7 +113,7 @@ export default function PricingSection() {
 
   const handlePlanSelect = (planName: string) => {
     console.log(`Selected plan: ${planName}`);
-    scrollToContact();
+    setLocation('/auth');
   };
 
   const currentPlans =

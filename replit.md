@@ -84,6 +84,23 @@ The application uses PostgreSQL with the following tables:
 
 ## Changelog
 
+### July 15, 2025 - User Name Field Update (COMPLETED)
+- **Problem**: Authentication form was using single "name" field instead of separate firstName and lastName fields
+- **User Requirement**: Collect firstName and lastName separately in signup form for better user experience
+- **Solution Implemented**: Updated database schema and frontend forms to use firstName/lastName fields
+- **Key Changes**:
+  - Updated database schema to replace 'name' field with 'firstName' and 'lastName' fields
+  - Modified signup form to collect first and last names separately
+  - Updated dashboard to display full name properly
+  - Updated all authentication API responses to include firstName and lastName
+  - Maintained backward compatibility during schema migration
+- **Technical Implementation**:
+  - Added firstName and lastName columns to users table
+  - Updated shared schema types and validation
+  - Modified frontend forms and interfaces
+  - Updated server routes to handle new field structure
+  - Tested all authentication flows with new field structure
+
 ### July 15, 2025 - Phase 1: User Authentication System (COMPLETED)
 - **Problem**: Marketing website needed user accounts and project management capabilities
 - **User Requirement**: Complete user authentication system with email verification and secure password handling
@@ -104,7 +121,7 @@ The application uses PostgreSQL with the following tables:
   - Added proper TypeScript session types declaration
   - Database schema includes users, projects, project_files, and project_status_log tables
 - **Database Schema**: 
-  - `users` table with email verification support (id, email, password, name, company, created_at, verified_at, verification_token)
+  - `users` table with email verification support (id, email, password, firstName, lastName, company, created_at, verified_at, verification_token)
   - `projects` table with user relationships (id, user_id, title, status, vimeo_folder_id, tally_form_url, created_at, updated_at)
   - `project_files` table for file tracking (id, project_id, vimeo_video_id, filename, file_type, file_size, upload_date)
   - `project_status_log` table for audit trail (id, project_id, old_status, new_status, changed_at)
