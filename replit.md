@@ -84,6 +84,21 @@ The application uses PostgreSQL with the following tables:
 
 ## Changelog
 
+### July 15, 2025 - Authentication API Fix (COMPLETED)
+- **Problem**: Users experiencing "unspecified error" when creating accounts and logging in
+- **Root Cause**: Incorrect API request parameter order and email verification requirement not communicated clearly
+- **Solution Implemented**: Fixed API calls and verified user accounts for testing
+- **Key Fixes**:
+  - Corrected apiRequest function calls to use proper parameter order (method, url, data)
+  - Added better error logging and user feedback for authentication failures
+  - Verified that email verification is required before login (as designed)
+  - Manually verified test user account to enable login testing
+- **Technical Implementation**:
+  - Updated login and signup mutations to use correct API format
+  - Enhanced error handling with detailed error messages and console logging
+  - Confirmed authentication flow works correctly after email verification
+- **Result**: Authentication system now working properly with clear error messages
+
 ### July 15, 2025 - User Name Field Update (COMPLETED)
 - **Problem**: Authentication form was using single "name" field instead of separate firstName and lastName fields
 - **User Requirement**: Collect firstName and lastName separately in signup form for better user experience
