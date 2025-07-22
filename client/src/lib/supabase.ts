@@ -16,7 +16,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    flowType: 'pkce'
   }
 })
 
@@ -41,13 +42,33 @@ export const signIn = async (email: string, password: string) => {
 }
 
 export const signInWithGoogle = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth`
+  try {
+    console.log('Starting Google OAuth with URL:', window.location.origin)
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/auth'
+      }
+    })
+    
+    if (error) {
+      console.error('Google OAuth error:', error)
+      throw error
     }
-  })
-  return { data, error }
+    
+    console.log('Google OAuth response:', data)
+    return { data, error }
+  } catch (err: any) {
+    console.error('Google OAuth exception:', err)
+    
+    // Check if it's a configuration error
+    if (err.message?.includes('Provider not found') || err.message?.includes('provider')) {
+      throw new Error('Google login is not configured. Please check your Supabase project settings.')
+    }
+    
+    throw err
+  }
 }
 
 
