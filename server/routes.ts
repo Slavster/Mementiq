@@ -185,68 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // User Login
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const validatedData = loginUserSchema.parse(req.body);
-      
-      // Find user
-      const user = await storage.getUserByEmail(validatedData.email);
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid email or password"
-        });
-      }
-      
-      // Check password
-      const isPasswordValid = await bcrypt.compare(validatedData.password, user.password);
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid email or password"
-        });
-      }
-      
-      // Check if email is verified
-      if (!user.verifiedAt) {
-        return res.status(403).json({
-          success: false,
-          message: "Please verify your email before logging in"
-        });
-      }
-      
-      // Set session
-      req.session.userId = user.id;
-      
-      res.json({
-        success: true,
-        message: "Login successful",
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          company: user.company,
-          verified: true
-        }
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid input data",
-          errors: error.errors
-        });
-      } else {
-        console.error('Login error:', error);
-        res.status(500).json({
-          success: false,
-          message: "Login failed"
-        });
-      }
-    }
-  });
+
 
   // User Logout
   app.post("/api/auth/logout", (req, res) => {
