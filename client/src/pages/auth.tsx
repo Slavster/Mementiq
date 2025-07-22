@@ -134,27 +134,18 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       console.log('Initiating Google login...')
-      const { data, error } = await signInWithGoogle();
-      console.log('Google login result:', { data, error })
-      
-      if (error) {
-        console.error('Google login error:', error)
-        toast({
-          title: "Google login failed",
-          description: error.message,
-          variant: "destructive"
-        });
-        setIsLoading(false);
-      }
-      // Don't set loading to false here if successful - redirect will handle it
+      await signInWithGoogle();
+      // If successful, the browser will be redirected to Google
+      // Loading state will continue until redirect
     } catch (error: any) {
-      console.error('Google login exception:', error)
+      console.error('Google login failed:', error)
+      setIsLoading(false);
+      
       toast({
-        title: "Google login failed",
-        description: error.message || "An unexpected error occurred",
+        title: "Google login setup required",
+        description: error.message || "Please configure Google OAuth in your Supabase project dashboard under Authentication > Providers > Google.",
         variant: "destructive"
       });
-      setIsLoading(false);
     }
   };
 
@@ -163,7 +154,19 @@ export default function AuthPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+        <div className="text-white text-xl">Loading authentication...</div>
+      </div>
+    );
+  }
+
+  // Additional check for loading state during Google OAuth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
+        <div className="text-white text-xl flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          Authenticating with Google...
+        </div>
       </div>
     );
   }
