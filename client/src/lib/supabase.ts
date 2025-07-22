@@ -27,7 +27,13 @@ export const signUp = async (email: string, password: string, metadata: { firstN
     email,
     password,
     options: {
-      data: metadata
+      data: {
+        firstName: metadata.firstName,
+        lastName: metadata.lastName,
+        company: metadata.company,
+        first_name: metadata.firstName, // Also set standard field
+        last_name: metadata.lastName   // Also set standard field
+      }
     }
   })
   return { data, error }
