@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -11,9 +11,38 @@ import {
 } from "../shared/schema.js";
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
-import bcrypt from "bcrypt";
-import { randomBytes } from "crypto";
+import { verifySupabaseToken } from "./supabase";
 import "./types"; // Import session types
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    company?: string;
+    verified: boolean;
+  };
+}
+
+// Middleware to verify Supabase auth
+async function requireAuth(req: AuthenticatedRequest, res: Response, next: Function) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  const result = await verifySupabaseToken(token);
+  
+  if (!result.success) {
+    return res.status(401).json({ success: false, message: result.error });
+  }
+  
+  req.user = result.user;
+  next();
+}
 
 // Initialize Object Storage client
 const objectStorageClient = new Client({ bucketId: "replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9" });
@@ -148,60 +177,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User Registration
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const validatedData = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(validatedData.email);
-      if (existingUser) {
-        return res.status(409).json({
-          success: false,
-          message: "User with this email already exists"
-        });
-      }
-      
-      // Hash password
-      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-      
-      // Generate verification token
-      const verificationToken = randomBytes(32).toString('hex');
-      
-      // Create user
-      const user = await storage.createUser({
-        ...validatedData,
-        password: hashedPassword,
-        verificationToken
-      });
-      
-      res.status(201).json({
-        success: true,
-        message: "User registered successfully. Please check your email for verification.",
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          company: user.company,
-          verified: !!user.verifiedAt
-        }
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid input data",
-          errors: error.errors
-        });
-      } else {
-        console.error('Registration error:', error);
-        res.status(500).json({
-          success: false,
-          message: "Registration failed"
-        });
-      }
-    }
+  // Get current user (for Supabase auth)
+  app.get("/api/auth/me", requireAuth, async (req: AuthenticatedRequest, res) => {
+    res.json({
+      success: true,
+      user: req.user
+    });
   });
 
   // User Login
@@ -354,16 +335,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project Management Routes
   
   // Get user's projects
-  app.get("/api/projects", async (req, res) => {
+  app.get("/api/projects", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Not authenticated"
-        });
-      }
-      
-      const projects = await storage.getProjectsByUser(req.session.userId);
+      const projects = await storage.getProjectsByUser(req.user!.id);
       res.json({
         success: true,
         projects
@@ -378,17 +352,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new project
-  app.post("/api/projects", async (req, res) => {
+  app.post("/api/projects", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Not authenticated"
-        });
-      }
-      
       const validatedData = insertProjectSchema.parse(req.body);
-      const project = await storage.createProject(req.session.userId, validatedData);
+      const project = await storage.createProject(req.user!.id, validatedData);
       
       res.status(201).json({
         success: true,

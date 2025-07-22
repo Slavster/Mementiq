@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { signOut } from "@/lib/supabase";
 import { Plus, LogOut, Video, Clock, CheckCircle, AlertCircle } from "lucide-react";
 
 interface User {
@@ -72,19 +74,10 @@ export default function DashboardPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState("");
 
-  // Get current user
-  const { data: userData, isLoading: userLoading } = useQuery({
-    queryKey: ['/api/auth/me'],
-    retry: false,
-    onError: () => {
-      setLocation('/auth');
-    }
-  });
-
   // Get user projects
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
     queryKey: ['/api/projects'],
-    enabled: !!userData?.success
+    enabled: isAuthenticated
   });
 
   // Create project mutation
@@ -119,29 +112,35 @@ export default function DashboardPage() {
     }
   });
 
-  // Logout mutation
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/auth/logout', {});
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      setLocation('/');
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOut();
+      if (error) {
+        toast({
+          title: "Logout failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        queryClient.clear();
+        setLocation('/');
+        toast({
+          title: "Logged out",
+          description: "You've been logged out successfully.",
+        });
+      }
+    } catch (error: any) {
       toast({
-        title: "Logged out",
-        description: "You've been logged out successfully.",
+        title: "Logout failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive"
       });
     }
-  });
-
-  const handleLogout = () => {
-    logoutMutation.mutate();
   };
 
 
 
-  if (userLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
@@ -149,13 +148,21 @@ export default function DashboardPage() {
     );
   }
 
-  if (!userData?.success) {
-    setLocation('/auth');
-    return null;
+  if (!isAuthenticated || !user) {
+    return null; // Will be redirected by useEffect
   }
 
-  const user: User = userData.user;
   const projects: Project[] = projectsData?.projects || [];
+  
+  // Map Supabase user to expected User interface
+  const mappedUser: User = {
+    id: parseInt(user.id) || 0,
+    email: user.email || '',
+    firstName: user.user_metadata?.firstName || user.user_metadata?.first_name || '',
+    lastName: user.user_metadata?.lastName || user.user_metadata?.last_name || '',
+    company: user.user_metadata?.company || '',
+    verified: user.email_confirmed_at !== null
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary">
@@ -167,12 +174,11 @@ export default function DashboardPage() {
               <h1 className="text-[#2abdee] text-2xl font-bold">Mementiq</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-white">Welcome, {user.firstName}</span>
+              <span className="text-white">Welcome, {mappedUser.firstName}</span>
               <Button
                 onClick={handleLogout}
                 variant="outline"
                 className="text-white border-white hover:bg-white hover:text-black"
-                disabled={logoutMutation.isPending}
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -197,16 +203,16 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Name</p>
-                  <p className="text-lg font-semibold">{user.firstName} {user.lastName}</p>
+                  <p className="text-lg font-semibold">{mappedUser.firstName} {mappedUser.lastName}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Email</p>
-                  <p className="text-lg">{user.email}</p>
+                  <p className="text-lg">{mappedUser.email}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Status</p>
-                  <Badge variant={user.verified ? "default" : "destructive"}>
-                    {user.verified ? "Verified" : "Unverified"}
+                  <Badge variant={mappedUser.verified ? "default" : "destructive"}>
+                    {mappedUser.verified ? "Verified" : "Unverified"}
                   </Badge>
                 </div>
               </div>
