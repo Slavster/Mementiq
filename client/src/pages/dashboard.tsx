@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState("");
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects
   const { data: projectsData, isLoading: projectsLoading } = useQuery({

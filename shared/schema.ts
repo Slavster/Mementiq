@@ -3,20 +3,18 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(), // Changed to text for Supabase UUID
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   company: text("company"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   verifiedAt: timestamp("verified_at"),
-  verificationToken: text("verification_token"),
 });
 
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: text("user_id").references(() => users.id).notNull(), // Changed to text
   title: text("title").notNull(),
   status: text("status").notNull().default("draft"),
   vimeoFolderId: text("vimeo_folder_id"),

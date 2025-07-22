@@ -21,16 +21,14 @@ import { randomBytes } from "crypto";
 
 export interface IStorage {
   // User methods
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  verifyUser(token: string): Promise<User | undefined>;
-  updateUserVerification(id: number, verifiedAt: Date): Promise<void>;
   
   // Project methods
   getProject(id: number): Promise<Project | undefined>;
-  getProjectsByUser(userId: number): Promise<Project[]>;
-  createProject(userId: number, project: InsertProject): Promise<Project>;
+  getProjectsByUser(userId: string): Promise<Project[]>;
+  createProject(userId: string, project: InsertProject): Promise<Project>;
   updateProject(id: number, updates: UpdateProject): Promise<Project | undefined>;
   deleteProject(id: number): Promise<void>;
   
@@ -50,7 +48,7 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   // User methods
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
@@ -61,30 +59,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const verificationToken = randomBytes(32).toString('hex');
     const [user] = await db
       .insert(users)
-      .values({
-        ...insertUser,
-        verificationToken,
-      })
+      .values(insertUser)
       .returning();
     return user;
-  }
-
-  async verifyUser(token: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.verificationToken, token));
-    return user || undefined;
-  }
-
-  async updateUserVerification(id: number, verifiedAt: Date): Promise<void> {
-    await db
-      .update(users)
-      .set({ verifiedAt, verificationToken: null })
-      .where(eq(users.id, id));
   }
 
   // Project methods
@@ -93,7 +72,7 @@ export class DatabaseStorage implements IStorage {
     return project || undefined;
   }
 
-  async getProjectsByUser(userId: number): Promise<Project[]> {
+  async getProjectsByUser(userId: string): Promise<Project[]> {
     return await db
       .select()
       .from(projects)
@@ -101,7 +80,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(projects.createdAt));
   }
 
-  async createProject(userId: number, project: InsertProject): Promise<Project> {
+  async createProject(userId: string, project: InsertProject): Promise<Project> {
     const [newProject] = await db
       .insert(projects)
       .values({
