@@ -43,9 +43,15 @@ export default function AuthPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
+      console.log('User authenticated, redirecting to dashboard')
       setLocation('/dashboard');
     }
   }, [authLoading, isAuthenticated, setLocation]);
+
+  // Debug logging for auth state
+  useEffect(() => {
+    console.log('Auth page state:', { authLoading, isAuthenticated })
+  }, [authLoading, isAuthenticated]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,22 +133,27 @@ export default function AuthPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      const { error } = await signInWithGoogle();
+      console.log('Initiating Google login...')
+      const { data, error } = await signInWithGoogle();
+      console.log('Google login result:', { data, error })
+      
       if (error) {
+        console.error('Google login error:', error)
         toast({
           title: "Google login failed",
           description: error.message,
           variant: "destructive"
         });
+        setIsLoading(false);
       }
-      // Success case will be handled by auth state change
+      // Don't set loading to false here if successful - redirect will handle it
     } catch (error: any) {
+      console.error('Google login exception:', error)
       toast({
         title: "Google login failed",
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
     }
   };
