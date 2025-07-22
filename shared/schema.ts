@@ -49,12 +49,12 @@ export const emailSignups = pgTable("email_signups", {
 
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
+  id: true,
   email: true,
-  password: true,
   firstName: true,
   lastName: true,
   company: true,
-});
+}).partial({ id: true }); // id is optional for regular signup, required for Supabase user creation
 
 export const loginUserSchema = z.object({
   email: z.string().email(),

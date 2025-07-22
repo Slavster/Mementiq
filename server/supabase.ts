@@ -14,6 +14,9 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   }
 })
 
+// Import storage for user creation
+import { storage } from './storage.js'
+
 // Middleware to verify Supabase JWT tokens
 export async function verifySupabaseToken(token: string) {
   try {
@@ -23,18 +26,43 @@ export async function verifySupabaseToken(token: string) {
       return { success: false, error: error?.message || 'Invalid token' }
     }
     
+    // Extract user info from Google/Supabase metadata
+    const firstName = user.user_metadata?.firstName || 
+                     user.user_metadata?.first_name || 
+                     user.user_metadata?.full_name?.split(' ')[0] || 
+                     user.user_metadata?.name?.split(' ')[0] || ''
+    
+    const lastName = user.user_metadata?.lastName || 
+                    user.user_metadata?.last_name || 
+                    user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || 
+                    user.user_metadata?.name?.split(' ').slice(1).join(' ') || ''
+    
+    // Ensure user exists in our database
+    let dbUser = await storage.getUser(user.id)
+    if (!dbUser) {
+      // Create user in our database with Google account info
+      dbUser = await storage.createUser({
+        id: user.id,
+        email: user.email || '',
+        firstName: firstName,
+        lastName: lastName,
+        company: user.user_metadata?.company || ''
+      })
+    }
+    
     return { 
       success: true, 
       user: {
         id: user.id,
-        email: user.email,
-        firstName: user.user_metadata?.firstName || user.user_metadata?.first_name,
-        lastName: user.user_metadata?.lastName || user.user_metadata?.last_name,
-        company: user.user_metadata?.company,
+        email: user.email || '',
+        firstName: firstName,
+        lastName: lastName,
+        company: user.user_metadata?.company || '',
         verified: user.email_confirmed_at !== null
       }
     }
   } catch (error) {
+    console.error('Token verification error:', error)
     return { success: false, error: 'Token verification failed' }
   }
 }

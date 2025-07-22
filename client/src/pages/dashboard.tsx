@@ -157,10 +157,16 @@ export default function DashboardPage() {
   
   // Map Supabase user to expected User interface
   const mappedUser: User = {
-    id: parseInt(user.id) || 0,
+    id: 0, // Not used for display, kept for interface compatibility
     email: user.email || '',
-    firstName: user.user_metadata?.firstName || user.user_metadata?.first_name || '',
-    lastName: user.user_metadata?.lastName || user.user_metadata?.last_name || '',
+    firstName: user.user_metadata?.firstName || 
+               user.user_metadata?.first_name || 
+               user.user_metadata?.full_name?.split(' ')[0] ||
+               user.user_metadata?.name?.split(' ')[0] || '',
+    lastName: user.user_metadata?.lastName || 
+              user.user_metadata?.last_name || 
+              user.user_metadata?.full_name?.split(' ').slice(1).join(' ') ||
+              user.user_metadata?.name?.split(' ').slice(1).join(' ') || '',
     company: user.user_metadata?.company || '',
     verified: user.email_confirmed_at !== null
   };
