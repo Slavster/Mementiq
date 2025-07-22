@@ -84,6 +84,30 @@ The application uses PostgreSQL with the following tables:
 
 ## Changelog
 
+### July 22, 2025 - Supabase Authentication Migration (IN PROGRESS)
+- **Problem**: User requested social login capabilities (Google, Facebook) that aren't available with custom Express authentication
+- **User Requirement**: Replace custom auth system with Supabase Auth to enable social login providers
+- **Solution Implementing**: Complete migration from Express sessions to Supabase authentication
+- **Key Features**:
+  - Supabase Auth integration with social login support (Google, Facebook)
+  - Client-side authentication with @supabase/supabase-js
+  - JWT token-based API authentication replacing session-based auth
+  - Seamless auth state management with React hooks
+  - Automatic redirect handling for OAuth providers
+- **Technical Implementation**:
+  - Created Supabase client configuration with environment variables
+  - Built useAuth hook for centralized auth state management
+  - Updated frontend auth forms with social login buttons
+  - Implemented server middleware to verify Supabase JWT tokens
+  - Modified API routes to use Bearer token authentication
+  - Updated dashboard to work with Supabase user objects
+- **Architecture Changes**:
+  - Removed Express session middleware and bcrypt dependencies
+  - Replaced custom user registration/login with Supabase Auth API
+  - Updated queryClient to include Authorization headers
+  - Modified storage layer to work with Supabase user IDs (string format)
+- **Status**: Frontend auth complete, backend middleware implemented, testing social login setup
+
 ### July 15, 2025 - Dashboard & Project Management (COMPLETED)
 - **Problem**: Users needed a comprehensive dashboard to view and manage their video projects after successful login
 - **User Requirement**: Build main dashboard with project list, status tracking, timestamps, and "+ New Video Request" functionality
