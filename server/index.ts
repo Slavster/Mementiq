@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
@@ -7,8 +8,19 @@ import ConnectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// CORS configuration for Vimeo direct uploads
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://vimeo.com', 'https://*.vimeo.com'] 
+    : ['http://localhost:5000', 'https://vimeo.com', 'https://*.vimeo.com'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: false, limit: '100mb' }));
 
 // Session configuration
 const PgSession = ConnectPgSimple(session);
