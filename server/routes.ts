@@ -683,14 +683,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         project.vimeoFolderId || undefined
       );
 
+      console.log('Raw Vimeo uploadSession object:', uploadSession);
+      console.log('Upload session keys:', Object.keys(uploadSession));
+      
+      const sessionResponse = {
+        uploadUrl: uploadSession.upload_link,
+        videoUri: uploadSession.video_uri,
+        completeUri: uploadSession.complete_uri,
+        ticketId: uploadSession.ticket_id
+      };
+      
+      console.log('Sending upload session response:', sessionResponse);
+
       res.json({
         success: true,
-        uploadSession: {
-          uploadUrl: uploadSession.upload_link,
-          videoUri: uploadSession.video_uri,
-          completeUri: uploadSession.complete_uri,
-          ticketId: uploadSession.ticket_id
-        }
+        uploadSession: sessionResponse
       });
 
     } catch (error) {
