@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -35,7 +35,6 @@ import {
   Upload,
   Folder,
 } from "lucide-react";
-import VideoUpload from "@/components/VideoUpload";
 import DirectVideoUpload from "@/components/DirectVideoUpload";
 
 interface User {
@@ -416,32 +415,13 @@ export default function DashboardPage() {
 
               {/* Upload Section */}
               {selectedProject.vimeoFolderId ? (
-                <div className="space-y-4">
-                  <Tabs defaultValue="direct" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="direct">Direct to Vimeo</TabsTrigger>
-                      <TabsTrigger value="server">Via Server</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="direct">
-                      <DirectVideoUpload 
-                        projectId={selectedProject.id}
-                        onUploadComplete={() => {
-                          // Refresh project data
-                          queryClient.invalidateQueries({ queryKey: ['projects'] });
-                        }}
-                      />
-                    </TabsContent>
-                    <TabsContent value="server">
-                      <VideoUpload 
-                        projectId={selectedProject.id}
-                        onUploadComplete={() => {
-                          // Refresh project data
-                          queryClient.invalidateQueries({ queryKey: ['projects'] });
-                        }}
-                      />
-                    </TabsContent>
-                  </Tabs>
-                </div>
+                <DirectVideoUpload 
+                  projectId={selectedProject.id}
+                  onUploadComplete={() => {
+                    // Refresh project data
+                    queryClient.invalidateQueries({ queryKey: ['projects'] });
+                  }}
+                />
               ) : (
                 <Card className="bg-yellow-500/10 border-yellow-500/30">
                   <CardContent className="p-6 text-center">
