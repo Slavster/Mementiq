@@ -84,6 +84,32 @@ The application uses PostgreSQL with the following tables:
 
 ## Changelog
 
+### July 24, 2025 - CORS and Direct Vimeo Upload Integration (COMPLETED)
+- **Problem**: User requested CORS configuration for direct uploads to improve performance and handle large files
+- **User Requirement**: Enable direct client-to-Vimeo uploads bypassing server intermediary for better performance
+- **Solution Implemented**: Complete CORS configuration and direct upload system with TUS protocol
+- **Key Features**:
+  - CORS middleware configured for Vimeo domains and development/production origins
+  - Direct upload session creation API endpoints with authentication
+  - TUS (resumable upload) protocol implementation for large file uploads
+  - Dual upload interface: Direct to Vimeo vs Server-mediated uploads
+  - Real-time upload progress tracking with chunked upload support
+  - Automatic video folder management and completion handling
+- **Technical Implementation**:
+  - Added cors middleware with proper origin and header configuration
+  - Created vimeoUpload.ts service for direct Vimeo API integration
+  - Built DirectVideoUpload component with TUS protocol support
+  - Added upload-session and complete-upload API endpoints
+  - Implemented chunked upload with 8MB chunk size for reliability
+  - Enhanced dashboard with tabbed upload interface (Direct vs Server)
+- **Architecture Changes**:
+  - CORS headers properly configured for cross-origin Vimeo uploads
+  - New API endpoints for creating and completing direct upload sessions
+  - Dual upload strategy allowing users to choose upload method
+  - Enhanced security with project ownership validation for all upload endpoints
+- **Performance Benefits**: Direct uploads bypass server storage, reducing bandwidth and enabling faster uploads
+- **User Experience**: Tabbed interface allows users to choose between direct Vimeo uploads or traditional server uploads
+
 ### July 22, 2025 - Supabase Authentication Migration (COMPLETED)
 - **Problem**: User requested social login capabilities (Google only initially) that weren't available with custom Express authentication
 - **User Requirement**: Replace custom auth system with Supabase Auth to enable Google social login

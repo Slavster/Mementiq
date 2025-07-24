@@ -36,6 +36,7 @@ import {
   Folder,
 } from "lucide-react";
 import VideoUpload from "@/components/VideoUpload";
+import DirectVideoUpload from "@/components/DirectVideoUpload";
 
 interface User {
   id: number;
@@ -415,13 +416,32 @@ export default function DashboardPage() {
 
               {/* Upload Section */}
               {selectedProject.vimeoFolderId ? (
-                <VideoUpload 
-                  projectId={selectedProject.id}
-                  onUploadComplete={() => {
-                    // Refresh project data
-                    queryClient.invalidateQueries({ queryKey: ['projects'] });
-                  }}
-                />
+                <div className="space-y-4">
+                  <Tabs defaultValue="direct" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="direct">Direct to Vimeo</TabsTrigger>
+                      <TabsTrigger value="server">Via Server</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="direct">
+                      <DirectVideoUpload 
+                        projectId={selectedProject.id}
+                        onUploadComplete={() => {
+                          // Refresh project data
+                          queryClient.invalidateQueries({ queryKey: ['projects'] });
+                        }}
+                      />
+                    </TabsContent>
+                    <TabsContent value="server">
+                      <VideoUpload 
+                        projectId={selectedProject.id}
+                        onUploadComplete={() => {
+                          // Refresh project data
+                          queryClient.invalidateQueries({ queryKey: ['projects'] });
+                        }}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </div>
               ) : (
                 <Card className="bg-yellow-500/10 border-yellow-500/30">
                   <CardContent className="p-6 text-center">

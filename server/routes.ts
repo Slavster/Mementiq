@@ -14,6 +14,7 @@ import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
 import { vimeoService } from "./vimeo";
 import { upload, cleanupUploadedFiles, getProjectUploadSize } from "./upload";
+import { createUploadSession, completeUpload, getVideoDetails, moveVideoToFolder } from './vimeoUpload';
 import "./types"; // Import session types
 
 interface AuthenticatedRequest extends Request {
@@ -722,6 +723,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cleanupUploadedFiles(req.files as Express.Multer.File[]);
       }
       res.status(500).json({ success: false, message: "Upload failed" });
+    }
+  });
+
+  // Create direct Vimeo upload session
+  app.post("/api/projects/:id/upload-session", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const { fileName, fileSize } = req.body;
+
+      if (!fileName || !fileSize) {
+        return res.status(400).json({
+          success: false,
+          message: "fileName and fileSize are required"
+        });
+      }
+
+      // Get project and verify ownership
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found"
+        });
+      }
+
+      if (project.userId !== req.user!.id) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied"
+        });
+      }
+
+      // Check size limits (10GB per project)
+      const maxSize = 10 * 1024 * 1024 * 1024; // 10GB
+      const currentSize = await getProjectUploadSize(projectId);
+      
+      if (currentSize + fileSize > maxSize) {
+        return res.status(400).json({
+          success: false,
+          message: `Upload would exceed 10GB limit for this project. Current: ${Math.round(currentSize / 1024 / 1024)}MB, Requested: ${Math.round(fileSize / 1024 / 1024)}MB`
+        });
+      }
+
+      // Create upload session
+      const uploadSession = await createUploadSession(
+        fileName,
+        fileSize,
+        project.vimeoFolderId || undefined
+      );
+
+      res.json({
+        success: true,
+        uploadSession: {
+          uploadUrl: uploadSession.upload_link,
+          videoUri: uploadSession.video_uri,
+          completeUri: uploadSession.complete_uri,
+          ticketId: uploadSession.ticket_id
+        }
+      });
+
+    } catch (error) {
+      console.error('Create upload session error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create upload session"
+      });
+    }
+  });
+
+  // Complete direct Vimeo upload
+  app.post("/api/projects/:id/complete-upload", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const { completeUri, videoUri, fileName, fileSize } = req.body;
+
+      if (!completeUri || !videoUri || !fileName) {
+        return res.status(400).json({
+          success: false,
+          message: "completeUri, videoUri, and fileName are required"
+        });
+      }
+
+      // Get project and verify ownership
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found"
+        });
+      }
+
+      if (project.userId !== req.user!.id) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied"
+        });
+      }
+
+      // Complete the upload
+      await completeUpload(completeUri);
+
+      // Move video to project folder if needed
+      if (project.vimeoFolderId) {
+        try {
+          await moveVideoToFolder(videoUri, project.vimeoFolderId);
+        } catch (moveError) {
+          console.warn('Failed to move video to folder:', moveError);
+          // Continue even if move fails
+        }
+      }
+
+      // Get video details
+      const videoDetails = await getVideoDetails(videoUri);
+
+      // Save file record
+      const fileRecord = await storage.createProjectFile({
+        projectId,
+        vimeoVideoId: videoUri.replace('/videos/', ''),
+        filename: fileName,
+        fileType: 'video',
+        fileSize: fileSize || 0
+      });
+
+      res.json({
+        success: true,
+        message: "Upload completed successfully",
+        file: fileRecord,
+        videoDetails
+      });
+
+    } catch (error) {
+      console.error('Complete upload error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to complete upload"
+      });
     }
   });
 
