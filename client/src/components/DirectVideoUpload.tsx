@@ -182,9 +182,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         fileSize: uploadFile.file.size,
       });
 
+      console.log('=== SESSION CREATION DEBUG ===');
       console.log('Session data received:', sessionData);
       console.log('Session data type:', typeof sessionData);
       console.log('Session data keys:', sessionData ? Object.keys(sessionData) : 'null');
+      console.log('Session data JSON:', JSON.stringify(sessionData, null, 2));
       
       if (!sessionData || !sessionData.uploadSession) {
         console.error('Invalid session data structure:', {
@@ -197,6 +199,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       const uploadSession = sessionData.uploadSession;
       console.log('Upload session object:', uploadSession);
       console.log('Upload session keys:', Object.keys(uploadSession));
+      console.log('Upload session JSON:', JSON.stringify(uploadSession, null, 2));
       
       if (!uploadSession.uploadUrl) {
         console.error('Upload session missing uploadUrl:', uploadSession);
@@ -205,6 +208,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       }
       
       console.log('Starting TUS upload with URL:', uploadSession.uploadUrl);
+      console.log('=== SESSION CREATION COMPLETE ===');
 
       // Step 2: Upload directly to Vimeo using TUS protocol
       setSelectedFiles((prev) =>
