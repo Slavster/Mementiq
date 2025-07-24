@@ -85,8 +85,16 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
     },
   });
 
-  // Listen for messages from Tally iframe
+  // Load Tally script and listen for form submissions
   useEffect(() => {
+    // Load Tally embed script
+    const script = document.createElement('script');
+    script.innerHTML = `
+      var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]')==null){var s=d.createElement("script");s.src=w,s.onload=v,s.onerror=v,d.body.appendChild(s);}
+    `;
+    document.body.appendChild(script);
+
+    // Listen for messages from Tally iframe
     const handleMessage = (event: MessageEvent) => {
       // Only accept messages from Tally
       if (!event.origin.includes('tally.so')) {
@@ -94,22 +102,37 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
       }
 
       const data = event.data;
+      console.log('Message received from Tally:', data);
       
-      // Handle Tally form submission
-      if (data.type === 'tally_form_submission') {
-        console.log('Tally form submission received:', data);
+      // Handle Tally form submission - check for various possible event types
+      if (data.type === 'tally_form_submission' || 
+          data.type === 'form_submission' || 
+          (data.payload && data.payload.type === 'form_submission')) {
+        console.log('Tally form submission detected:', data);
+        
+        const submissionData = data.payload || data.submission || data;
         
         // Record the submission in our database
         recordSubmissionMutation.mutate({
-          tallySubmissionId: data.submissionId || `tally_${Date.now()}`,
-          submissionData: data.submission || {}
+          tallySubmissionId: submissionData.submissionId || submissionData.responseId || `tally_${Date.now()}_${projectId}`,
+          submissionData: submissionData
         });
       }
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [recordSubmissionMutation]);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      // Clean up script
+      const scripts = document.querySelectorAll('script');
+      scripts.forEach(s => {
+        if (s.innerHTML.includes('tally.so/widgets/embed.js')) {
+          s.remove();
+        }
+      });
+    };
+  }, [recordSubmissionMutation, userId, projectId]);
 
   if (isLoading) {
     return (
@@ -215,17 +238,19 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
               </AlertDescription>
             </Alert>
             
-            {/* Tally Form Embed - Placeholder until you provide the embed code */}
-            <div className="border rounded-lg p-4 bg-gray-50 min-h-[400px] flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <FileText className="h-12 w-12 mx-auto text-gray-400" />
-                <p className="text-gray-600">
-                  Tally form will be embedded here
-                </p>
-                <p className="text-sm text-gray-500">
-                  Please provide the Tally embed code to display the form
-                </p>
-              </div>
+            {/* Tally Form Embed */}
+            <div className="border rounded-lg overflow-hidden">
+              <iframe 
+                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}`}
+                loading="lazy" 
+                width="100%" 
+                height="2072" 
+                frameBorder="0" 
+                marginHeight={0} 
+                marginWidth={0} 
+                title="Video Project Request Form"
+                className="w-full"
+              />
             </div>
             
             <div className="flex gap-2">
