@@ -402,7 +402,7 @@ export default function DashboardPage() {
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">video integration</p>
+                  <p className="text-sm text-gray-400">Video Integration</p>
                   <div className="flex items-center gap-2">
                     {selectedProject.vimeoFolderId ? (
                       <>
