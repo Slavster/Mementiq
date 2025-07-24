@@ -14,8 +14,8 @@ import {
   type ProjectStatusLog,
   type EmailSignup, 
   type InsertEmailSignup 
-} from "../shared/schema.js";
-import { db } from "./db.js";
+} from "../shared/schema";
+import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
@@ -24,6 +24,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  verifyUser(token: string): Promise<User | undefined>;
+  updateUserVerification(userId: string, verifiedAt: Date): Promise<void>;
   
   // Project methods
   getProject(id: number): Promise<Project | undefined>;
@@ -65,6 +67,18 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+
+  async verifyUser(token: string): Promise<User | undefined> {
+    // This method is used for email verification, but with Supabase auth
+    // we don't need custom token verification. Return undefined to skip.
+    return undefined;
+  }
+
+  async updateUserVerification(userId: string, verifiedAt: Date): Promise<void> {
+    // This method is used for email verification, but with Supabase auth
+    // verification is handled by Supabase. Skip this operation.
+    return;
   }
 
   // Project methods
