@@ -442,7 +442,7 @@ export default function DashboardPage() {
                   >
                     1
                   </div>
-                  <span className="font-medium">Upload Videos</span>
+                  <span className="font-medium">Upload Footage</span>
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
