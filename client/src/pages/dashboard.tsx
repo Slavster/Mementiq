@@ -100,6 +100,7 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState("");
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects
@@ -181,7 +182,7 @@ export default function DashboardPage() {
     return null; // Will be redirected by useEffect
   }
 
-  const projects: Project[] = projectsData?.projects || [];
+  const projects: Project[] = (projectsData as any)?.projects || [];
 
   // Map Supabase user to expected User interface
   const mappedUser: User = {
