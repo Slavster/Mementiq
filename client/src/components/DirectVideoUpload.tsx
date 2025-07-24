@@ -16,7 +16,7 @@ interface DirectVideoUploadProps {
 interface UploadFile {
   file: File;
   id: string;
-  status: 'pending' | 'session' | 'uploading' | 'completing' | 'completed' | 'failed';
+  status: 'pending' | 'session' | 'uploading' | 'completing' | 'verifying' | 'verified' | 'completed' | 'failed';
   progress: number;
   error?: string;
   uploadSession?: {
@@ -25,6 +25,14 @@ interface UploadFile {
     completeUri: string;
     ticketId: string;
   };
+  verification?: {
+    isUploaded: boolean;
+    isTranscoding: boolean;
+    isReady: boolean;
+    status: string;
+    canProceed: boolean;
+  };
+  videoId?: string;
 }
 
 const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUploadComplete }) => {
@@ -42,6 +50,12 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
   const completeUploadMutation = useMutation({
     mutationFn: async (data: { completeUri: string; videoUri: string; fileName: string; fileSize: number }) => {
       return apiRequest('POST', `/api/projects/${projectId}/complete-upload`, data);
+    }
+  });
+
+  const verifyUploadMutation = useMutation({
+    mutationFn: async (data: { videoId: string; projectId: number }) => {
+      return apiRequest('POST', '/api/upload/verify-video', data);
     }
   });
 
@@ -135,21 +149,31 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
         f.id === uploadFile.id ? { ...f, status: 'completing', progress: 95 } : f
       ));
 
-      await completeUploadMutation.mutateAsync({
+      const completeResult = await completeUploadMutation.mutateAsync({
         completeUri: uploadSession.completeUri,
         videoUri: uploadSession.videoUri,
         fileName: uploadFile.file.name,
         fileSize: uploadFile.file.size
       });
 
-      // Step 4: Mark as completed
+      // Step 4: Extract video ID and start verification
+      const videoId = uploadSession.videoUri.split('/').pop() || '';
+      
       setSelectedFiles(prev => prev.map(f => 
-        f.id === uploadFile.id ? { ...f, status: 'completed', progress: 100 } : f
+        f.id === uploadFile.id ? { 
+          ...f, 
+          status: 'verifying', 
+          progress: 100,
+          videoId 
+        } : f
       ));
+
+      // Step 5: Verify upload with Vimeo API
+      await verifyVideoUpload(uploadFile.id, videoId);
 
       toast({
         title: "Upload Complete",
-        description: `${uploadFile.file.name} uploaded successfully to Vimeo`,
+        description: `${uploadFile.file.name} uploaded and verified successfully`,
       });
 
     } catch (error: any) {
@@ -164,6 +188,99 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
         } : f
       ));
     }
+  };
+
+  const verifyVideoUpload = async (fileId: string, videoId: string): Promise<void> => {
+    const maxRetries = 30; // Maximum 5 minutes (10 seconds * 30)
+    let retries = 0;
+
+    const pollVerification = async (): Promise<void> => {
+      try {
+        const result = await verifyUploadMutation.mutateAsync({
+          videoId,
+          projectId
+        });
+
+        const verification = result.verification;
+        const canProceed = result.canProceed;
+
+        // Update file with verification status
+        setSelectedFiles(prev => prev.map(f => 
+          f.id === fileId ? {
+            ...f,
+            verification
+          } : f
+        ));
+
+        if (canProceed) {
+          // Video is successfully uploaded and ready (or transcoding)
+          setSelectedFiles(prev => prev.map(f => 
+            f.id === fileId ? {
+              ...f,
+              status: 'verified',
+              verification: { ...verification, canProceed: true }
+            } : f
+          ));
+
+          // Mark as fully completed
+          setTimeout(() => {
+            setSelectedFiles(prev => prev.map(f => 
+              f.id === fileId ? { ...f, status: 'completed' } : f
+            ));
+          }, 1000);
+
+          return;
+        }
+
+        // Check if we should retry
+        if (retries < maxRetries && !verification.isUploaded) {
+          retries++;
+          console.log(`Verification attempt ${retries}/${maxRetries} for video ${videoId}`);
+          
+          setTimeout(() => {
+            pollVerification();
+          }, 10000); // Wait 10 seconds before retry
+          return;
+        }
+
+        // Failed verification - mark as failed and prompt retry
+        setSelectedFiles(prev => prev.map(f => 
+          f.id === fileId ? {
+            ...f,
+            status: 'failed',
+            error: 'Upload verification failed. Vimeo did not confirm receipt of the video. Please try uploading again.',
+            verification
+          } : f
+        ));
+
+        toast({
+          variant: "destructive",
+          title: "Upload Verification Failed",
+          description: "Please upload this video again. Vimeo did not confirm successful receipt.",
+        });
+
+      } catch (error: any) {
+        console.error('Verification error:', error);
+        
+        if (retries < maxRetries) {
+          retries++;
+          setTimeout(() => {
+            pollVerification();
+          }, 10000);
+        } else {
+          setSelectedFiles(prev => prev.map(f => 
+            f.id === fileId ? {
+              ...f,
+              status: 'failed',
+              error: 'Verification failed after multiple attempts. Please try uploading again.'
+            } : f
+          ));
+        }
+      }
+    };
+
+    // Start verification polling
+    await pollVerification();
   };
 
   const uploadWithTUS = async (uploadFile: UploadFile, uploadSession: any): Promise<void> => {
@@ -257,7 +374,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
   const getStatusIcon = (status: UploadFile['status']) => {
     switch (status) {
       case 'completed':
+        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+      case 'verified':
         return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'verifying':
+        return <AlertCircle className="h-4 w-4 text-yellow-500 animate-pulse" />;
       case 'failed':
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'uploading':
@@ -275,6 +396,8 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
       case 'session': return 'Creating session...';
       case 'uploading': return 'Uploading to Vimeo...';
       case 'completing': return 'Finalizing...';
+      case 'verifying': return 'Verifying with Vimeo...';
+      case 'verified': return 'Verified & Ready';
       case 'completed': return 'Complete';
       case 'failed': return 'Failed';
       default: return 'Ready';
@@ -291,8 +414,14 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
 
   const totalSize = selectedFiles.reduce((sum, file) => sum + file.file.size, 0);
   const completedFiles = selectedFiles.filter(f => f.status === 'completed').length;
+  const verifyingFiles = selectedFiles.filter(f => f.status === 'verifying').length;
+  const verifiedFiles = selectedFiles.filter(f => f.status === 'verified').length;
   const failedFiles = selectedFiles.filter(f => f.status === 'failed').length;
-  const isUploading = selectedFiles.some(f => ['session', 'uploading', 'completing'].includes(f.status));
+  const isUploading = selectedFiles.some(f => ['session', 'uploading', 'completing', 'verifying'].includes(f.status));
+  const allFilesCompleted = selectedFiles.length > 0 && selectedFiles.every(f => f.status === 'completed' || f.status === 'verified');
+  const canProceed = selectedFiles.length > 0 && selectedFiles.every(f => 
+    f.status === 'completed' || f.status === 'verified'
+  ) && !isUploading;
 
   return (
     <Card className="w-full">
@@ -369,6 +498,13 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
                       {['uploading', 'completing'].includes(uploadFile.status) && (
                         <Progress value={uploadFile.progress} className="mt-1 h-1" />
                       )}
+                      {uploadFile.status === 'verifying' && uploadFile.verification && (
+                        <div className="text-xs text-yellow-600 mt-1">
+                          Upload: {uploadFile.verification.isUploaded ? 'Complete' : 'Pending'} | 
+                          Status: {uploadFile.verification.status} |
+                          Transcoding: {uploadFile.verification.isTranscoding ? 'In Progress' : uploadFile.verification.isReady ? 'Complete' : 'Pending'}
+                        </div>
+                      )}
                       {uploadFile.error && (
                         <p className="text-xs text-red-500 mt-1">
                           {uploadFile.error}
@@ -398,21 +534,69 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
             <AlertDescription>
               Total size: {formatFileSize(totalSize)} | 
               Ready: {selectedFiles.filter(f => f.status === 'pending').length} | 
+              {verifyingFiles > 0 && `Verifying: ${verifyingFiles} | `}
+              {verifiedFiles > 0 && `Verified: ${verifiedFiles} | `}
               Completed: {completedFiles} | 
               Failed: {failedFiles}
             </AlertDescription>
           </Alert>
         )}
 
+        {/* Verification Status Alert */}
+        {verifyingFiles > 0 && (
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              <strong>Verification in Progress:</strong> We're checking with Vimeo to confirm your videos were received successfully. 
+              This ensures your uploads are complete before you can proceed to the next step.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Ready to Proceed Alert */}
+        {canProceed && (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              <strong>All videos verified!</strong> Your uploads have been confirmed by Vimeo and are ready for processing.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Upload Button */}
         {selectedFiles.length > 0 && (
-          <Button
-            onClick={startDirectUpload}
-            disabled={isUploading || selectedFiles.every(f => f.status !== 'pending')}
-            className="w-full"
-          >
-            {isUploading ? 'Uploading...' : `Upload ${selectedFiles.filter(f => f.status === 'pending').length} Files`}
-          </Button>
+          <div className="space-y-2">
+            <Button
+              onClick={startDirectUpload}
+              disabled={isUploading || selectedFiles.every(f => f.status !== 'pending')}
+              className="w-full"
+            >
+              {isUploading ? 'Uploading...' : `Upload ${selectedFiles.filter(f => f.status === 'pending').length} Files`}
+            </Button>
+            
+            {/* Proceed Button - Only enabled when all uploads are verified */}
+            {selectedFiles.length > 0 && completedFiles + verifiedFiles > 0 && (
+              <Button
+                onClick={() => {
+                  if (onUploadComplete) {
+                    onUploadComplete();
+                  }
+                }}
+                disabled={!canProceed}
+                variant={canProceed ? "default" : "secondary"}
+                className="w-full"
+              >
+                {canProceed 
+                  ? `Proceed to Next Step (${completedFiles + verifiedFiles} files verified)` 
+                  : verifyingFiles > 0 
+                    ? `Please wait - Verifying ${verifyingFiles} files with Vimeo...`
+                    : failedFiles > 0
+                      ? `Fix ${failedFiles} failed uploads before proceeding`
+                      : "Upload files to proceed"
+                }
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

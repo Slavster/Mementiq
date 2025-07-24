@@ -232,6 +232,52 @@ export class VimeoService {
   }
 
   /**
+   * Verify video upload status and transcoding progress
+   */
+  async verifyVideoUpload(videoId: string): Promise<{
+    isUploaded: boolean;
+    isTranscoding: boolean;
+    isReady: boolean;
+    status: string;
+    transcode?: {
+      status: string;
+      progress?: number;
+    };
+  }> {
+    return new Promise((resolve, reject) => {
+      this.client.request({
+        method: 'GET',
+        path: `/videos/${videoId}`,
+        query: {
+          fields: 'status,transcode,upload'
+        }
+      }, (error: any, body: any) => {
+        if (error) {
+          console.error('Error verifying video upload:', error);
+          reject(error);
+        } else {
+          const uploadStatus = body.upload?.status || 'unknown';
+          const transcodeStatus = body.transcode?.status || 'unknown';
+          
+          const result = {
+            isUploaded: uploadStatus === 'complete',
+            isTranscoding: transcodeStatus === 'in_progress',
+            isReady: transcodeStatus === 'complete',
+            status: body.status || 'unknown',
+            transcode: body.transcode ? {
+              status: transcodeStatus,
+              progress: body.transcode.progress || 0
+            } : undefined
+          };
+          
+          console.log(`Video ${videoId} verification:`, result);
+          resolve(result);
+        }
+      });
+    });
+  }
+
+  /**
    * Get videos in a folder
    */
   async getFolderVideos(folderUri: string): Promise<VimeoUploadResponse[]> {

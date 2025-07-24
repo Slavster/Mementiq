@@ -798,6 +798,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Verify video upload status
+  app.post("/api/upload/verify-video", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { videoId, projectId } = req.body;
+      
+      if (!videoId || !projectId) {
+        return res.status(400).json({
+          success: false,
+          message: "Video ID and project ID are required"
+        });
+      }
+
+      // Verify user owns the project
+      const project = await storage.getProject(parseInt(projectId));
+      if (!project || project.userId !== req.user!.id) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied - project not found or unauthorized"
+        });
+      }
+
+      // Verify video upload status with Vimeo
+      const verification = await vimeoService.verifyVideoUpload(videoId);
+
+      res.json({
+        success: true,
+        verification,
+        canProceed: verification.isUploaded && (verification.isReady || verification.isTranscoding)
+      });
+    } catch (error) {
+      console.error("Video verification error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to verify video upload",
+        shouldRetry: true
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
