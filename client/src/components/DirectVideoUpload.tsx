@@ -73,10 +73,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       fileName: string;
       fileSize: number;
     }) => {
-      return apiRequest("POST", `/api/projects/${projectId}/upload-session`, {
+      const response = await apiRequest("POST", `/api/projects/${projectId}/upload-session`, {
         fileName,
         fileSize,
       });
+      return await response.json();
     },
   });
 
@@ -87,17 +88,19 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       fileName: string;
       fileSize: number;
     }) => {
-      return apiRequest(
+      const response = await apiRequest(
         "POST",
         `/api/projects/${projectId}/complete-upload`,
         data,
       );
+      return await response.json();
     },
   });
 
   const verifyUploadMutation = useMutation({
     mutationFn: async (data: { videoId: string; projectId: number }) => {
-      return apiRequest("POST", "/api/upload/verify-video", data);
+      const response = await apiRequest("POST", "/api/upload/verify-video", data);
+      return await response.json();
     },
   });
 
