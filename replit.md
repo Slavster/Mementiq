@@ -114,6 +114,13 @@ The application uses PostgreSQL with the following tables:
   - Each user gets a main folder: `User_{userIdPrefix}_{emailPrefix}`  
   - Each project gets a subfolder: `Project_{projectId}_{titleSanitized}`
   - Ensures videos are isolated by both user and project for security and organization
+- **Upload Verification System**: Added comprehensive verification to ensure videos are successfully received by Vimeo
+  - After TUS upload completion, system automatically verifies video status with Vimeo API
+  - Users cannot proceed to next step until all uploads are verified as received
+  - Real-time verification polling every 10 seconds for up to 5 minutes
+  - Clear visual feedback showing verification progress and status
+  - Failed verifications prompt user to re-upload with detailed error messages
+  - Supports both upload confirmation and transcoding status tracking
 
 ### July 22, 2025 - Supabase Authentication Migration (COMPLETED)
 - **Problem**: User requested social login capabilities (Google only initially) that weren't available with custom Express authentication
