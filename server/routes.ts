@@ -8,7 +8,7 @@ import {
   insertProjectSchema,
   updateProjectSchema,
   insertProjectFileSchema 
-} from "../shared/schema.js";
+} from "../shared/schema";
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
@@ -246,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.session.userId as string);
       if (!user) {
         return res.status(404).json({
           success: false,
