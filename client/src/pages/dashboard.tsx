@@ -99,93 +99,7 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-// Component for "Move to Next Step" button
-interface MoveToNextStepButtonProps {
-  projectId: number;
-  onMoveToNext: () => void;
-}
 
-const MoveToNextStepButton: React.FC<MoveToNextStepButtonProps> = ({ 
-  projectId, 
-  onMoveToNext 
-}) => {
-  const { toast } = useToast();
-
-  // Check folder status
-  const { data: folderStatus, isLoading } = useQuery({
-    queryKey: ["projects", projectId, "folder-status"],
-    queryFn: () => apiRequest("GET", `/api/projects/${projectId}/folder-status`),
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
-
-  const hasVideos = folderStatus?.success ? folderStatus.hasVideos : false;
-  const videoCount = folderStatus?.success ? folderStatus.videoCount : 0;
-
-  const handleMoveToNext = () => {
-    if (!hasVideos) {
-      toast({
-        variant: "destructive",
-        title: "No videos uploaded",
-        description: "Please upload at least one video before proceeding to the form.",
-      });
-      return;
-    }
-
-    onMoveToNext();
-    toast({
-      title: "Moving to next step",
-      description: "Ready to describe your dream edit!",
-    });
-  };
-
-  return (
-    <Card className="border-blue-200 bg-blue-50/10">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h4 className="font-medium text-white mb-1">
-              Ready for the next step?
-            </h4>
-            <p className="text-sm text-gray-400">
-              {isLoading 
-                ? "Checking folder status..." 
-                : hasVideos 
-                  ? `${videoCount} video${videoCount !== 1 ? 's' : ''} uploaded - ready to proceed!`
-                  : "Upload at least one video to continue"
-              }
-            </p>
-          </div>
-          <Button
-            onClick={handleMoveToNext}
-            disabled={!hasVideos || isLoading}
-            className={`${
-              hasVideos && !isLoading
-                ? "bg-[#2abdee] hover:bg-[#2abdee]/80 text-white"
-                : "bg-gray-600 text-gray-400 cursor-not-allowed"
-            }`}
-          >
-            {isLoading ? (
-              <>
-                <AlertCircle className="h-4 w-4 animate-spin mr-2" />
-                Checking...
-              </>
-            ) : hasVideos ? (
-              <>
-                Move to Next Step
-                <CheckCircle className="h-4 w-4 ml-2" />
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload videos first
-              </>
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
 
 export default function DashboardPage() {
   const [, setLocation] = useLocation();
@@ -558,21 +472,15 @@ export default function DashboardPage() {
 
               {/* Step Content */}
               {currentStep === "upload" && selectedProject.vimeoFolderId ? (
-                <div className="space-y-4">
-                  <DirectVideoUpload
-                    projectId={selectedProject.id}
-                    onUploadComplete={() => {
-                      // Move to next step
-                      setCurrentStep("form");
-                      // Refresh project data
-                      queryClient.invalidateQueries({ queryKey: ["projects"] });
-                    }}
-                  />
-                  <MoveToNextStepButton 
-                    projectId={selectedProject.id}
-                    onMoveToNext={() => setCurrentStep("form")}
-                  />
-                </div>
+                <DirectVideoUpload
+                  projectId={selectedProject.id}
+                  onUploadComplete={() => {
+                    // Move to next step
+                    setCurrentStep("form");
+                    // Refresh project data
+                    queryClient.invalidateQueries({ queryKey: ["projects"] });
+                  }}
+                />
               ) : currentStep === "upload" ? (
                 <Card className="bg-yellow-500/10 border-yellow-500/30">
                   <CardContent className="p-6 text-center">

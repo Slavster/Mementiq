@@ -47,11 +47,12 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   // Check if form has already been submitted
   const { data: submissionData, isLoading } = useQuery({
     queryKey: ["projects", projectId, "tally-submission"],
-    queryFn: () => apiRequest("GET", `/api/projects/${projectId}/tally-submission`),
+    queryFn: () =>
+      apiRequest("GET", `/api/projects/${projectId}/tally-submission`),
   });
 
-  const hasExistingSubmission = submissionData?.hasSubmission;
-  const existingSubmission = submissionData?.submission;
+  const hasExistingSubmission = submissionData?.success ? submissionData.hasSubmission : false;
+  const existingSubmission = submissionData?.success ? submissionData.submission : null;
 
   // Mutation to record form submission
   const recordSubmissionMutation = useMutation({
@@ -59,20 +60,30 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
       tallySubmissionId: string;
       submissionData: any;
     }) => {
-      return apiRequest("POST", `/api/projects/${projectId}/tally-submission`, data);
+      return apiRequest(
+        "POST",
+        `/api/projects/${projectId}/tally-submission`,
+        data,
+      );
     },
     onSuccess: () => {
       setSubmissionReceived(true);
       toast({
         title: "Form Submitted Successfully",
-        description: "Your project request has been submitted and is now being reviewed.",
+        description:
+          "Your project request has been submitted and is now being reviewed.",
       });
+      
       queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
-      queryClient.invalidateQueries({ 
-        queryKey: ["projects", projectId, "tally-submission"] 
+      queryClient.invalidateQueries({
+        queryKey: ["projects", projectId, "tally-submission"],
       });
+      
+      // Call onFormComplete to automatically close dialog and move to next step
       if (onFormComplete) {
-        onFormComplete();
+        setTimeout(() => {
+          onFormComplete();
+        }, 1500); // Brief delay to show success message
       }
     },
     onError: (error: any) => {
@@ -88,7 +99,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   // Load Tally script and listen for form submissions
   useEffect(() => {
     // Load Tally embed script
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.innerHTML = `
       var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]')==null){var s=d.createElement("script");s.src=w,s.onload=v,s.onerror=v,d.body.appendChild(s);}
     `;
@@ -97,37 +108,42 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
     // Listen for messages from Tally iframe
     const handleMessage = (event: MessageEvent) => {
       // Only accept messages from Tally
-      if (!event.origin.includes('tally.so')) {
+      if (!event.origin.includes("tally.so")) {
         return;
       }
 
       const data = event.data;
-      console.log('Message received from Tally:', data);
-      
+      console.log("Message received from Tally:", data);
+
       // Handle Tally form submission - check for various possible event types
-      if (data.type === 'tally_form_submission' || 
-          data.type === 'form_submission' || 
-          (data.payload && data.payload.type === 'form_submission')) {
-        console.log('Tally form submission detected:', data);
-        
+      if (
+        data.type === "tally_form_submission" ||
+        data.type === "form_submission" ||
+        (data.payload && data.payload.type === "form_submission")
+      ) {
+        console.log("Tally form submission detected:", data);
+
         const submissionData = data.payload || data.submission || data;
-        
+
         // Record the submission in our database
         recordSubmissionMutation.mutate({
-          tallySubmissionId: submissionData.submissionId || submissionData.responseId || `tally_${Date.now()}_${projectId}`,
-          submissionData: submissionData
+          tallySubmissionId:
+            submissionData.submissionId ||
+            submissionData.responseId ||
+            `tally_${Date.now()}_${projectId}`,
+          submissionData: submissionData,
         });
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    
+    window.addEventListener("message", handleMessage);
+
     return () => {
-      window.removeEventListener('message', handleMessage);
+      window.removeEventListener("message", handleMessage);
       // Clean up script
-      const scripts = document.querySelectorAll('script');
-      scripts.forEach(s => {
-        if (s.innerHTML.includes('tally.so/widgets/embed.js')) {
+      const scripts = document.querySelectorAll("script");
+      scripts.forEach((s) => {
+        if (s.innerHTML.includes("tally.so/widgets/embed.js")) {
           s.remove();
         }
       });
@@ -163,16 +179,26 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
-              Form submitted on {new Date(existingSubmission?.submittedAt).toLocaleDateString()}
+              Form submitted on{" "}
+              {new Date(existingSubmission?.submittedAt).toLocaleDateString()}
               {existingSubmission?.verifiedAt && (
-                <> and verified on {new Date(existingSubmission.verifiedAt).toLocaleDateString()}</>
+                <>
+                  {" "}
+                  and verified on{" "}
+                  {new Date(existingSubmission.verifiedAt).toLocaleDateString()}
+                </>
               )}
             </AlertDescription>
           </Alert>
-          
+
           <div className="text-sm text-gray-600">
-            <p><strong>Status:</strong> Submitted</p>
-            <p><strong>Submission ID:</strong> {existingSubmission?.tallySubmissionId}</p>
+            <p>
+              <strong>Status:</strong> Submitted
+            </p>
+            <p>
+              <strong>Submission ID:</strong>{" "}
+              {existingSubmission?.tallySubmissionId}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -195,7 +221,8 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
-              Thank you! Your project details have been recorded and you'll be contacted soon.
+              Thank you! Your project details have been recorded and you'll be
+              contacted soon.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -208,17 +235,17 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Project Request Form
+          Describe your Dream Edit
         </CardTitle>
         <CardDescription>
-          Complete this form to submit your video editing request. This form is required to proceed.
+          Complete a short form and we'll make it a reality.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!isFormVisible ? (
           <div className="text-center space-y-4">
             <p className="text-gray-600">
-              Please fill out the project details form to complete your request.
+              Please fill in the details and we'll start on your request.
             </p>
             <Button
               onClick={() => setIsFormVisible(true)}
@@ -226,7 +253,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
               size="lg"
             >
               <FileText className="h-4 w-4 mr-2" />
-              Open Project Request Form
+              Open Request Form
             </Button>
           </div>
         ) : (
@@ -234,54 +261,26 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Please complete the form below. The form will automatically save when you submit it.
+                Direct our creativity with the form below.
               </AlertDescription>
             </Alert>
-            
+
             {/* Tally Form Embed */}
             <div className="border rounded-lg overflow-hidden">
-              <iframe 
+              <iframe
                 data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}`}
-                loading="lazy" 
-                width="100%" 
-                height="2072" 
-                frameBorder="0" 
-                marginHeight={0} 
-                marginWidth={0} 
+                loading="lazy"
+                width="100%"
+                height="2072"
+                frameBorder="0"
+                marginHeight={0}
+                marginWidth={0}
                 title="Video Project Request Form"
                 className="w-full"
               />
             </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsFormVisible(false)}
-                className="flex-1"
-              >
-                Close Form
-              </Button>
-              <Button
-                disabled={recordSubmissionMutation.isPending}
-                className="flex-1"
-                onClick={() => {
-                  // This will be triggered by the Tally form submission
-                  toast({
-                    title: "Submit the form",
-                    description: "Please complete and submit the form above.",
-                  });
-                }}
-              >
-                {recordSubmissionMutation.isPending ? (
-                  <>
-                    <AlertCircle className="h-4 w-4 animate-spin mr-2" />
-                    Processing...
-                  </>
-                ) : (
-                  "Form will auto-submit"
-                )}
-              </Button>
-            </div>
+
+            {/* Form will automatically submit and close dialog when completed */}
           </div>
         )}
       </CardContent>
