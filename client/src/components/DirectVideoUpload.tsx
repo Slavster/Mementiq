@@ -283,6 +283,9 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       });
     } catch (error: any) {
       console.error("Direct upload error:", error);
+      console.error("Error stack:", error.stack);
+      console.error("Error type:", typeof error);
+      console.error("Error message:", error.message);
       
       let errorMessage = "Upload failed";
       
@@ -293,9 +296,13 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         errorMessage = "Authentication failed. Please log in again.";
       } else if (error.message?.includes('session')) {
         errorMessage = "Failed to create upload session. Please try again.";
+      } else if (error.message?.includes('completeUri')) {
+        errorMessage = "Upload session invalid. Please try again.";
       } else if (error.message) {
         errorMessage = error.message;
       }
+      
+      console.error("Final error message to user:", errorMessage);
 
       setSelectedFiles((prev) =>
         prev.map((f) =>
@@ -440,6 +447,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         
         console.log('TUS upload starting for file:', file.name, 'size:', file.size);
         console.log('Upload URL:', uploadUrl);
+        console.log('Upload session object:', uploadSession);
 
         // Create a simple TUS implementation
         // First, send HEAD request to get upload offset
