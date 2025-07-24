@@ -734,6 +734,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "videoUri and fileName are required"
         });
       }
+      
+      console.log('All required fields present, proceeding with upload completion');
 
       // Get project and verify ownership
       const project = await storage.getProject(projectId);
