@@ -30,6 +30,7 @@ export interface IStorage {
   getProjectsByUser(userId: string): Promise<Project[]>;
   createProject(userId: string, project: InsertProject): Promise<Project>;
   updateProject(id: number, updates: UpdateProject): Promise<Project | undefined>;
+  updateProjectVimeoInfo(id: number, vimeoFolderId: string, userFolderUri?: string): Promise<void>;
   deleteProject(id: number): Promise<void>;
   
   // Project file methods

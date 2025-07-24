@@ -299,21 +299,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(req.user!.id, validatedData);
       
-      // Create Vimeo folder structure
+      // Create hierarchical Vimeo folder structure
       try {
+        // Step 1: Ensure user has a main folder in Vimeo
+        console.log(`Creating/getting user folder for user ${req.user!.id} (${req.user!.email})`);
         const userFolderUri = await vimeoService.createUserFolder(req.user!.id, req.user!.email);
+        
+        // Step 2: Create project subfolder within user folder
+        console.log(`Creating project subfolder for project ${project.id}: "${project.title}"`);
         const projectFolderUri = await vimeoService.createProjectFolder(userFolderUri, project.id, project.title);
         
-        // Update project with Vimeo folder info
+        // Step 3: Update project with Vimeo folder information
         await storage.updateProjectVimeoInfo(project.id, projectFolderUri, userFolderUri);
         
-        // Get updated project
+        // Get updated project with folder info
         const updatedProject = await storage.getProject(project.id);
+        
+        console.log(`Successfully created hierarchical folders: User(${userFolderUri}) -> Project(${projectFolderUri})`);
         
         res.status(201).json({
           success: true,
-          message: "Project created successfully with Vimeo integration",
-          project: updatedProject
+          message: "Project created successfully with hierarchical Vimeo folder structure",
+          project: updatedProject,
+          folders: {
+            userFolder: userFolderUri,
+            projectFolder: projectFolderUri
+          }
         });
       } catch (vimeoError) {
         console.error("Vimeo folder creation failed:", vimeoError);
@@ -322,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           message: "Project created successfully",
           project,
-          warning: "Vimeo folder setup failed - contact support"
+          warning: "Vimeo folder setup failed - videos will be uploaded to root. Contact support for assistance."
         });
       }
     } catch (error) {
