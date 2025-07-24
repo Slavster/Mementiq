@@ -84,6 +84,32 @@ The application uses PostgreSQL with the following tables:
 
 ## Changelog
 
+### July 24, 2025 - Tally Form Integration with Two-Step Workflow (COMPLETED)
+- **Problem**: User requested Tally form integration as mandatory step after video upload verification
+- **User Requirement**: Two-step workflow with engaging step names and one form submission per project
+- **Solution Implemented**: Complete Tally form integration with step-based workflow
+- **Key Features**:
+  - Two-step workflow: "Upload Videos" → "Describe Your Dream Edit" → "Editor is On It!"
+  - Tally form embedded with iframe and automatic submission detection
+  - One form submission per project enforced by database unique constraints
+  - Automatic project status update to "submitted" upon form completion
+  - Step progress indicator with visual feedback for completed steps
+- **Technical Implementation**:
+  - Added `tally_form_submissions` table with projectId/userId unique constraint
+  - Created API endpoints: POST/GET `/api/projects/:id/tally-submission`
+  - Built TallyFormStep React component with message handling for form completion
+  - Enhanced dashboard with step-based workflow and navigation
+  - Integrated Tally embed code with userId and projectId parameters
+- **User Experience**:
+  - Clean three-step visual progress indicator
+  - Engaging step names: "Upload Videos", "Describe Your Dream Edit", "Editor is On It!"
+  - Automatic step progression and completion tracking
+  - Form submission triggers project status change and user feedback
+- **Database Schema**: 
+  - `tally_form_submissions` table (id, project_id, user_id, tally_submission_id, submission_data, submitted_at, verified_at)
+  - Unique constraint on (project_id, user_id) to prevent duplicate submissions
+- **Status**: Fully operational with complete workflow from upload to form submission
+
 ### July 24, 2025 - CORS and Direct Vimeo Upload Integration (FULLY OPERATIONAL)
 - **Problem**: User requested CORS configuration for direct uploads to improve performance and handle large files
 - **User Requirement**: Enable direct client-to-Vimeo uploads bypassing server intermediary for better performance

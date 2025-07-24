@@ -106,7 +106,7 @@ export default function DashboardPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState("");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [currentStep, setCurrentStep] = useState<'upload' | 'form'>('upload');
+  const [currentStep, setCurrentStep] = useState<"upload" | "form">("upload");
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects
@@ -365,7 +365,7 @@ export default function DashboardPage() {
                         }}
                       >
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload Videos
+                        Manage & Upload Footage
                       </Button>
                     </div>
                   </CardContent>
@@ -381,7 +381,7 @@ export default function DashboardPage() {
         open={!!selectedProject}
         onOpenChange={() => {
           setSelectedProject(null);
-          setCurrentStep('upload');
+          setCurrentStep("upload");
         }}
       >
         <DialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -433,34 +433,53 @@ export default function DashboardPage() {
               </div>
 
               {/* Step Progress */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className={`flex items-center gap-2 ${currentStep === 'upload' ? 'text-[#2abdee]' : 'text-gray-400'}`}>
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === 'upload' ? 'bg-[#2abdee] text-white' : 'bg-gray-600'}`}>
+              <div className="flex items-center gap-2 mb-6">
+                <div
+                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : "text-gray-400"}`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : "bg-gray-600"}`}
+                  >
                     1
                   </div>
-                  Upload Videos
+                  <span className="font-medium">Upload Videos</span>
                 </div>
-                <div className="flex-1 h-px bg-gray-600" />
-                <div className={`flex items-center gap-2 ${currentStep === 'form' ? 'text-[#2abdee]' : selectedProject.status === 'submitted' ? 'text-green-400' : 'text-gray-400'}`}>
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === 'form' ? 'bg-[#2abdee] text-white' : selectedProject.status === 'submitted' ? 'bg-green-600 text-white' : 'bg-gray-600'}`}>
-                    {selectedProject.status === 'submitted' ? '✓' : '2'}
+                <div className="flex-1 h-px bg-gray-600 mx-2" />
+                <div
+                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : selectedProject.status === "submitted" ? "text-green-400" : "text-gray-400"}`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : selectedProject.status === "submitted" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                  >
+                    {selectedProject.status === "submitted" ? "✓" : "2"}
                   </div>
-                  Project Details
+                  <span className="font-medium">Describe Your Dream Edit</span>
+                </div>
+                <div className="flex-1 h-px bg-gray-600 mx-2" />
+                <div
+                  className={`flex items-center gap-2 ${selectedProject.status === "submitted" ? "text-green-400" : "text-gray-400"}`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${selectedProject.status === "submitted" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                  >
+                    {selectedProject.status === "submitted" ? "✓" : "3"}
+                  </div>
+                  <span className="font-medium">Editor is On It!</span>
                 </div>
               </div>
 
               {/* Step Content */}
-              {currentStep === 'upload' && selectedProject.vimeoFolderId ? (
+              {currentStep === "upload" && selectedProject.vimeoFolderId ? (
                 <DirectVideoUpload
                   projectId={selectedProject.id}
                   onUploadComplete={() => {
                     // Move to next step
-                    setCurrentStep('form');
+                    setCurrentStep("form");
                     // Refresh project data
                     queryClient.invalidateQueries({ queryKey: ["projects"] });
                   }}
                 />
-              ) : currentStep === 'upload' ? (
+              ) : currentStep === "upload" ? (
                 <Card className="bg-yellow-500/10 border-yellow-500/30">
                   <CardContent className="p-6 text-center">
                     <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
@@ -473,12 +492,12 @@ export default function DashboardPage() {
                     </p>
                   </CardContent>
                 </Card>
-              ) : currentStep === 'form' ? (
+              ) : currentStep === "form" ? (
                 <div className="space-y-4">
                   <div className="flex gap-2 mb-4">
                     <Button
                       variant="outline"
-                      onClick={() => setCurrentStep('upload')}
+                      onClick={() => setCurrentStep("upload")}
                       className="text-white border-gray-600 hover:bg-gray-700"
                     >
                       ← Back to Upload
@@ -486,18 +505,19 @@ export default function DashboardPage() {
                   </div>
                   <TallyFormStep
                     projectId={selectedProject.id}
-                    userId={user?.id || ''}
+                    userId={user?.id || ""}
                     onFormComplete={() => {
                       // Refresh project data and show success
                       queryClient.invalidateQueries({ queryKey: ["projects"] });
                       toast({
                         title: "Project Submitted!",
-                        description: "Your project request has been successfully submitted.",
+                        description:
+                          "Your project request has been successfully submitted.",
                       });
                       // Close dialog after brief delay
                       setTimeout(() => {
                         setSelectedProject(null);
-                        setCurrentStep('upload');
+                        setCurrentStep("upload");
                       }, 2000);
                     }}
                   />
