@@ -179,7 +179,18 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         fileSize: uploadFile.file.size,
       });
 
+      console.log('Session data received:', sessionData);
+      
+      if (!sessionData || !sessionData.uploadSession) {
+        throw new Error('Invalid upload session response from server');
+      }
+
       const uploadSession = sessionData.uploadSession;
+      
+      if (!uploadSession.uploadUrl) {
+        console.error('Upload session missing uploadUrl:', uploadSession);
+        throw new Error('Upload session is missing required uploadUrl');
+      }
 
       // Step 2: Upload directly to Vimeo using TUS protocol
       setSelectedFiles((prev) =>
