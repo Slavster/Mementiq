@@ -1,17 +1,41 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "@/lib/supabase";
-import { Plus, LogOut, Video, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  LogOut,
+  Video,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Upload,
+  Folder,
+} from "lucide-react";
+import VideoUpload from "@/components/VideoUpload";
 
 interface User {
   id: number;
@@ -29,38 +53,41 @@ interface Project {
   createdAt: string;
   updatedAt: string;
   vimeoFolderId?: string;
+  vimeoUserFolderId?: string;
   tallyFormUrl?: string;
+  currentUploadSize?: number;
+  uploadSizeLimit?: number;
 }
 
 // Helper functions for project status
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
-    case 'draft':
-      return 'bg-gray-600';
-    case 'in_progress':
-      return 'bg-blue-600';
-    case 'review':
-      return 'bg-yellow-600';
-    case 'completed':
-      return 'bg-green-600';
-    case 'on_hold':
-      return 'bg-orange-600';
+    case "draft":
+      return "bg-gray-600";
+    case "in_progress":
+      return "bg-blue-600";
+    case "review":
+      return "bg-yellow-600";
+    case "completed":
+      return "bg-green-600";
+    case "on_hold":
+      return "bg-orange-600";
     default:
-      return 'bg-gray-600';
+      return "bg-gray-600";
   }
 };
 
 const getStatusIcon = (status: string) => {
   switch (status.toLowerCase()) {
-    case 'draft':
+    case "draft":
       return <AlertCircle className="h-3 w-3" />;
-    case 'in_progress':
+    case "in_progress":
       return <Clock className="h-3 w-3" />;
-    case 'review':
+    case "review":
       return <Clock className="h-3 w-3" />;
-    case 'completed':
+    case "completed":
       return <CheckCircle className="h-3 w-3" />;
-    case 'on_hold':
+    case "on_hold":
       return <AlertCircle className="h-3 w-3" />;
     default:
       return <AlertCircle className="h-3 w-3" />;
@@ -77,19 +104,22 @@ export default function DashboardPage() {
 
   // Get user projects
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
-    queryKey: ['/api/projects'],
-    enabled: isAuthenticated
+    queryKey: ["/api/projects"],
+    enabled: isAuthenticated,
   });
 
   // Create project mutation
   const createProjectMutation = useMutation({
-    mutationFn: async (projectData: { title: string; tallyFormUrl?: string }) => {
-      const response = await apiRequest('POST', '/api/projects', projectData);
+    mutationFn: async (projectData: {
+      title: string;
+      tallyFormUrl?: string;
+    }) => {
+      const response = await apiRequest("POST", "/api/projects", projectData);
       return response.json();
     },
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
         toast({
           title: "Project created!",
           description: "Your new video project has been created successfully.",
@@ -100,17 +130,17 @@ export default function DashboardPage() {
         toast({
           title: "Failed to create project",
           description: data.message || "Please try again.",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     },
     onError: (error) => {
       toast({
         title: "Failed to create project",
-        description: `An error occurred: ${error.message || 'Please try again.'}`,
-        variant: "destructive"
+        description: `An error occurred: ${error.message || "Please try again."}`,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleLogout = async () => {
@@ -120,11 +150,11 @@ export default function DashboardPage() {
         toast({
           title: "Logout failed",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       } else {
         queryClient.clear();
-        setLocation('/');
+        setLocation("/");
         toast({
           title: "Logged out",
           description: "You've been logged out successfully.",
@@ -134,12 +164,10 @@ export default function DashboardPage() {
       toast({
         title: "Logout failed",
         description: error.message || "An unexpected error occurred",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
-
-
 
   if (authLoading) {
     return (
@@ -154,21 +182,25 @@ export default function DashboardPage() {
   }
 
   const projects: Project[] = projectsData?.projects || [];
-  
+
   // Map Supabase user to expected User interface
   const mappedUser: User = {
     id: 0, // Not used for display, kept for interface compatibility
-    email: user.email || '',
-    firstName: user.user_metadata?.firstName || 
-               user.user_metadata?.first_name || 
-               user.user_metadata?.full_name?.split(' ')[0] ||
-               user.user_metadata?.name?.split(' ')[0] || '',
-    lastName: user.user_metadata?.lastName || 
-              user.user_metadata?.last_name || 
-              user.user_metadata?.full_name?.split(' ').slice(1).join(' ') ||
-              user.user_metadata?.name?.split(' ').slice(1).join(' ') || '',
-    company: user.user_metadata?.company || '',
-    verified: user.email_confirmed_at !== null
+    email: user.email || "",
+    firstName:
+      user.user_metadata?.firstName ||
+      user.user_metadata?.first_name ||
+      user.user_metadata?.full_name?.split(" ")[0] ||
+      user.user_metadata?.name?.split(" ")[0] ||
+      "",
+    lastName:
+      user.user_metadata?.lastName ||
+      user.user_metadata?.last_name ||
+      user.user_metadata?.full_name?.split(" ").slice(1).join(" ") ||
+      user.user_metadata?.name?.split(" ").slice(1).join(" ") ||
+      "",
+    company: user.user_metadata?.company || "",
+    verified: user.email_confirmed_at !== null,
   };
 
   return (
@@ -181,7 +213,9 @@ export default function DashboardPage() {
               <h1 className="text-[#2abdee] text-2xl font-bold">Mementiq</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-white">Welcome, {mappedUser.firstName}</span>
+              <span className="text-white">
+                Welcome, {mappedUser.firstName}
+              </span>
               <Button
                 onClick={handleLogout}
                 variant="outline"
@@ -210,7 +244,9 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Name</p>
-                  <p className="text-lg font-semibold">{mappedUser.firstName} {mappedUser.lastName}</p>
+                  <p className="text-lg font-semibold">
+                    {mappedUser.firstName} {mappedUser.lastName}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Email</p>
@@ -218,7 +254,9 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Status</p>
-                  <Badge variant={mappedUser.verified ? "default" : "destructive"}>
+                  <Badge
+                    variant={mappedUser.verified ? "default" : "destructive"}
+                  >
                     {mappedUser.verified ? "Verified" : "Unverified"}
                   </Badge>
                 </div>
@@ -231,26 +269,32 @@ export default function DashboardPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-white">Your Projects</h2>
-            <Button 
+            <Button
               className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
               onClick={() => setShowCreateForm(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              + New Video Request
+              New Video Request
             </Button>
           </div>
 
           {projectsLoading ? (
-            <div className="text-white text-center py-8">Loading projects...</div>
+            <div className="text-white text-center py-8">
+              Loading projects...
+            </div>
           ) : projects.length === 0 ? (
             <Card className="bg-black/20 backdrop-blur-xl border-gray-800/30 text-white">
               <CardContent className="py-16 text-center">
                 <Video className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Ready to create something amazing?</h3>
+                <h3 className="text-xl font-semibold mb-2">
+                  Ready to create something amazing?
+                </h3>
                 <p className="text-gray-400 mb-6">
-                  Transform your vision into professional video content. Start your first project and let our expert team bring your ideas to life.
+                  Transform your vision into professional video content. Start
+                  your first project and let our expert team bring your ideas to
+                  life.
                 </p>
-                <Button 
+                <Button
                   className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
                   onClick={() => setShowCreateForm(true)}
                 >
@@ -262,17 +306,21 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <Card key={project.id} className="bg-black/20 backdrop-blur-xl border-gray-800/30 text-white hover:bg-black/30 transition-all duration-200">
+                <Card
+                  key={project.id}
+                  className="bg-black/20 backdrop-blur-xl border-gray-800/30 text-white hover:bg-black/30 transition-all duration-200 cursor-pointer"
+                  onClick={() => setSelectedProject(project)}
+                >
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{project.title}</CardTitle>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={`${getStatusColor(project.status)} text-white`}
                       >
                         <span className="flex items-center gap-1">
                           {getStatusIcon(project.status)}
-                          {project.status.replace('_', ' ')}
+                          {project.status.replace("_", " ")}
                         </span>
                       </Badge>
                     </div>
@@ -291,6 +339,25 @@ export default function DashboardPage() {
                           {new Date(project.updatedAt).toLocaleDateString()}
                         </p>
                       </div>
+                      {project.vimeoFolderId && (
+                        <div className="flex items-center gap-2 pt-2">
+                          <Folder className="h-4 w-4 text-blue-400" />
+                          <span className="text-xs text-blue-400">Vimeo Ready</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        size="sm"
+                        className="w-full bg-accent text-secondary hover:bg-yellow-500"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProject(project);
+                        }}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Videos
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -300,16 +367,93 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Project Details Dialog */}
+      <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
+        <DialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[#2abdee] text-xl">
+              {selectedProject?.title}
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Upload and manage video files for this project
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedProject && (
+            <div className="space-y-6">
+              {/* Project Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-400">Status</p>
+                  <Badge
+                    variant="secondary"
+                    className={`${getStatusColor(selectedProject.status)} text-white`}
+                  >
+                    <span className="flex items-center gap-1">
+                      {getStatusIcon(selectedProject.status)}
+                      {selectedProject.status.replace("_", " ")}
+                    </span>
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Vimeo Integration</p>
+                  <div className="flex items-center gap-2">
+                    {selectedProject.vimeoFolderId ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-400" />
+                        <span className="text-sm text-green-400">Connected</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="h-4 w-4 text-yellow-400" />
+                        <span className="text-sm text-yellow-400">Setting up...</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload Section */}
+              {selectedProject.vimeoFolderId ? (
+                <VideoUpload 
+                  projectId={selectedProject.id}
+                  onUploadComplete={() => {
+                    // Refresh project data
+                    queryClient.invalidateQueries({ queryKey: ['projects'] });
+                  }}
+                />
+              ) : (
+                <Card className="bg-yellow-500/10 border-yellow-500/30">
+                  <CardContent className="p-6 text-center">
+                    <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-yellow-500 mb-2">
+                      Setting up Vimeo Integration
+                    </h3>
+                    <p className="text-gray-400">
+                      Your project folder is being created in Vimeo. This may take a few moments.
+                      Please refresh or try again shortly.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Create Project Dialog */}
       <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
         <DialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white">
           <DialogHeader>
-            <DialogTitle className="text-[#2abdee]">Create New Video Request</DialogTitle>
+            <DialogTitle className="text-[#2abdee]">
+              Create New Video Request
+            </DialogTitle>
             <DialogDescription className="text-gray-400">
-              Start a new video editing project. Give it a descriptive title that will help you track its progress.
+              Start a new video editing project. Give it a descriptive title
+              that will help you track its progress.
             </DialogDescription>
           </DialogHeader>
-          <form 
+          <form
             onSubmit={(e) => {
               e.preventDefault();
               if (newProjectTitle.trim()) {
@@ -330,9 +474,9 @@ export default function DashboardPage() {
               />
             </div>
             <div className="flex justify-end space-x-3">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setShowCreateForm(false);
                   setNewProjectTitle("");
@@ -341,12 +485,16 @@ export default function DashboardPage() {
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
-                disabled={createProjectMutation.isPending || !newProjectTitle.trim()}
+                disabled={
+                  createProjectMutation.isPending || !newProjectTitle.trim()
+                }
               >
-                {createProjectMutation.isPending ? "Creating..." : "Create Project"}
+                {createProjectMutation.isPending
+                  ? "Creating..."
+                  : "Create Project"}
               </Button>
             </div>
           </form>

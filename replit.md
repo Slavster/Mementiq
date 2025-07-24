@@ -110,11 +110,11 @@ The application uses PostgreSQL with the following tables:
 
 ### July 15, 2025 - Dashboard & Project Management (COMPLETED)
 - **Problem**: Users needed a comprehensive dashboard to view and manage their video projects after successful login
-- **User Requirement**: Build main dashboard with project list, status tracking, timestamps, and "+ New Video Request" functionality
+- **User Requirement**: Build main dashboard with project list, status tracking, timestamps, and "New Video Request" functionality
 - **Solution Implemented**: Complete dashboard with project management, status visualization, and inspiring empty states
 - **Key Features**:
   - Responsive project grid layout with status badges and timestamps
-  - "+ New Video Request" button for easy project creation
+  - "New Video Request" button for easy project creation
   - Project creation modal with validation and user feedback
   - Inspiring empty state message: "Ready to create something amazing?"
   - Real-time project status indicators with color coding (draft, in_progress, review, completed, on_hold)

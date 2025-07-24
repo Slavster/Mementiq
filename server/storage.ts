@@ -95,6 +95,21 @@ export class DatabaseStorage implements IStorage {
     return newProject;
   }
 
+  async updateProjectVimeoInfo(projectId: number, vimeoFolderId: string, vimeoUserFolderId?: string): Promise<Project | undefined> {
+    const updateData: any = { vimeoFolderId };
+    if (vimeoUserFolderId) {
+      updateData.vimeoUserFolderId = vimeoUserFolderId;
+    }
+
+    const [updatedProject] = await db
+      .update(projects)
+      .set(updateData)
+      .where(eq(projects.id, projectId))
+      .returning();
+
+    return updatedProject || undefined;
+  }
+
   async updateProject(id: number, updates: UpdateProject): Promise<Project | undefined> {
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
     if (!project) return undefined;

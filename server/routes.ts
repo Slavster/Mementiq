@@ -12,6 +12,8 @@ import {
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
+import { vimeoService } from "./vimeo";
+import { upload, cleanupUploadedFiles, getProjectUploadSize } from "./upload";
 import "./types"; // Import session types
 
 interface AuthenticatedRequest extends Request {
@@ -296,11 +298,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(req.user!.id, validatedData);
       
-      res.status(201).json({
-        success: true,
-        message: "Project created successfully",
-        project
-      });
+      // Create Vimeo folder structure
+      try {
+        const userFolderUri = await vimeoService.createUserFolder(req.user!.id, req.user!.email);
+        const projectFolderUri = await vimeoService.createProjectFolder(userFolderUri, project.id, project.title);
+        
+        // Update project with Vimeo folder info
+        await storage.updateProjectVimeoInfo(project.id, projectFolderUri, userFolderUri);
+        
+        // Get updated project
+        const updatedProject = await storage.getProject(project.id);
+        
+        res.status(201).json({
+          success: true,
+          message: "Project created successfully with Vimeo integration",
+          project: updatedProject
+        });
+      } catch (vimeoError) {
+        console.error("Vimeo folder creation failed:", vimeoError);
+        // Project is still created, just without Vimeo integration
+        res.status(201).json({
+          success: true,
+          message: "Project created successfully",
+          project,
+          warning: "Vimeo folder setup failed - contact support"
+        });
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
@@ -582,6 +605,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.send(Buffer.from(chunk));
   }
+
+  // Vimeo upload routes
+  app.post("/api/projects/:id/upload", requireAuth, upload.array('videos', 10), async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const files = req.files as Express.Multer.File[];
+      
+      if (!files || files.length === 0) {
+        return res.status(400).json({ success: false, message: "No files uploaded" });
+      }
+      
+      // Verify project ownership
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        cleanupUploadedFiles(files);
+        return res.status(404).json({ success: false, message: "Project not found" });
+      }
+      
+      if (project.userId !== req.user!.id) {
+        cleanupUploadedFiles(files);
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+      
+      if (!project.vimeoFolderId) {
+        cleanupUploadedFiles(files);
+        return res.status(400).json({ success: false, message: "Project Vimeo folder not configured" });
+      }
+      
+      // Check total upload size
+      const totalUploadSize = files.reduce((sum, file) => sum + file.size, 0);
+      const currentSize = project.currentUploadSize || 0;
+      const limit = project.uploadSizeLimit || (10 * 1024 * 1024 * 1024); // 10GB default
+      
+      if (currentSize + totalUploadSize > limit) {
+        cleanupUploadedFiles(files);
+        return res.status(400).json({ 
+          success: false, 
+          message: `Upload would exceed 10GB limit. Current: ${Math.round(currentSize/1024/1024/1024*100)/100}GB, New: ${Math.round(totalUploadSize/1024/1024/1024*100)/100}GB` 
+        });
+      }
+      
+      const uploadResults = [];
+      
+      // Upload files to Vimeo
+      for (const file of files) {
+        try {
+          console.log(`Uploading ${file.originalname} to Vimeo...`);
+          const vimeoResult = await vimeoService.uploadVideo(
+            file.path,
+            file.originalname,
+            project.vimeoFolderId,
+            file.size
+          );
+          
+          // Save file record to database
+          const fileRecord = await storage.createProjectFile(projectId, {
+            vimeoVideoId: vimeoResult.uri,
+            vimeoVideoUrl: vimeoResult.link,
+            filename: file.filename,
+            originalFilename: file.originalname,
+            fileType: file.mimetype,
+            fileSize: file.size,
+            uploadStatus: 'completed',
+            uploadProgress: 100,
+          });
+          
+          uploadResults.push({
+            file: fileRecord,
+            vimeo: vimeoResult
+          });
+          
+          console.log(`Successfully uploaded ${file.originalname}`);
+        } catch (uploadError) {
+          console.error(`Failed to upload ${file.originalname}:`, uploadError);
+          
+          // Record failed upload
+          await storage.createProjectFile(projectId, {
+            filename: file.filename,
+            originalFilename: file.originalname,
+            fileType: file.mimetype,
+            fileSize: file.size,
+            uploadStatus: 'failed',
+            uploadProgress: 0,
+          });
+          
+          uploadResults.push({
+            file: { originalname: file.originalname },
+            error: uploadError.message || 'Upload failed'
+          });
+        }
+      }
+      
+      // Update project upload size
+      const successfulUploads = uploadResults.filter(r => !r.error);
+      const successfulSize = successfulUploads.reduce((sum, r) => sum + (r.file?.fileSize || 0), 0);
+      
+      if (successfulSize > 0) {
+        await storage.updateProject(projectId, {
+          currentUploadSize: currentSize + successfulSize
+        });
+      }
+      
+      // Cleanup uploaded files from server
+      cleanupUploadedFiles(files);
+      
+      res.json({ 
+        success: true, 
+        data: uploadResults,
+        message: `${successfulUploads.length} of ${files.length} files uploaded successfully`
+      });
+      
+    } catch (error) {
+      console.error("Error in upload:", error);
+      if (req.files) {
+        cleanupUploadedFiles(req.files as Express.Multer.File[]);
+      }
+      res.status(500).json({ success: false, message: "Upload failed" });
+    }
+  });
+
+  // Get project files
+  app.get("/api/projects/:id/files", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ success: false, message: "Project not found" });
+      }
+      
+      if (project.userId !== req.user!.id) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+      
+      const files = await storage.getProjectFiles(projectId);
+      res.json({ success: true, data: files });
+    } catch (error) {
+      console.error("Error fetching project files:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch files" });
+    }
+  });
+
+  // Get user's Vimeo folders (security check)
+  app.get("/api/vimeo/folders", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const folders = await vimeoService.getUserFolders(req.user!.id);
+      res.json({ success: true, data: folders });
+    } catch (error) {
+      console.error("Error fetching Vimeo folders:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch folders" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
