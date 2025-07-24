@@ -239,6 +239,18 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         ),
       );
 
+      console.log('About to call complete upload with:', {
+        completeUri: uploadSession.completeUri,
+        videoUri: uploadSession.videoUri,
+        fileName: uploadFile.file.name,
+        fileSize: uploadFile.file.size,
+      });
+      
+      if (!uploadSession.completeUri) {
+        console.error('Missing completeUri in uploadSession:', uploadSession);
+        throw new Error('Upload session is missing completeUri - cannot complete upload');
+      }
+
       const completeResult = await completeUploadMutation.mutateAsync({
         completeUri: uploadSession.completeUri,
         videoUri: uploadSession.videoUri,
