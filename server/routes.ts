@@ -707,10 +707,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete direct Vimeo upload
   app.post("/api/projects/:id/complete-upload", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
+      console.log('Complete upload request body:', req.body);
+      console.log('Complete upload body keys:', Object.keys(req.body || {}));
+      console.log('Auth user:', req.user?.id);
+      
       const projectId = parseInt(req.params.id);
       const { completeUri, videoUri, fileName, fileSize } = req.body;
 
+      console.log('Extracted values:', { completeUri, videoUri, fileName, fileSize });
+
       if (!completeUri || !videoUri || !fileName) {
+        console.error('Missing required fields:', {
+          hasCompleteUri: !!completeUri,
+          hasVideoUri: !!videoUri,
+          hasFileName: !!fileName
+        });
         return res.status(400).json({
           success: false,
           message: "completeUri, videoUri, and fileName are required"
