@@ -559,8 +559,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
           Video Upload
         </CardTitle>
         <CardDescription>
-          Upload video files directly to Vimeo with TUS resumable uploads.
-          Maximum 10GB per request.
+          Upload video files; Maximum 10GB per request.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -591,8 +590,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             </label>
           </p>
           <p className="text-sm text-gray-500">
-            TUS resumable upload directly to Vimeo - supports MP4, MOV, AVI, and
-            other video formats
+            Upload your videos - supports MP4, MOV, AVI, and other video formats
           </p>
         </div>
 
@@ -694,10 +692,9 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertCircle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              <strong>Verification in Progress:</strong> We're checking with
-              Vimeo to confirm your videos were received successfully. This
-              ensures your uploads are complete before you can proceed to the
-              next step.
+              <strong>Verification in Progress:</strong> We're checking to
+              confirm your videos were received successfully. This ensures your
+              uploads are complete before you can proceed to the next step.
             </AlertDescription>
           </Alert>
         )}
@@ -708,7 +705,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
               <strong>All videos verified!</strong> Your uploads have been
-              confirmed by Vimeo and are ready for processing.
+              confirmed and are ready for processing.
             </AlertDescription>
           </Alert>
         )}
@@ -744,7 +741,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
                 {canProceed
                   ? `Proceed to Next Step (${completedFiles + verifiedFiles} files verified)`
                   : verifyingFiles > 0
-                    ? `Please wait - Verifying ${verifyingFiles} files with Vimeo...`
+                    ? `Please wait - Verifying ${verifyingFiles} files...`
                     : failedFiles > 0
                       ? `Fix ${failedFiles} failed uploads before proceeding`
                       : "Upload files to proceed"}

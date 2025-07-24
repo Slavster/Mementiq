@@ -343,7 +343,9 @@ export default function DashboardPage() {
                       {project.vimeoFolderId && (
                         <div className="flex items-center gap-2 pt-2">
                           <Folder className="h-4 w-4 text-blue-400" />
-                          <span className="text-xs text-blue-400">Vimeo Ready</span>
+                          <span className="text-xs text-blue-400">
+                            Upload Ready
+                          </span>
                         </div>
                       )}
                     </div>
@@ -369,7 +371,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Project Details Dialog */}
-      <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
+      <Dialog
+        open={!!selectedProject}
+        onOpenChange={() => setSelectedProject(null)}
+      >
         <DialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-[#2abdee] text-xl">
@@ -379,7 +384,7 @@ export default function DashboardPage() {
               Upload and manage video files for this project
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedProject && (
             <div className="space-y-6">
               {/* Project Info */}
@@ -397,17 +402,21 @@ export default function DashboardPage() {
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Vimeo Integration</p>
+                  <p className="text-sm text-gray-400">video integration</p>
                   <div className="flex items-center gap-2">
                     {selectedProject.vimeoFolderId ? (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-400" />
-                        <span className="text-sm text-green-400">Connected</span>
+                        <span className="text-sm text-green-400">
+                          Connected
+                        </span>
                       </>
                     ) : (
                       <>
                         <AlertCircle className="h-4 w-4 text-yellow-400" />
-                        <span className="text-sm text-yellow-400">Setting up...</span>
+                        <span className="text-sm text-yellow-400">
+                          Setting up...
+                        </span>
                       </>
                     )}
                   </div>
@@ -416,11 +425,11 @@ export default function DashboardPage() {
 
               {/* Upload Section */}
               {selectedProject.vimeoFolderId ? (
-                <DirectVideoUpload 
+                <DirectVideoUpload
                   projectId={selectedProject.id}
                   onUploadComplete={() => {
                     // Refresh project data
-                    queryClient.invalidateQueries({ queryKey: ['projects'] });
+                    queryClient.invalidateQueries({ queryKey: ["projects"] });
                   }}
                 />
               ) : (
@@ -428,11 +437,11 @@ export default function DashboardPage() {
                   <CardContent className="p-6 text-center">
                     <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-yellow-500 mb-2">
-                      Setting up Vimeo Integration
+                      Setting up video project
                     </h3>
                     <p className="text-gray-400">
-                      Your project folder is being created in Vimeo. This may take a few moments.
-                      Please refresh or try again shortly.
+                      Your project folder is being created. This may take a few
+                      moments. Please refresh or try again shortly.
                     </p>
                   </CardContent>
                 </Card>
