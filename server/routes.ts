@@ -871,6 +871,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tally form submission routes
+  app.post("/api/projects/:id/tally-submission", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const { tallySubmissionId, submissionData } = req.body;
+
+      // Verify project exists and user owns it
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ success: false, message: "Project not found" });
+      }
+      
+      if (project.userId !== req.user!.id) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+
+      // Check if submission already exists
+      const existingSubmission = await storage.getTallyFormSubmission(projectId);
+      if (existingSubmission) {
+        return res.status(409).json({ 
+          success: false, 
+          message: "Project already has a form submission",
+          submission: existingSubmission
+        });
+      }
+
+      // Create the submission record
+      const submission = await storage.createTallyFormSubmission({
+        projectId,
+        userId: req.user!.id,
+        tallySubmissionId,
+        submissionData: JSON.stringify(submissionData)
+      });
+
+      // Update project status to "submitted"
+      await storage.updateProject(projectId, { status: "submitted" });
+
+      res.json({
+        success: true,
+        message: "Form submission recorded successfully",
+        submission
+      });
+
+    } catch (error: any) {
+      console.error('Tally submission error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to record form submission"
+      });
+    }
+  });
+
+  // Get Tally form submission for a project
+  app.get("/api/projects/:id/tally-submission", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+
+      // Verify project exists and user owns it
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ success: false, message: "Project not found" });
+      }
+      
+      if (project.userId !== req.user!.id) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+
+      const submission = await storage.getTallyFormSubmission(projectId);
+      
+      res.json({
+        success: true,
+        submission: submission || null,
+        hasSubmission: !!submission
+      });
+
+    } catch (error: any) {
+      console.error('Get Tally submission error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get form submission"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

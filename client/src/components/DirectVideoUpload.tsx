@@ -74,10 +74,14 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       fileName: string;
       fileSize: number;
     }) => {
-      const response = await apiRequest("POST", `/api/projects/${projectId}/upload-session`, {
-        fileName,
-        fileSize,
-      });
+      const response = await apiRequest(
+        "POST",
+        `/api/projects/${projectId}/upload-session`,
+        {
+          fileName,
+          fileSize,
+        },
+      );
       return await response.json();
     },
   });
@@ -100,7 +104,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
 
   const verifyUploadMutation = useMutation({
     mutationFn: async (data: { videoId: string; projectId: number }) => {
-      const response = await apiRequest("POST", "/api/upload/verify-video", data);
+      const response = await apiRequest(
+        "POST",
+        "/api/upload/verify-video",
+        data,
+      );
       return await response.json();
     },
   });
@@ -142,10 +150,10 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       }));
 
       setSelectedFiles((prev) => [...prev, ...newFiles]);
-      
+
       // Reset file input to allow re-selecting the same files
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     },
     [toast],
@@ -172,10 +180,10 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
 
   const removeFile = (id: string) => {
     setSelectedFiles((prev) => prev.filter((file) => file.id !== id));
-    
+
     // Reset file input to allow re-selecting files
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -193,33 +201,39 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         fileSize: uploadFile.file.size,
       });
 
-      console.log('=== SESSION CREATION DEBUG ===');
-      console.log('Session data received:', sessionData);
-      console.log('Session data type:', typeof sessionData);
-      console.log('Session data keys:', sessionData ? Object.keys(sessionData) : 'null');
-      console.log('Session data JSON:', JSON.stringify(sessionData, null, 2));
-      
+      console.log("=== SESSION CREATION DEBUG ===");
+      console.log("Session data received:", sessionData);
+      console.log("Session data type:", typeof sessionData);
+      console.log(
+        "Session data keys:",
+        sessionData ? Object.keys(sessionData) : "null",
+      );
+      console.log("Session data JSON:", JSON.stringify(sessionData, null, 2));
+
       if (!sessionData || !sessionData.uploadSession) {
-        console.error('Invalid session data structure:', {
+        console.error("Invalid session data structure:", {
           sessionData,
-          hasUploadSession: !!sessionData?.uploadSession
+          hasUploadSession: !!sessionData?.uploadSession,
         });
-        throw new Error('Invalid upload session response from server');
+        throw new Error("Invalid upload session response from server");
       }
 
       const uploadSession = sessionData.uploadSession;
-      console.log('Upload session object:', uploadSession);
-      console.log('Upload session keys:', Object.keys(uploadSession));
-      console.log('Upload session JSON:', JSON.stringify(uploadSession, null, 2));
-      
+      console.log("Upload session object:", uploadSession);
+      console.log("Upload session keys:", Object.keys(uploadSession));
+      console.log(
+        "Upload session JSON:",
+        JSON.stringify(uploadSession, null, 2),
+      );
+
       if (!uploadSession.uploadUrl) {
-        console.error('Upload session missing uploadUrl:', uploadSession);
-        console.error('Available properties:', Object.keys(uploadSession));
-        throw new Error('Upload session is missing required uploadUrl');
+        console.error("Upload session missing uploadUrl:", uploadSession);
+        console.error("Available properties:", Object.keys(uploadSession));
+        throw new Error("Upload session is missing required uploadUrl");
       }
-      
-      console.log('Starting TUS upload with URL:', uploadSession.uploadUrl);
-      console.log('=== SESSION CREATION COMPLETE ===');
+
+      console.log("Starting TUS upload with URL:", uploadSession.uploadUrl);
+      console.log("=== SESSION CREATION COMPLETE ===");
 
       // Step 2: Upload directly to Vimeo using TUS protocol
       setSelectedFiles((prev) =>
@@ -236,12 +250,12 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       );
 
       // Use TUS (tus.io) protocol for resumable uploads
-      console.log('Starting TUS upload...');
+      console.log("Starting TUS upload...");
       try {
         await uploadWithTUS(uploadFile, uploadSession);
-        console.log('TUS upload completed successfully');
+        console.log("TUS upload completed successfully");
       } catch (tusError) {
-        console.error('TUS upload failed:', tusError);
+        console.error("TUS upload failed:", tusError);
         throw new Error(`TUS upload failed: ${tusError.message}`);
       }
 
@@ -254,15 +268,15 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         ),
       );
 
-      console.log('About to call complete upload with:', {
+      console.log("About to call complete upload with:", {
         completeUri: uploadSession.completeUri,
         videoUri: uploadSession.videoUri,
         fileName: uploadFile.file.name,
         fileSize: uploadFile.file.size,
       });
-      
+
       // Note: completeUri is optional in modern Vimeo API (3.4+)
-      console.log('CompleteUri available:', !!uploadSession.completeUri);
+      console.log("CompleteUri available:", !!uploadSession.completeUri);
 
       const completeResult = await completeUploadMutation.mutateAsync({
         completeUri: uploadSession.completeUri || null,
@@ -299,22 +313,24 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       console.error("Error stack:", error.stack);
       console.error("Error type:", typeof error);
       console.error("Error message:", error.message);
-      
+
       let errorMessage = "Upload failed";
-      
+
       // Check for authentication errors
-      if (error.message?.includes('Authentication') || 
-          error.message?.includes('token') || 
-          error.message?.includes('unauthorized')) {
+      if (
+        error.message?.includes("Authentication") ||
+        error.message?.includes("token") ||
+        error.message?.includes("unauthorized")
+      ) {
         errorMessage = "Authentication failed. Please log in again.";
-      } else if (error.message?.includes('session')) {
+      } else if (error.message?.includes("session")) {
         errorMessage = "Failed to create upload session. Please try again.";
-      } else if (error.message?.includes('completeUri')) {
+      } else if (error.message?.includes("completeUri")) {
         errorMessage = "Upload session invalid. Please try again.";
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       console.error("Final error message to user:", errorMessage);
 
       setSelectedFiles((prev) =>
@@ -457,10 +473,15 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       try {
         const file = uploadFile.file;
         const uploadUrl = uploadSession.uploadUrl;
-        
-        console.log('TUS upload starting for file:', file.name, 'size:', file.size);
-        console.log('Upload URL:', uploadUrl);
-        console.log('Upload session object:', uploadSession);
+
+        console.log(
+          "TUS upload starting for file:",
+          file.name,
+          "size:",
+          file.size,
+        );
+        console.log("Upload URL:", uploadUrl);
+        console.log("Upload session object:", uploadSession);
 
         // Create a simple TUS implementation
         // First, send HEAD request to get upload offset
@@ -550,10 +571,10 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         (file) => file.status !== "completed" && file.status !== "failed",
       ),
     );
-    
+
     // Reset file input to allow re-selecting files
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -645,7 +666,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
           Video Upload
         </CardTitle>
         <CardDescription>
-          Upload video files; Maximum 10GB per request.
+          Upload video files; maximum 10GB per project.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
