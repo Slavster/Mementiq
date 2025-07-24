@@ -108,7 +108,8 @@ The application uses PostgreSQL with the following tables:
   - Dual upload strategy allowing users to choose upload method
   - Enhanced security with project ownership validation for all upload endpoints
 - **Performance Benefits**: Direct uploads bypass server storage, reducing bandwidth and enabling faster uploads
-- **User Experience**: Tabbed interface allows users to choose between direct Vimeo uploads or traditional server uploads
+- **User Experience**: Clean TUS-only upload interface with no server storage of user videos
+- **Architecture Decision**: Removed server-side video storage entirely - all uploads go directly to Vimeo via TUS protocol
 
 ### July 22, 2025 - Supabase Authentication Migration (COMPLETED)
 - **Problem**: User requested social login capabilities (Google only initially) that weren't available with custom Express authentication

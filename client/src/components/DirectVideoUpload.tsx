@@ -298,11 +298,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Cloud className="h-5 w-5" />
-          Direct Vimeo Upload
+          <Upload className="h-5 w-5" />
+          Video Upload
         </CardTitle>
         <CardDescription>
-          Upload video files directly to Vimeo for faster processing. Maximum 10GB per request.
+          Upload video files directly to Vimeo with TUS resumable uploads. Maximum 10GB per request.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -317,7 +317,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
         >
-          <Cloud className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-lg font-medium mb-2">
             Drop video files here or{' '}
             <label className="text-primary cursor-pointer hover:underline">
@@ -333,7 +333,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
             </label>
           </p>
           <p className="text-sm text-gray-500">
-            Direct upload to Vimeo - supports MP4, MOV, AVI, and other video formats
+            TUS resumable upload directly to Vimeo - supports MP4, MOV, AVI, and other video formats
           </p>
         </div>
 
@@ -411,7 +411,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({ projectId, onUplo
             disabled={isUploading || selectedFiles.every(f => f.status !== 'pending')}
             className="w-full"
           >
-            {isUploading ? 'Uploading to Vimeo...' : `Upload ${selectedFiles.filter(f => f.status === 'pending').length} Files to Vimeo`}
+            {isUploading ? 'Uploading...' : `Upload ${selectedFiles.filter(f => f.status === 'pending').length} Files`}
           </Button>
         )}
       </CardContent>

@@ -13,7 +13,7 @@ import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
 import { vimeoService } from "./vimeo";
-import { upload, cleanupUploadedFiles, getProjectUploadSize } from "./upload";
+import { getProjectUploadSize } from "./upload";
 import { createUploadSession, completeUpload, getVideoDetails, moveVideoToFolder } from './vimeoUpload';
 import "./types"; // Import session types
 
@@ -607,123 +607,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(Buffer.from(chunk));
   }
 
-  // Vimeo upload routes
-  app.post("/api/projects/:id/upload", requireAuth, upload.array('videos', 10), async (req: AuthenticatedRequest, res) => {
-    try {
-      const projectId = parseInt(req.params.id);
-      const files = req.files as Express.Multer.File[];
-      
-      if (!files || files.length === 0) {
-        return res.status(400).json({ success: false, message: "No files uploaded" });
-      }
-      
-      // Verify project ownership
-      const project = await storage.getProject(projectId);
-      if (!project) {
-        cleanupUploadedFiles(files);
-        return res.status(404).json({ success: false, message: "Project not found" });
-      }
-      
-      if (project.userId !== req.user!.id) {
-        cleanupUploadedFiles(files);
-        return res.status(403).json({ success: false, message: "Access denied" });
-      }
-      
-      if (!project.vimeoFolderId) {
-        cleanupUploadedFiles(files);
-        return res.status(400).json({ success: false, message: "Project Vimeo folder not configured" });
-      }
-      
-      // Check total upload size
-      const totalUploadSize = files.reduce((sum, file) => sum + file.size, 0);
-      const currentSize = project.currentUploadSize || 0;
-      const limit = project.uploadSizeLimit || (10 * 1024 * 1024 * 1024); // 10GB default
-      
-      if (currentSize + totalUploadSize > limit) {
-        cleanupUploadedFiles(files);
-        return res.status(400).json({ 
-          success: false, 
-          message: `Upload would exceed 10GB limit. Current: ${Math.round(currentSize/1024/1024/1024*100)/100}GB, New: ${Math.round(totalUploadSize/1024/1024/1024*100)/100}GB` 
-        });
-      }
-      
-      const uploadResults = [];
-      
-      // Upload files to Vimeo
-      for (const file of files) {
-        try {
-          console.log(`Uploading ${file.originalname} to Vimeo...`);
-          const vimeoResult = await vimeoService.uploadVideo(
-            file.path,
-            file.originalname,
-            project.vimeoFolderId,
-            file.size
-          );
-          
-          // Save file record to database
-          const fileRecord = await storage.createProjectFile(projectId, {
-            vimeoVideoId: vimeoResult.uri,
-            vimeoVideoUrl: vimeoResult.link,
-            filename: file.filename,
-            originalFilename: file.originalname,
-            fileType: file.mimetype,
-            fileSize: file.size,
-            uploadStatus: 'completed',
-            uploadProgress: 100,
-          });
-          
-          uploadResults.push({
-            file: fileRecord,
-            vimeo: vimeoResult
-          });
-          
-          console.log(`Successfully uploaded ${file.originalname}`);
-        } catch (uploadError) {
-          console.error(`Failed to upload ${file.originalname}:`, uploadError);
-          
-          // Record failed upload
-          await storage.createProjectFile(projectId, {
-            filename: file.filename,
-            originalFilename: file.originalname,
-            fileType: file.mimetype,
-            fileSize: file.size,
-            uploadStatus: 'failed',
-            uploadProgress: 0,
-          });
-          
-          uploadResults.push({
-            file: { originalname: file.originalname },
-            error: uploadError.message || 'Upload failed'
-          });
-        }
-      }
-      
-      // Update project upload size
-      const successfulUploads = uploadResults.filter(r => !r.error);
-      const successfulSize = successfulUploads.reduce((sum, r) => sum + (r.file?.fileSize || 0), 0);
-      
-      if (successfulSize > 0) {
-        await storage.updateProject(projectId, {
-          currentUploadSize: currentSize + successfulSize
-        });
-      }
-      
-      // Cleanup uploaded files from server
-      cleanupUploadedFiles(files);
-      
-      res.json({ 
-        success: true, 
-        data: uploadResults,
-        message: `${successfulUploads.length} of ${files.length} files uploaded successfully`
-      });
-      
-    } catch (error) {
-      console.error("Error in upload:", error);
-      if (req.files) {
-        cleanupUploadedFiles(req.files as Express.Multer.File[]);
-      }
-      res.status(500).json({ success: false, message: "Upload failed" });
-    }
+  // Legacy server upload route (removed - TUS direct upload only)
+  app.post("/api/projects/:id/upload", requireAuth, async (req: AuthenticatedRequest, res) => {
+    res.status(410).json({
+      success: false,
+      message: "Server uploads are no longer supported. Please use direct TUS upload to Vimeo.",
+      migration: "Use /api/projects/:id/upload-session endpoint for direct uploads"
+    });
   });
 
   // Create direct Vimeo upload session
@@ -791,6 +681,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+
 
   // Complete direct Vimeo upload
   app.post("/api/projects/:id/complete-upload", requireAuth, async (req: AuthenticatedRequest, res) => {
