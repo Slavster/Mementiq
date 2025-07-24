@@ -711,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Complete direct Vimeo upload
+  // Complete direct Vimeo upload (modernized for API 3.4+)
   app.post("/api/projects/:id/complete-upload", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       console.log('Complete upload request body:', req.body);
@@ -723,7 +723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Extracted values:', { completeUri, videoUri, fileName, fileSize });
 
-      if (!completeUri || !videoUri || !fileName) {
+      if (!videoUri || !fileName) {
         console.error('Missing required fields:', {
           hasCompleteUri: !!completeUri,
           hasVideoUri: !!videoUri,
@@ -731,7 +731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         return res.status(400).json({
           success: false,
-          message: "completeUri, videoUri, and fileName are required"
+          message: "videoUri and fileName are required"
         });
       }
 
@@ -751,8 +751,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Complete the upload
-      await completeUpload(completeUri);
+      // Complete the upload (only if completeUri is available)
+      if (completeUri) {
+        await completeUpload(completeUri);
+      } else {
+        console.log('No completeUri provided - using modern API flow (completion checked via video status)');
+      }
 
       // Move video to project folder if needed
       if (project.vimeoFolderId) {

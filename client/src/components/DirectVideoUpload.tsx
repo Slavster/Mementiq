@@ -250,13 +250,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         fileSize: uploadFile.file.size,
       });
       
-      if (!uploadSession.completeUri) {
-        console.error('Missing completeUri in uploadSession:', uploadSession);
-        throw new Error('Upload session is missing completeUri - cannot complete upload');
-      }
+      // Note: completeUri is optional in modern Vimeo API (3.4+)
+      console.log('CompleteUri available:', !!uploadSession.completeUri);
 
       const completeResult = await completeUploadMutation.mutateAsync({
-        completeUri: uploadSession.completeUri,
+        completeUri: uploadSession.completeUri || null,
         videoUri: uploadSession.videoUri,
         fileName: uploadFile.file.name,
         fileSize: uploadFile.file.size,
