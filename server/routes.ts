@@ -14,7 +14,7 @@ import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
 import { vimeoService } from "./vimeo";
 import { getProjectUploadSize } from "./upload";
-import { createUploadSession, completeUpload, getVideoDetails, moveVideoToFolder } from './vimeoUpload';
+import { createUploadSession, completeUpload, getVideoDetails, moveVideoToFolder, getFolderVideos } from './vimeoUpload';
 import "./types"; // Import session types
 
 interface AuthenticatedRequest extends Request {
@@ -951,6 +951,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to get form submission"
+      });
+    }
+  });
+
+  // Check if project folder has videos
+  app.get("/api/projects/:id/folder-status", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+
+      // Verify project exists and user owns it
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ success: false, message: "Project not found" });
+      }
+      
+      if (project.userId !== req.user!.id) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+
+      if (!project.vimeoFolderId) {
+        return res.json({
+          success: true,
+          hasVideos: false,
+          videoCount: 0,
+          message: "Vimeo folder not yet created"
+        });
+      }
+
+      // Check folder contents using Vimeo API
+      const folderVideos = await getFolderVideos(project.vimeoFolderId);
+      
+      res.json({
+        success: true,
+        hasVideos: folderVideos.length > 0,
+        videoCount: folderVideos.length,
+        canProceed: folderVideos.length > 0
+      });
+
+    } catch (error: any) {
+      console.error('Folder status check error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to check folder status",
+        hasVideos: false,
+        videoCount: 0
       });
     }
   });

@@ -132,3 +132,132 @@ export const moveVideoToFolder = async (videoUri: string, folderId: string): Pro
     });
   });
 };
+
+/**
+ * Get videos in a Vimeo folder/project
+ */
+export const getFolderVideos = async (folderId: string): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    client.request({
+      method: 'GET',
+      path: `/me/projects/${folderId}/videos`,
+      query: {
+        per_page: 100 // Get up to 100 videos
+      }
+    }, (error: any, body: any) => {
+      if (error) {
+        console.error('Vimeo folder videos error:', error);
+        reject(new Error(`Failed to get folder videos: ${error.message}`));
+        return;
+      }
+
+      resolve(body.data || []);
+    });
+  });
+};
+
+/**
+ * Verify video upload status
+ */
+export const verifyVideoUpload = async (videoId: string): Promise<{
+  isUploaded: boolean;
+  isTranscoding: boolean;
+  isReady: boolean;
+  status: string;
+  transcode?: {
+    status: string;
+    progress?: number;
+  };
+}> => {
+  return new Promise((resolve, reject) => {
+    client.request({
+      method: 'GET',
+      path: `/videos/${videoId}`,
+      query: {
+        fields: 'status,transcode,upload'
+      }
+    }, (error: any, body: any) => {
+      if (error) {
+        console.error('Error verifying video upload:', error);
+        reject(error);
+        return;
+      }
+      
+      const uploadStatus = body.upload?.status || 'unknown';
+      const transcodeStatus = body.transcode?.status || 'unknown';
+      
+      const result = {
+        isUploaded: uploadStatus === 'complete',
+        isTranscoding: transcodeStatus === 'in_progress',
+        isReady: transcodeStatus === 'complete',
+        status: body.status || 'unknown',
+        transcode: body.transcode ? {
+          status: transcodeStatus,
+          progress: body.transcode.progress || 0
+        } : undefined
+      };
+      
+      resolve(result);
+    });
+  });
+};
+
+/**
+ * Create user folder
+ */
+export const createUserFolder = async (userId: string, userEmail: string): Promise<string> => {
+  const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
+  
+  return new Promise((resolve, reject) => {
+    client.request({
+      method: 'POST',
+      path: '/me/projects',
+      query: {
+        name: folderName
+      }
+    }, (error: any, body: any) => {
+      if (error) {
+        console.error('Error creating user folder:', error);
+        reject(error);
+        return;
+      }
+      
+      resolve(body.uri);
+    });
+  });
+};
+
+/**
+ * Create project folder
+ */
+export const createProjectFolder = async (userFolderUri: string, projectId: number, projectTitle: string): Promise<string> => {
+  const folderName = `Project_${projectId}_${projectTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  
+  return new Promise((resolve, reject) => {
+    client.request({
+      method: 'POST',
+      path: '/me/projects',
+      query: {
+        name: folderName,
+        parent_folder_uri: userFolderUri
+      }
+    }, (error: any, body: any) => {
+      if (error) {
+        console.error('Error creating project folder:', error);
+        reject(error);
+        return;
+      }
+      
+      resolve(body.uri);
+    });
+  });
+};
+
+export const vimeoService = {
+  createUploadSession,
+  completeUpload,
+  verifyVideoUpload,
+  createUserFolder,
+  createProjectFolder,
+  getFolderVideos
+};
