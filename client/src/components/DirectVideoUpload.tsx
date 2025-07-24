@@ -180,17 +180,28 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       });
 
       console.log('Session data received:', sessionData);
+      console.log('Session data type:', typeof sessionData);
+      console.log('Session data keys:', sessionData ? Object.keys(sessionData) : 'null');
       
       if (!sessionData || !sessionData.uploadSession) {
+        console.error('Invalid session data structure:', {
+          sessionData,
+          hasUploadSession: !!sessionData?.uploadSession
+        });
         throw new Error('Invalid upload session response from server');
       }
 
       const uploadSession = sessionData.uploadSession;
+      console.log('Upload session object:', uploadSession);
+      console.log('Upload session keys:', Object.keys(uploadSession));
       
       if (!uploadSession.uploadUrl) {
         console.error('Upload session missing uploadUrl:', uploadSession);
+        console.error('Available properties:', Object.keys(uploadSession));
         throw new Error('Upload session is missing required uploadUrl');
       }
+      
+      console.log('Starting TUS upload with URL:', uploadSession.uploadUrl);
 
       // Step 2: Upload directly to Vimeo using TUS protocol
       setSelectedFiles((prev) =>
@@ -207,7 +218,14 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       );
 
       // Use TUS (tus.io) protocol for resumable uploads
-      await uploadWithTUS(uploadFile, uploadSession);
+      console.log('Starting TUS upload...');
+      try {
+        await uploadWithTUS(uploadFile, uploadSession);
+        console.log('TUS upload completed successfully');
+      } catch (tusError) {
+        console.error('TUS upload failed:', tusError);
+        throw new Error(`TUS upload failed: ${tusError.message}`);
+      }
 
       // Step 3: Complete upload
       setSelectedFiles((prev) =>
@@ -404,6 +422,9 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       try {
         const file = uploadFile.file;
         const uploadUrl = uploadSession.uploadUrl;
+        
+        console.log('TUS upload starting for file:', file.name, 'size:', file.size);
+        console.log('Upload URL:', uploadUrl);
 
         // Create a simple TUS implementation
         // First, send HEAD request to get upload offset
