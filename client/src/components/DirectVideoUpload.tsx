@@ -847,7 +847,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
                 className="w-full"
               >
                 {canProceed
-                  ? `Proceed to Next Step (${completedFiles + verifiedFiles} files verified)`
+                  ? `Next: Project Details Form (${completedFiles + verifiedFiles} files verified)`
                   : verifyingFiles > 0
                     ? `Please wait - Verifying ${verifyingFiles} files...`
                     : failedFiles > 0
