@@ -763,10 +763,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Move video to project folder if needed
       if (project.vimeoFolderId) {
         try {
+          console.log(`Attempting to move video ${videoUri} to folder ${project.vimeoFolderId}`);
           await moveVideoToFolder(videoUri, project.vimeoFolderId);
+          console.log('Video moved to folder successfully');
         } catch (moveError) {
           console.warn('Failed to move video to folder:', moveError);
-          // Continue even if move fails
+          // Continue even if move fails - this is not critical
         }
       }
 
@@ -774,8 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const videoDetails = await getVideoDetails(videoUri);
 
       // Save file record
-      const fileRecord = await storage.createProjectFile({
-        projectId,
+      const fileRecord = await storage.createProjectFile(projectId, {
         vimeoVideoId: videoUri.replace('/videos/', ''),
         filename: fileName,
         fileType: 'video',
