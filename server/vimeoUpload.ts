@@ -56,10 +56,12 @@ export const createUploadSession = async (
         return;
       }
 
+      // Note: complete_uri is deprecated in Vimeo API 3.4+
+      // Upload completion is checked via video status instead
       resolve({
         upload_link: body.upload.upload_link,
         video_uri: body.uri,
-        complete_uri: body.upload.complete_uri,
+        complete_uri: body.upload.complete_uri || null, // May be undefined in newer API
         ticket_id: body.upload.ticket_id || body.uri.split('/').pop()
       });
     });
