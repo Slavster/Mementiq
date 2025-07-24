@@ -110,6 +110,10 @@ The application uses PostgreSQL with the following tables:
 - **Performance Benefits**: Direct uploads bypass server storage, reducing bandwidth and enabling faster uploads
 - **User Experience**: Clean TUS-only upload interface with no server storage of user videos
 - **Architecture Decision**: Removed server-side video storage entirely - all uploads go directly to Vimeo via TUS protocol
+- **Hierarchical Folder Structure**: Implemented User -> Project folder hierarchy in Vimeo for proper organization and isolation
+  - Each user gets a main folder: `User_{userIdPrefix}_{emailPrefix}`  
+  - Each project gets a subfolder: `Project_{projectId}_{titleSanitized}`
+  - Ensures videos are isolated by both user and project for security and organization
 
 ### July 22, 2025 - Supabase Authentication Migration (COMPLETED)
 - **Problem**: User requested social login capabilities (Google only initially) that weren't available with custom Express authentication

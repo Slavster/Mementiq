@@ -52,10 +52,12 @@ export class VimeoService {
       // Check if folder already exists
       const existingFolder = await this.findFolderByName(folderName);
       if (existingFolder) {
+        console.log('Found existing user folder:', existingFolder.uri);
         return existingFolder.uri;
       }
 
       // Create new user folder
+      console.log('Creating new user folder:', folderName);
       return new Promise((resolve, reject) => {
         this.client.request({
           method: 'POST',
@@ -113,6 +115,28 @@ export class VimeoService {
       this.client.request({
         method: 'GET',
         path: '/me/projects',
+        query: {
+          per_page: 100
+        }
+      }, (error: any, body: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          const folder = body.data?.find((f: VimeoFolder) => f.name === name);
+          resolve(folder || null);
+        }
+      });
+    });
+  }
+
+  /**
+   * Find subfolder by name within a parent folder
+   */
+  private async findSubfolderByName(name: string, parentFolderUri: string): Promise<VimeoFolder | null> {
+    return new Promise((resolve, reject) => {
+      this.client.request({
+        method: 'GET',
+        path: `${parentFolderUri}/projects`,
         query: {
           per_page: 100
         }
