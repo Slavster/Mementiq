@@ -84,7 +84,7 @@ The application uses PostgreSQL with the following tables:
 
 ## Changelog
 
-### July 24, 2025 - Tally Form Integration with Two-Step Workflow (COMPLETED)
+### July 24, 2025 - Enhanced Tally Form Integration with Auto-Close (COMPLETED)
 - **Problem**: User requested Tally form integration as mandatory step after video upload verification
 - **User Requirement**: Two-step workflow with engaging step names and one form submission per project
 - **Solution Implemented**: Complete Tally form integration with step-based workflow
@@ -109,6 +109,8 @@ The application uses PostgreSQL with the following tables:
   - `tally_form_submissions` table (id, project_id, user_id, tally_submission_id, submission_data, submitted_at, verified_at)
   - Unique constraint on (project_id, user_id) to prevent duplicate submissions
 - **Status**: Fully operational with complete workflow from upload to form submission
+- **Latest Enhancement**: Removed manual buttons ("Close Form", "Form will auto-submit") - form now automatically closes dialog upon Tally submission detection
+- **UX Improvement**: Streamlined experience with automatic dialog closure and step progression after form completion
 
 ### July 24, 2025 - CORS and Direct Vimeo Upload Integration (FULLY OPERATIONAL)
 - **Problem**: User requested CORS configuration for direct uploads to improve performance and handle large files
