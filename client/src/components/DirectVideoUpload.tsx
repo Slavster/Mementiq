@@ -250,6 +250,19 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       });
     } catch (error: any) {
       console.error("Direct upload error:", error);
+      
+      let errorMessage = "Upload failed";
+      
+      // Check for authentication errors
+      if (error.message?.includes('Authentication') || 
+          error.message?.includes('token') || 
+          error.message?.includes('unauthorized')) {
+        errorMessage = "Authentication failed. Please log in again.";
+      } else if (error.message?.includes('session')) {
+        errorMessage = "Failed to create upload session. Please try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
 
       setSelectedFiles((prev) =>
         prev.map((f) =>
@@ -258,7 +271,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
                 ...f,
                 status: "failed",
                 progress: 0,
-                error: error.message || "Upload failed",
+                error: errorMessage,
               }
             : f,
         ),

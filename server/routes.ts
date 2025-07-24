@@ -33,13 +33,22 @@ async function requireAuth(req: AuthenticatedRequest, res: Response, next: Funct
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('Missing or invalid auth header:', authHeader);
     return res.status(401).json({ success: false, message: 'Authentication required' });
   }
   
   const token = authHeader.split(' ')[1];
+  
+  if (!token || token.length < 10) {
+    console.log('Invalid token format:', token?.substring(0, 20) + '...');
+    return res.status(401).json({ success: false, message: 'Invalid token format' });
+  }
+  
+  console.log('Verifying token for request:', req.method, req.path);
   const result = await verifySupabaseToken(token);
   
   if (!result.success) {
+    console.log('Token verification failed:', result.error);
     return res.status(401).json({ success: false, message: result.error });
   }
   
