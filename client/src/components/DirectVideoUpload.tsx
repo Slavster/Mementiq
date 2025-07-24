@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createSessionMutation = useMutation({
     mutationFn: async ({
@@ -141,6 +142,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       }));
 
       setSelectedFiles((prev) => [...prev, ...newFiles]);
+      
+      // Reset file input to allow re-selecting the same files
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     },
     [toast],
   );
@@ -166,6 +172,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
 
   const removeFile = (id: string) => {
     setSelectedFiles((prev) => prev.filter((file) => file.id !== id));
+    
+    // Reset file input to allow re-selecting files
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const uploadToVimeo = async (uploadFile: UploadFile) => {
@@ -539,6 +550,11 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         (file) => file.status !== "completed" && file.status !== "failed",
       ),
     );
+    
+    // Reset file input to allow re-selecting files
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const getStatusIcon = (status: UploadFile["status"]) => {
@@ -650,6 +666,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             <label className="text-primary cursor-pointer hover:underline">
               browse
               <input
+                ref={fileInputRef}
                 type="file"
                 multiple
                 accept="video/*"
