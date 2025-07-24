@@ -54,6 +54,16 @@ export const emailSignups = pgTable("email_signups", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const tallyFormSubmissions = pgTable("tally_form_submissions", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull().unique(), // One submission per project
+  userId: text("user_id").references(() => users.id).notNull(),
+  tallySubmissionId: text("tally_submission_id").notNull().unique(), // Tally's unique submission ID
+  submissionData: text("submission_data"), // JSON string of form responses
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  verifiedAt: timestamp("verified_at"), // When we confirmed it exists in Tally
+});
+
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -100,6 +110,14 @@ export const insertEmailSignupSchema = createInsertSchema(emailSignups).pick({
   email: true,
 });
 
+// Tally form submission schema
+export const insertTallyFormSubmissionSchema = createInsertSchema(tallyFormSubmissions).pick({
+  projectId: true,
+  userId: true,
+  tallySubmissionId: true,
+  submissionData: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginUser = z.infer<typeof loginUserSchema>;
@@ -116,3 +134,6 @@ export type ProjectStatusLog = typeof projectStatusLog.$inferSelect;
 
 export type InsertEmailSignup = z.infer<typeof insertEmailSignupSchema>;
 export type EmailSignup = typeof emailSignups.$inferSelect;
+
+export type InsertTallyFormSubmission = z.infer<typeof insertTallyFormSubmissionSchema>;
+export type TallyFormSubmission = typeof tallyFormSubmissions.$inferSelect;

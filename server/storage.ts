@@ -3,7 +3,8 @@ import {
   projects, 
   projectFiles, 
   projectStatusLog, 
-  emailSignups, 
+  emailSignups,
+  tallyFormSubmissions,
   type User, 
   type InsertUser, 
   type Project,
@@ -13,7 +14,9 @@ import {
   type InsertProjectFile,
   type ProjectStatusLog,
   type EmailSignup, 
-  type InsertEmailSignup 
+  type InsertEmailSignup,
+  type TallyFormSubmission,
+  type InsertTallyFormSubmission
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -47,6 +50,11 @@ export interface IStorage {
   // Email signup methods
   createEmailSignup(emailSignup: InsertEmailSignup): Promise<EmailSignup>;
   getEmailSignups(): Promise<EmailSignup[]>;
+  
+  // Tally form submission methods
+  createTallyFormSubmission(submission: InsertTallyFormSubmission): Promise<TallyFormSubmission>;
+  getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined>;
+  updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -214,6 +222,43 @@ export class DatabaseStorage implements IStorage {
 
   async getEmailSignups(): Promise<EmailSignup[]> {
     return await db.select().from(emailSignups).orderBy(emailSignups.createdAt);
+  }
+
+  // Tally form submission methods
+  async createTallyFormSubmission(submission: InsertTallyFormSubmission): Promise<TallyFormSubmission> {
+    try {
+      const [tallySubmission] = await db
+        .insert(tallyFormSubmissions)
+        .values(submission)
+        .returning();
+      return tallySubmission;
+    } catch (error: any) {
+      // Handle unique constraint violations
+      if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+        if (error.message?.includes('project_id')) {
+          throw new Error("Project already has a form submission");
+        }
+        if (error.message?.includes('tally_submission_id')) {
+          throw new Error("Tally submission ID already exists");
+        }
+      }
+      throw error;
+    }
+  }
+
+  async getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined> {
+    const [submission] = await db
+      .select()
+      .from(tallyFormSubmissions)
+      .where(eq(tallyFormSubmissions.projectId, projectId));
+    return submission || undefined;
+  }
+
+  async updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void> {
+    await db
+      .update(tallyFormSubmissions)
+      .set({ verifiedAt })
+      .where(eq(tallyFormSubmissions.tallySubmissionId, submissionId));
   }
 }
 
