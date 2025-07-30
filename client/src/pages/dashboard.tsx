@@ -294,7 +294,7 @@ export default function DashboardPage() {
               </span>
               {subscription && (
                 <Button
-                  onClick={() => setLocation("/subscribe")}
+                  onClick={() => window.open("https://billing.stripe.com/p/login/test_4gMdR81Z2fYr6m9aOd6wE00", "_blank")}
                   variant="outline"
                   className="text-white border-white hover:bg-white hover:text-black"
                 >

@@ -120,6 +120,7 @@ The application uses PostgreSQL with the following tables:
   - Added subscription_status, subscription_tier, subscription_usage fields
   - Added subscription_allowance, subscription_period_start/end timestamps
 - **Status**: Fully operational subscription system with test Stripe keys configured
+- **Customer Portal Integration**: "Manage Subscription" button redirects to Stripe customer portal (https://billing.stripe.com/p/login/test_4gMdR81Z2fYr6m9aOd6wE00) for external subscription management
 
 ### July 24, 2025 - Enhanced Tally Form Integration with Auto-Close (COMPLETED)
 - **Problem**: User requested Tally form integration as mandatory step after video upload verification
