@@ -39,7 +39,7 @@ interface PricingTier {
 const pricingTiers: PricingTier[] = [
   {
     id: 'basic',
-    name: 'Basic',
+    name: 'Creative Spark',
     price: 49,
     projects: 2,
     features: [
@@ -53,7 +53,7 @@ const pricingTiers: PricingTier[] = [
   },
   {
     id: 'standard',
-    name: 'Standard',
+    name: 'Consistency Club',
     price: 129,
     projects: 6,
     features: [
@@ -70,7 +70,7 @@ const pricingTiers: PricingTier[] = [
   },
   {
     id: 'premium',
-    name: 'Premium',
+    name: 'Growth Accelerator',
     price: 249,
     projects: 12,
     features: [

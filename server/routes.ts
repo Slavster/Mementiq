@@ -157,32 +157,24 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-// Subscription tier configurations matching your pricing
+// Subscription tier configurations matching your actual Stripe products
 const SUBSCRIPTION_TIERS = {
   basic: {
-    name: 'Basic',
+    name: 'Creative Spark',
     allowance: 2,
-    stripeProductName: 'Basic Plan',
-    priceInCents: 2900 // $29/month
+    stripeProductId: 'prod_SlhMaAjk64ykbk'
   },
   standard: {
-    name: 'Standard',
+    name: 'Consistency Club',
     allowance: 6,
-    stripeProductName: 'Standard Plan',
-    priceInCents: 5900 // $59/month
+    stripeProductId: 'prod_SlhNEEOKukgpjo'
   },
   premium: {
-    name: 'Premium',
+    name: 'Growth Accelerator',
     allowance: 12,
-    stripeProductName: 'Premium Plan',
-    priceInCents: 9900 // $99/month
+    stripeProductId: 'prod_Sm3pNUZ42txw8o'
   }
 };
-
-// Helper function to get subscription price
-function getSubscriptionPrice(tier: string): number {
-  return SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS]?.priceInCents || 0;
-}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Email signup endpoint
@@ -389,9 +381,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUserStripeInfo(user.id, customerId);
       }
 
-      // Create actual Stripe checkout session
+      // Create actual Stripe checkout session using your product IDs
       const tierConfig = SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS];
       const baseUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'http://localhost:5000';
+      
+      // Get the default price for the product
+      const prices = await stripe.prices.list({
+        product: tierConfig.stripeProductId,
+        active: true,
+      });
+      
+      if (prices.data.length === 0) {
+        throw new Error(`No active prices found for product ${tierConfig.stripeProductId}`);
+      }
       
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -399,17 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         line_items: [
           {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: `${tierConfig.name} Plan`,
-                description: `${tierConfig.allowance} video projects per month`,
-              },
-              unit_amount: getSubscriptionPrice(tier), // You'll need to implement this
-              recurring: {
-                interval: 'month',
-              },
-            },
+            price: prices.data[0].id, // Use the first active price
             quantity: 1,
           },
         ],
@@ -417,7 +409,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cancel_url: `${baseUrl}/payment-cancelled?checkout=cancelled`,
         metadata: {
           userId: user.id,
-          tier: tier
+          tier: tier,
+          productId: tierConfig.stripeProductId
         }
       });
 
