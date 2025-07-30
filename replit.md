@@ -126,6 +126,13 @@ The application uses PostgreSQL with the following tables:
   - Consistency Club (Standard): prod_SlhNEEOKukgpjo  
   - Growth Accelerator (Premium): prod_Sm3pNUZ42txw8o
 - **Payment Flow**: Complete cancellation/success handling with dedicated pages (/payment-cancelled, /payment-success)
+- **Stripe Webhook System**: Comprehensive webhook handling at /api/webhooks/stripe with signature verification for:
+  - checkout.session.completed: Activates subscription upon successful checkout
+  - invoice.payment_succeeded: Handles recurring payments and resets usage counters
+  - customer.subscription.updated: Updates subscription tiers and status changes
+  - customer.subscription.deleted: Handles subscription cancellations
+  - invoice.payment_failed: Marks subscriptions as past_due for failed renewals
+- **Webhook Security**: Stripe signature verification using STRIPE_WEBHOOK_SECRET environment variable
 
 ### July 24, 2025 - Enhanced Tally Form Integration with Auto-Close (COMPLETED)
 - **Problem**: User requested Tally form integration as mandatory step after video upload verification

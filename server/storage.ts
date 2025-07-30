@@ -59,12 +59,15 @@ export interface IStorage {
   // Stripe subscription methods
   updateUserStripeInfo(userId: string, stripeCustomerId?: string, stripeSubscriptionId?: string): Promise<User | undefined>;
   updateUserSubscription(userId: string, subscriptionData: {
-    subscriptionStatus: string;
-    subscriptionTier: string;
-    subscriptionAllowance: number;
-    subscriptionPeriodStart: Date;
-    subscriptionPeriodEnd: Date;
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    subscriptionTier?: string | null;
+    subscriptionUsage?: number;
+    subscriptionAllowance?: number;
+    subscriptionPeriodStart?: Date;
+    subscriptionPeriodEnd?: Date;
   }): Promise<User | undefined>;
+  getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   incrementUserUsage(userId: string): Promise<User | undefined>;
   resetUserUsage(userId: string): Promise<User | undefined>;
 }
@@ -288,23 +291,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserSubscription(userId: string, subscriptionData: {
-    subscriptionStatus: string;
-    subscriptionTier: string;
-    subscriptionAllowance: number;
-    subscriptionPeriodStart: Date;
-    subscriptionPeriodEnd: Date;
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    subscriptionTier?: string | null;
+    subscriptionUsage?: number;
+    subscriptionAllowance?: number;
+    subscriptionPeriodStart?: Date;
+    subscriptionPeriodEnd?: Date;
   }): Promise<User | undefined> {
+    // Only include defined fields
+    const updateData: any = {};
+    if (subscriptionData.stripeSubscriptionId !== undefined) updateData.stripeSubscriptionId = subscriptionData.stripeSubscriptionId;
+    if (subscriptionData.subscriptionStatus !== undefined) updateData.subscriptionStatus = subscriptionData.subscriptionStatus;
+    if (subscriptionData.subscriptionTier !== undefined) updateData.subscriptionTier = subscriptionData.subscriptionTier;
+    if (subscriptionData.subscriptionUsage !== undefined) updateData.subscriptionUsage = subscriptionData.subscriptionUsage;
+    if (subscriptionData.subscriptionAllowance !== undefined) updateData.subscriptionAllowance = subscriptionData.subscriptionAllowance;
+    if (subscriptionData.subscriptionPeriodStart !== undefined) updateData.subscriptionPeriodStart = subscriptionData.subscriptionPeriodStart;
+    if (subscriptionData.subscriptionPeriodEnd !== undefined) updateData.subscriptionPeriodEnd = subscriptionData.subscriptionPeriodEnd;
+
     const [user] = await db
       .update(users)
-      .set({
-        subscriptionStatus: subscriptionData.subscriptionStatus,
-        subscriptionTier: subscriptionData.subscriptionTier,
-        subscriptionAllowance: subscriptionData.subscriptionAllowance,
-        subscriptionPeriodStart: subscriptionData.subscriptionPeriodStart,
-        subscriptionPeriodEnd: subscriptionData.subscriptionPeriodEnd,
-      })
+      .set(updateData)
       .where(eq(users.id, userId))
       .returning();
+    return user || undefined;
+  }
+
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.stripeCustomerId, stripeCustomerId));
     return user || undefined;
   }
 
