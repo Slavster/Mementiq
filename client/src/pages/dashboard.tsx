@@ -208,8 +208,8 @@ export default function DashboardPage() {
           variant: "destructive",
         });
         setLocation("/subscribe");
-      } else if (subscription && subscription.hasReachedLimit) {
-        // Show upgrade popup for users who reached their limit
+      } else if (subscription && subscription.hasActiveSubscription && subscription.hasReachedLimit) {
+        // Show upgrade popup for users who reached their limit (only if they have active subscription)
         toast({
           title: "Reached your limit? Upgrade your plan for more videos.",
           description: `You've used all ${subscription.allowance} videos in your ${subscription.productName || subscription.tier} plan.`,
@@ -379,7 +379,7 @@ export default function DashboardPage() {
                             Resets {new Date(subscription.periodEnd).toLocaleDateString()}
                           </p>
                         )}
-                        {subscription.hasReachedLimit && (
+                        {subscription.hasActiveSubscription && subscription.hasReachedLimit && (
                           <Button
                             size="sm"
                             onClick={() => setLocation("/subscribe")}
@@ -415,10 +415,10 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-white">Your Projects</h2>
             <Button
-              className={subscription?.hasReachedLimit ? "bg-orange-600 hover:bg-orange-700 font-semibold" : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"}
+              className={(subscription?.hasActiveSubscription && subscription?.hasReachedLimit) ? "bg-orange-600 hover:bg-orange-700 font-semibold" : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"}
               onClick={handleCreateProject}
             >
-              {subscription?.hasReachedLimit ? (
+              {(subscription?.hasActiveSubscription && subscription?.hasReachedLimit) ? (
                 <>
                   <Crown className="h-4 w-4 mr-2" />
                   Upgrade
@@ -449,10 +449,10 @@ export default function DashboardPage() {
                   life.
                 </p>
                 <Button
-                  className={subscription?.hasReachedLimit ? "bg-orange-600 hover:bg-orange-700 font-semibold" : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"}
+                  className={(subscription?.hasActiveSubscription && subscription?.hasReachedLimit) ? "bg-orange-600 hover:bg-orange-700 font-semibold" : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"}
                   onClick={handleCreateProject}
                 >
-                  {subscription?.hasReachedLimit ? (
+                  {(subscription?.hasActiveSubscription && subscription?.hasReachedLimit) ? (
                     <>
                       <Crown className="h-4 w-4 mr-2" />
                       Upgrade to Create More Videos
