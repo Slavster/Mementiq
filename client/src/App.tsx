@@ -7,6 +7,8 @@ import Home from "@/pages/home";
 import AuthPage from "@/pages/auth";
 import DashboardPage from "@/pages/dashboard";
 import Subscribe from "@/pages/subscribe";
+import PaymentCancelledPage from "@/pages/payment-cancelled";
+import PaymentSuccessPage from "@/pages/payment-success";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +18,8 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/subscribe" component={Subscribe} />
+      <Route path="/payment-cancelled" component={PaymentCancelledPage} />
+      <Route path="/payment-success" component={PaymentSuccessPage} />
       <Route component={NotFound} />
     </Switch>
   );

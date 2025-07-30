@@ -105,23 +105,21 @@ export default function Subscribe() {
   // Create checkout session mutation
   const createCheckoutMutation = useMutation({
     mutationFn: async (tier: string) => {
-      return apiRequest("POST", "/api/subscription/create-checkout", { tier });
+      const response = await apiRequest("POST", "/api/subscription/create-checkout", { tier });
+      return response.json();
     },
     onSuccess: (data) => {
-      // In production, redirect to actual Stripe checkout
-      toast({
-        title: "Redirecting to checkout...",
-        description: "You'll be redirected to Stripe to complete your subscription.",
-      });
-      
-      // For now, simulate subscription activation (replace with actual Stripe redirect)
-      setTimeout(() => {
+      if (data.success && data.checkoutUrl) {
         toast({
-          title: "Subscription activated!",
-          description: "Welcome to your new plan. You can now create projects.",
+          title: "Redirecting to checkout...",
+          description: "You'll be redirected to Stripe to complete your subscription.",
         });
-        setLocation("/dashboard");
-      }, 2000);
+        
+        // Redirect to Stripe checkout
+        window.location.href = data.checkoutUrl;
+      } else {
+        throw new Error(data.message || "Failed to create checkout session");
+      }
     },
     onError: (error: any) => {
       toast({
