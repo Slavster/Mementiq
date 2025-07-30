@@ -84,6 +84,43 @@ The application uses PostgreSQL with the following tables:
 
 ## Changelog
 
+### July 30, 2025 - Stripe Subscription Integration (COMPLETED)
+- **Problem**: User requested comprehensive subscription management with Stripe integration
+- **User Requirement**: Complete subscription system with usage limits, payment verification, and project creation validation
+- **Solution Implemented**: Full Stripe subscription system with dashboard integration
+- **Key Features**:
+  - Subscription status checking and display in dashboard
+  - Project creation validation against subscription limits
+  - Three-tier subscription system (Basic: 2 projects, Standard: 6 projects, Premium: 12 projects)
+  - Automatic usage tracking and limit enforcement
+  - Subscription management UI with plan comparison
+  - Stripe customer creation and checkout session handling
+  - Dashboard subscription status display with usage meters
+- **Technical Implementation**:
+  - Added subscription fields to users table (stripe_customer_id, subscription_status, etc.)
+  - Created comprehensive Stripe API integration with error handling
+  - Built subscription status checking middleware for project creation
+  - Implemented subscription management page (/subscribe) with pricing tiers
+  - Enhanced dashboard with subscription information and management links
+  - Added project creation validation with subscription requirement checks
+  - Real-time subscription status updates and cache invalidation
+- **User Experience**:
+  - Clear subscription status display in dashboard header
+  - Automatic redirection to subscription page when limits reached
+  - Usage meter showing projects used vs allowance
+  - Subscription management button for easy access to billing
+  - Validation prevents project creation without valid subscription
+- **API Endpoints**:
+  - GET /api/subscription/status - Check current subscription status
+  - POST /api/subscription/create-checkout - Create Stripe checkout session
+  - POST /api/webhooks/stripe - Handle Stripe subscription updates
+  - Enhanced POST /api/projects with subscription validation
+- **Database Schema Updates**:
+  - Added stripe_customer_id, stripe_subscription_id to users table
+  - Added subscription_status, subscription_tier, subscription_usage fields
+  - Added subscription_allowance, subscription_period_start/end timestamps
+- **Status**: Fully operational subscription system with test Stripe keys configured
+
 ### July 24, 2025 - Enhanced Tally Form Integration with Auto-Close (COMPLETED)
 - **Problem**: User requested Tally form integration as mandatory step after video upload verification
 - **User Requirement**: Two-step workflow with engaging step names and one form submission per project

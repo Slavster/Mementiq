@@ -55,6 +55,18 @@ export interface IStorage {
   createTallyFormSubmission(submission: InsertTallyFormSubmission): Promise<TallyFormSubmission>;
   getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined>;
   updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void>;
+
+  // Stripe subscription methods
+  updateUserStripeInfo(userId: string, stripeCustomerId?: string, stripeSubscriptionId?: string): Promise<User | undefined>;
+  updateUserSubscription(userId: string, subscriptionData: {
+    subscriptionStatus: string;
+    subscriptionTier: string;
+    subscriptionAllowance: number;
+    subscriptionPeriodStart: Date;
+    subscriptionPeriodEnd: Date;
+  }): Promise<User | undefined>;
+  incrementUserUsage(userId: string): Promise<User | undefined>;
+  resetUserUsage(userId: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -259,6 +271,62 @@ export class DatabaseStorage implements IStorage {
       .update(tallyFormSubmissions)
       .set({ verifiedAt })
       .where(eq(tallyFormSubmissions.tallySubmissionId, submissionId));
+  }
+
+  // Stripe subscription methods
+  async updateUserStripeInfo(userId: string, stripeCustomerId?: string, stripeSubscriptionId?: string): Promise<User | undefined> {
+    const updateData: any = {};
+    if (stripeCustomerId !== undefined) updateData.stripeCustomerId = stripeCustomerId;
+    if (stripeSubscriptionId !== undefined) updateData.stripeSubscriptionId = stripeSubscriptionId;
+
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async updateUserSubscription(userId: string, subscriptionData: {
+    subscriptionStatus: string;
+    subscriptionTier: string;
+    subscriptionAllowance: number;
+    subscriptionPeriodStart: Date;
+    subscriptionPeriodEnd: Date;
+  }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({
+        subscriptionStatus: subscriptionData.subscriptionStatus,
+        subscriptionTier: subscriptionData.subscriptionTier,
+        subscriptionAllowance: subscriptionData.subscriptionAllowance,
+        subscriptionPeriodStart: subscriptionData.subscriptionPeriodStart,
+        subscriptionPeriodEnd: subscriptionData.subscriptionPeriodEnd,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async incrementUserUsage(userId: string): Promise<User | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+
+    const [updatedUser] = await db
+      .update(users)
+      .set({ subscriptionUsage: (user.subscriptionUsage || 0) + 1 })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser || undefined;
+  }
+
+  async resetUserUsage(userId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ subscriptionUsage: 0 })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
   }
 }
 

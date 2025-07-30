@@ -34,6 +34,9 @@ import {
   AlertCircle,
   Upload,
   Folder,
+  CreditCard,
+  Crown,
+  Settings,
 } from "lucide-react";
 import DirectVideoUpload from "@/components/DirectVideoUpload";
 import TallyFormStep from "@/components/TallyFormStep";
@@ -45,6 +48,17 @@ interface User {
   lastName: string;
   company?: string;
   verified: boolean;
+}
+
+interface SubscriptionStatus {
+  hasActiveSubscription: boolean;
+  status: string;
+  tier: string;
+  usage: number;
+  allowance: number;
+  periodStart: string;
+  periodEnd: string;
+  stripeCustomerId: string;
 }
 
 interface Project {
@@ -117,7 +131,15 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
-  // Create project mutation
+  // Get subscription status
+  const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
+    queryKey: ["/api/subscription/status"],
+    enabled: isAuthenticated,
+  });
+
+  const subscription: SubscriptionStatus | undefined = subscriptionData?.subscription;
+
+  // Create project mutation with subscription validation
   const createProjectMutation = useMutation({
     mutationFn: async (projectData: {
       title: string;
@@ -129,12 +151,27 @@ export default function DashboardPage() {
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
         toast({
           title: "Project created!",
           description: "Your new video project has been created successfully.",
         });
         setShowCreateForm(false);
         setNewProjectTitle("");
+      } else if (data.requiresSubscription) {
+        toast({
+          title: "Subscription Required",
+          description: "You need an active subscription to create projects.",
+          variant: "destructive",
+        });
+        setLocation("/subscribe");
+      } else if (data.requiresUpgrade) {
+        toast({
+          title: "Upgrade Required",
+          description: `You've reached your ${data.tier} plan limit (${data.allowance} projects). Upgrade to create more projects.`,
+          variant: "destructive",
+        });
+        setLocation("/subscribe");
       } else {
         toast({
           title: "Failed to create project",
@@ -151,6 +188,36 @@ export default function DashboardPage() {
       });
     },
   });
+
+  // Helper function to check if user can create projects
+  const canCreateProject = () => {
+    if (!subscription) return false;
+    if (!subscription.hasActiveSubscription) return false;
+    if (subscription.usage >= subscription.allowance) return false;
+    return true;
+  };
+
+  const handleCreateProject = () => {
+    if (!canCreateProject()) {
+      if (!subscription?.hasActiveSubscription) {
+        toast({
+          title: "Subscription Required",
+          description: "You need an active subscription to create projects.",
+          variant: "destructive",
+        });
+        setLocation("/subscribe");
+      } else if (subscription && subscription.usage >= subscription.allowance) {
+        toast({
+          title: "Upgrade Required",
+          description: `You've reached your ${subscription.tier} plan limit. Upgrade to create more projects.`,
+          variant: "destructive",
+        });
+        setLocation("/subscribe");
+      }
+      return;
+    }
+    setShowCreateForm(true);
+  };
 
   const handleLogout = async () => {
     try {
@@ -225,6 +292,16 @@ export default function DashboardPage() {
               <span className="text-white">
                 Welcome, {mappedUser.firstName}
               </span>
+              {subscription && (
+                <Button
+                  onClick={() => setLocation("/subscribe")}
+                  variant="outline"
+                  className="text-white border-white hover:bg-white hover:text-black"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Manage Subscription
+                </Button>
+              )}
               <Button
                 onClick={handleLogout}
                 variant="outline"
@@ -250,7 +327,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Name</p>
                   <p className="text-lg font-semibold">
@@ -262,12 +339,42 @@ export default function DashboardPage() {
                   <p className="text-lg">{mappedUser.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Status</p>
+                  <p className="text-sm text-gray-400">Account Status</p>
                   <Badge
                     variant={mappedUser.verified ? "default" : "destructive"}
                   >
                     {mappedUser.verified ? "Verified" : "Unverified"}
                   </Badge>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Subscription</p>
+                  {subscriptionLoading ? (
+                    <div className="animate-pulse">Loading...</div>
+                  ) : subscription?.hasActiveSubscription ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="default" className="bg-green-600">
+                          {subscription.tier?.toUpperCase()} Plan
+                        </Badge>
+                        {subscription.tier === 'premium' && <Crown className="h-4 w-4 text-yellow-500" />}
+                      </div>
+                      <p className="text-sm text-gray-400">
+                        {subscription.usage}/{subscription.allowance} projects used
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <Badge variant="destructive">No Active Plan</Badge>
+                      <Button
+                        size="sm"
+                        onClick={() => setLocation("/subscribe")}
+                        className="mt-2"
+                      >
+                        <CreditCard className="h-3 w-3 mr-1" />
+                        Subscribe
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -280,7 +387,7 @@ export default function DashboardPage() {
             <h2 className="text-3xl font-bold text-white">Your Projects</h2>
             <Button
               className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
-              onClick={() => setShowCreateForm(true)}
+              onClick={handleCreateProject}
             >
               <Plus className="h-4 w-4 mr-2" />
               New Video Request
@@ -305,7 +412,7 @@ export default function DashboardPage() {
                 </p>
                 <Button
                   className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
-                  onClick={() => setShowCreateForm(true)}
+                  onClick={handleCreateProject}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Your First Video Request

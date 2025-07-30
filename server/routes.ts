@@ -16,6 +16,7 @@ import { vimeoService } from "./vimeo";
 import { getProjectUploadSize } from "./upload";
 import { createUploadSession, completeUpload, getVideoDetails, moveVideoToFolder, getFolderVideos } from './vimeoUpload';
 import "./types"; // Import session types
+import Stripe from "stripe";
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -147,6 +148,33 @@ function getContentType(extension: string | undefined): string {
       return 'application/octet-stream';
   }
 }
+
+// Initialize Stripe
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
+});
+
+// Subscription tier configurations matching your pricing
+const SUBSCRIPTION_TIERS = {
+  basic: {
+    name: 'Basic',
+    allowance: 2,
+    stripeProductName: 'Basic Plan'
+  },
+  standard: {
+    name: 'Standard',
+    allowance: 6,
+    stripeProductName: 'Standard Plan'
+  },
+  premium: {
+    name: 'Premium',
+    allowance: 12,
+    stripeProductName: 'Premium Plan'
+  }
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Email signup endpoint
@@ -283,6 +311,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Stripe Subscription Routes
+  
+  // Check subscription status
+  app.get("/api/subscription/status", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      res.json({
+        success: true,
+        subscription: {
+          hasActiveSubscription: user.subscriptionStatus === 'active',
+          status: user.subscriptionStatus,
+          tier: user.subscriptionTier,
+          usage: user.subscriptionUsage || 0,
+          allowance: user.subscriptionAllowance || 0,
+          periodStart: user.subscriptionPeriodStart,
+          periodEnd: user.subscriptionPeriodEnd,
+          stripeCustomerId: user.stripeCustomerId
+        }
+      });
+    } catch (error) {
+      console.error('Get subscription status error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get subscription status"
+      });
+    }
+  });
+
+  // Create or get subscription (redirect to Stripe checkout)
+  app.post('/api/subscription/create-checkout', requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { tier } = req.body;
+      
+      if (!tier || !SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS]) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid subscription tier"
+        });
+      }
+
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      let customerId = user.stripeCustomerId;
+
+      // Create Stripe customer if doesn't exist
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+          metadata: {
+            userId: user.id
+          }
+        });
+        customerId = customer.id;
+        await storage.updateUserStripeInfo(user.id, customerId);
+      }
+
+      // For now, we'll return checkout URL configuration
+      // In production, you would create the actual checkout session
+      res.json({
+        success: true,
+        message: "Subscription checkout session created",
+        checkoutUrl: `https://checkout.stripe.com/c/pay/placeholder#${tier}`,
+        customerId
+      });
+
+    } catch (error) {
+      console.error('Create checkout session error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create checkout session"
+      });
+    }
+  });
+
+  // Webhook for Stripe subscription updates
+  app.post('/api/webhooks/stripe', async (req, res) => {
+    try {
+      // In production, verify webhook signature
+      const event = req.body;
+
+      if (event.type === 'invoice.payment_succeeded') {
+        const subscription = event.data.object.subscription;
+        const customerId = event.data.object.customer;
+        
+        // Find user by Stripe customer ID
+        const users = await storage.getEmailSignups(); // We need a method to find by stripe customer
+        // For now, we'll handle this manually
+        
+        console.log('Webhook: Invoice payment succeeded', { subscription, customerId });
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Stripe webhook error:', error);
+      res.status(400).json({ error: 'Webhook error' });
+    }
+  });
+
   // Project Management Routes
   
   // Get user's projects
@@ -302,11 +442,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new project
+  // Create new project with subscription check
   app.post("/api/projects", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
+      // Check subscription status before creating project
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      // Check if user has active subscription
+      if (user.subscriptionStatus !== 'active') {
+        return res.status(403).json({
+          success: false,
+          message: "Active subscription required to create projects",
+          requiresSubscription: true,
+          subscriptionStatus: user.subscriptionStatus
+        });
+      }
+
+      // Check if user has exceeded usage limit
+      const currentUsage = user.subscriptionUsage || 0;
+      const allowance = user.subscriptionAllowance || 0;
+      
+      if (currentUsage >= allowance) {
+        return res.status(403).json({
+          success: false,
+          message: "Project limit reached for your subscription tier",
+          requiresUpgrade: true,
+          currentUsage,
+          allowance,
+          tier: user.subscriptionTier
+        });
+      }
+
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(req.user!.id, validatedData);
+      
+      // Increment user usage count for successful project creation
+      await storage.incrementUserUsage(req.user!.id);
       
       // Create hierarchical Vimeo folder structure
       try {

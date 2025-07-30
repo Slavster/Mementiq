@@ -10,6 +10,14 @@ export const users = pgTable("users", {
   company: text("company"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   verifiedAt: timestamp("verified_at"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status"), // active, inactive, past_due, canceled, etc.
+  subscriptionTier: text("subscription_tier"), // basic, standard, premium
+  subscriptionUsage: integer("subscription_usage").default(0), // Number of projects used in current period
+  subscriptionAllowance: integer("subscription_allowance"), // Projects allowed per billing period
+  subscriptionPeriodStart: timestamp("subscription_period_start"),
+  subscriptionPeriodEnd: timestamp("subscription_period_end"),
 });
 
 export const projects = pgTable("projects", {
