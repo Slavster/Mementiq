@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -154,7 +155,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2024-06-20",
 });
 
 // Subscription tier configurations matching your actual Stripe products
@@ -177,6 +178,164 @@ const SUBSCRIPTION_TIERS = {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Stripe webhook endpoint - must be before other JSON middleware
+  app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!sig || !endpointSecret) {
+      console.error('Missing Stripe signature or webhook secret');
+      return res.status(400).send('Missing signature or secret');
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      console.log('Webhook received:', event.type);
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed': {
+          const session = event.data.object as Stripe.Checkout.Session;
+          console.log('Checkout completed:', session.id);
+          
+          if (session.mode === 'subscription' && session.subscription) {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+            const userId = session.metadata?.userId;
+            const tier = session.metadata?.tier;
+
+            if (userId && tier) {
+              // Update user subscription status
+              await storage.updateUserSubscription(userId, {
+                stripeSubscriptionId: subscription.id,
+                subscriptionStatus: subscription.status,
+                subscriptionTier: tier,
+                subscriptionUsage: 0, // Reset usage on new subscription
+                subscriptionAllowance: SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS].allowance,
+                subscriptionPeriodStart: new Date(subscription.current_period_start * 1000),
+                subscriptionPeriodEnd: new Date(subscription.current_period_end * 1000)
+              });
+              
+              console.log(`Subscription activated for user ${userId}: ${tier}`);
+            }
+          }
+          break;
+        }
+
+        case 'invoice.payment_succeeded': {
+          const invoice = event.data.object as Stripe.Invoice;
+          console.log('Payment succeeded:', invoice.id);
+          
+          if (invoice.subscription) {
+            const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+            const customer = await stripe.customers.retrieve(subscription.customer as string);
+            
+            // Find user by customer ID
+            const user = await storage.getUserByStripeCustomerId(subscription.customer as string);
+            
+            if (user) {
+              // Update subscription status and reset usage for new billing period
+              const tierConfig = Object.entries(SUBSCRIPTION_TIERS).find(([_, config]) => 
+                config.stripeProductId === subscription.items.data[0]?.price.product
+              );
+              
+              if (tierConfig) {
+                const [tier] = tierConfig;
+                await storage.updateUserSubscription(user.id, {
+                  subscriptionStatus: subscription.status,
+                  subscriptionUsage: 0, // Reset usage on successful payment
+                  subscriptionPeriodStart: new Date(subscription.current_period_start * 1000),
+                  subscriptionPeriodEnd: new Date(subscription.current_period_end * 1000)
+                });
+                
+                console.log(`Subscription renewed for user ${user.id}: ${tier}`);
+              }
+            }
+          }
+          break;
+        }
+
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object as Stripe.Subscription;
+          console.log('Subscription updated:', subscription.id);
+          
+          const user = await storage.getUserByStripeCustomerId(subscription.customer as string);
+          
+          if (user) {
+            // Find tier based on product ID
+            const tierConfig = Object.entries(SUBSCRIPTION_TIERS).find(([_, config]) => 
+              config.stripeProductId === subscription.items.data[0]?.price.product
+            );
+            
+            if (tierConfig) {
+              const [tier] = tierConfig;
+              await storage.updateUserSubscription(user.id, {
+                subscriptionStatus: subscription.status,
+                subscriptionTier: tier,
+                subscriptionAllowance: SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS].allowance,
+                subscriptionPeriodStart: new Date(subscription.current_period_start * 1000),
+                subscriptionPeriodEnd: new Date(subscription.current_period_end * 1000)
+              });
+              
+              console.log(`Subscription updated for user ${user.id}: ${tier} (${subscription.status})`);
+            }
+          }
+          break;
+        }
+
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object as Stripe.Subscription;
+          console.log('Subscription canceled:', subscription.id);
+          
+          const user = await storage.getUserByStripeCustomerId(subscription.customer as string);
+          
+          if (user) {
+            await storage.updateUserSubscription(user.id, {
+              subscriptionStatus: 'canceled',
+              subscriptionTier: null,
+              subscriptionAllowance: 0,
+              subscriptionUsage: 0
+            });
+            
+            console.log(`Subscription canceled for user ${user.id}`);
+          }
+          break;
+        }
+
+        case 'invoice.payment_failed': {
+          const invoice = event.data.object as Stripe.Invoice;
+          console.log('Payment failed:', invoice.id);
+          
+          if (invoice.subscription) {
+            const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+            const user = await storage.getUserByStripeCustomerId(subscription.customer as string);
+            
+            if (user) {
+              await storage.updateUserSubscription(user.id, {
+                subscriptionStatus: 'past_due'
+              });
+              
+              console.log(`Payment failed for user ${user.id}, subscription marked past_due`);
+            }
+          }
+          break;
+        }
+
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error('Webhook processing error:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
   // Email signup endpoint
   app.post("/api/email-signup", async (req, res) => {
     try {
