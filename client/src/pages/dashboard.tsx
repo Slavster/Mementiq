@@ -54,11 +54,13 @@ interface SubscriptionStatus {
   hasActiveSubscription: boolean;
   status: string;
   tier: string;
+  productName: string;
   usage: number;
   allowance: number;
   periodStart: string;
   periodEnd: string;
   stripeCustomerId: string;
+  hasReachedLimit: boolean;
 }
 
 interface Project {
@@ -206,13 +208,23 @@ export default function DashboardPage() {
           variant: "destructive",
         });
         setLocation("/subscribe");
-      } else if (subscription && subscription.usage >= subscription.allowance) {
+      } else if (subscription && subscription.hasReachedLimit) {
+        // Show upgrade popup for users who reached their limit
         toast({
-          title: "Upgrade Required",
-          description: `You've reached your ${subscription.tier} plan limit. Upgrade to create more projects.`,
+          title: "Reached your limit? Upgrade your plan for more videos.",
+          description: `You've used all ${subscription.allowance} videos in your ${subscription.productName || subscription.tier} plan.`,
           variant: "destructive",
+          action: (
+            <Button
+              size="sm"
+              onClick={() => setLocation("/subscribe")}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Upgrade Plan
+            </Button>
+          ),
         });
-        setLocation("/subscribe");
+        return;
       }
       return;
     }
@@ -347,20 +359,37 @@ export default function DashboardPage() {
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Subscription</p>
+                  <p className="text-sm text-gray-400">Videos Created</p>
                   {subscriptionLoading ? (
                     <div className="animate-pulse">Loading...</div>
                   ) : subscription?.hasActiveSubscription ? (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Badge variant="default" className="bg-green-600">
-                          {subscription.tier?.toUpperCase()} Plan
+                        <Badge variant="default" className={`${subscription.hasReachedLimit ? 'bg-orange-600' : 'bg-green-600'}`}>
+                          {subscription.productName || subscription.tier?.toUpperCase()}
                         </Badge>
                         {subscription.tier === 'premium' && <Crown className="h-4 w-4 text-yellow-500" />}
                       </div>
-                      <p className="text-sm text-gray-400">
-                        {subscription.usage}/{subscription.allowance} projects used
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-lg font-semibold">
+                          {subscription.usage}/{subscription.allowance} Videos Created
+                        </p>
+                        {subscription.periodEnd && (
+                          <p className="text-xs text-gray-400">
+                            Resets {new Date(subscription.periodEnd).toLocaleDateString()}
+                          </p>
+                        )}
+                        {subscription.hasReachedLimit && (
+                          <Button
+                            size="sm"
+                            onClick={() => setLocation("/subscribe")}
+                            className="mt-1 bg-orange-600 hover:bg-orange-700"
+                          >
+                            <Crown className="h-3 w-3 mr-1" />
+                            Upgrade
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-1">
@@ -386,11 +415,20 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-white">Your Projects</h2>
             <Button
-              className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
+              className={subscription?.hasReachedLimit ? "bg-orange-600 hover:bg-orange-700 font-semibold" : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"}
               onClick={handleCreateProject}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              New Video Request
+              {subscription?.hasReachedLimit ? (
+                <>
+                  <Crown className="h-4 w-4 mr-2" />
+                  Upgrade
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Video Request
+                </>
+              )}
             </Button>
           </div>
 
@@ -411,11 +449,20 @@ export default function DashboardPage() {
                   life.
                 </p>
                 <Button
-                  className="bg-accent text-secondary hover:bg-yellow-500 font-semibold"
+                  className={subscription?.hasReachedLimit ? "bg-orange-600 hover:bg-orange-700 font-semibold" : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"}
                   onClick={handleCreateProject}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Video Request
+                  {subscription?.hasReachedLimit ? (
+                    <>
+                      <Crown className="h-4 w-4 mr-2" />
+                      Upgrade to Create More Videos
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Video Request
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>

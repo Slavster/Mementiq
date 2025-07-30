@@ -133,6 +133,10 @@ The application uses PostgreSQL with the following tables:
   - customer.subscription.deleted: Handles subscription cancellations
   - invoice.payment_failed: Marks subscriptions as past_due for failed renewals
 - **Webhook Security**: Stripe signature verification using STRIPE_WEBHOOK_SECRET environment variable
+- **Enhanced Usage Tracking**: System fetches allowance metadata from Stripe products and tracks video usage by counting projects in current billing period
+- **Smart Usage Display**: Dashboard shows "X/N Videos Created" with Stripe product names and billing period reset dates
+- **Upgrade Flow**: When users reach limits, "Subscribe" buttons change to "Upgrade" and show targeted upgrade messaging
+- **Real-time Validation**: Project creation blocked when limits reached with popup: "Reached your limit? Upgrade your plan for more videos."
 
 ### July 24, 2025 - Enhanced Tally Form Integration with Auto-Close (COMPLETED)
 - **Problem**: User requested Tally form integration as mandatory step after video upload verification

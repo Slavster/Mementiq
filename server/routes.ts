@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Stripe Subscription Routes
   
-  // Check subscription status
+  // Check subscription status with Stripe metadata
   app.get("/api/subscription/status", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const user = await storage.getUser(req.user!.id);
@@ -483,17 +483,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      let allowanceFromStripe = user.subscriptionAllowance || 0;
+      let productName = user.subscriptionTier || null;
+
+      // If user has active subscription, fetch allowance from Stripe product metadata
+      if (user.subscriptionStatus === 'active' && user.stripeSubscriptionId) {
+        try {
+          const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+          const productId = subscription.items.data[0]?.price.product as string;
+          
+          if (productId) {
+            const product = await stripe.products.retrieve(productId);
+            
+            // Get allowance from Stripe product metadata
+            if (product.metadata?.allowance) {
+              allowanceFromStripe = parseInt(product.metadata.allowance);
+              
+              // Update local storage if different
+              if (allowanceFromStripe !== user.subscriptionAllowance) {
+                await storage.updateUserSubscription(user.id, {
+                  subscriptionAllowance: allowanceFromStripe
+                });
+              }
+            }
+            
+            productName = product.name;
+          }
+        } catch (stripeError) {
+          console.warn('Failed to fetch Stripe subscription details:', stripeError);
+          // Continue with stored values
+        }
+      }
+
+      // Count completed/submitted projects in current period
+      const projects = await storage.getProjectsByUser(user.id);
+      let usageInPeriod = 0;
+      
+      if (user.subscriptionPeriodStart && user.subscriptionPeriodEnd) {
+        const periodStart = new Date(user.subscriptionPeriodStart);
+        const periodEnd = new Date(user.subscriptionPeriodEnd);
+        
+        usageInPeriod = projects.filter(project => {
+          const createdAt = new Date(project.createdAt);
+          return createdAt >= periodStart && createdAt <= periodEnd && 
+                 (project.status === 'submitted' || project.status === 'completed' || project.status === 'in_progress');
+        }).length;
+      }
+
       res.json({
         success: true,
         subscription: {
           hasActiveSubscription: user.subscriptionStatus === 'active',
           status: user.subscriptionStatus,
           tier: user.subscriptionTier,
-          usage: user.subscriptionUsage || 0,
-          allowance: user.subscriptionAllowance || 0,
+          productName,
+          usage: usageInPeriod,
+          allowance: allowanceFromStripe,
           periodStart: user.subscriptionPeriodStart,
           periodEnd: user.subscriptionPeriodEnd,
-          stripeCustomerId: user.stripeCustomerId
+          stripeCustomerId: user.stripeCustomerId,
+          hasReachedLimit: usageInPeriod >= allowanceFromStripe
         }
       });
     } catch (error) {
@@ -655,16 +704,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if user has exceeded usage limit
-      const currentUsage = user.subscriptionUsage || 0;
+      // Check if user has exceeded usage limit by counting projects in current period
+      const projects = await storage.getProjectsByUser(req.user!.id);
+      let usageInPeriod = 0;
+      
+      if (user.subscriptionPeriodStart && user.subscriptionPeriodEnd) {
+        const periodStart = new Date(user.subscriptionPeriodStart);
+        const periodEnd = new Date(user.subscriptionPeriodEnd);
+        
+        usageInPeriod = projects.filter(project => {
+          const createdAt = new Date(project.createdAt);
+          return createdAt >= periodStart && createdAt <= periodEnd && 
+                 (project.status === 'submitted' || project.status === 'completed' || project.status === 'in_progress');
+        }).length;
+      }
+      
       const allowance = user.subscriptionAllowance || 0;
       
-      if (currentUsage >= allowance) {
+      if (usageInPeriod >= allowance) {
         return res.status(403).json({
           success: false,
           message: "Project limit reached for your subscription tier",
           requiresUpgrade: true,
-          currentUsage,
+          currentUsage: usageInPeriod,
           allowance,
           tier: user.subscriptionTier
         });
