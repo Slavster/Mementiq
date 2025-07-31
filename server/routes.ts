@@ -1316,17 +1316,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Calculate storage from Vimeo videos if available, fallback to database files
+      let calculatedSize = totalSize;
+      if (vimeoVideos.length > 0) {
+        calculatedSize = vimeoVideos.reduce((sum, video) => sum + (video.file_size || 0), 0);
+      }
+      
+      const totalSizeGB = (calculatedSize / (1024 * 1024 * 1024)).toFixed(1);
+      const percentUsed = Math.round((calculatedSize / maxSize) * 100);
+
+      console.log('Final response data:', {
+        filesCount: files.length,
+        vimeoVideosCount: vimeoVideos.length,
+        vimeoVideoSizes: vimeoVideos.map(v => ({name: v.name, size: v.file_size})),
+        calculatedSize,
+        totalSizeGB
+      });
+
       res.json({ 
         success: true, 
         data: {
           files,
           vimeoVideos,
           storage: {
-            used: totalSize,
+            used: calculatedSize,
             max: maxSize,
-            usedGB: (totalSize / (1024 * 1024 * 1024)).toFixed(2),
+            usedGB: totalSizeGB,
             maxGB: 10,
-            percentUsed: Math.round((totalSize / maxSize) * 100)
+            percentUsed
           }
         }
       });
