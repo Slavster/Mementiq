@@ -316,7 +316,7 @@ export default function DashboardPage() {
                     )
                   }
                   variant="outline"
-                  className="text-white border-white hover:bg-white hover:text-black"
+                  className="border-2 border-accent text-accent px-6 py-2 font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200"
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Manage Subscription
@@ -325,7 +325,7 @@ export default function DashboardPage() {
               <Button
                 onClick={handleLogout}
                 variant="outline"
-                className="text-white border-white hover:bg-white hover:text-black"
+                className="border-2 border-accent text-accent px-6 py-2 font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
