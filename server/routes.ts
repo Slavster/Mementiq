@@ -1291,21 +1291,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Process Vimeo videos to extract proper names and file sizes
           vimeoVideos = rawVimeoVideos.map(video => {
-            // Get file size from the largest quality version in files array
+            // Get file size - try multiple possible fields
             let fileSize = 0;
-            if (video.files && video.files.length > 0) {
+            if (video.file_size) {
+              fileSize = video.file_size;
+            } else if (video.files && video.files.length > 0) {
               // Find the largest file (usually original quality)
               const largestFile = video.files.reduce((prev, current) => 
                 (current.size > prev.size) ? current : prev
               );
               fileSize = largestFile.size;
+            } else {
+              // Fallback to database file size
+              const videoId = video.uri.split('/').pop();
+              const dbFile = files.find(f => f.vimeoVideoId && f.vimeoVideoId.includes(videoId));
+              if (dbFile) {
+                fileSize = dbFile.fileSize || 0;
+              }
             }
             
             // Use the video name or fallback to database filename
             let videoName = video.name;
             if (!videoName || videoName.includes('.MOV') || videoName.includes('.mp4')) {
               // Find matching database file for better name
-              const dbFile = files.find(f => f.vimeoVideoId && video.uri.includes(f.vimeoVideoId));
+              const videoId = video.uri.split('/').pop();
+              const dbFile = files.find(f => f.vimeoVideoId && f.vimeoVideoId.includes(videoId));
               if (dbFile) {
                 videoName = dbFile.filename;
               }

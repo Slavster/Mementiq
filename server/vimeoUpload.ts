@@ -94,20 +94,25 @@ export const completeUpload = async (completeUri: string): Promise<any> => {
 };
 
 /**
- * Get video details
+ * Get video details with file information
  */
-export const getVideoDetails = async (videoUri: string): Promise<any> => {
+export const getVideoDetails = async (videoId: string): Promise<any> => {
   return new Promise((resolve, reject) => {
+    // Handle both full URI and just video ID
+    const path = videoId.startsWith('/videos/') ? videoId : `/videos/${videoId}`;
+    
     client.request({
       method: 'GET',
-      path: videoUri
+      path: path,
+      query: {
+        fields: 'uri,name,created_time,files,status,transcode,file_size'
+      }
     }, (error: any, body: any) => {
       if (error) {
-        console.error('Vimeo get video error:', error);
-        reject(new Error(`Failed to get video details: ${error.message}`));
+        console.error('Error getting video details:', error);
+        reject(error);
         return;
       }
-
       resolve(body);
     });
   });
@@ -136,6 +141,7 @@ export const moveVideoToFolder = async (videoUri: string, folderId: string): Pro
 /**
  * Get videos in a Vimeo folder/project
  */
+
 export const getFolderVideos = async (folderId: string): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     console.log('Attempting to fetch videos from folder:', folderId);
@@ -168,9 +174,9 @@ export const getFolderVideos = async (folderId: string): Promise<any[]> => {
         path: endpoint,
         query: {
           per_page: 100,
-          fields: 'uri,name,created_time,files,status,transcode'
+          fields: 'uri,name,created_time,status,transcode'
         }
-      }, (error: any, body: any) => {
+      }, async (error: any, body: any) => {
         if (error) {
           console.error(`Endpoint ${endpoint} failed:`, error);
           tryEndpoint(index + 1);
@@ -178,8 +184,33 @@ export const getFolderVideos = async (folderId: string): Promise<any[]> => {
         }
 
         console.log(`Success with endpoint: ${endpoint}`, body.data?.length || 0, 'videos found');
-        console.log('Raw Vimeo video data:', JSON.stringify(body.data?.slice(0, 1), null, 2)); // Log first video structure
-        resolve(body.data || []);
+        
+        // Get detailed info for each video to fetch file sizes
+        try {
+          const videosWithDetails = await Promise.all(
+            (body.data || []).map(async (video: any) => {
+              const videoId = video.uri.split('/').pop();
+              try {
+                const details = await getVideoDetails(videoId);
+                console.log(`Video ${videoId} details:`, {
+                  name: details.name,
+                  files: details.files?.length || 0,
+                  fileSize: details.file_size
+                });
+                return details;
+              } catch (err) {
+                console.warn(`Failed to get details for video ${videoId}:`, err);
+                return video; // Return basic video if details fail
+              }
+            })
+          );
+          
+          console.log('Videos with details fetched:', videosWithDetails.length);
+          resolve(videosWithDetails);
+        } catch (err) {
+          console.error('Error fetching video details:', err);
+          resolve(body.data || []); // Fallback to basic data
+        }
       });
     };
     
