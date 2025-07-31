@@ -572,6 +572,8 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
     queryClient.invalidateQueries({
       queryKey: ["projects", projectId, "files"],
     });
+    // Also invalidate the main projects list to refresh status on dashboard
+    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
 
     if (onUploadComplete) {
       onUploadComplete();
