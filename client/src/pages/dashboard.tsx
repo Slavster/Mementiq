@@ -637,6 +637,7 @@ export default function DashboardPage() {
                     // Refresh project data
                     queryClient.invalidateQueries({ queryKey: ["projects"] });
                   }}
+
                 />
               ) : currentStep === "upload" ? (
                 <Card className="bg-yellow-500/10 border-yellow-500/30">
