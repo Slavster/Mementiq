@@ -163,7 +163,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
     );
   }
 
-  if (hasExistingSubmission) {
+  if (hasExistingSubmission && !isFormVisible) {
     return (
       <Card className="w-full">
         <CardHeader>
@@ -200,6 +200,20 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
               {existingSubmission?.tallySubmissionId}
             </p>
           </div>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setIsFormVisible(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Update Form Responses
+            </Button>
+          </div>
+          <p className="text-sm text-gray-400 mt-2">
+            Note: Uploading additional footage allows you to update your form responses.
+          </p>
         </CardContent>
       </Card>
     );

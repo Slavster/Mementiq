@@ -120,7 +120,7 @@ export default function DashboardPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState("");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [currentStep, setCurrentStep] = useState<"upload" | "form">("upload");
+  const [currentStep, setCurrentStep] = useState<"upload" | "form" | "confirmation">("upload");
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects
@@ -515,6 +515,12 @@ export default function DashboardPage() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedProject(project);
+                          // If project has "edit in progress" status, show confirmation screen
+                          if (project.status === "edit in progress") {
+                            setCurrentStep("confirmation");
+                          } else {
+                            setCurrentStep("upload");
+                          }
                         }}
                       >
                         <Upload className="h-4 w-4 mr-2" />
@@ -599,21 +605,21 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : selectedProject.status === "edit in progress" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : (currentStep === "confirmation" || selectedProject.status === "edit in progress") ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : selectedProject.status === "edit in progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : (currentStep === "confirmation" || selectedProject.status === "edit in progress") ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {selectedProject.status === "edit in progress" ? "✓" : "2"}
+                    {(currentStep === "confirmation" || selectedProject.status === "edit in progress") ? "✓" : "2"}
                   </div>
                   <span className="font-medium">Describe Your Dream Edit</span>
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${selectedProject.status === "edit in progress" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "confirmation" ? "text-[#2abdee]" : selectedProject.status === "edit in progress" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${selectedProject.status === "edit in progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status === "edit in progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
                     {selectedProject.status === "edit in progress" ? "✓" : "3"}
                   </div>
@@ -660,20 +666,51 @@ export default function DashboardPage() {
                     projectId={selectedProject.id}
                     userId={user?.id || ""}
                     onFormComplete={() => {
-                      // Refresh project data and show success
+                      // Move to step 3 instead of closing
+                      setCurrentStep("confirmation");
                       queryClient.invalidateQueries({ queryKey: ["projects"] });
-                      toast({
-                        title: "Project Submitted!",
-                        description:
-                          "Your project request has been successfully submitted.",
-                      });
-                      // Close dialog after brief delay
-                      setTimeout(() => {
-                        setSelectedProject(null);
-                        setCurrentStep("upload");
-                      }, 2000);
                     }}
                   />
+                </div>
+              ) : currentStep === "confirmation" ? (
+                <div className="space-y-4">
+                  <Card className="bg-green-500/10 border-green-500/30">
+                    <CardContent className="p-6 text-center">
+                      <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-green-400 mb-2">
+                        Form Submitted Successfully!
+                      </h3>
+                      <p className="text-gray-300 mb-6">
+                        Your project details have been received. You can now confirm your submission or go back to upload additional footage.
+                      </p>
+                      <div className="flex gap-4 justify-center">
+                        <Button
+                          variant="outline"
+                          onClick={() => setCurrentStep("upload")}
+                          className="text-white border-gray-600 hover:bg-gray-700"
+                        >
+                          ← Back to Upload
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            // Show thank you message and close dialog
+                            toast({
+                              title: "Request Confirmed!",
+                              description: "An editor will contact you soon via email when your video is ready.",
+                              duration: 5000,
+                            });
+                            setTimeout(() => {
+                              setSelectedProject(null);
+                              setCurrentStep("upload");
+                            }, 1000);
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          Confirm Submission
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               ) : null}
             </div>
