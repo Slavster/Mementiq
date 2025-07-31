@@ -54,6 +54,7 @@ export interface IStorage {
   // Tally form submission methods
   createTallyFormSubmission(submission: InsertTallyFormSubmission): Promise<TallyFormSubmission>;
   getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined>;
+  updateTallyFormSubmission(projectId: number, updates: Partial<Pick<TallyFormSubmission, 'tallySubmissionId' | 'submissionData' | 'submittedAt'>>): Promise<TallyFormSubmission>;
   updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void>;
 
   // Stripe subscription methods
@@ -267,6 +268,20 @@ export class DatabaseStorage implements IStorage {
       .from(tallyFormSubmissions)
       .where(eq(tallyFormSubmissions.projectId, projectId));
     return submission || undefined;
+  }
+
+  async updateTallyFormSubmission(projectId: number, updates: Partial<Pick<TallyFormSubmission, 'tallySubmissionId' | 'submissionData' | 'submittedAt'>>): Promise<TallyFormSubmission> {
+    const [updatedSubmission] = await db
+      .update(tallyFormSubmissions)
+      .set(updates)
+      .where(eq(tallyFormSubmissions.projectId, projectId))
+      .returning();
+    
+    if (!updatedSubmission) {
+      throw new Error("Tally form submission not found for update");
+    }
+    
+    return updatedSubmission;
   }
 
   async updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void> {

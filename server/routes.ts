@@ -1480,10 +1480,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if submission already exists
       const existingSubmission = await storage.getTallyFormSubmission(projectId);
       if (existingSubmission) {
-        return res.status(409).json({ 
-          success: false, 
-          message: "Project already has a form submission",
-          submission: existingSubmission
+        // Update existing submission instead of creating new one
+        const updatedSubmission = await storage.updateTallyFormSubmission(projectId, {
+          tallySubmissionId,
+          submissionData: JSON.stringify(submissionData),
+          submittedAt: new Date()
+        });
+        
+        return res.json({
+          success: true,
+          message: "Form submission updated successfully",
+          submission: updatedSubmission
         });
       }
 
