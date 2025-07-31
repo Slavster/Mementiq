@@ -135,8 +135,8 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
-  const subscription: SubscriptionStatus | undefined =
-    (subscriptionData as any)?.subscription;
+  const subscription: SubscriptionStatus | undefined = (subscriptionData as any)
+    ?.subscription;
 
   // Create project mutation with subscription validation
   const createProjectMutation = useMutation({
@@ -392,7 +392,7 @@ export default function DashboardPage() {
                         </p>
                         {subscription.periodEnd && (
                           <p className="text-xs text-gray-400">
-                            Resets{" "}
+                            Resets:{" "}
                             {new Date(
                               subscription.periodEnd,
                             ).toLocaleDateString()}
@@ -536,7 +536,6 @@ export default function DashboardPage() {
                           {new Date(project.updatedAt).toLocaleDateString()}
                         </p>
                       </div>
-
                     </div>
                     <div className="mt-4">
                       <Button

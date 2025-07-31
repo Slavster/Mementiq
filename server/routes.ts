@@ -72,6 +72,66 @@ async function requireAuth(
   next();
 }
 
+// Middleware to check 31-day project access restriction
+async function requireProjectAccess(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: Function,
+) {
+  try {
+    const projectId = parseInt(req.params.id);
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project ID",
+      });
+    }
+
+    const project = await storage.getProject(projectId);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    // Check if user owns this project
+    if (project.userId !== req.user!.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    // Check 31-day access restriction
+    const projectCreatedAt = new Date(project.createdAt);
+    const thirtyOneDaysAfterCreation = new Date(
+      projectCreatedAt.getTime() + 31 * 24 * 60 * 60 * 1000,
+    );
+    const now = new Date();
+
+    if (now > thirtyOneDaysAfterCreation) {
+      return res.status(403).json({
+        success: false,
+        message: "Project access has expired. You can only manage projects for 31 days after creation.",
+        expired: true,
+        createdAt: project.createdAt,
+        expiresAt: thirtyOneDaysAfterCreation.toISOString(),
+      });
+    }
+
+    // Add project to request for downstream use
+    (req as any).project = project;
+    next();
+  } catch (error) {
+    console.error("Project access check error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to verify project access",
+    });
+  }
+}
+
 // Initialize Object Storage client
 const objectStorageClient = new Client({
   bucketId: "replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9",
@@ -602,7 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Count non-draft projects that became active in current period
+        // Count projects CREATED within the current billing period (not based on status changes)
         const projects = await storage.getProjectsByUser(user.id);
         let usageInPeriod = 0;
 
@@ -611,12 +671,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const periodEnd = new Date(user.subscriptionPeriodEnd);
 
           usageInPeriod = projects.filter((project) => {
-            const updatedAt = new Date(project.updatedAt);
+            const createdAt = new Date(project.createdAt);
             return (
-              updatedAt >= periodStart &&
-              updatedAt <= periodEnd &&
-              project.status !== "draft"
-            ); // Count projects that became non-draft within the billing period
+              createdAt >= periodStart &&
+              createdAt <= periodEnd
+            ); // Count projects CREATED within the billing period
           }).length;
         }
 
@@ -1258,6 +1317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:id/upload-session",
     requireAuth,
+    requireProjectAccess,
     async (req: AuthenticatedRequest, res) => {
       try {
         const projectId = parseInt(req.params.id);
@@ -1334,6 +1394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:id/complete-upload",
     requireAuth,
+    requireProjectAccess,
     async (req: AuthenticatedRequest, res) => {
       try {
         console.log("Complete upload request body:", req.body);
@@ -1444,6 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/projects/:id/files",
     requireAuth,
+    requireProjectAccess,
     async (req: AuthenticatedRequest, res) => {
       try {
         const projectId = parseInt(req.params.id);
@@ -1706,6 +1768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:id/tally-submission",
     requireAuth,
+    requireProjectAccess,
     async (req: AuthenticatedRequest, res) => {
       try {
         const projectId = parseInt(req.params.id);
@@ -1781,6 +1844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/projects/:id/tally-submission",
     requireAuth,
+    requireProjectAccess,
     async (req: AuthenticatedRequest, res) => {
       try {
         const projectId = parseInt(req.params.id);
