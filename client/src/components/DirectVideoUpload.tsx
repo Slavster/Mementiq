@@ -746,7 +746,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
           </div>
         )}
 
-        {/* Existing Videos List */}
+        {/* Existing Videos List - show if any videos exist */}
         {!filesLoading && existingFiles?.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
           <div className="bg-gray-50 p-4 rounded-lg border">
             <h4 className="font-medium text-sm mb-3">
