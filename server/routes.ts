@@ -1371,7 +1371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const totalSizeGB = parseFloat((calculatedSize / (1024 * 1024 * 1024)).toFixed(2)); // Use 2 decimal places for small files
       const totalSizeMB = parseFloat((calculatedSize / (1024 * 1024)).toFixed(1)); // Also calculate MB
-      const percentUsed = Math.round((calculatedSize / maxSize) * 100);
+      const percentUsed = parseFloat(((calculatedSize / maxSize) * 100).toFixed(2)); // More precise percentage for progress bar
 
       console.log('Final response data:', {
         filesCount: files.length,
