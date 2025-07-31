@@ -138,21 +138,50 @@ export const moveVideoToFolder = async (videoUri: string, folderId: string): Pro
  */
 export const getFolderVideos = async (folderId: string): Promise<any[]> => {
   return new Promise((resolve, reject) => {
-    client.request({
-      method: 'GET',
-      path: `/me/projects/${folderId}/videos`,
-      query: {
-        per_page: 100 // Get up to 100 videos
-      }
-    }, (error: any, body: any) => {
-      if (error) {
-        console.error('Vimeo folder videos error:', error);
-        reject(new Error(`Failed to get folder videos: ${error.message}`));
+    console.log('Attempting to fetch videos from folder:', folderId);
+    
+    // Extract project ID from full folder path if needed
+    let projectId = folderId;
+    if (folderId.includes('/projects/')) {
+      projectId = folderId.split('/projects/')[1];
+      console.log('Extracted project ID:', projectId);
+    }
+    
+    // Try different API endpoints 
+    const endpoints = [
+      `${folderId}/videos`, // Use full path as stored
+      `/me/projects/${projectId}/videos`, // Use extracted project ID
+      `/projects/${projectId}/videos` // Direct project access
+    ];
+    
+    const tryEndpoint = (index: number) => {
+      if (index >= endpoints.length) {
+        reject(new Error('All folder video endpoints failed'));
         return;
       }
+      
+      const endpoint = endpoints[index];
+      console.log(`Trying endpoint ${index + 1}/${endpoints.length}: ${endpoint}`);
+      
+      client.request({
+        method: 'GET',
+        path: endpoint,
+        query: {
+          per_page: 100
+        }
+      }, (error: any, body: any) => {
+        if (error) {
+          console.error(`Endpoint ${endpoint} failed:`, error);
+          tryEndpoint(index + 1);
+          return;
+        }
 
-      resolve(body.data || []);
-    });
+        console.log(`Success with endpoint: ${endpoint}`, body.data?.length || 0, 'videos found');
+        resolve(body.data || []);
+      });
+    };
+    
+    tryEndpoint(0);
   });
 };
 

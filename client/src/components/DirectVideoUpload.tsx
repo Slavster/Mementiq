@@ -689,7 +689,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             <div className="h-2 bg-gray-300 rounded"></div>
           </div>
         ) : (
-          <div className="p-4 rounded-lg border border-gray-600">
+          <div className="p-4 rounded-lg">
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-medium text-sm text-blue-400">Current Storage Usage</h4>
               <span className="text-sm font-medium text-blue-300">
