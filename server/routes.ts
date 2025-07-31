@@ -1290,22 +1290,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Vimeo videos fetched:', vimeoVideos.length, 'videos');
         } catch (error) {
           console.warn('Failed to fetch Vimeo folder videos:', error);
+          console.log('Using database files as fallback. Files found:', files.length);
           // Try to get project files from database as fallback
-          vimeoVideos = files.map(file => ({
-            name: file.filename,
-            file_size: file.fileSize,
-            created_time: file.uploadDate,
-            uri: file.vimeoVideoId
-          }));
+          vimeoVideos = files.map(file => {
+            console.log('Mapping file:', file.filename, 'size:', file.fileSize);
+            return {
+              name: file.filename,
+              file_size: file.fileSize || 0,
+              created_time: file.uploadDate,
+              uri: file.vimeoVideoId
+            };
+          });
         }
       } else {
+        console.log('No Vimeo folder, using database files. Files found:', files.length);
         // Use database files if no Vimeo folder
-        vimeoVideos = files.map(file => ({
-          name: file.filename,
-          file_size: file.fileSize,
-          created_time: file.uploadDate,
-          uri: file.vimeoVideoId
-        }));
+        vimeoVideos = files.map(file => {
+          console.log('Mapping file (no folder):', file.filename, 'size:', file.fileSize);
+          return {
+            name: file.filename,
+            file_size: file.fileSize || 0,
+            created_time: file.uploadDate,
+            uri: file.vimeoVideoId
+          };
+        });
       }
       
       res.json({ 
