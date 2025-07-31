@@ -180,7 +180,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error("Missing required Stripe secret: STRIPE_SECRET_KEY");
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2024-06-20" as any,
 });
 
 // Subscription tier configurations matching your actual Stripe products
@@ -250,10 +250,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS]
                       .allowance,
                   subscriptionPeriodStart: new Date(
-                    subscription.current_period_start * 1000,
+                    (subscription as any).current_period_start * 1000,
                   ),
                   subscriptionPeriodEnd: new Date(
-                    subscription.current_period_end * 1000,
+                    (subscription as any).current_period_end * 1000,
                   ),
                 });
 
@@ -269,9 +269,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const invoice = event.data.object as Stripe.Invoice;
             console.log("Payment succeeded:", invoice.id);
 
-            if (invoice.subscription) {
+            if ((invoice as any).subscription) {
               const subscription = await stripe.subscriptions.retrieve(
-                invoice.subscription as string,
+                (invoice as any).subscription as string,
               );
               const customer = await stripe.customers.retrieve(
                 subscription.customer as string,
@@ -296,10 +296,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     subscriptionStatus: subscription.status,
                     subscriptionUsage: 0, // Reset usage on successful payment
                     subscriptionPeriodStart: new Date(
-                      subscription.current_period_start * 1000,
+                      (subscription as any).current_period_start * 1000,
                     ),
                     subscriptionPeriodEnd: new Date(
-                      subscription.current_period_end * 1000,
+                      (subscription as any).current_period_end * 1000,
                     ),
                   });
 
@@ -337,10 +337,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS]
                       .allowance,
                   subscriptionPeriodStart: new Date(
-                    subscription.current_period_start * 1000,
+                    (subscription as any).current_period_start * 1000,
                   ),
                   subscriptionPeriodEnd: new Date(
-                    subscription.current_period_end * 1000,
+                    (subscription as any).current_period_end * 1000,
                   ),
                 });
 
@@ -377,9 +377,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const invoice = event.data.object as Stripe.Invoice;
             console.log("Payment failed:", invoice.id);
 
-            if (invoice.subscription) {
+            if ((invoice as any).subscription) {
               const subscription = await stripe.subscriptions.retrieve(
-                invoice.subscription as string,
+                (invoice as any).subscription as string,
               );
               const user = await storage.getUserByStripeCustomerId(
                 subscription.customer as string,
@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const user = await storage.getUser(req.session.userId as string);
+      const user = await storage.getUser(String(req.session.userId));
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -976,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user owns this project
-      if (project.userId !== req.session.userId) {
+      if (project.userId !== String(req.session.userId)) {
         return res.status(403).json({
           success: false,
           message: "Access denied",
@@ -1023,7 +1023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user owns this project
-      if (project.userId !== req.session.userId) {
+      if (project.userId !== String(req.session.userId)) {
         return res.status(403).json({
           success: false,
           message: "Access denied",
@@ -1079,7 +1079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/assets/*", async (req, res) => {
     try {
       // Strip EditingPortfolioAssets prefix and keep the full Objects/ path
-      let assetPath = req.params[0];
+      let assetPath = req.params[0] || "";
       if (assetPath.startsWith("EditingPortfolioAssets/")) {
         assetPath = assetPath.replace("EditingPortfolioAssets/", "");
       }
@@ -1412,6 +1412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const fileRecord = await storage.createProjectFile(projectId, {
           vimeoVideoId: videoUri.replace("/videos/", ""),
           filename: fileName,
+          originalFilename: fileName,
           fileType: "video",
           fileSize: fileSize || 0,
         });
@@ -1483,7 +1484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 fileSize = video.file_size;
               } else if (video.files && video.files.length > 0) {
                 // Find the largest file (usually original quality)
-                const largestFile = video.files.reduce((prev, current) =>
+                const largestFile = video.files.reduce((prev: any, current: any) =>
                   current.size > prev.size ? current : prev,
                 );
                 fileSize = largestFile.size;
@@ -1917,38 +1918,38 @@ async function downloadAsset(
         content = bytesResult.value[0];
       } else if (
         bytesResult.value[0] &&
-        typeof bytesResult.value[0].arrayBuffer === "function"
+        typeof (bytesResult.value[0] as any).arrayBuffer === "function"
       ) {
-        const arrayBuffer = await bytesResult.value[0].arrayBuffer();
+        const arrayBuffer = await (bytesResult.value[0] as any).arrayBuffer();
         content = new Uint8Array(arrayBuffer);
       } else {
         // Try converting the array itself to Uint8Array
-        content = new Uint8Array(bytesResult.value);
+        content = new Uint8Array(bytesResult.value as any);
       }
     } else if (typeof bytesResult.value === "string") {
-      content = new TextEncoder().encode(bytesResult.value);
+      content = new TextEncoder().encode(bytesResult.value as string);
     } else if (
       bytesResult.value &&
-      typeof bytesResult.value.arrayBuffer === "function"
+      typeof (bytesResult.value as any).arrayBuffer === "function"
     ) {
       // Handle Response-like object
-      const arrayBuffer = await bytesResult.value.arrayBuffer();
+      const arrayBuffer = await (bytesResult.value as any).arrayBuffer();
       content = new Uint8Array(arrayBuffer);
     } else if (
       bytesResult.value &&
-      typeof bytesResult.value.stream === "function"
+      typeof (bytesResult.value as any).stream === "function"
     ) {
       // Handle stream response
-      const response = new Response(bytesResult.value.stream());
+      const response = new Response((bytesResult.value as any).stream());
       const arrayBuffer = await response.arrayBuffer();
       content = new Uint8Array(arrayBuffer);
-    } else if (bytesResult.value && bytesResult.value.bytes) {
+    } else if (bytesResult.value && (bytesResult.value as any).bytes) {
       // Maybe bytes field?
-      content = bytesResult.value.bytes;
+      content = (bytesResult.value as any).bytes;
     } else {
       // Last resort: try converting whatever we got to Uint8Array
       try {
-        content = new Uint8Array(bytesResult.value);
+        content = new Uint8Array(bytesResult.value as any);
       } catch (e) {
         console.error("Failed to convert to Uint8Array:", e);
         throw new Error(
@@ -1958,7 +1959,7 @@ async function downloadAsset(
     }
 
     console.log("Final content length:", content.length);
-  } catch (bytesError) {
+  } catch (bytesError: any) {
     console.log(`First attempt failed for ${assetPath}:`, bytesError.message);
 
     // Try fallback: remove Objects/ prefix if it exists (legacy structure)
@@ -1992,21 +1993,21 @@ async function downloadAsset(
         );
 
         // Check if value has a nested structure
-        if (fallbackResult.value && fallbackResult.value.content) {
-          content = fallbackResult.value.content;
-        } else if (fallbackResult.value && fallbackResult.value.data) {
-          content = fallbackResult.value.data;
+        if (fallbackResult.value && (fallbackResult.value as any).content) {
+          content = (fallbackResult.value as any).content;
+        } else if (fallbackResult.value && (fallbackResult.value as any).data) {
+          content = (fallbackResult.value as any).data;
         } else if (fallbackResult.value instanceof Uint8Array) {
           content = fallbackResult.value;
         } else if (typeof fallbackResult.value === "string") {
           content = new TextEncoder().encode(fallbackResult.value);
-        } else if (fallbackResult.content) {
-          content = fallbackResult.content;
-        } else if (fallbackResult.data) {
-          content = fallbackResult.data;
+        } else if ((fallbackResult as any).content) {
+          content = (fallbackResult as any).content;
+        } else if ((fallbackResult as any).data) {
+          content = (fallbackResult as any).data;
         } else {
           // Try converting whatever we got to Uint8Array
-          content = new Uint8Array(fallbackResult.value);
+          content = new Uint8Array(fallbackResult.value as any);
         }
 
         finalPath = fallbackPath;
@@ -2014,7 +2015,7 @@ async function downloadAsset(
           "Fallback final content length:",
           content?.length || "undefined",
         );
-      } catch (fallbackError) {
+      } catch (fallbackError: any) {
         console.log("Both paths failed:", fallbackError.message);
         throw new Error(`Asset not found: ${assetPath}`);
       }
