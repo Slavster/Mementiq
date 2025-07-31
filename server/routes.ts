@@ -515,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Count completed/submitted projects in current period
+      // Count non-draft projects in current period
       const projects = await storage.getProjectsByUser(user.id);
       let usageInPeriod = 0;
       
@@ -526,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usageInPeriod = projects.filter(project => {
           const createdAt = new Date(project.createdAt);
           return createdAt >= periodStart && createdAt <= periodEnd && 
-                 (project.status === 'submitted' || project.status === 'completed' || project.status === 'in_progress');
+                 project.status !== 'draft'; // Count all non-draft projects
         }).length;
       }
 
@@ -704,7 +704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if user has exceeded usage limit by counting projects in current period
+      // Check if user has exceeded usage limit by counting non-draft projects in current period
       const projects = await storage.getProjectsByUser(req.user!.id);
       let usageInPeriod = 0;
       
@@ -715,7 +715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usageInPeriod = projects.filter(project => {
           const createdAt = new Date(project.createdAt);
           return createdAt >= periodStart && createdAt <= periodEnd && 
-                 (project.status === 'submitted' || project.status === 'completed' || project.status === 'in_progress');
+                 project.status !== 'draft'; // Count all non-draft projects
         }).length;
       }
       
@@ -1213,6 +1213,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileSize: fileSize || 0
       });
 
+      // If project is still in draft status, update to "awaiting instructions" after first upload
+      if (project.status === 'draft') {
+        await storage.updateProject(projectId, { status: "awaiting instructions" });
+      }
+
       res.json({
         success: true,
         message: "Upload completed successfully",
@@ -1335,8 +1340,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         submissionData: JSON.stringify(submissionData)
       });
 
-      // Update project status to "submitted"
-      await storage.updateProject(projectId, { status: "submitted" });
+      // Update project status to "edit in progress"
+      await storage.updateProject(projectId, { status: "edit in progress" });
 
       res.json({
         success: true,
