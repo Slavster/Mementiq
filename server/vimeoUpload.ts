@@ -177,6 +177,7 @@ export const getFolderVideos = async (folderId: string): Promise<any[]> => {
         }
 
         console.log(`Success with endpoint: ${endpoint}`, body.data?.length || 0, 'videos found');
+        console.log('Raw Vimeo video data:', JSON.stringify(body.data?.slice(0, 1), null, 2)); // Log first video structure
         resolve(body.data || []);
       });
     };
