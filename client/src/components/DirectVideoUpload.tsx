@@ -73,6 +73,10 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
   });
 
   const existingFiles = projectFilesData?.success ? projectFilesData.data : null;
+  
+  console.log('Files loading:', filesLoading);
+  console.log('Project files data:', projectFilesData);
+  console.log('Existing files:', existingFiles);
 
   const createSessionMutation = useMutation({
     mutationFn: async ({
@@ -679,16 +683,21 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Storage Usage Display */}
-        {!filesLoading && existingFiles && (
+        {filesLoading ? (
+          <div className="bg-gray-100 p-4 rounded-lg animate-pulse">
+            <div className="h-4 bg-gray-300 rounded mb-2"></div>
+            <div className="h-2 bg-gray-300 rounded"></div>
+          </div>
+        ) : (
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-medium text-sm text-blue-900">Current Storage Usage</h4>
               <span className="text-sm font-medium text-blue-800">
-                {existingFiles.storage?.usedGB || "0"}/{existingFiles.storage?.maxGB || 10} GB
+                {existingFiles?.storage?.usedGB || "0"}/{existingFiles?.storage?.maxGB || 10} GB
               </span>
             </div>
             <Progress 
-              value={existingFiles.storage?.percentUsed || 0} 
+              value={existingFiles?.storage?.percentUsed || 0} 
               className="h-2"
             />
           </div>
@@ -727,7 +736,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         </div>
 
         {/* Existing Videos List */}
-        {!filesLoading && existingFiles && existingFiles.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
+        {!filesLoading && existingFiles?.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
           <div className="bg-gray-50 p-4 rounded-lg border">
             <h4 className="font-medium text-sm mb-3">
               Existing Videos in Project ({existingFiles.vimeoVideos.length})
