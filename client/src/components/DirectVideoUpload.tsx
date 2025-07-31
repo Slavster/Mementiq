@@ -69,20 +69,27 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
   // Fetch existing project files and storage info
   const { data: projectFilesData, isLoading: filesLoading, refetch } = useQuery({
     queryKey: ["projects", projectId, "files"],
-    queryFn: () => apiRequest("GET", `/api/projects/${projectId}/files`),
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/projects/${projectId}/files`);
+      return await response.json();
+    },
     staleTime: 0, // Always fetch fresh data
     cacheTime: 0, // Don't cache results
   });
 
   const existingFiles = projectFilesData?.success ? projectFilesData.data : null;
   
-  console.log('=== QUERY DEBUG ===');
-  console.log('Files loading:', filesLoading);
-  console.log('Project files data (raw):', projectFilesData);
-  console.log('Existing files:', existingFiles);
-  console.log('Storage data:', existingFiles?.storage);
-  console.log('Vimeo videos:', existingFiles?.vimeoVideos);
-  console.log('=== END DEBUG ===');
+  console.log('=== REACT QUERY DETAILED DEBUG ===');
+  console.log('1. Files loading:', filesLoading);
+  console.log('2. Raw projectFilesData:', JSON.stringify(projectFilesData, null, 2));
+  console.log('3. projectFilesData?.success:', projectFilesData?.success);
+  console.log('4. projectFilesData?.data:', projectFilesData?.data);
+  console.log('5. Existing files:', existingFiles);
+  console.log('6. Storage data:', existingFiles?.storage);
+  console.log('7. Vimeo videos:', existingFiles?.vimeoVideos);
+  console.log('8. Data type check:', typeof projectFilesData);
+  console.log('9. Response structure keys:', projectFilesData ? Object.keys(projectFilesData) : 'no data');
+  console.log('=== END DETAILED DEBUG ===');
 
   const createSessionMutation = useMutation({
     mutationFn: async ({
