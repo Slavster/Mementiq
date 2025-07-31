@@ -742,7 +742,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             Existing files: {existingFiles ? 'yes' : 'no'} | 
             Vimeo videos: {existingFiles?.vimeoVideos?.length || 0} | 
             Storage: {existingFiles?.storage?.usedGB || 0}GB |
-            Raw vimeo data: {JSON.stringify(existingFiles?.vimeoVideos?.slice(0, 1) || [])}
+            First video: {JSON.stringify(existingFiles?.vimeoVideos?.[0] || {})}
           </div>
         )}
 

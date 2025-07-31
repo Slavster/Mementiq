@@ -167,7 +167,8 @@ export const getFolderVideos = async (folderId: string): Promise<any[]> => {
         method: 'GET',
         path: endpoint,
         query: {
-          per_page: 100
+          per_page: 100,
+          fields: 'uri,name,created_time,files,status,transcode'
         }
       }, (error: any, body: any) => {
         if (error) {
