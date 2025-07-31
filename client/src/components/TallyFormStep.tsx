@@ -144,7 +144,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
 
         const submissionData = parsedData.payload || parsedData.submission || parsedData;
 
-        // Record the submission in our database
+        // Record the submission in our database with latest submission ID
         recordSubmissionMutation.mutate({
           tallySubmissionId:
             submissionData.submissionId ||
