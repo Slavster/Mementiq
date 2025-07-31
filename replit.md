@@ -185,6 +185,23 @@ The application uses PostgreSQL with the following tables:
 - **Result**: Dashboard now correctly displays "0/8 Videos Created" based on real Stripe subscription allowance
 - **Status**: Subscription allowance properly synchronized with Stripe product metadata
 
+### July 31, 2025 - Latest Tally Submission ID Tracking for Automation (COMPLETED)
+- **Problem**: User needs the latest Tally submission ID maintained in database for downstream automation workflows
+- **User Requirement**: When form edits occur, replace the submission ID with the latest one instead of keeping the original
+- **Solution Implemented**: Enhanced submission update logic to track latest submission identifiers
+- **Key Features**:
+  - Database always stores the most recent Tally submission ID when edits occur
+  - `tally_submission_id` field updated with each form edit for automation pipeline integration
+  - Maintains complete submission data history while providing current submission reference
+  - Enables downstream automation tools to always reference the latest form submission
+- **Technical Implementation**:
+  - Modified `updateTallyFormSubmission` to replace `tallySubmissionId` field with latest value
+  - Enhanced form submission endpoint to update existing records with new submission IDs
+  - Added clear comments indicating automation workflow purpose
+  - Maintained data integrity while supporting automation requirements
+- **Automation Benefits**: External systems can reliably reference the current submission ID for workflow triggers and data processing
+- **Status**: Latest submission ID tracking fully operational for automation integration
+
 ### July 31, 2025 - UI Improvements & Form Editing Fix (COMPLETED)
 - **Problem**: User requested UI consistency improvements and fix for Tally form editing
 - **User Requirements**: Purple button colors, orange status indicators, remove unnecessary text, enable form editing
