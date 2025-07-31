@@ -1287,9 +1287,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (project.vimeoFolderId) {
         try {
           vimeoVideos = await getFolderVideos(project.vimeoFolderId);
+          console.log('Vimeo videos fetched:', vimeoVideos.length, 'videos');
         } catch (error) {
           console.warn('Failed to fetch Vimeo folder videos:', error);
+          // Try to get project files from database as fallback
+          vimeoVideos = files.map(file => ({
+            name: file.filename,
+            file_size: file.fileSize,
+            created_time: file.uploadDate,
+            uri: file.vimeoVideoId
+          }));
         }
+      } else {
+        // Use database files if no Vimeo folder
+        vimeoVideos = files.map(file => ({
+          name: file.filename,
+          file_size: file.fileSize,
+          created_time: file.uploadDate,
+          uri: file.vimeoVideoId
+        }));
       }
       
       res.json({ 

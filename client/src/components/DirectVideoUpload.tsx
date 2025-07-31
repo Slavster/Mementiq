@@ -680,39 +680,17 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       <CardContent className="space-y-4">
         {/* Storage Usage Display */}
         {!filesLoading && existingFiles && (
-          <div className="bg-gray-50 p-4 rounded-lg border">
+          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="font-medium text-sm">Project Storage</h4>
-              <span className="text-sm text-gray-600">
+              <h4 className="font-medium text-sm text-blue-900">Current Storage Usage</h4>
+              <span className="text-sm font-medium text-blue-800">
                 {existingFiles.storage?.usedGB || "0"}/{existingFiles.storage?.maxGB || 10} GB
               </span>
             </div>
             <Progress 
               value={existingFiles.storage?.percentUsed || 0} 
-              className="h-2 mb-2"
+              className="h-2"
             />
-            {existingFiles.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
-              <div className="mt-3">
-                <p className="text-sm font-medium mb-2">
-                  Existing Videos ({existingFiles.vimeoVideos.length})
-                </p>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {existingFiles.vimeoVideos.map((video: any, index: number) => (
-                    <div key={index} className="flex justify-between items-center text-sm bg-white p-2 rounded border">
-                      <span className="truncate flex-1 mr-2" title={video.name}>
-                        {video.name || `Video ${index + 1}`}
-                      </span>
-                      <span className="text-gray-500 text-xs">
-                        {formatFileSize(video.file_size || 0)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  To prevent duplicates, check this list before uploading new videos.
-                </p>
-              </div>
-            )}
           </div>
         )}
 
@@ -747,6 +725,37 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             Upload your videos - supports MP4, MOV, AVI, and other video formats
           </p>
         </div>
+
+        {/* Existing Videos List */}
+        {!filesLoading && existingFiles && existingFiles.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <h4 className="font-medium text-sm mb-3">
+              Existing Videos in Project ({existingFiles.vimeoVideos.length})
+            </h4>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {existingFiles.vimeoVideos.map((video: any, index: number) => (
+                <div key={index} className="flex justify-between items-center text-sm bg-white p-3 rounded border">
+                  <div className="flex-1">
+                    <p className="font-medium truncate" title={video.name}>
+                      {video.name || `Video ${index + 1}`}
+                    </p>
+                    {video.created_time && (
+                      <p className="text-xs text-gray-500">
+                        Uploaded: {new Date(video.created_time).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-gray-600 text-xs ml-2">
+                    {formatFileSize(video.file_size || 0)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+              💡 To prevent duplicates, check this list before uploading new videos.
+            </p>
+          </div>
+        )}
 
         {/* File List */}
         {selectedFiles.length > 0 && (
