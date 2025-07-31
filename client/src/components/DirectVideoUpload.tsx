@@ -67,16 +67,22 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch existing project files and storage info
-  const { data: projectFilesData, isLoading: filesLoading } = useQuery({
+  const { data: projectFilesData, isLoading: filesLoading, refetch } = useQuery({
     queryKey: ["projects", projectId, "files"],
     queryFn: () => apiRequest("GET", `/api/projects/${projectId}/files`),
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   const existingFiles = projectFilesData?.success ? projectFilesData.data : null;
   
+  console.log('=== QUERY DEBUG ===');
   console.log('Files loading:', filesLoading);
-  console.log('Project files data:', projectFilesData);
+  console.log('Project files data (raw):', projectFilesData);
   console.log('Existing files:', existingFiles);
+  console.log('Storage data:', existingFiles?.storage);
+  console.log('Vimeo videos:', existingFiles?.vimeoVideos);
+  console.log('=== END DEBUG ===');
 
   const createSessionMutation = useMutation({
     mutationFn: async ({
@@ -693,7 +699,10 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-medium text-sm text-blue-400">Current Storage Usage</h4>
               <span className="text-sm font-medium text-blue-300">
-                {existingFiles?.storage?.usedGB || 0}/{existingFiles?.storage?.maxGB || 10} GB
+                {existingFiles?.storage?.usedGB < 0.1 && existingFiles?.storage?.usedMB > 0 
+                  ? `${existingFiles?.storage?.usedMB || 0} MB`
+                  : `${existingFiles?.storage?.usedGB || 0} GB`
+                }/{existingFiles?.storage?.maxGB || 10} GB
               </span>
             </div>
             <Progress 
@@ -736,16 +745,21 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         </div>
 
         {/* Debug info - remove later */}
-        {!filesLoading && (
-          <div className="text-xs text-gray-500 p-2 bg-gray-800 rounded">
-            Files loading: {String(filesLoading)} | 
-            Existing files: {existingFiles ? 'yes' : 'no'} | 
-            Vimeo videos: {existingFiles?.vimeoVideos?.length || 0} | 
-            Storage: {existingFiles?.storage?.usedGB || 0}GB ({existingFiles?.storage?.used || 0} bytes) |
-            Percent: {existingFiles?.storage?.percentUsed || 0}% |
-            Storage obj: {JSON.stringify(existingFiles?.storage || {})}
-          </div>
-        )}
+        <div className="text-xs text-gray-500 p-2 bg-gray-800 rounded">
+          <div>Files loading: {String(filesLoading)}</div>
+          <div>Existing files: {existingFiles ? 'yes' : 'no'}</div>
+          <div>Vimeo videos: {existingFiles?.vimeoVideos?.length || 0}</div>
+          <div>Storage: {existingFiles?.storage?.usedGB || 0}GB ({existingFiles?.storage?.used || 0} bytes)</div>
+          <div>Percent: {existingFiles?.storage?.percentUsed || 0}%</div>
+          <div>Storage obj: {JSON.stringify(existingFiles?.storage || {})}</div>
+          <div>Raw data: {JSON.stringify(projectFilesData || {})}</div>
+          <button 
+            onClick={() => refetch()} 
+            className="mt-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+          >
+            Force Refresh
+          </button>
+        </div>
 
         {/* Existing Videos List - show if any videos exist */}
         {!filesLoading && existingFiles?.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
