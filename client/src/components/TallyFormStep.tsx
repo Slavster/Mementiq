@@ -47,8 +47,10 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   // Check if form has already been submitted
   const { data: submissionData, isLoading } = useQuery({
     queryKey: ["projects", projectId, "tally-submission"],
-    queryFn: () =>
-      apiRequest("GET", `/api/projects/${projectId}/tally-submission`),
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/projects/${projectId}/tally-submission`);
+      return await response.json();
+    },
   });
 
   const hasExistingSubmission = submissionData?.success ? submissionData.hasSubmission : false;
@@ -208,11 +210,11 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
               className="flex items-center gap-2"
             >
               <ExternalLink className="h-4 w-4" />
-              Update Form Responses
+              Edit Form Responses
             </Button>
           </div>
           <p className="text-sm text-gray-400 mt-2">
-            Note: Uploading additional footage allows you to update your form responses.
+            Click "Edit Form Responses" to modify your previous submission.
           </p>
         </CardContent>
       </Card>
@@ -272,17 +274,10 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Direct our creativity with the form below.
-              </AlertDescription>
-            </Alert>
-
             {/* Tally Form Embed */}
             <div className="border rounded-lg overflow-hidden">
               <iframe
-                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}`}
+                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&submissionId=${existingSubmission.tallySubmissionId}` : ''}`}
                 loading="lazy"
                 width="100%"
                 height="2072"
