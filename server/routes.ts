@@ -1369,7 +1369,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         calculatedSize = vimeoVideos.reduce((sum, video) => sum + (video.file_size || 0), 0);
       }
       
-      const totalSizeGB = parseFloat((calculatedSize / (1024 * 1024 * 1024)).toFixed(1));
+      const totalSizeGB = parseFloat((calculatedSize / (1024 * 1024 * 1024)).toFixed(2)); // Use 2 decimal places for small files
+      const totalSizeMB = parseFloat((calculatedSize / (1024 * 1024)).toFixed(1)); // Also calculate MB
       const percentUsed = Math.round((calculatedSize / maxSize) * 100);
 
       console.log('Final response data:', {
@@ -1389,6 +1390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             used: calculatedSize,
             max: maxSize,
             usedGB: totalSizeGB,
+            usedMB: totalSizeMB,
             maxGB: 10,
             percentUsed
           }
