@@ -53,8 +53,13 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
     },
   });
 
-  const hasExistingSubmission = submissionData?.success ? submissionData.hasSubmission : false;
+  const hasExistingSubmission = submissionData?.success && submissionData.submission;
   const existingSubmission = submissionData?.success ? submissionData.submission : null;
+  
+  // Debug logging
+  console.log('Submission data:', submissionData);
+  console.log('Has existing submission:', hasExistingSubmission);
+  console.log('Existing submission:', existingSubmission);
 
   // Mutation to record form submission
   const recordSubmissionMutation = useMutation({
@@ -277,15 +282,14 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
             {/* Tally Form Embed */}
             <div className="border rounded-lg overflow-hidden">
               {/* Debug URL generation */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="p-2 bg-gray-100 text-xs">
-                  <p><strong>Has Existing:</strong> {hasExistingSubmission ? 'Yes' : 'No'}</p>
-                  <p><strong>Submission ID:</strong> {existingSubmission?.tallySubmissionId || 'None'}</p>
-                  <p><strong>URL:</strong> {`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&submissionId=${existingSubmission.tallySubmissionId}` : ''}`}</p>
-                </div>
-              )}
+              <div className="p-2 bg-gray-100 text-xs">
+                <p><strong>Has Existing:</strong> {hasExistingSubmission ? 'Yes' : 'No'}</p>
+                <p><strong>Submission ID:</strong> {existingSubmission?.tallySubmissionId || 'None'}</p>
+                <p><strong>Full Data:</strong> {JSON.stringify(submissionData)}</p>
+                <p><strong>URL:</strong> {`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&tallySubmissionId=${existingSubmission.tallySubmissionId}` : ''}`}</p>
+              </div>
               <iframe
-                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&submissionId=${existingSubmission.tallySubmissionId}` : ''}`}
+                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&tallySubmissionId=${existingSubmission.tallySubmissionId}` : ''}`}
                 loading="lazy"
                 width="100%"
                 height="2072"
