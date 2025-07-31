@@ -1286,8 +1286,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let vimeoVideos: any[] = [];
       if (project.vimeoFolderId) {
         try {
-          vimeoVideos = await getFolderVideos(project.vimeoFolderId);
-          console.log('Vimeo videos fetched:', vimeoVideos.length, 'videos');
+          const rawVimeoVideos = await getFolderVideos(project.vimeoFolderId);
+          console.log('Vimeo videos fetched:', rawVimeoVideos.length, 'videos');
+          
+          // Process Vimeo videos to extract proper names and file sizes
+          vimeoVideos = rawVimeoVideos.map(video => {
+            // Get file size from the largest quality version in files array
+            let fileSize = 0;
+            if (video.files && video.files.length > 0) {
+              // Find the largest file (usually original quality)
+              const largestFile = video.files.reduce((prev, current) => 
+                (current.size > prev.size) ? current : prev
+              );
+              fileSize = largestFile.size;
+            }
+            
+            // Use the video name or fallback to database filename
+            let videoName = video.name;
+            if (!videoName || videoName.includes('.MOV') || videoName.includes('.mp4')) {
+              // Find matching database file for better name
+              const dbFile = files.find(f => f.vimeoVideoId && video.uri.includes(f.vimeoVideoId));
+              if (dbFile) {
+                videoName = dbFile.filename;
+              }
+            }
+            
+            return {
+              name: videoName || 'Unnamed Video',
+              file_size: fileSize,
+              created_time: video.created_time,
+              uri: video.uri,
+              vimeo_id: video.uri.split('/').pop()
+            };
+          });
+          
+          console.log('Processed Vimeo videos:', vimeoVideos.map(v => ({
+            name: v.name,
+            size: v.file_size,
+            id: v.vimeo_id
+          })));
         } catch (error) {
           console.warn('Failed to fetch Vimeo folder videos:', error);
           console.log('Using database files as fallback. Files found:', files.length);
