@@ -81,16 +81,14 @@ const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "draft":
       return "bg-gray-600";
-    case "in_progress":
+    case "awaiting instructions":
       return "bg-blue-600";
-    case "review":
-      return "bg-yellow-600";
-    case "completed":
-      return "bg-green-600";
-    case "on_hold":
-      return "bg-orange-600";
-    case "submitted":
+    case "edit in progress":
       return "bg-purple-600";
+    case "video is ready":
+      return "bg-green-600";
+    case "revision in progress":
+      return "bg-orange-600";
     default:
       return "bg-gray-600";
   }
@@ -100,16 +98,14 @@ const getStatusIcon = (status: string) => {
   switch (status.toLowerCase()) {
     case "draft":
       return <AlertCircle className="h-3 w-3" />;
-    case "in_progress":
-      return <Clock className="h-3 w-3" />;
-    case "review":
-      return <Clock className="h-3 w-3" />;
-    case "completed":
+    case "awaiting instructions":
+      return <Upload className="h-3 w-3" />;
+    case "edit in progress":
+      return <Video className="h-3 w-3" />;
+    case "video is ready":
       return <CheckCircle className="h-3 w-3" />;
-    case "on_hold":
-      return <AlertCircle className="h-3 w-3" />;
-    case "submitted":
-      return <CheckCircle className="h-3 w-3" />;
+    case "revision in progress":
+      return <Clock className="h-3 w-3" />;
     default:
       return <AlertCircle className="h-3 w-3" />;
   }
@@ -602,23 +598,23 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : selectedProject.status === "submitted" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : selectedProject.status === "edit in progress" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : selectedProject.status === "submitted" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : selectedProject.status === "edit in progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {selectedProject.status === "submitted" ? "✓" : "2"}
+                    {selectedProject.status === "edit in progress" ? "✓" : "2"}
                   </div>
                   <span className="font-medium">Describe Your Dream Edit</span>
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${selectedProject.status === "submitted" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${selectedProject.status === "edit in progress" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${selectedProject.status === "submitted" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${selectedProject.status === "edit in progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {selectedProject.status === "submitted" ? "✓" : "3"}
+                    {selectedProject.status === "edit in progress" ? "✓" : "3"}
                   </div>
                   <span className="font-medium">Editor is On It!</span>
                 </div>

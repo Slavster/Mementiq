@@ -138,6 +138,32 @@ The application uses PostgreSQL with the following tables:
 - **Upgrade Flow**: When users reach limits, "Subscribe" buttons change to "Upgrade" and show targeted upgrade messaging
 - **Real-time Validation**: Project creation blocked when limits reached with popup: "Reached your limit? Upgrade your plan for more videos."
 
+### July 31, 2025 - Simplified Project Status System (IN PROGRESS)
+- **Problem**: User requested simplified project status system with clear workflow
+- **User Requirement**: Five simplified statuses with automatic transitions and exclusion of draft projects from usage counting
+- **Solution Implemented**: Simplified status system with automatic workflow transitions
+- **New Status System**:
+  - `draft` - Initial state, does not count toward subscription limits
+  - `awaiting instructions` - Triggered when user uploads any footage  
+  - `edit in progress` - Triggered when user completes Tally form submission
+  - `video is ready` - Placeholder for future implementation
+  - `revision in progress` - Placeholder for future implementation
+- **Key Features**:
+  - Only non-draft projects count toward subscription allowances
+  - Automatic status progression: draft → awaiting instructions → edit in progress
+  - Updated UI status indicators and colors for new workflow
+  - Enhanced usage counting to exclude draft projects from limits
+- **Technical Implementation**:
+  - Updated status helper functions (getStatusColor, getStatusIcon) in dashboard
+  - Modified subscription usage counting to filter out draft projects
+  - Added automatic status transitions in upload and form submission endpoints
+  - Updated UI step progression to reflect "edit in progress" completion state
+- **Workflow Logic**:
+  - Project starts as "draft" (doesn't count toward limits)
+  - First video upload triggers change to "awaiting instructions"
+  - Tally form completion triggers change to "edit in progress"
+  - Both "awaiting instructions" and "edit in progress" count toward subscription limits
+
 ### July 24, 2025 - Enhanced Tally Form Integration with Auto-Close (COMPLETED)
 - **Problem**: User requested Tally form integration as mandatory step after video upload verification
 - **User Requirement**: Two-step workflow with engaging step names and one form submission per project
