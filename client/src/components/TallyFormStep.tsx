@@ -126,17 +126,30 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
       if (
         data.type === "tally_form_submission" ||
         data.type === "form_submission" ||
-        (data.payload && data.payload.type === "form_submission")
+        (data.payload && data.payload.type === "form_submission") ||
+        data.includes?.('Tally.FormSubmitted')
       ) {
         console.log("Tally form submission detected:", data);
 
-        const submissionData = data.payload || data.submission || data;
+        // Parse the data if it's a string
+        let parsedData = data;
+        if (typeof data === 'string' && data.includes('Tally.FormSubmitted')) {
+          try {
+            parsedData = JSON.parse(data).payload;
+          } catch (e) {
+            console.error("Failed to parse Tally submission data:", e);
+            return;
+          }
+        }
+
+        const submissionData = parsedData.payload || parsedData.submission || parsedData;
 
         // Record the submission in our database
         recordSubmissionMutation.mutate({
           tallySubmissionId:
             submissionData.submissionId ||
             submissionData.responseId ||
+            submissionData.id ||
             `tally_${Date.now()}_${projectId}`,
           submissionData: submissionData,
         });
@@ -289,11 +302,12 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
                   <p><strong>Has Existing:</strong> {hasExistingSubmission ? 'Yes' : 'No'}</p>
                   <p><strong>Submission ID:</strong> {existingSubmission?.tallySubmissionId || 'None'}</p>
                   <p><strong>API Response:</strong> {JSON.stringify(submissionData)}</p>
-                  <p><strong>Project Status:</strong> Should be a fresh form since no submission exists</p>
+                  <p><strong>Project Status:</strong> {hasExistingSubmission ? 'Should load existing submission for editing' : 'Fresh form - no submission exists'}</p>
                 </div>
               )}
               <iframe
-                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&tallySubmissionId=${existingSubmission.tallySubmissionId}` : ''}`}
+                key={hasExistingSubmission ? 'edit-mode' : 'new-mode'}
+                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&submissionId=${existingSubmission.tallySubmissionId}` : ''}`}
                 loading="lazy"
                 width="100%"
                 height="2072"
