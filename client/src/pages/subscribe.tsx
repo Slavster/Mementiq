@@ -127,7 +127,7 @@ export default function SubscribePage() {
     enabled: isAuthenticated,
   });
 
-  const subscription: SubscriptionStatus | undefined = subscriptionData?.subscription;
+  const subscription: SubscriptionStatus | undefined = (subscriptionData as any)?.subscription;
 
   // Create checkout session mutation
   const createCheckoutMutation = useMutation({

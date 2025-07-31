@@ -1,18 +1,56 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function PaymentSuccessPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Invalidate subscription status on success to refresh data
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
   }, [queryClient]);
+
+  // Auto-redirect to dashboard after a short delay if authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      const timer = setTimeout(() => {
+        setIsRedirecting(true);
+        setLocation("/dashboard");
+      }, 3000); // 3-second delay to show success message
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, authLoading, setLocation]);
+
+  // If not authenticated, redirect to auth page
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setLocation("/auth");
+    }
+  }, [isAuthenticated, authLoading, setLocation]);
+
+  // Show loading if still checking auth or redirecting
+  if (authLoading || isRedirecting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-black/20 backdrop-blur-xl border-gray-800/30 text-white">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-accent" />
+            <p className="text-gray-300">
+              {authLoading ? "Verifying your account..." : "Redirecting to dashboard..."}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center p-4">
