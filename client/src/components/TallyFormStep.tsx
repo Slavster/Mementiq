@@ -170,6 +170,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
     );
   }
 
+  // Show submission status if we have a submission AND form is not visible
   if (hasExistingSubmission && !isFormVisible) {
     return (
       <Card className="w-full">
@@ -274,20 +275,23 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
               size="lg"
             >
               <FileText className="h-4 w-4 mr-2" />
-              Open Request Form
+              {hasExistingSubmission ? 'Edit Form Responses' : 'Open Request Form'}
             </Button>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Tally Form Embed */}
             <div className="border rounded-lg overflow-hidden">
-              {/* Debug URL generation */}
-              <div className="p-2 bg-gray-100 text-xs">
-                <p><strong>Has Existing:</strong> {hasExistingSubmission ? 'Yes' : 'No'}</p>
-                <p><strong>Submission ID:</strong> {existingSubmission?.tallySubmissionId || 'None'}</p>
-                <p><strong>Full Data:</strong> {JSON.stringify(submissionData)}</p>
-                <p><strong>URL:</strong> {`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&tallySubmissionId=${existingSubmission.tallySubmissionId}` : ''}`}</p>
-              </div>
+              {/* Debug URL generation - only show in development */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="p-2 bg-yellow-100 text-xs border-b">
+                  <p><strong>Debug Info:</strong></p>
+                  <p><strong>Has Existing:</strong> {hasExistingSubmission ? 'Yes' : 'No'}</p>
+                  <p><strong>Submission ID:</strong> {existingSubmission?.tallySubmissionId || 'None'}</p>
+                  <p><strong>API Response:</strong> {JSON.stringify(submissionData)}</p>
+                  <p><strong>Project Status:</strong> Should be a fresh form since no submission exists</p>
+                </div>
+              )}
               <iframe
                 data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&tallySubmissionId=${existingSubmission.tallySubmissionId}` : ''}`}
                 loading="lazy"
