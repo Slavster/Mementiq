@@ -1264,7 +1264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get project files
+  // Get project files with Vimeo data and storage usage
   app.get("/api/projects/:id/files", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const projectId = parseInt(req.params.id);
@@ -1279,7 +1279,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const files = await storage.getProjectFiles(projectId);
-      res.json({ success: true, data: files });
+      const totalSize = await getProjectUploadSize(projectId);
+      const maxSize = 10 * 1024 * 1024 * 1024; // 10GB limit
+      
+      // Get Vimeo folder videos if folder exists
+      let vimeoVideos: any[] = [];
+      if (project.vimeoFolderId) {
+        try {
+          vimeoVideos = await getFolderVideos(project.vimeoFolderId);
+        } catch (error) {
+          console.warn('Failed to fetch Vimeo folder videos:', error);
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        data: {
+          files,
+          vimeoVideos,
+          storage: {
+            used: totalSize,
+            max: maxSize,
+            usedGB: (totalSize / (1024 * 1024 * 1024)).toFixed(2),
+            maxGB: 10,
+            percentUsed: Math.round((totalSize / maxSize) * 100)
+          }
+        }
+      });
     } catch (error) {
       console.error("Error fetching project files:", error);
       res.status(500).json({ success: false, message: "Failed to fetch files" });
