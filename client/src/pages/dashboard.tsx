@@ -136,7 +136,7 @@ export default function DashboardPage() {
   });
 
   const subscription: SubscriptionStatus | undefined =
-    subscriptionData?.subscription;
+    (subscriptionData as any)?.subscription;
 
   // Create project mutation with subscription validation
   const createProjectMutation = useMutation({
@@ -536,8 +536,7 @@ export default function DashboardPage() {
                           {new Date(project.updatedAt).toLocaleDateString()}
                         </p>
                       </div>
-                      {project.vimeoFolderId && (
-                      )}
+
                     </div>
                     <div className="mt-4">
                       <Button
