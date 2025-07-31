@@ -84,7 +84,7 @@ const getStatusColor = (status: string) => {
     case "awaiting instructions":
       return "bg-orange-600";
     case "edit in progress":
-      return "bg-pink-600";
+      return "bg-violet-600";
     case "video is ready":
       return "bg-green-600";
     case "revision in progress":
