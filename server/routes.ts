@@ -639,27 +639,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Webhook for Stripe subscription updates
-  app.post('/api/webhooks/stripe', async (req, res) => {
+
+
+  // Test webhook handler for development (bypasses signature verification)
+  app.post('/api/test-subscription-sync', async (req, res) => {
     try {
-      // In production, verify webhook signature
-      const event = req.body;
-
-      if (event.type === 'invoice.payment_succeeded') {
-        const subscription = event.data.object.subscription;
-        const customerId = event.data.object.customer;
-        
-        // Find user by Stripe customer ID
-        const users = await storage.getEmailSignups(); // We need a method to find by stripe customer
-        // For now, we'll handle this manually
-        
-        console.log('Webhook: Invoice payment succeeded', { subscription, customerId });
+      const { userId, tier, subscriptionId } = req.body;
+      
+      if (!userId || !tier || !subscriptionId) {
+        return res.status(400).json({
+          success: false,
+          message: "userId, tier, and subscriptionId are required"
+        });
       }
-
-      res.json({ received: true });
+      
+      // Simulate checkout.session.completed webhook
+      console.log(`Manual subscription sync for user ${userId}: ${tier}`);
+      
+      const tierConfig = SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS];
+      if (!tierConfig) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid tier"
+        });
+      }
+      
+      // Update user subscription status
+      await storage.updateUserSubscription(userId, {
+        stripeSubscriptionId: subscriptionId,
+        subscriptionStatus: 'active',
+        subscriptionTier: tier,
+        subscriptionUsage: 0,
+        subscriptionAllowance: tierConfig.allowance,
+        subscriptionPeriodStart: new Date(),
+        subscriptionPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+      });
+      
+      console.log(`Subscription manually synced for user ${userId}: ${tier}`);
+      
+      res.json({
+        success: true,
+        message: `Subscription synced for user ${userId}`,
+        tier,
+        allowance: tierConfig.allowance
+      });
+      
     } catch (error) {
-      console.error('Stripe webhook error:', error);
-      res.status(400).json({ error: 'Webhook error' });
+      console.error('Manual subscription sync error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to sync subscription"
+      });
     }
   });
 
