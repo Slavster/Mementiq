@@ -741,31 +741,31 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
 
         {/* Existing Videos Table - show if any videos exist */}
         {!filesLoading && existingFiles?.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
-          <div className="bg-gray-50 p-4 rounded-lg border">
-            <h4 className="font-medium text-sm mb-3">
+          <div className="bg-gray-800 dark:bg-gray-900 p-4 rounded-lg border border-gray-700">
+            <h4 className="font-medium text-sm mb-3 text-gray-200">
               Existing Videos ({existingFiles.vimeoVideos.length})
             </h4>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-3 font-medium text-gray-600">Filename</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-600">Size</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-600">Upload Date</th>
+                  <tr className="border-b border-gray-600">
+                    <th className="text-left py-2 px-3 font-medium text-gray-300">Filename</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-300">Size</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-300">Upload Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {existingFiles.vimeoVideos.map((video: any, index: number) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                    <tr key={index} className="border-b border-gray-700 hover:bg-gray-700">
                       <td className="py-2 px-3">
-                        <span className="truncate max-w-xs block" title={video.name}>
+                        <span className="truncate max-w-xs block text-gray-200" title={video.name}>
                           {video.name || `Video ${index + 1}`}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-gray-600">
+                      <td className="py-2 px-3 text-gray-400">
                         {formatFileSize(video.file_size || 0)}
                       </td>
-                      <td className="py-2 px-3 text-gray-600">
+                      <td className="py-2 px-3 text-gray-400">
                         {video.created_time 
                           ? new Date(video.created_time).toLocaleDateString()
                           : 'Unknown'
