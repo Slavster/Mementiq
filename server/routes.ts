@@ -1378,7 +1378,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vimeoVideosCount: vimeoVideos.length,
         vimeoVideoSizes: vimeoVideos.map(v => ({name: v.name, size: v.file_size})),
         calculatedSize,
-        totalSizeGB
+        totalSizeGB,
+        totalSizeMB,
+        storageObject: {
+          used: calculatedSize,
+          max: maxSize,
+          usedGB: totalSizeGB,
+          usedMB: totalSizeMB,
+          maxGB: 10,
+          percentUsed
+        }
       });
 
       res.json({ 
