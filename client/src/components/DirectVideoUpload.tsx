@@ -701,7 +701,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
               </span>
             </div>
             <Progress 
-              value={existingFiles?.storage?.percentUsed || 0} 
+              value={existingFiles?.storage?.percentUsed > 0 ? Math.max(existingFiles.storage.percentUsed, 1) : 0} 
               className="h-2"
             />
           </div>
