@@ -1487,6 +1487,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           submittedAt: new Date()
         });
         
+        // Update project status to "edit in progress" when form is completed
+        await storage.updateProject(projectId, { status: "edit in progress" });
+        
         return res.json({
           success: true,
           message: "Form submission updated successfully",
