@@ -57,9 +57,7 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    const jsonData = await res.json();
-    console.log(`Query response for ${queryKey[0]}:`, jsonData);
-    return jsonData;
+    return await res.json();
   };
 
 export const queryClient = new QueryClient({

@@ -74,22 +74,10 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       return await response.json();
     },
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results (cacheTime renamed to gcTime in v5)
   });
 
   const existingFiles = projectFilesData?.success ? projectFilesData.data : null;
-  
-  console.log('=== REACT QUERY DETAILED DEBUG ===');
-  console.log('1. Files loading:', filesLoading);
-  console.log('2. Raw projectFilesData:', JSON.stringify(projectFilesData, null, 2));
-  console.log('3. projectFilesData?.success:', projectFilesData?.success);
-  console.log('4. projectFilesData?.data:', projectFilesData?.data);
-  console.log('5. Existing files:', existingFiles);
-  console.log('6. Storage data:', existingFiles?.storage);
-  console.log('7. Vimeo videos:', existingFiles?.vimeoVideos);
-  console.log('8. Data type check:', typeof projectFilesData);
-  console.log('9. Response structure keys:', projectFilesData ? Object.keys(projectFilesData) : 'no data');
-  console.log('=== END DETAILED DEBUG ===');
 
   const createSessionMutation = useMutation({
     mutationFn: async ({
@@ -281,7 +269,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         console.log("TUS upload completed successfully");
       } catch (tusError) {
         console.error("TUS upload failed:", tusError);
-        throw new Error(`TUS upload failed: ${tusError.message}`);
+        throw new Error(`TUS upload failed: ${tusError instanceof Error ? tusError.message : String(tusError)}`);
       }
 
       // Step 3: Complete upload
@@ -751,51 +739,43 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
           </p>
         </div>
 
-        {/* Debug info - remove later */}
-        <div className="text-xs text-gray-500 p-2 bg-gray-800 rounded">
-          <div>Files loading: {String(filesLoading)}</div>
-          <div>Existing files: {existingFiles ? 'yes' : 'no'}</div>
-          <div>Vimeo videos: {existingFiles?.vimeoVideos?.length || 0}</div>
-          <div>Storage: {existingFiles?.storage?.usedGB || 0}GB ({existingFiles?.storage?.used || 0} bytes)</div>
-          <div>Percent: {existingFiles?.storage?.percentUsed || 0}%</div>
-          <div>Storage obj: {JSON.stringify(existingFiles?.storage || {})}</div>
-          <div>Raw data: {JSON.stringify(projectFilesData || {})}</div>
-          <button 
-            onClick={() => refetch()} 
-            className="mt-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
-          >
-            Force Refresh
-          </button>
-        </div>
-
-        {/* Existing Videos List - show if any videos exist */}
+        {/* Existing Videos Table - show if any videos exist */}
         {!filesLoading && existingFiles?.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
           <div className="bg-gray-50 p-4 rounded-lg border">
             <h4 className="font-medium text-sm mb-3">
-              Existing Videos in Project ({existingFiles.vimeoVideos.length})
+              Existing Videos ({existingFiles.vimeoVideos.length})
             </h4>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {existingFiles.vimeoVideos.map((video: any, index: number) => (
-                <div key={index} className="flex justify-between items-center text-sm bg-white p-3 rounded border">
-                  <div className="flex-1">
-                    <p className="font-medium truncate" title={video.name}>
-                      {video.name || `Video ${index + 1}`}
-                    </p>
-                    {video.created_time && (
-                      <p className="text-xs text-gray-500">
-                        Uploaded: {new Date(video.created_time).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-gray-600 text-xs ml-2">
-                    {formatFileSize(video.file_size || 0)}
-                  </span>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-3 font-medium text-gray-600">Filename</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-600">Size</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-600">Upload Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {existingFiles.vimeoVideos.map((video: any, index: number) => (
+                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-2 px-3">
+                        <span className="truncate max-w-xs block" title={video.name}>
+                          {video.name || `Video ${index + 1}`}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-gray-600">
+                        {formatFileSize(video.file_size || 0)}
+                      </td>
+                      <td className="py-2 px-3 text-gray-600">
+                        {video.created_time 
+                          ? new Date(video.created_time).toLocaleDateString()
+                          : 'Unknown'
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <p className="text-xs text-gray-500 mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
-              💡 To prevent duplicates, check this list before uploading new videos.
-            </p>
           </div>
         )}
 
