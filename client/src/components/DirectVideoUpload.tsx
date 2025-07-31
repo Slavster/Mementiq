@@ -693,7 +693,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-medium text-sm text-blue-400">Current Storage Usage</h4>
               <span className="text-sm font-medium text-blue-300">
-                {existingFiles?.storage?.usedGB || "0"}/{existingFiles?.storage?.maxGB || 10} GB
+                {existingFiles?.storage?.usedGB || 0}/{existingFiles?.storage?.maxGB || 10} GB
               </span>
             </div>
             <Progress 
@@ -741,8 +741,9 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             Files loading: {String(filesLoading)} | 
             Existing files: {existingFiles ? 'yes' : 'no'} | 
             Vimeo videos: {existingFiles?.vimeoVideos?.length || 0} | 
-            Storage: {existingFiles?.storage?.usedGB || 0}GB |
-            First video: {JSON.stringify(existingFiles?.vimeoVideos?.[0] || {})}
+            Storage: {existingFiles?.storage?.usedGB || 0}GB ({existingFiles?.storage?.used || 0} bytes) |
+            Percent: {existingFiles?.storage?.percentUsed || 0}% |
+            Storage obj: {JSON.stringify(existingFiles?.storage || {})}
           </div>
         )}
 
