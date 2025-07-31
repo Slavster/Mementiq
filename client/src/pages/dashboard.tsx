@@ -515,7 +515,9 @@ export default function DashboardPage() {
                       >
                         <span className="flex items-center gap-1">
                           {getStatusIcon(project.status)}
-                          {project.status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                          {project.status
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l) => l.toUpperCase())}
                         </span>
                       </Badge>
                     </div>
@@ -535,12 +537,6 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       {project.vimeoFolderId && (
-                        <div className="flex items-center gap-2 pt-2">
-                          <Folder className="h-4 w-4 text-blue-400" />
-                          <span className="text-xs text-blue-400">
-                            Upload Ready
-                          </span>
-                        </div>
                       )}
                     </div>
                     <div className="mt-4">
@@ -600,7 +596,9 @@ export default function DashboardPage() {
                   >
                     <span className="flex items-center gap-1">
                       {getStatusIcon(selectedProject.status)}
-                      {selectedProject.status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                      {selectedProject.status
+                        .replace("_", " ")
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
                     </span>
                   </Badge>
                 </div>
