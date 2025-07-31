@@ -602,7 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Count non-draft projects in current period
+        // Count non-draft projects that became active in current period
         const projects = await storage.getProjectsByUser(user.id);
         let usageInPeriod = 0;
 
@@ -611,12 +611,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const periodEnd = new Date(user.subscriptionPeriodEnd);
 
           usageInPeriod = projects.filter((project) => {
-            const createdAt = new Date(project.createdAt);
+            const updatedAt = new Date(project.updatedAt);
             return (
-              createdAt >= periodStart &&
-              createdAt <= periodEnd &&
+              updatedAt >= periodStart &&
+              updatedAt <= periodEnd &&
               project.status !== "draft"
-            ); // Count all non-draft projects
+            ); // Count projects that became non-draft within the billing period
           }).length;
         }
 
