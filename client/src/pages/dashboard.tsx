@@ -83,7 +83,7 @@ const getStatusColor = (status: string) => {
       return "bg-gray-600";
     case "awaiting instructions":
       return "bg-orange-600";
-    case "edit in progress":
+    case "Edit in Progress":
       return "bg-primary";
     case "video is ready":
       return "bg-green-600";
@@ -100,7 +100,7 @@ const getStatusIcon = (status: string) => {
       return <AlertCircle className="h-3 w-3" />;
     case "awaiting instructions":
       return <Upload className="h-3 w-3" />;
-    case "edit in progress":
+    case "Edit in Progress":
       return <Video className="h-3 w-3" />;
     case "video is ready":
       return <CheckCircle className="h-3 w-3" />;
@@ -515,7 +515,7 @@ export default function DashboardPage() {
                       >
                         <span className="flex items-center gap-1">
                           {getStatusIcon(project.status)}
-                          {project.status.replace("_", " ")}
+                          {project.status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
                         </span>
                       </Badge>
                     </div>
@@ -550,8 +550,8 @@ export default function DashboardPage() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedProject(project);
-                          // If project has "edit in progress" status, show confirmation screen
-                          if (project.status === "edit in progress") {
+                          // If project has "Edit in Progress" status, show confirmation screen
+                          if (project.status === "Edit in Progress") {
                             setCurrentStep("confirmation");
                           } else {
                             setCurrentStep("upload");
@@ -600,7 +600,7 @@ export default function DashboardPage() {
                   >
                     <span className="flex items-center gap-1">
                       {getStatusIcon(selectedProject.status)}
-                      {selectedProject.status.replace("_", " ")}
+                      {selectedProject.status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
                   </Badge>
                 </div>
@@ -640,13 +640,13 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status === "edit in progress" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status === "Edit in Progress" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status === "edit in progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status === "Edit in Progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
                     {currentStep === "confirmation" ||
-                    selectedProject.status === "edit in progress"
+                    selectedProject.status === "Edit in Progress"
                       ? "✓"
                       : "2"}
                   </div>
@@ -654,12 +654,12 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "confirmation" ? "text-[#2abdee]" : selectedProject.status === "edit in progress" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "confirmation" ? "text-[#2abdee]" : selectedProject.status === "Edit in Progress" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status === "edit in progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status === "Edit in Progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {selectedProject.status === "edit in progress" ? "✓" : "3"}
+                    {selectedProject.status === "Edit in Progress" ? "✓" : "3"}
                   </div>
                   <span className="font-medium">Editor is On It!</span>
                 </div>
