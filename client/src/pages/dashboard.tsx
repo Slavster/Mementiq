@@ -82,7 +82,7 @@ const getStatusColor = (status: string) => {
     case "draft":
       return "bg-gray-600";
     case "awaiting instructions":
-      return "bg-blue-600";
+      return "bg-orange-600";
     case "edit in progress":
       return "bg-purple-600";
     case "video is ready":
@@ -362,7 +362,7 @@ export default function DashboardPage() {
                   ) : subscription?.hasActiveSubscription ? (
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Badge variant="default" className={`${subscription.hasReachedLimit ? 'bg-orange-600' : 'bg-green-600'}`}>
+                        <Badge variant="default" className={`${subscription.hasReachedLimit ? 'bg-orange-600' : 'bg-purple-600'}`}>
                           {subscription.productName || subscription.tier?.toUpperCase()}
                         </Badge>
                         {subscription.tier === 'premium' && <Crown className="h-4 w-4 text-yellow-500" />}

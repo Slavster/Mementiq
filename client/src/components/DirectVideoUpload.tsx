@@ -781,9 +781,9 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             <div className="mt-4 pt-4 border-t border-gray-600">
               <Button
                 onClick={() => onUploadComplete?.()}
-                className="w-full bg-[#2abdee] hover:bg-[#2abdee]/90 text-white"
+                className="w-full bg-primary hover:bg-primary/90 text-white"
               >
-                Continue to Describe Your Dream Edit →
+                Continue to the Next Step
               </Button>
             </div>
           </div>
