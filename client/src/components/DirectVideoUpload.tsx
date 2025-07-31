@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +65,14 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch existing project files and storage info
+  const { data: projectFilesData, isLoading: filesLoading } = useQuery({
+    queryKey: ["projects", projectId, "files"],
+    queryFn: () => apiRequest("GET", `/api/projects/${projectId}/files`),
+  });
+
+  const existingFiles = projectFilesData?.success ? projectFilesData.data : null;
 
   const createSessionMutation = useMutation({
     mutationFn: async ({
@@ -670,6 +678,44 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Storage Usage Display */}
+        {!filesLoading && existingFiles && (
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="font-medium text-sm">Project Storage</h4>
+              <span className="text-sm text-gray-600">
+                {existingFiles.storage?.usedGB || "0"}/{existingFiles.storage?.maxGB || 10} GB
+              </span>
+            </div>
+            <Progress 
+              value={existingFiles.storage?.percentUsed || 0} 
+              className="h-2 mb-2"
+            />
+            {existingFiles.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm font-medium mb-2">
+                  Existing Videos ({existingFiles.vimeoVideos.length})
+                </p>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {existingFiles.vimeoVideos.map((video: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center text-sm bg-white p-2 rounded border">
+                      <span className="truncate flex-1 mr-2" title={video.name}>
+                        {video.name || `Video ${index + 1}`}
+                      </span>
+                      <span className="text-gray-500 text-xs">
+                        {formatFileSize(video.file_size || 0)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  To prevent duplicates, check this list before uploading new videos.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Upload Area */}
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
