@@ -185,6 +185,25 @@ The application uses PostgreSQL with the following tables:
 - **Result**: Dashboard now correctly displays "0/8 Videos Created" based on real Stripe subscription allowance
 - **Status**: Subscription allowance properly synchronized with Stripe product metadata
 
+### July 31, 2025 - Billing-Period Project Counting & 31-Day Access Restrictions (COMPLETED)
+- **Problem**: Project count displayed total projects instead of billing-period projects, and no time-based access restrictions
+- **User Requirement**: Count projects based on creation date within billing period, and restrict project management access to 31 days after creation
+- **Solution Implemented**: Billing-period-based project counting and comprehensive 31-day access middleware
+- **Key Features**:
+  - Project usage now counts only projects CREATED within current billing period (not status changes)
+  - 31-day access restriction applied to all project management endpoints
+  - Automatic blocking of "Manage & Upload Footage" functionality after 31 days
+  - URL-based access protection - direct navigation blocked after expiration
+  - Clear error messages indicating access expiration with creation and expiry dates
+- **Technical Implementation**:
+  - Updated subscription status endpoint to filter projects by createdAt within billing period
+  - Created `requireProjectAccess` middleware with 31-day validation logic
+  - Applied access middleware to protected endpoints: files, upload-session, complete-upload, tally-submission
+  - Enhanced error responses with expiration details for better user experience
+- **Protected Endpoints**: All project management features now require both authentication and 31-day access validation
+- **User Experience**: Users with expired projects (>31 days old) receive clear messaging about access restrictions
+- **Result**: Project count now correctly shows 0/8 for new billing periods, and management features are time-restricted
+
 ### July 31, 2025 - Latest Tally Submission ID Tracking for Automation (COMPLETED)
 - **Problem**: User needs the latest Tally submission ID maintained in database for downstream automation workflows
 - **User Requirement**: When form edits occur, replace the submission ID with the latest one instead of keeping the original
