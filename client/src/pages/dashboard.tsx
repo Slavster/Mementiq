@@ -335,24 +335,25 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Name</p>
                   <p className="text-lg font-semibold">
                     {mappedUser.firstName} {mappedUser.lastName}
                   </p>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-400">Account Status</p>
+                    <Badge
+                      variant={mappedUser.verified ? "default" : "destructive"}
+                      className="mt-1"
+                    >
+                      {mappedUser.verified ? "Verified" : "Unverified"}
+                    </Badge>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Email</p>
                   <p className="text-lg">{mappedUser.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400">Account Status</p>
-                  <Badge
-                    variant={mappedUser.verified ? "default" : "destructive"}
-                  >
-                    {mappedUser.verified ? "Verified" : "Unverified"}
-                  </Badge>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Videos Created</p>
