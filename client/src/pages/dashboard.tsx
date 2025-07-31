@@ -111,8 +111,6 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-
-
 export default function DashboardPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -120,7 +118,9 @@ export default function DashboardPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState("");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [currentStep, setCurrentStep] = useState<"upload" | "form" | "confirmation">("upload");
+  const [currentStep, setCurrentStep] = useState<
+    "upload" | "form" | "confirmation"
+  >("upload");
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects
@@ -135,7 +135,8 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
-  const subscription: SubscriptionStatus | undefined = subscriptionData?.subscription;
+  const subscription: SubscriptionStatus | undefined =
+    subscriptionData?.subscription;
 
   // Create project mutation with subscription validation
   const createProjectMutation = useMutation({
@@ -149,7 +150,9 @@ export default function DashboardPage() {
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+        queryClient.invalidateQueries({
+          queryKey: ["/api/subscription/status"],
+        });
         toast({
           title: "Project created!",
           description: "Your new video project has been created successfully.",
@@ -204,7 +207,11 @@ export default function DashboardPage() {
           variant: "destructive",
         });
         setLocation("/subscribe");
-      } else if (subscription && subscription.hasActiveSubscription && subscription.hasReachedLimit) {
+      } else if (
+        subscription &&
+        subscription.hasActiveSubscription &&
+        subscription.hasReachedLimit
+      ) {
         // Show upgrade popup for users who reached their limit (only if they have active subscription)
         toast({
           title: "Reached your limit? Upgrade your plan for more videos.",
@@ -302,7 +309,12 @@ export default function DashboardPage() {
               </span>
               {subscription && (
                 <Button
-                  onClick={() => window.open("https://billing.stripe.com/p/login/test_4gMdR81Z2fYr6m9aOd6wE00", "_blank")}
+                  onClick={() =>
+                    window.open(
+                      "https://billing.stripe.com/p/login/test_4gMdR81Z2fYr6m9aOd6wE00",
+                      "_blank",
+                    )
+                  }
                   variant="outline"
                   className="text-white border-white hover:bg-white hover:text-black"
                 >
@@ -362,30 +374,41 @@ export default function DashboardPage() {
                   ) : subscription?.hasActiveSubscription ? (
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Badge variant="default" className={`${subscription.hasReachedLimit ? 'bg-orange-600' : 'bg-purple-600'}`}>
-                          {subscription.productName || subscription.tier?.toUpperCase()}
+                        <Badge
+                          variant="default"
+                          className={`${subscription.hasReachedLimit ? "bg-orange-600" : "bg-purple-600"}`}
+                        >
+                          {subscription.productName ||
+                            subscription.tier?.toUpperCase()}
                         </Badge>
-                        {subscription.tier === 'premium' && <Crown className="h-4 w-4 text-yellow-500" />}
+                        {subscription.tier === "premium" && (
+                          <Crown className="h-4 w-4 text-yellow-500" />
+                        )}
                       </div>
                       <div className="space-y-1">
                         <p className="text-lg font-semibold">
-                          {subscription.usage}/{subscription.allowance} Videos Created
+                          {subscription.usage}/{subscription.allowance} Videos
+                          Created
                         </p>
                         {subscription.periodEnd && (
                           <p className="text-xs text-gray-400">
-                            Resets {new Date(subscription.periodEnd).toLocaleDateString()}
+                            Resets{" "}
+                            {new Date(
+                              subscription.periodEnd,
+                            ).toLocaleDateString()}
                           </p>
                         )}
-                        {subscription.hasActiveSubscription && subscription.hasReachedLimit && (
-                          <Button
-                            size="sm"
-                            onClick={() => setLocation("/subscribe")}
-                            className="mt-1 bg-orange-600 hover:bg-orange-700"
-                          >
-                            <Crown className="h-3 w-3 mr-1" />
-                            Upgrade
-                          </Button>
-                        )}
+                        {subscription.hasActiveSubscription &&
+                          subscription.hasReachedLimit && (
+                            <Button
+                              size="sm"
+                              onClick={() => setLocation("/subscribe")}
+                              className="mt-1 bg-orange-600 hover:bg-orange-700"
+                            >
+                              <Crown className="h-3 w-3 mr-1" />
+                              Upgrade
+                            </Button>
+                          )}
                       </div>
                     </div>
                   ) : (
@@ -412,10 +435,16 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-white">Your Projects</h2>
             <Button
-              className={(subscription?.hasActiveSubscription && subscription?.hasReachedLimit) ? "bg-orange-600 hover:bg-orange-700 font-semibold" : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"}
+              className={
+                subscription?.hasActiveSubscription &&
+                subscription?.hasReachedLimit
+                  ? "bg-orange-600 hover:bg-orange-700 font-semibold"
+                  : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"
+              }
               onClick={handleCreateProject}
             >
-              {(subscription?.hasActiveSubscription && subscription?.hasReachedLimit) ? (
+              {subscription?.hasActiveSubscription &&
+              subscription?.hasReachedLimit ? (
                 <>
                   <Crown className="h-4 w-4 mr-2" />
                   Upgrade
@@ -446,10 +475,16 @@ export default function DashboardPage() {
                   life.
                 </p>
                 <Button
-                  className={(subscription?.hasActiveSubscription && subscription?.hasReachedLimit) ? "bg-orange-600 hover:bg-orange-700 font-semibold" : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"}
+                  className={
+                    subscription?.hasActiveSubscription &&
+                    subscription?.hasReachedLimit
+                      ? "bg-orange-600 hover:bg-orange-700 font-semibold"
+                      : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"
+                  }
                   onClick={handleCreateProject}
                 >
-                  {(subscription?.hasActiveSubscription && subscription?.hasReachedLimit) ? (
+                  {subscription?.hasActiveSubscription &&
+                  subscription?.hasReachedLimit ? (
                     <>
                       <Crown className="h-4 w-4 mr-2" />
                       Upgrade to Create More Videos
@@ -605,12 +640,15 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : (currentStep === "confirmation" || selectedProject.status === "edit in progress") ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status === "edit in progress" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : (currentStep === "confirmation" || selectedProject.status === "edit in progress") ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status === "edit in progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {(currentStep === "confirmation" || selectedProject.status === "edit in progress") ? "✓" : "2"}
+                    {currentStep === "confirmation" ||
+                    selectedProject.status === "edit in progress"
+                      ? "✓"
+                      : "2"}
                   </div>
                   <span className="font-medium">Describe Your Dream Edit</span>
                 </div>
@@ -637,7 +675,6 @@ export default function DashboardPage() {
                     // Refresh project data
                     queryClient.invalidateQueries({ queryKey: ["projects"] });
                   }}
-
                 />
               ) : currentStep === "upload" ? (
                 <Card className="bg-yellow-500/10 border-yellow-500/30">
@@ -682,7 +719,9 @@ export default function DashboardPage() {
                         Form Submitted Successfully!
                       </h3>
                       <p className="text-gray-300 mb-6">
-                        Your project details have been received. You can now confirm your submission or go back to upload additional footage.
+                        Your request has been received, nice! You can send it
+                        off to an editor now or go back to upload additional
+                        footage.
                       </p>
                       <div className="flex gap-4 justify-center">
                         <Button
@@ -697,7 +736,8 @@ export default function DashboardPage() {
                             // Show thank you message and close dialog
                             toast({
                               title: "Request Confirmed!",
-                              description: "An editor will contact you soon via email when your video is ready.",
+                              description:
+                                "Keep an eye on your email your video will be ready in a couple days.",
                               duration: 5000,
                             });
                             setTimeout(() => {
@@ -707,7 +747,7 @@ export default function DashboardPage() {
                           }}
                           className="bg-green-600 hover:bg-green-700 text-white"
                         >
-                          Confirm Submission
+                          Send to Editor
                         </Button>
                       </div>
                     </CardContent>
