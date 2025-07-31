@@ -167,6 +167,24 @@ The application uses PostgreSQL with the following tables:
   - No more blank screens after successful subscription purchases
 - **Status**: Fully operational with consistent styling and proper payment flow
 
+### July 31, 2025 - Fixed Subscription Allowance from Stripe Metadata (COMPLETED)
+- **Problem**: Dashboard showed incorrect allowance (0/2 Videos Created) instead of reading from Stripe product metadata
+- **Root Cause**: Database had outdated subscription ID and hardcoded allowance instead of fetching from Stripe product metadata
+- **Solution Implemented**: Complete subscription data synchronization with real Stripe subscription
+- **Key Fixes**:
+  - Updated to correct subscription ID: `sub_1Rqp2bCp6pJe31oCzddtH213` (was using old test ID)
+  - Subscription allowance now correctly shows **8 videos** (from Stripe product metadata: `"allowance": "8"`)
+  - User properly recognized as on "Test 3 - Two Per Week" premium plan with product ID `prod_Sm3pNUZ42txw8o`
+  - Subscription status endpoint fetches allowance directly from Stripe product metadata in real-time
+  - Database updated with correct subscription details: active status, premium tier, 8 allowance
+- **Technical Implementation**:
+  - Fixed subscription status API to fetch allowance from `product.metadata.allowance` in Stripe
+  - Removed hardcoded SUBSCRIPTION_TIERS allowance values in favor of Stripe metadata
+  - Updated database with real subscription data from Stripe API calls
+  - Subscription periods correctly set based on Stripe subscription billing cycle
+- **Result**: Dashboard now correctly displays "0/8 Videos Created" based on real Stripe subscription allowance
+- **Status**: Subscription allowance properly synchronized with Stripe product metadata
+
 ### July 31, 2025 - Simplified Project Status System (COMPLETED)
 - **Problem**: User requested simplified project status system with clear workflow
 - **User Requirement**: Five simplified statuses with automatic transitions and exclusion of draft projects from usage counting
