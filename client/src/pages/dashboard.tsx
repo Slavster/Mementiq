@@ -83,7 +83,7 @@ const getStatusColor = (status: string) => {
       return "bg-gray-600";
     case "awaiting instructions":
       return "bg-orange-600";
-    case "Edit in Progress":
+    case "edit in progress":
       return "bg-primary";
     case "video is ready":
       return "bg-green-600";
@@ -100,7 +100,7 @@ const getStatusIcon = (status: string) => {
       return <AlertCircle className="h-3 w-3" />;
     case "awaiting instructions":
       return <Upload className="h-3 w-3" />;
-    case "Edit in Progress":
+    case "edit in progress":
       return <Video className="h-3 w-3" />;
     case "video is ready":
       return <CheckCircle className="h-3 w-3" />;
