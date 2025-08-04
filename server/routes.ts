@@ -865,13 +865,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const projects = await storage.getProjectsByUser(req.user!.id);
         
-        // Update all projects' "Last Updated" timestamp to reflect dashboard access
-        const updatedProjects = await Promise.all(
+        // Calculate true "Last Updated" timestamp for each project based on latest activity
+        const projectsWithActualLastUpdated = await Promise.all(
           projects.map(async (project) => {
+            let latestActivityDate = new Date(project.createdAt);
+            
+            try {
+              // Check latest photo upload
+              const photoFiles = await storage.getPhotoFilesByProject(project.id);
+              if (photoFiles.length > 0) {
+                const latestPhotoDate = new Date(Math.max(...photoFiles.map(f => new Date(f.uploadDate).getTime())));
+                console.log(`Latest photo date for project ${project.id}: ${latestPhotoDate}`);
+                if (latestPhotoDate > latestActivityDate) {
+                  latestActivityDate = latestPhotoDate;
+                }
+              }
+              
+              // Check latest Tally form submission
+              const tallySubmission = await storage.getTallyFormSubmission(project.id);
+              if (tallySubmission && tallySubmission.submittedAt) {
+                const tallyDate = new Date(tallySubmission.submittedAt);
+                console.log(`Latest Tally submission date for project ${project.id}: ${tallyDate}`);
+                if (tallyDate > latestActivityDate) {
+                  latestActivityDate = tallyDate;
+                }
+              }
+              
+              // Check latest video upload via Vimeo API
+              if (project.vimeoFolderId) {
+                try {
+                  // Get user Vimeo folder ID to construct full path
+                  const userVimeoFolderId = project.vimeoUserFolderId || '244011105'; // fallback to known user folder
+                  const folderPath = `/users/${userVimeoFolderId}/projects/${project.vimeoFolderId}`;
+                  console.log(`Checking videos for project ${project.id} in folder: ${folderPath}`);
+                  
+                  const vimeoVideos = await getFolderVideos(folderPath);
+                  if (vimeoVideos.length > 0) {
+                    const videoDates = vimeoVideos
+                      .map((v: any) => v.created_time ? new Date(v.created_time) : null)
+                      .filter(date => date !== null);
+                    
+                    if (videoDates.length > 0) {
+                      const latestVideoDate = new Date(Math.max(...videoDates.map(d => d!.getTime())));
+                      console.log(`Latest video date for project ${project.id}: ${latestVideoDate}`);
+                      if (latestVideoDate > latestActivityDate) {
+                        latestActivityDate = latestVideoDate;
+                      }
+                    }
+                  }
+                } catch (vimeoError) {
+                  console.log(`Could not fetch Vimeo videos for project ${project.id}:`, vimeoError);
+                }
+              }
+              
+            } catch (error) {
+              console.error(`Error calculating last activity for project ${project.id}:`, error);
+            }
+            
+            // Update project with calculated timestamp
             const updated = await storage.updateProject(project.id, {
-              updatedAt: new Date(),
+              updatedAt: latestActivityDate,
             });
-            return updated || project;
+            
+            return updated || { ...project, updatedAt: latestActivityDate.toISOString() };
           })
         );
         
@@ -884,7 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.json({
           success: true,
-          projects: updatedProjects,
+          projects: projectsWithActualLastUpdated,
         });
       } catch (error) {
         console.error("Get projects error:", error);
