@@ -1,160 +1,148 @@
-import ImageKit from "imagekit";
+import ImageKit from 'imagekit';
+
+// Initialize ImageKit with environment variables
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY || '',
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || '',
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || ''
+});
+
+export interface UploadResult {
+  fileId: string;
+  url: string;
+  filePath: string;
+  thumbnailUrl?: string;
+  name: string;
+  size: number;
+  tags: string[];
+}
+
+export interface UploadParams {
+  fileName: string;
+  file: string; // base64 encoded file
+  folder: string; // e.g., '/users/user123/projects/project456'
+  tags?: string[];
+}
 
 export class ImageKitService {
-  private imagekit: ImageKit;
+  /**
+   * Create folder structure for user/project
+   */
+  async createUserProjectFolder(userId: string, projectId: number): Promise<string> {
+    return `/users/${userId}/projects/${projectId}`;
+  }
 
-  constructor() {
-    const publicKey = process.env.IMAGEKIT_PUBLIC_KEY;
-    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
-    const urlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT;
-
-    if (!publicKey || !privateKey || !urlEndpoint) {
-      throw new Error("ImageKit credentials not configured. Please set IMAGEKIT_PUBLIC_KEY, IMAGEKIT_PRIVATE_KEY, and IMAGEKIT_URL_ENDPOINT environment variables.");
+  /**
+   * Upload an image to ImageKit with security checks
+   */
+  async uploadImage(
+    base64Data: string, 
+    filename: string, 
+    folderPath: string, 
+    userId: string
+  ): Promise<UploadResult> {
+    // Security check: ensure folder path matches user ID
+    if (!folderPath.includes(`/users/${userId}/`)) {
+      throw new Error('Security violation: User can only upload to their own folders');
     }
 
-    this.imagekit = new ImageKit({
-      publicKey,
-      privateKey,
-      urlEndpoint,
+    return this.uploadFile({
+      file: base64Data,
+      fileName: filename,
+      folder: folderPath,
+      tags: ['mementiq', 'user-upload', `user-${userId}`]
     });
   }
 
   /**
-   * Create folder structure for user/project organization
-   * Mimics Vimeo's structure: /users/{userId}/projects/{projectId}
+   * Upload a file to ImageKit with proper folder structure
    */
-  async createUserProjectFolder(userId: string, projectId: number): Promise<string> {
-    const folderPath = `/users/${userId}/projects/${projectId}`;
-    
+  async uploadFile(params: UploadParams): Promise<UploadResult> {
     try {
-      // ImageKit automatically creates folders when uploading files to them
-      // We don't need to explicitly create folders - they're created on first upload
-      console.log(`ImageKit folder path prepared: ${folderPath}`);
-      return folderPath;
-    } catch (error) {
-      console.error("Error preparing ImageKit folder:", error);
-      throw new Error(`Failed to prepare folder structure: ${error}`);
-    }
-  }
-
-  /**
-   * Upload image to ImageKit with proper folder organization
-   */
-  async uploadImage(
-    base64Data: string,
-    filename: string,
-    folderPath: string,
-    userId: string
-  ): Promise<{
-    fileId: string;
-    url: string;
-    thumbnailUrl: string;
-    filePath: string;
-  }> {
-    try {
-      // Clean base64 data
-      const base64Clean = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
-      
-      // Create unique filename to prevent conflicts
-      const timestamp = Date.now();
-      const uniqueFilename = `${timestamp}_${filename}`;
-      
-      const uploadResult = await this.imagekit.upload({
-        file: base64Clean,
-        fileName: uniqueFilename,
-        folder: folderPath,
-        useUniqueFileName: false, // We're already making it unique
-        tags: [`user_${userId}`, `uploaded_${timestamp}`],
-        isPrivateFile: false, // Set to true if you want private access
+      const result = await imagekit.upload({
+        file: params.file,
+        fileName: params.fileName,
+        folder: params.folder,
+        tags: params.tags || ['mementiq', 'project-photo'],
+        useUniqueFileName: true,
+        overwriteFile: false,
       });
 
-      // Generate thumbnail URL (ImageKit supports on-the-fly transformations)
-      const thumbnailUrl = this.imagekit.url({
-        path: uploadResult.filePath,
+      // Generate thumbnail URL with ImageKit transformations
+      const thumbnailUrl = imagekit.url({
+        path: result.filePath,
         transformation: [
-          {
-            height: "150",
-            width: "150",
-            crop: "fill",
-            quality: "80"
-          }
+          { width: 300, height: 300, cropMode: 'maintain_ratio' },
+          { quality: 80 }
         ]
       });
 
       return {
-        fileId: uploadResult.fileId,
-        url: uploadResult.url,
+        fileId: result.fileId,
+        url: result.url,
+        filePath: result.filePath,
         thumbnailUrl,
-        filePath: uploadResult.filePath,
+        name: result.name,
+        size: result.size,
+        tags: result.tags || []
       };
-    } catch (error) {
-      console.error("ImageKit upload error:", error);
-      throw new Error(`Failed to upload to ImageKit: ${error}`);
+    } catch (error: any) {
+      console.error('ImageKit upload error:', error);
+      throw new Error(`ImageKit upload failed: ${error.message}`);
     }
   }
 
   /**
-   * Delete image from ImageKit
+   * Generate a thumbnail URL for an existing image
    */
-  async deleteImage(fileId: string): Promise<void> {
+  generateThumbnailUrl(filePath: string, width = 300, height = 300): string {
+    return imagekit.url({
+      path: filePath,
+      transformation: [
+        { width, height, cropMode: 'maintain_ratio' },
+        { quality: 80 }
+      ]
+    });
+  }
+
+  /**
+   * Delete a file from ImageKit
+   */
+  async deleteFile(fileId: string): Promise<void> {
     try {
-      await this.imagekit.deleteFile(fileId);
-      console.log(`Successfully deleted ImageKit file: ${fileId}`);
-    } catch (error) {
-      console.error("Error deleting ImageKit file:", error);
-      throw new Error(`Failed to delete file: ${error}`);
+      await imagekit.deleteFile(fileId);
+    } catch (error: any) {
+      console.error('ImageKit delete error:', error);
+      throw new Error(`ImageKit delete failed: ${error.message}`);
     }
   }
 
   /**
-   * List files in a specific folder (for security verification)
+   * List files in a specific folder
    */
-  async listFolderFiles(folderPath: string): Promise<any[]> {
+  async listFiles(folder: string): Promise<any[]> {
     try {
-      const result = await this.imagekit.listFiles({
-        path: folderPath,
-        limit: 1000, // Adjust as needed
+      const result = await imagekit.listFiles({
+        path: folder,
+        includeFolder: false
       });
       return result;
-    } catch (error) {
-      console.error("Error listing ImageKit folder files:", error);
-      throw new Error(`Failed to list folder files: ${error}`);
+    } catch (error: any) {
+      console.error('ImageKit list files error:', error);
+      throw new Error(`ImageKit list files failed: ${error.message}`);
     }
   }
 
   /**
-   * Verify user has access to a specific folder path
-   * Security check to prevent cross-user access
+   * Check if ImageKit is properly configured
    */
-  verifyUserFolderAccess(userId: string, folderPath: string): boolean {
-    const expectedPrefix = `/users/${userId}/`;
-    return folderPath.startsWith(expectedPrefix);
-  }
-
-  /**
-   * Get file details from ImageKit
-   */
-  async getFileDetails(fileId: string): Promise<any> {
-    try {
-      const result = await this.imagekit.getFileDetails(fileId);
-      return result;
-    } catch (error) {
-      console.error("Error getting ImageKit file details:", error);
-      throw new Error(`Failed to get file details: ${error}`);
-    }
-  }
-
-  /**
-   * Generate authentication parameters for client-side uploads
-   */
-  getAuthenticationParameters(): {
-    signature: string;
-    expire: number;
-    token: string;
-  } {
-    return this.imagekit.getAuthenticationParameters();
+  isConfigured(): boolean {
+    return !!(
+      process.env.IMAGEKIT_PUBLIC_KEY &&
+      process.env.IMAGEKIT_PRIVATE_KEY &&
+      process.env.IMAGEKIT_URL_ENDPOINT
+    );
   }
 }
 
-// Export singleton instance
 export const imagekitService = new ImageKitService();
