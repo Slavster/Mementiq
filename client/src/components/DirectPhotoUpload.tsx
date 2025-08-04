@@ -302,23 +302,21 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
         </p>
       </div>
 
-      {/* Storage Usage - matching video upload style */}
-      {photoData?.album && (
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-blue-400">Album Storage: {photoData.photoCount} photos</span>
-            <span className="text-gray-300">
-              {formatFileSize(currentAlbumSize)} / 500 MB
-            </span>
-          </div>
-          <div className="w-full bg-gray-800 rounded-full h-2">
-            <div
-              className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(albumUsagePercent, 100)}%` }}
-            />
-          </div>
+      {/* Current Storage Usage - matching video upload style exactly */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-blue-400">Current Storage Usage</span>
+          <span className="text-gray-300">
+            {formatFileSize(currentAlbumSize)} / 500 MB
+          </span>
         </div>
-      )}
+        <div className="w-full bg-gray-800 rounded-full h-2">
+          <div
+            className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(albumUsagePercent, 100)}%` }}
+          />
+        </div>
+      </div>
       {/* Drag and Drop Area - matching video upload style */}
       <div
         onDrop={handleDrop}
@@ -447,46 +445,52 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
         </div>
       )}
 
-      {/* Existing Photos Display - Table Style like Videos */}
+      {/* Existing Photos - matching video upload style exactly */}
       {photoData?.photos && photoData.photos.length > 0 && (
         <div className="bg-gray-800/30 rounded-lg p-6">
           <h3 className="text-white font-medium mb-4">
             Existing Photos ({photoData.photos.length})
           </h3>
           
-          {/* Table Header */}
-          <div className="grid grid-cols-12 gap-4 pb-2 border-b border-gray-700 text-gray-400 text-sm">
-            <div className="col-span-2">Thumbnail</div>
-            <div className="col-span-6">Filename</div>
-            <div className="col-span-2">Size</div>
-            <div className="col-span-2">Upload Date</div>
-          </div>
-          
-          {/* Table Rows */}
-          <div className="space-y-2 mt-4">
-            {photoData.photos.map((photo: any) => (
-              <div key={photo.id} className="grid grid-cols-12 gap-4 py-2 border-b border-gray-800/50 last:border-b-0">
-                <div className="col-span-2">
-                  <div className="w-12 h-12 bg-gray-700 rounded overflow-hidden">
-                    <img
-                      src={photo.imagekitThumbnailUrl || photo.imagekitUrl}
-                      alt={photo.originalFilename}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
-                      onClick={() => window.open(photo.imagekitUrl, "_blank")}
-                    />
-                  </div>
-                </div>
-                <div className="col-span-6 text-gray-300 text-sm flex items-center">
-                  <span className="truncate">{photo.originalFilename}</span>
-                </div>
-                <div className="col-span-2 text-gray-400 text-sm flex items-center">
-                  {formatFileSize(photo.fileSize)}
-                </div>
-                <div className="col-span-2 text-gray-400 text-sm flex items-center">
-                  {new Date(photo.uploadDate).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-600">
+                  <th className="text-left py-2 px-3 font-medium text-gray-300">Filename</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-300">Size</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-300">Upload Date</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-300">Preview</th>
+                </tr>
+              </thead>
+              <tbody>
+                {photoData.photos.map((photo: any) => (
+                  <tr key={photo.id} className="border-b border-gray-700 hover:bg-gray-700">
+                    <td className="py-2 px-3">
+                      <span className="truncate max-w-xs block text-gray-200" title={photo.originalFilename}>
+                        {photo.originalFilename}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-gray-400">
+                      {formatFileSize(photo.fileSize)}
+                    </td>
+                    <td className="py-2 px-3 text-gray-400">
+                      {new Date(photo.uploadDate).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 px-3">
+                      <a
+                        href={photo.imagekitUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs"
+                      >
+                        <Image className="h-3 w-3" />
+                        View
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
