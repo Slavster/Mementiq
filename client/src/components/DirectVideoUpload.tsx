@@ -674,17 +674,19 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
     !isUploading;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5" />
+    <div className="w-full space-y-6 bg-gray-800/30 border border-gray-700/50 rounded-lg p-6">
+      {/* Header Section */}
+      <div>
+        <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-2">
+          <Upload className="h-6 w-6" />
           Video Upload
-        </CardTitle>
-        <CardDescription>
+        </h2>
+        <p className="text-gray-400">
           Upload video files; maximum 10GB per project.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        </p>
+      </div>
+      
+      <div className="space-y-4">
         {/* Storage Usage Display */}
         {filesLoading ? (
           <div className="p-4 rounded-lg animate-pulse">
@@ -946,8 +948,8 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
