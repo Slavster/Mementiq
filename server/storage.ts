@@ -5,6 +5,8 @@ import {
   projectStatusLog, 
   emailSignups,
   tallyFormSubmissions,
+  photoAlbums,
+  photoFiles,
   type User, 
   type InsertUser, 
   type Project,
@@ -16,7 +18,12 @@ import {
   type EmailSignup, 
   type InsertEmailSignup,
   type TallyFormSubmission,
-  type InsertTallyFormSubmission
+  type InsertTallyFormSubmission,
+  type PhotoAlbum,
+  type InsertPhotoAlbum,
+  type UpdatePhotoAlbum,
+  type PhotoFile,
+  type InsertPhotoFile
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -56,6 +63,20 @@ export interface IStorage {
   getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined>;
   updateTallyFormSubmission(projectId: number, updates: Partial<Pick<TallyFormSubmission, 'tallySubmissionId' | 'submissionData' | 'submittedAt'>>): Promise<TallyFormSubmission>;
   updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void>;
+
+  // Photo album methods
+  getPhotoAlbum(projectId: number): Promise<PhotoAlbum | undefined>;
+  getPhotoAlbumsByUser(userId: string): Promise<PhotoAlbum[]>;
+  createPhotoAlbum(userId: string, album: InsertPhotoAlbum): Promise<PhotoAlbum>;
+  updatePhotoAlbum(id: number, updates: UpdatePhotoAlbum): Promise<PhotoAlbum | undefined>;
+  deletePhotoAlbum(id: number): Promise<void>;
+
+  // Photo file methods
+  getPhotoFiles(albumId: number): Promise<PhotoFile[]>;
+  getPhotoFilesByProject(projectId: number): Promise<PhotoFile[]>;
+  createPhotoFile(userId: string, file: InsertPhotoFile): Promise<PhotoFile>;
+  updatePhotoFile(id: number, updates: Partial<PhotoFile>): Promise<PhotoFile | undefined>;
+  deletePhotoFile(id: number): Promise<void>;
 
   // Stripe subscription methods
   updateUserStripeInfo(userId: string, stripeCustomerId?: string, stripeSubscriptionId?: string): Promise<User | undefined>;
