@@ -39,6 +39,7 @@ import {
   Settings,
 } from "lucide-react";
 import DirectVideoUpload from "@/components/DirectVideoUpload";
+import DirectPhotoUpload from "@/components/DirectPhotoUpload";
 import TallyFormStep from "@/components/TallyFormStep";
 
 interface User {
@@ -663,15 +664,25 @@ export default function DashboardPage() {
 
               {/* Step Content */}
               {currentStep === "upload" && selectedProject.vimeoFolderId ? (
-                <DirectVideoUpload
-                  projectId={selectedProject.id}
-                  onUploadComplete={() => {
-                    // Move to next step
-                    setCurrentStep("form");
-                    // Refresh project data
-                    queryClient.invalidateQueries({ queryKey: ["projects"] });
-                  }}
-                />
+                <div className="space-y-6">
+                  <DirectVideoUpload
+                    projectId={selectedProject.id}
+                    onUploadComplete={() => {
+                      // Move to next step
+                      setCurrentStep("form");
+                      // Refresh project data
+                      queryClient.invalidateQueries({ queryKey: ["projects"] });
+                    }}
+                  />
+                  
+                  <DirectPhotoUpload
+                    projectId={selectedProject.id}
+                    onUploadComplete={() => {
+                      // Refresh project data
+                      queryClient.invalidateQueries({ queryKey: ["projects"] });
+                    }}
+                  />
+                </div>
               ) : currentStep === "upload" ? (
                 <Card className="bg-yellow-500/10 border-yellow-500/30">
                   <CardContent className="p-6 text-center">

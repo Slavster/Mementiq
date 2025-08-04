@@ -109,7 +109,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(insertUser)
+      .values([insertUser])
       .returning();
     return user;
   }
@@ -155,19 +155,16 @@ export class DatabaseStorage implements IStorage {
     return newProject;
   }
 
-  async updateProjectVimeoInfo(projectId: number, vimeoFolderId: string, vimeoUserFolderId?: string): Promise<Project | undefined> {
+  async updateProjectVimeoInfo(projectId: number, vimeoFolderId: string, vimeoUserFolderId?: string): Promise<void> {
     const updateData: any = { vimeoFolderId };
     if (vimeoUserFolderId) {
       updateData.vimeoUserFolderId = vimeoUserFolderId;
     }
 
-    const [updatedProject] = await db
+    await db
       .update(projects)
       .set(updateData)
-      .where(eq(projects.id, projectId))
-      .returning();
-
-    return updatedProject || undefined;
+      .where(eq(projects.id, projectId));
   }
 
   async updateProject(id: number, updates: UpdateProject): Promise<Project | undefined> {
@@ -380,6 +377,95 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user || undefined;
+  }
+
+  // Photo album methods
+  async getPhotoAlbum(projectId: number): Promise<PhotoAlbum | undefined> {
+    const [album] = await db
+      .select()
+      .from(photoAlbums)
+      .where(eq(photoAlbums.projectId, projectId));
+    return album || undefined;
+  }
+
+  async getPhotoAlbumsByUser(userId: string): Promise<PhotoAlbum[]> {
+    return await db
+      .select()
+      .from(photoAlbums)
+      .where(eq(photoAlbums.userId, userId))
+      .orderBy(desc(photoAlbums.createdAt));
+  }
+
+  async createPhotoAlbum(userId: string, album: InsertPhotoAlbum): Promise<PhotoAlbum> {
+    const [createdAlbum] = await db
+      .insert(photoAlbums)
+      .values({
+        ...album,
+        userId,
+      })
+      .returning();
+    return createdAlbum;
+  }
+
+  async updatePhotoAlbum(id: number, updates: UpdatePhotoAlbum): Promise<PhotoAlbum | undefined> {
+    const [updatedAlbum] = await db
+      .update(photoAlbums)
+      .set({ 
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(photoAlbums.id, id))
+      .returning();
+    return updatedAlbum || undefined;
+  }
+
+  async deletePhotoAlbum(id: number): Promise<void> {
+    await db
+      .delete(photoAlbums)
+      .where(eq(photoAlbums.id, id));
+  }
+
+  // Photo file methods
+  async getPhotoFiles(albumId: number): Promise<PhotoFile[]> {
+    return await db
+      .select()
+      .from(photoFiles)
+      .where(eq(photoFiles.albumId, albumId))
+      .orderBy(desc(photoFiles.uploadDate));
+  }
+
+  async getPhotoFilesByProject(projectId: number): Promise<PhotoFile[]> {
+    return await db
+      .select()
+      .from(photoFiles)
+      .where(eq(photoFiles.projectId, projectId))
+      .orderBy(desc(photoFiles.uploadDate));
+  }
+
+  async createPhotoFile(userId: string, file: InsertPhotoFile): Promise<PhotoFile> {
+    const [createdFile] = await db
+      .insert(photoFiles)
+      .values({
+        ...file,
+        userId,
+      })
+      .returning();
+    return createdFile;
+  }
+
+  async updatePhotoFile(id: number, updates: Partial<PhotoFile>): Promise<PhotoFile | undefined> {
+    const [updatedFile] = await db
+      .update(photoFiles)
+      .set(updates)
+      .where(eq(photoFiles.id, id))
+      .returning();
+    return updatedFile || undefined;
+  }
+
+  async deletePhotoFile(id: number): Promise<void> {
+    await db
+      .delete(photoFiles)
+      .where(eq(photoFiles.id, id));
   }
 }
 

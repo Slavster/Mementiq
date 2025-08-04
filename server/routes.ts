@@ -9,6 +9,8 @@ import {
   insertProjectSchema,
   updateProjectSchema,
   insertProjectFileSchema,
+  insertPhotoAlbumSchema,
+  insertPhotoFileSchema,
 } from "../shared/schema";
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
@@ -1932,8 +1934,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Photo upload and album management endpoints
+  
+  // Upload photo to Freeimage.host
+  app.post(
+    "/api/photos/upload",
+    requireAuth,
+    requireProjectAccess,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { projectId, filename, fileSize, mimeType, base64Data } = req.body;
+
+        if (!projectId || !filename || !fileSize || !mimeType || !base64Data) {
+          return res.status(400).json({
+            success: false,
+            message: "Missing required upload parameters",
+          });
+        }
+
+        // Verify project exists and user owns it
+        const project = await storage.getProject(projectId);
+        if (!project) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Project not found" });
+        }
+
+        if (project.userId !== req.user!.id) {
+          return res
+            .status(403)
+            .json({ success: false, message: "Access denied" });
+        }
+
+        // Get or create photo album for this project
+        let album = await storage.getPhotoAlbum(projectId);
+        if (!album) {
+          album = await storage.createPhotoAlbum(req.user!.id, {
+            projectId,
+            albumName: `${project.title} - Photo Album`,
+          });
+        }
+
+        // Check album size limit (10GB)
+        const albumSizeLimit = album.totalSizeLimit;
+        if (album.currentSize + fileSize > albumSizeLimit) {
+          return res.status(413).json({
+            success: false,
+            message: `Album size limit exceeded. Maximum ${Math.round(albumSizeLimit / (1024 * 1024 * 1024))}GB allowed.`,
+          });
+        }
+
+        // Upload to Freeimage.host
+        const freeimagePid = await uploadToFreeimage(base64Data, filename);
+        
+        // Create photo file record
+        const photoFile = await storage.createPhotoFile(req.user!.id, {
+          albumId: album.id,
+          projectId,
+          freeimagePId: freeimagePid,
+          freeimagePUrl: `https://iili.io/${freeimagePid}`, // Freeimage.host direct URL format
+          freeimageThumbnailUrl: `https://iili.io/${freeimagePid}`, // Using same URL for now
+          filename: filename,
+          originalFilename: filename,
+          fileSize,
+          mimeType,
+          uploadStatus: "completed",
+        });
+
+        // Update album stats
+        await storage.updatePhotoAlbum(album.id, {
+          currentSize: album.currentSize + fileSize,
+          photoCount: album.photoCount + 1,
+        });
+
+        res.json({
+          success: true,
+          message: "Photo uploaded successfully",
+          photo: photoFile,
+        });
+      } catch (error: any) {
+        console.error("Photo upload error:", error);
+        res.status(500).json({
+          success: false,
+          message: error.message || "Failed to upload photo",
+        });
+      }
+    }
+  );
+
+  // Get photos for a project
+  app.get(
+    "/api/projects/:id/photos",
+    requireAuth,
+    requireProjectAccess,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const projectId = parseInt(req.params.id);
+
+        // Verify project exists and user owns it
+        const project = await storage.getProject(projectId);
+        if (!project) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Project not found" });
+        }
+
+        if (project.userId !== req.user!.id) {
+          return res
+            .status(403)
+            .json({ success: false, message: "Access denied" });
+        }
+
+        // Get album and photos
+        const album = await storage.getPhotoAlbum(projectId);
+        const photos = album ? await storage.getPhotoFiles(album.id) : [];
+
+        res.json({
+          success: true,
+          album: album || null,
+          photos,
+          photoCount: photos.length,
+        });
+      } catch (error: any) {
+        console.error("Error fetching photos:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to fetch photos",
+        });
+      }
+    }
+  );
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper function to upload to Freeimage.host
+async function uploadToFreeimage(base64Data: string, filename: string): Promise<string> {
+  const apiKey = process.env.FREEIMAGE_API_KEY;
+  if (!apiKey) {
+    throw new Error("Freeimage API key not configured");
+  }
+
+  const response = await fetch("https://freeimage.host/api/1/upload/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      key: apiKey,
+      action: "upload",
+      source: base64Data,
+      format: "json",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Freeimage upload failed: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  
+  if (!result.success || !result.image) {
+    throw new Error(result.error?.message || "Upload failed");
+  }
+
+  // Extract photo ID from the URL
+  const url = result.image.url;
+  const urlParts = url.split('/');
+  const photoId = urlParts[urlParts.length - 1];
+  
+  return photoId;
 }
 
 async function downloadAsset(
