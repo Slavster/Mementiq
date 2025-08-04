@@ -195,7 +195,8 @@ export class DatabaseStorage implements IStorage {
       .update(projects)
       .set({
         ...updates,
-        updatedAt: new Date(),
+        // Only set updatedAt to current time if not explicitly provided in updates
+        updatedAt: updates.updatedAt || new Date(),
       })
       .where(eq(projects.id, id))
       .returning();
