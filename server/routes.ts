@@ -2074,34 +2074,48 @@ async function uploadToFreeimage(base64Data: string, filename: string): Promise<
     throw new Error("Freeimage API key not configured");
   }
 
+  console.log("Uploading to Freeimage.host with filename:", filename);
+  console.log("API key length:", apiKey.length);
+  console.log("Base64 data length:", base64Data.length);
+  console.log("Base64 data prefix:", base64Data.substring(0, 50));
+
+  // Use JSON approach as recommended in the documentation
+  const requestBody = {
+    action: "upload",
+    source: base64Data,
+    format: "json",
+    key: apiKey
+  };
+
   const response = await fetch("https://freeimage.host/api/1/upload/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      key: apiKey,
-      action: "upload",
-      source: base64Data,
-      format: "json",
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Freeimage API error response:", errorText);
     throw new Error(`Freeimage upload failed: ${response.status} ${response.statusText}`);
   }
 
   const result = await response.json();
+  console.log("Freeimage API response:", result);
   
-  if (!result.success || !result.image) {
-    throw new Error(result.error?.message || "Upload failed");
+  if (result.status_code !== 200 || !result.image) {
+    const errorMsg = result.error?.message || result.error_message || result.error || "Upload failed";
+    console.error("Freeimage API error:", errorMsg);
+    throw new Error(errorMsg);
   }
 
-  // Extract photo ID from the URL
+  // Extract photo ID from the URL  
   const url = result.image.url;
   const urlParts = url.split('/');
   const photoId = urlParts[urlParts.length - 1];
   
+  console.log("Successfully uploaded to Freeimage.host, photo ID:", photoId);
   return photoId;
 }
 
