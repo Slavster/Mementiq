@@ -1137,6 +1137,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test ImageKit integration (for debugging)
+  app.post("/api/test-imagekit", async (req, res) => {
+    try {
+      console.log("Testing ImageKit integration...");
+      
+      if (!imagekitService.isConfigured()) {
+        return res.status(500).json({
+          success: false,
+          message: "ImageKit is not properly configured"
+        });
+      }
+
+      // Upload a test image
+      const result = await imagekitService.uploadFile({
+        file: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        fileName: 'api-test.png',
+        folder: '/test/api-verification',
+        tags: ['test', 'api']
+      });
+
+      res.json({
+        success: true,
+        message: "ImageKit integration working properly",
+        result
+      });
+    } catch (error: any) {
+      console.error("ImageKit test error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "ImageKit test failed"
+      });
+    }
+  });
+
   // Serve Object Storage assets with HTTP Range support for video streaming
   app.get("/api/assets/*", async (req, res) => {
     try {
