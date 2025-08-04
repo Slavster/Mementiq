@@ -291,7 +291,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
   const displayPercent = actualPhotoSizes > 0 ? Math.max(albumUsagePercent, 2) : 0;
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-6 bg-gray-800/30 border border-gray-700/50 rounded-lg p-6">
       {/* Header Section */}
       <div>
         <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-2">
@@ -448,7 +448,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
 
       {/* Existing Photos - matching video upload style exactly with proper shading */}
       {photoData?.photos && photoData.photos.length > 0 && (
-        <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
+        <div className="bg-gray-800 dark:bg-gray-900 p-4 rounded-lg border border-gray-700">
           <h3 className="text-white font-medium mb-4">
             Existing Photos ({photoData.photos.length})
           </h3>
