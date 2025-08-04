@@ -462,6 +462,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(photoFiles.uploadDate));
   }
 
+  async getPhotoFileByImageKitId(imagekitFileId: string): Promise<PhotoFile | undefined> {
+    const [file] = await db
+      .select()
+      .from(photoFiles)
+      .where(eq(photoFiles.imagekitFileId, imagekitFileId));
+    return file || undefined;
+  }
+
   async createPhotoFile(userId: string, file: InsertPhotoFile): Promise<PhotoFile> {
     const [createdFile] = await db
       .insert(photoFiles)

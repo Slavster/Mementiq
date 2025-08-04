@@ -2097,50 +2097,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ success: false, message: "Access denied" });
         }
 
-        // Get album and photos from database first
-        const album = await storage.getPhotoAlbum(projectId);
-        let photos = album ? await storage.getPhotoFiles(album.id) : [];
-
-        // Also fetch photos directly from ImageKit media library for this user/project
+        // Fetch photos ONLY from ImageKit media library for this user/project
+        let photos: any[] = [];
+        let album = null;
+        let currentSize = 0;
+        
         try {
           const folderPath = `/users/${req.user!.id}/projects/${projectId}`;
+          console.log(`Fetching photos from ImageKit folder: ${folderPath}`);
           const imagekitFiles = await imagekitService.listFiles(folderPath);
+          console.log(`Found ${imagekitFiles.length} files in ImageKit folder`);
           
-          // Merge with database records and sync any missing files
-          for (const imagekitFile of imagekitFiles) {
-            const existingPhoto = photos.find(p => p.imagekitFileId === imagekitFile.fileId);
-            if (!existingPhoto && album) {
-              // Create database record for photos that exist in ImageKit but not in DB
-              const newPhoto = await storage.createPhotoFile(req.user!.id, {
-                albumId: album.id,
+          if (imagekitFiles.length > 0) {
+            // Get or create album only if there are actual photos in ImageKit
+            album = await storage.getPhotoAlbum(projectId);
+            if (!album) {
+              album = await storage.createPhotoAlbum(req.user!.id, {
                 projectId,
-                imagekitFileId: imagekitFile.fileId,
-                imagekitUrl: imagekitFile.url,
-                imagekitThumbnailUrl: imagekitService.generateThumbnailUrl(imagekitFile.filePath),
-                imagekitFolderPath: folderPath,
-                filename: imagekitFile.name,
-                originalFilename: imagekitFile.name,
-                fileSize: imagekitFile.size,
-                mimeType: imagekitFile.mime || 'image/jpeg',
-                uploadStatus: "completed",
+                albumName: `${project.title} - Photos`,
+                totalSizeLimit: 524288000, // 500MB default for images
               });
-              photos.push(newPhoto);
             }
-          }
-        } catch (error) {
-          console.log('Could not sync with ImageKit media library:', error);
-          // Continue with database-only photos
-        }
 
-        // Security check: verify all photos belong to this user's folder structure
-        for (const photo of photos) {
-          if (photo.imagekitFolderPath && !imagekitService.verifyUserFolderAccess(req.user!.id, photo.imagekitFolderPath)) {
-            console.error(`Security violation: User ${req.user!.id} trying to access ${photo.imagekitFolderPath}`);
-            return res.status(403).json({
-              success: false,
-              message: "Access denied to photo resources",
+            // Convert ImageKit files to photo objects and sync to database
+            for (const imagekitFile of imagekitFiles) {
+              let existingPhoto = await storage.getPhotoFileByImageKitId(imagekitFile.fileId);
+              
+              if (!existingPhoto) {
+                // Create database record for photos that exist in ImageKit but not in DB
+                existingPhoto = await storage.createPhotoFile(req.user!.id, {
+                  albumId: album.id,
+                  projectId,
+                  imagekitFileId: imagekitFile.fileId,
+                  imagekitUrl: imagekitFile.url,
+                  imagekitThumbnailUrl: imagekitService.generateThumbnailUrl(imagekitFile.filePath),
+                  imagekitFolderPath: folderPath,
+                  filename: imagekitFile.name,
+                  originalFilename: imagekitFile.name,
+                  fileSize: imagekitFile.size,
+                  mimeType: imagekitFile.mime || 'image/jpeg',
+                  uploadStatus: "completed",
+                });
+              }
+              
+              photos.push(existingPhoto);
+              currentSize += imagekitFile.size;
+            }
+
+            // Update album with current stats from ImageKit
+            await storage.updatePhotoAlbum(album.id, {
+              currentSize,
+              photoCount: imagekitFiles.length,
             });
           }
+        } catch (error) {
+          console.log('ImageKit folder does not exist or is empty:', error);
+          // Return empty results - no photos in ImageKit means no photos to display
         }
 
         res.json({
