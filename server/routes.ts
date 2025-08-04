@@ -2067,55 +2067,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Helper function to upload to Freeimage.host
-async function uploadToFreeimage(base64Data: string, filename: string): Promise<string> {
-  const apiKey = process.env.FREEIMAGE_API_KEY;
+// Helper function to upload to ImgBB (more reliable alternative)
+async function uploadToImgBB(base64Data: string, filename: string): Promise<string> {
+  const apiKey = process.env.IMGBB_API_KEY;
   if (!apiKey) {
-    throw new Error("Freeimage API key not configured");
+    throw new Error("ImgBB API key not configured");
   }
 
-  console.log("Uploading to Freeimage.host with filename:", filename);
-  console.log("API key length:", apiKey.length);
+  console.log("Uploading to ImgBB with filename:", filename);
   console.log("Base64 data length:", base64Data.length);
-  console.log("Base64 data prefix:", base64Data.substring(0, 50));
 
-  // Use JSON approach as recommended in the documentation
-  const requestBody = {
-    action: "upload",
-    source: base64Data,
-    format: "json",
-    key: apiKey
-  };
+  // Remove data URI prefix if present
+  const base64Clean = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
 
-  const response = await fetch("https://freeimage.host/api/1/upload/", {
+  // Create form data for ImgBB API
+  const formData = new FormData();
+  formData.append('key', apiKey);
+  formData.append('image', base64Clean);
+  formData.append('name', filename);
+
+  const response = await fetch("https://api.imgbb.com/1/upload", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
+    body: formData,
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Freeimage API error response:", errorText);
-    throw new Error(`Freeimage upload failed: ${response.status} ${response.statusText}`);
+    console.error("ImgBB API error response:", errorText);
+    throw new Error(`ImgBB upload failed: ${response.status} ${response.statusText}`);
   }
 
   const result = await response.json();
-  console.log("Freeimage API response:", result);
+  console.log("ImgBB API response:", result);
   
-  if (result.status_code !== 200 || !result.image) {
-    const errorMsg = result.error?.message || result.error_message || result.error || "Upload failed";
-    console.error("Freeimage API error:", errorMsg);
+  if (!result.success || !result.data) {
+    const errorMsg = result.error?.message || result.error || "Upload failed";
+    console.error("ImgBB API error:", errorMsg);
     throw new Error(errorMsg);
   }
 
   // Extract photo ID from the URL  
-  const url = result.image.url;
+  const url = result.data.url;
   const urlParts = url.split('/');
-  const photoId = urlParts[urlParts.length - 1];
+  const photoId = urlParts[urlParts.length - 1].split('.')[0]; // Remove file extension
   
-  console.log("Successfully uploaded to Freeimage.host, photo ID:", photoId);
+  console.log("Successfully uploaded to ImgBB, photo ID:", photoId);
   return photoId;
 }
 
