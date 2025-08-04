@@ -92,6 +92,20 @@ export interface IStorage {
   getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   incrementUserUsage(userId: string): Promise<User | undefined>;
   resetUserUsage(userId: string): Promise<User | undefined>;
+  
+  // Photo album methods
+  getPhotoAlbum(projectId: number): Promise<PhotoAlbum | undefined>;
+  getPhotoAlbumsByUser(userId: string): Promise<PhotoAlbum[]>;
+  createPhotoAlbum(userId: string, album: InsertPhotoAlbum): Promise<PhotoAlbum>;
+  updatePhotoAlbum(id: number, updates: UpdatePhotoAlbum): Promise<PhotoAlbum | undefined>;
+  deletePhotoAlbum(id: number): Promise<void>;
+  
+  // Photo file methods
+  getPhotoFiles(albumId: number): Promise<PhotoFile[]>;
+  getPhotoFilesByProject(projectId: number): Promise<PhotoFile[]>;
+  createPhotoFile(userId: string, file: InsertPhotoFile): Promise<PhotoFile>;
+  updatePhotoFile(id: number, updates: Partial<PhotoFile>): Promise<PhotoFile | undefined>;
+  deletePhotoFile(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -109,7 +123,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values([insertUser])
+      .values(insertUser)
       .returning();
     return user;
   }
