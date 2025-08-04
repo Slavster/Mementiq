@@ -24,6 +24,7 @@ import {
   moveVideoToFolder,
   getFolderVideos,
 } from "./vimeoUpload";
+import { imagekitService } from "./imagekitService";
 import "./types"; // Import session types
 import Stripe from "stripe";
 
@@ -1934,9 +1935,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Photo upload and album management endpoints
+  // Photo upload and album management endpoints using ImageKit
   
-  // Upload photo to Freeimage.host
+  // Upload photo to ImageKit.io
   app.post(
     "/api/photos/upload",
     requireAuth,
@@ -1948,6 +1949,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({
             success: false,
             message: "Missing required upload parameters",
+          });
+        }
+
+        // Check file size limit (500MB)
+        const maxFileSize = 524288000; // 500MB in bytes
+        if (fileSize > maxFileSize) {
+          return res.status(413).json({
+            success: false,
+            message: `File too large. Maximum size is 500MB.`,
           });
         }
 
@@ -1970,32 +1980,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!album) {
           album = await storage.createPhotoAlbum(req.user!.id, {
             projectId,
-            albumName: `${project.title} - Photo Album`,
+            albumName: `${project.title} - Photos`,
+            totalSizeLimit: 524288000, // 500MB default for images
           });
         }
 
-        // Check album size limit (10GB)
-        const albumSizeLimit = album.totalSizeLimit || 10737418240; // 10GB default
+        // Check album size limit (500MB)
+        const albumSizeLimit = album.totalSizeLimit || 524288000; // 500MB default
         if (album.currentSize + fileSize > albumSizeLimit) {
           return res.status(413).json({
             success: false,
-            message: `Album size limit exceeded. Maximum ${Math.round(albumSizeLimit / (1024 * 1024 * 1024))}GB allowed.`,
+            message: `Album size limit exceeded. Maximum 500MB allowed per project.`,
           });
         }
 
-        // Create organized filename for Freeimage.host
-        const organizedFilename = `user_${req.user!.id}_project_${projectId}_${filename}`;
+        // Create ImageKit folder structure: /users/{userId}/projects/{projectId}
+        const folderPath = await imagekitService.createUserProjectFolder(req.user!.id, projectId);
         
-        // Upload to Freeimage.host with organized naming
-        const freeimagePid = await uploadToFreeimage(base64Data, organizedFilename);
+        // Upload to ImageKit.io
+        const uploadResult = await imagekitService.uploadImage(
+          base64Data,
+          filename,
+          folderPath,
+          req.user!.id
+        );
         
         // Create photo file record
         const photoFile = await storage.createPhotoFile(req.user!.id, {
           albumId: album.id,
           projectId,
-          freeimagePId: freeimagePid,
-          freeimagePUrl: `https://iili.io/${freeimagePid}`, // Freeimage.host direct URL format
-          freeimageThumbnailUrl: `https://iili.io/${freeimagePid}`, // Using same URL for now
+          imagekitFileId: uploadResult.fileId,
+          imagekitUrl: uploadResult.url,
+          imagekitThumbnailUrl: uploadResult.thumbnailUrl,
+          imagekitFolderPath: folderPath,
           filename: filename,
           originalFilename: filename,
           fileSize,
@@ -2011,7 +2028,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           success: true,
-          message: "Photo uploaded successfully",
+          message: "Photo uploaded successfully to ImageKit",
           photo: photoFile,
         });
       } catch (error: any) {
@@ -2024,7 +2041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Get photos for a project
+  // Get photos for a project with security verification
   app.get(
     "/api/projects/:id/photos",
     requireAuth,
@@ -2050,6 +2067,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const album = await storage.getPhotoAlbum(projectId);
         const photos = album ? await storage.getPhotoFiles(album.id) : [];
 
+        // Security check: verify all photos belong to this user's folder structure
+        for (const photo of photos) {
+          if (photo.imagekitFolderPath && !imagekitService.verifyUserFolderAccess(req.user!.id, photo.imagekitFolderPath)) {
+            console.error(`Security violation: User ${req.user!.id} trying to access ${photo.imagekitFolderPath}`);
+            return res.status(403).json({
+              success: false,
+              message: "Access denied to photo resources",
+            });
+          }
+        }
+
         res.json({
           success: true,
           album: album || null,
@@ -2070,59 +2098,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Helper function to upload to Freeimage.host with organized naming
-async function uploadToFreeimage(base64Data: string, filename: string): Promise<string> {
-  const apiKey = process.env.FREEIMAGE_API_KEY;
-  if (!apiKey) {
-    throw new Error("Freeimage API key not configured");
-  }
-
-  console.log("Uploading to Freeimage.host with organized filename:", filename);
-  console.log("Base64 data length:", base64Data.length);
-
-  // Clean base64 data - remove data URI prefix if present
-  const base64Clean = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
-  
-  // Use form data approach as documented
-  const formData = new FormData();
-  formData.append('key', apiKey);
-  formData.append('action', 'upload');
-  formData.append('source', base64Clean);
-  formData.append('format', 'json');
-  // Note: Freeimage.host API doesn't support album_id parameter for guest uploads
-  // Album organization is handled through our database system
-
-  const response = await fetch("https://freeimage.host/api/1/upload", {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Freeimage API error response:", errorText);
-    throw new Error(`Freeimage upload failed: ${response.status} ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  console.log("Freeimage API response:", result);
-  
-  if (result.status_code !== 200 || !result.image) {
-    const errorMsg = result.error?.message || result.error_message || result.error || "Upload failed";
-    console.error("Freeimage API error:", errorMsg);
-    throw new Error(errorMsg);
-  }
-
-  // Extract photo ID from the URL  
-  const url = result.image.url;
-  const urlParts = url.split('/');
-  const photoId = urlParts[urlParts.length - 1];
-  
-  console.log("Successfully uploaded to Freeimage.host, photo ID:", photoId);
-  console.log("Direct image URL:", url);
-  console.log("Viewer URL:", result.image.url_viewer);
-  
-  return photoId;
-}
+// ImageKit.io integration is handled by the imagekitService
+// Removed old Freeimage.host upload function
 
 async function downloadAsset(
   assetPath: string,
