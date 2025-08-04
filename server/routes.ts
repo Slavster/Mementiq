@@ -2067,51 +2067,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Helper function to upload to ImgBB (more reliable alternative)
-async function uploadToImgBB(base64Data: string, filename: string): Promise<string> {
-  const apiKey = process.env.IMGBB_API_KEY;
+// Helper function to upload to Freeimage.host
+async function uploadToFreeimage(base64Data: string, filename: string): Promise<string> {
+  const apiKey = process.env.FREEIMAGE_API_KEY;
   if (!apiKey) {
-    throw new Error("ImgBB API key not configured");
+    throw new Error("Freeimage API key not configured");
   }
 
-  console.log("Uploading to ImgBB with filename:", filename);
+  console.log("Uploading to Freeimage.host with filename:", filename);
+  console.log("API key length:", apiKey.length);
   console.log("Base64 data length:", base64Data.length);
+  console.log("Base64 data prefix:", base64Data.substring(0, 50));
 
-  // Remove data URI prefix if present
+  // Clean base64 data - remove data URI prefix if present
   const base64Clean = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
-
-  // Create form data for ImgBB API
+  
+  // Use form data approach as documented
   const formData = new FormData();
   formData.append('key', apiKey);
-  formData.append('image', base64Clean);
-  formData.append('name', filename);
+  formData.append('action', 'upload');
+  formData.append('source', base64Clean);
+  formData.append('format', 'json');
 
-  const response = await fetch("https://api.imgbb.com/1/upload", {
+  const response = await fetch("https://freeimage.host/api/1/upload", {
     method: "POST",
     body: formData,
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("ImgBB API error response:", errorText);
-    throw new Error(`ImgBB upload failed: ${response.status} ${response.statusText}`);
+    console.error("Freeimage API error response:", errorText);
+    throw new Error(`Freeimage upload failed: ${response.status} ${response.statusText}`);
   }
 
   const result = await response.json();
-  console.log("ImgBB API response:", result);
+  console.log("Freeimage API response:", result);
   
-  if (!result.success || !result.data) {
-    const errorMsg = result.error?.message || result.error || "Upload failed";
-    console.error("ImgBB API error:", errorMsg);
+  if (result.status_code !== 200 || !result.image) {
+    const errorMsg = result.error?.message || result.error_message || result.error || "Upload failed";
+    console.error("Freeimage API error:", errorMsg);
     throw new Error(errorMsg);
   }
 
   // Extract photo ID from the URL  
-  const url = result.data.url;
+  const url = result.image.url;
   const urlParts = url.split('/');
-  const photoId = urlParts[urlParts.length - 1].split('.')[0]; // Remove file extension
+  const photoId = urlParts[urlParts.length - 1];
   
-  console.log("Successfully uploaded to ImgBB, photo ID:", photoId);
+  console.log("Successfully uploaded to Freeimage.host, photo ID:", photoId);
   return photoId;
 }
 
