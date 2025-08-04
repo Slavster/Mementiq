@@ -865,6 +865,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const projects = await storage.getProjectsByUser(req.user!.id);
         
+        // Update all projects' "Last Updated" timestamp to reflect dashboard access
+        const updatedProjects = await Promise.all(
+          projects.map(async (project) => {
+            const updated = await storage.updateProject(project.id, {
+              updatedAt: new Date(),
+            });
+            return updated || project;
+          })
+        );
+        
         // Ensure fresh data by preventing caching
         res.set({
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -874,7 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.json({
           success: true,
-          projects,
+          projects: updatedProjects,
         });
       } catch (error) {
         console.error("Get projects error:", error);
