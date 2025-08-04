@@ -49,10 +49,17 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch existing photo album and files
-  const { data: photoData, isLoading: photosLoading, refetch } = useQuery({
+  const {
+    data: photoData,
+    isLoading: photosLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["projects", projectId, "photos"],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/projects/${projectId}/photos`);
+      const response = await apiRequest(
+        "GET",
+        `/api/projects/${projectId}/photos`,
+      );
       return await response.json();
     },
   });
@@ -60,11 +67,13 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
   const uploadToFreeimage = async (uploadPhoto: UploadPhoto): Promise<void> => {
     try {
       console.log("Starting Freeimage upload for:", uploadPhoto.file.name);
-      
+
       setSelectedPhotos((prev) =>
         prev.map((p) =>
-          p.id === uploadPhoto.id ? { ...p, status: "uploading", progress: 10 } : p
-        )
+          p.id === uploadPhoto.id
+            ? { ...p, status: "uploading", progress: 10 }
+            : p,
+        ),
       );
 
       // Convert file to base64
@@ -79,9 +88,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
       });
 
       setSelectedPhotos((prev) =>
-        prev.map((p) =>
-          p.id === uploadPhoto.id ? { ...p, progress: 30 } : p
-        )
+        prev.map((p) => (p.id === uploadPhoto.id ? { ...p, progress: 30 } : p)),
       );
 
       // Upload to Freeimage.host via our backend
@@ -114,12 +121,11 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                 freeimagePUrl: result.photo.freeimagePUrl,
                 thumbnailUrl: result.photo.thumbnailUrl,
               }
-            : p
-        )
+            : p,
+        ),
       );
 
       console.log("Photo upload completed:", result);
-
     } catch (error: any) {
       console.error("Photo upload error:", error);
       setSelectedPhotos((prev) =>
@@ -130,8 +136,8 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                 status: "failed",
                 error: error.message || "Upload failed",
               }
-            : p
-        )
+            : p,
+        ),
       );
 
       toast({
@@ -165,47 +171,60 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
     }
   };
 
-  const handleFileSelect = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const handleFileSelect = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
 
-    const validImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-    const newPhotos: UploadPhoto[] = [];
+      const validImageTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      const newPhotos: UploadPhoto[] = [];
 
-    Array.from(files).forEach((file) => {
-      if (!validImageTypes.includes(file.type)) {
-        toast({
-          variant: "destructive",
-          title: "Invalid File Type",
-          description: `${file.name} is not a supported image format. Please upload JPEG, PNG, GIF, or WebP images.`,
+      Array.from(files).forEach((file) => {
+        if (!validImageTypes.includes(file.type)) {
+          toast({
+            variant: "destructive",
+            title: "Invalid File Type",
+            description: `${file.name} is not a supported image format. Please upload JPEG, PNG, GIF, or WebP images.`,
+          });
+          return;
+        }
+
+        if (file.size > 50 * 1024 * 1024) {
+          // 50MB limit
+          toast({
+            variant: "destructive",
+            title: "File Too Large",
+            description: `${file.name} is larger than 50MB. Please choose a smaller image.`,
+          });
+          return;
+        }
+
+        newPhotos.push({
+          file,
+          id: Math.random().toString(36).substring(7),
+          status: "pending",
+          progress: 0,
         });
-        return;
-      }
-
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast({
-          variant: "destructive",
-          title: "File Too Large",
-          description: `${file.name} is larger than 50MB. Please choose a smaller image.`,
-        });
-        return;
-      }
-
-      newPhotos.push({
-        file,
-        id: Math.random().toString(36).substring(7),
-        status: "pending",
-        progress: 0,
       });
-    });
 
-    setSelectedPhotos((prev) => [...prev, ...newPhotos]);
-  }, [toast]);
+      setSelectedPhotos((prev) => [...prev, ...newPhotos]);
+    },
+    [toast],
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    handleFileSelect(e.dataTransfer.files);
-  }, [handleFileSelect]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      handleFileSelect(e.dataTransfer.files);
+    },
+    [handleFileSelect],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -224,8 +243,8 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
   const clearCompleted = () => {
     setSelectedPhotos((prev) =>
       prev.filter(
-        (photo) => photo.status !== "completed" && photo.status !== "failed"
-      )
+        (photo) => photo.status !== "completed" && photo.status !== "failed",
+      ),
     );
 
     // Reset file input to allow re-selecting files
@@ -256,13 +275,20 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
   };
 
   const totalPhotos = selectedPhotos.length;
-  const completedPhotos = selectedPhotos.filter((p) => p.status === "completed").length;
-  const failedPhotos = selectedPhotos.filter((p) => p.status === "failed").length;
-  const uploadingPhotos = selectedPhotos.filter((p) => p.status === "uploading").length;
+  const completedPhotos = selectedPhotos.filter(
+    (p) => p.status === "completed",
+  ).length;
+  const failedPhotos = selectedPhotos.filter(
+    (p) => p.status === "failed",
+  ).length;
+  const uploadingPhotos = selectedPhotos.filter(
+    (p) => p.status === "uploading",
+  ).length;
 
   // Calculate current album usage
   const currentAlbumSize = photoData?.album?.currentSize || 0;
-  const albumSizeLimit = photoData?.album?.totalSizeLimit || (10 * 1024 * 1024 * 1024); // 10GB
+  const albumSizeLimit =
+    photoData?.album?.totalSizeLimit || 10 * 1024 * 1024 * 1024; // 10GB
   const albumUsagePercent = (currentAlbumSize / albumSizeLimit) * 100;
 
   return (
@@ -273,15 +299,19 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
           Photo Upload (Optional)
         </CardTitle>
         <CardDescription>
-          Upload photos to create a visual album for this project. Supports JPEG, PNG, GIF, and WebP formats up to 50MB each.
+          Upload any photos you want included in your video, up to 10GB in
+          total.
         </CardDescription>
-        
+
         {/* Album Storage Usage */}
         {photoData?.album && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Album Storage: {photoData.photoCount} photos</span>
-              <span>{formatFileSize(currentAlbumSize)} / {formatFileSize(albumSizeLimit)}</span>
+              <span>
+                {formatFileSize(currentAlbumSize)} /{" "}
+                {formatFileSize(albumSizeLimit)}
+              </span>
             </div>
             <Progress value={albumUsagePercent} className="h-2" />
           </div>
@@ -303,7 +333,8 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
           <div className="flex flex-col items-center space-y-2">
             <Upload className="h-8 w-8 text-gray-400" />
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium">Click to upload</span> or drag and drop photos here
+              <span className="font-medium">Click to upload</span> or drag and
+              drop photos here
             </div>
             <div className="text-xs text-gray-500">
               JPEG, PNG, GIF, WebP up to 50MB each
@@ -324,7 +355,9 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
         {selectedPhotos.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium">Upload Queue ({totalPhotos} photos)</h4>
+              <h4 className="font-medium">
+                Upload Queue ({totalPhotos} photos)
+              </h4>
               <div className="flex gap-2">
                 {selectedPhotos.some((p) => p.status === "pending") && (
                   <Button onClick={startPhotoUpload} size="sm">
@@ -344,7 +377,8 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Uploading {uploadingPhotos} photos... Please don't close this page.
+                  Uploading {uploadingPhotos} photos... Please don't close this
+                  page.
                 </AlertDescription>
               </Alert>
             )}
@@ -359,7 +393,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                   <div className="flex-shrink-0">
                     {getStatusIcon(photo.status)}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium truncate">
@@ -369,15 +403,15 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                         {formatFileSize(photo.file.size)}
                       </span>
                     </div>
-                    
+
                     {photo.status === "uploading" && (
                       <Progress value={photo.progress} className="h-1 mt-1" />
                     )}
-                    
+
                     {photo.error && (
                       <p className="text-xs text-red-500 mt-1">{photo.error}</p>
                     )}
-                    
+
                     {photo.status === "completed" && photo.freeimagePUrl && (
                       <a
                         href={photo.freeimagePUrl}
@@ -420,12 +454,16 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                       src={photo.thumbnailUrl || photo.freeimagePUrl}
                       alt={photo.originalFilename}
                       className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
-                      onClick={() => window.open(photo.freeimagePUrl, '_blank')}
+                      onClick={() => window.open(photo.freeimagePUrl, "_blank")}
                     />
                   </div>
                   <div className="text-xs text-center">
-                    <p className="truncate font-medium">{photo.originalFilename}</p>
-                    <p className="text-gray-500">{formatFileSize(photo.fileSize)}</p>
+                    <p className="truncate font-medium">
+                      {photo.originalFilename}
+                    </p>
+                    <p className="text-gray-500">
+                      {formatFileSize(photo.fileSize)}
+                    </p>
                   </div>
                 </div>
               ))}
