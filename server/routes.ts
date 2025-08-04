@@ -864,6 +864,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: AuthenticatedRequest, res) => {
       try {
         const projects = await storage.getProjectsByUser(req.user!.id);
+        
+        // Ensure fresh data by preventing caching
+        res.set({
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        });
+        
         res.json({
           success: true,
           projects,
