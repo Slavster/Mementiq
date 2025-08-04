@@ -292,164 +292,184 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
   const albumUsagePercent = (currentAlbumSize / albumSizeLimit) * 100;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Image className="h-5 w-5" />
+    <div className="w-full space-y-6">
+      {/* Header Section */}
+      <div>
+        <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-2">
+          <Image className="h-6 w-6" />
           Photo Upload (Optional)
-        </CardTitle>
-        <CardDescription>
-          Upload any photos you want included in your video, up to 10GB in
-          total.
-        </CardDescription>
+        </h2>
+        <p className="text-gray-400">
+          Upload any photos you want included in your video, up to 10GB in total.
+        </p>
+      </div>
 
-        {/* Album Storage Usage */}
-        {photoData?.album && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Album Storage: {photoData.photoCount} photos</span>
-              <span>
-                {formatFileSize(currentAlbumSize)} /{" "}
-                {formatFileSize(albumSizeLimit)}
-              </span>
-            </div>
-            <Progress value={albumUsagePercent} className="h-2" />
+      {/* Storage Usage - matching video upload style */}
+      {photoData?.album && (
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-blue-400">Album Storage: {photoData.photoCount} photos</span>
+            <span className="text-gray-300">
+              {formatFileSize(currentAlbumSize)} / 10 GB
+            </span>
           </div>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Drag and Drop Area */}
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragOver
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-              : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-          }`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <div className="flex flex-col items-center space-y-2">
-            <Upload className="h-8 w-8 text-gray-400" />
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium">Click to upload</span> or drag and
-              drop photos here
-            </div>
-            <div className="text-xs text-gray-500">
-              JPEG, PNG, GIF, WebP up to 50MB each
-            </div>
+          <div className="w-full bg-gray-800 rounded-full h-2">
+            <div
+              className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(albumUsagePercent, 100)}%` }}
+            />
           </div>
         </div>
+      )}
+      {/* Drag and Drop Area - matching video upload style */}
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
+          isDragOver
+            ? "border-blue-500 bg-blue-950/20"
+            : "border-gray-600 hover:border-gray-500"
+        }`}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <div className="flex flex-col items-center space-y-3">
+          <Upload className="h-12 w-12 text-gray-400" />
+          <div className="text-white">
+            <span className="font-medium">Drop photo files here or </span>
+            <span className="text-purple-400 underline hover:text-purple-300">browse</span>
+          </div>
+          <div className="text-sm text-gray-400">
+            Upload your photos - supports JPEG, PNG, GIF, and WebP formats
+          </div>
+        </div>
+      </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => handleFileSelect(e.target.files)}
-        />
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFileSelect(e.target.files)}
+      />
 
-        {/* Upload Queue */}
-        {selectedPhotos.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium">
-                Upload Queue ({totalPhotos} photos)
-              </h4>
-              <div className="flex gap-2">
-                {selectedPhotos.some((p) => p.status === "pending") && (
-                  <Button onClick={startPhotoUpload} size="sm">
-                    Start Upload
-                  </Button>
-                )}
-                {(completedPhotos > 0 || failedPhotos > 0) && (
-                  <Button onClick={clearCompleted} variant="outline" size="sm">
-                    Clear Completed
+      {/* Upload Queue */}
+      {selectedPhotos.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-white font-medium">
+              Upload Queue ({totalPhotos} photos)
+            </h4>
+            <div className="flex gap-2">
+              {selectedPhotos.some((p) => p.status === "pending") && (
+                <Button onClick={startPhotoUpload} size="sm" className="bg-purple-600 hover:bg-purple-700">
+                  Start Upload
+                </Button>
+              )}
+              {(completedPhotos > 0 || failedPhotos > 0) && (
+                <Button onClick={clearCompleted} variant="outline" size="sm">
+                  Clear Completed
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Upload Progress Summary */}
+          {uploadingPhotos > 0 && (
+            <div className="bg-blue-950/20 border border-blue-800 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-blue-400">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm">
+                  Uploading {uploadingPhotos} photos... Please don't close this page.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Photo List */}
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {selectedPhotos.map((photo) => (
+              <div
+                key={photo.id}
+                className="flex items-center gap-3 p-3 bg-gray-800/50 border border-gray-700 rounded-lg"
+              >
+                <div className="flex-shrink-0">
+                  {getStatusIcon(photo.status)}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-white truncate">
+                      {photo.file.name}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {formatFileSize(photo.file.size)}
+                    </span>
+                  </div>
+
+                  {photo.status === "uploading" && (
+                    <div className="w-full bg-gray-700 rounded-full h-1 mt-2">
+                      <div
+                        className="bg-purple-500 h-1 rounded-full transition-all duration-300"
+                        style={{ width: `${photo.progress}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {photo.error && (
+                    <p className="text-xs text-red-400 mt-1">{photo.error}</p>
+                  )}
+
+                  {photo.status === "completed" && photo.freeimagePUrl && (
+                    <a
+                      href={photo.freeimagePUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-400 hover:text-blue-300 mt-1 block"
+                    >
+                      View uploaded photo
+                    </a>
+                  )}
+                </div>
+
+                {photo.status === "pending" && (
+                  <Button
+                    onClick={() => removePhoto(photo.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="flex-shrink-0 text-gray-400 hover:text-white"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
-            </div>
-
-            {/* Upload Progress Summary */}
-            {uploadingPhotos > 0 && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Uploading {uploadingPhotos} photos... Please don't close this
-                  page.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Photo List */}
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {selectedPhotos.map((photo) => (
-                <div
-                  key={photo.id}
-                  className="flex items-center gap-3 p-3 border rounded-lg"
-                >
-                  <div className="flex-shrink-0">
-                    {getStatusIcon(photo.status)}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium truncate">
-                        {photo.file.name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {formatFileSize(photo.file.size)}
-                      </span>
-                    </div>
-
-                    {photo.status === "uploading" && (
-                      <Progress value={photo.progress} className="h-1 mt-1" />
-                    )}
-
-                    {photo.error && (
-                      <p className="text-xs text-red-500 mt-1">{photo.error}</p>
-                    )}
-
-                    {photo.status === "completed" && photo.freeimagePUrl && (
-                      <a
-                        href={photo.freeimagePUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-500 hover:underline mt-1 block"
-                      >
-                        View uploaded photo
-                      </a>
-                    )}
-                  </div>
-
-                  {photo.status === "pending" && (
-                    <Button
-                      onClick={() => removePhoto(photo.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="flex-shrink-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Existing Photos Display */}
-        {photoData?.photos && photoData.photos.length > 0 && (
-          <div className="space-y-4">
-            <h4 className="font-medium">
-              Album Photos ({photoData.photos.length} photos)
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {photoData.photos.map((photo: any, index: number) => (
-                <div key={photo.id} className="space-y-2">
-                  <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+      {/* Existing Photos Display - Table Style like Videos */}
+      {photoData?.photos && photoData.photos.length > 0 && (
+        <div className="bg-gray-800/30 rounded-lg p-6">
+          <h3 className="text-white font-medium mb-4">
+            Existing Photos ({photoData.photos.length})
+          </h3>
+          
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-4 pb-2 border-b border-gray-700 text-gray-400 text-sm">
+            <div className="col-span-2">Thumbnail</div>
+            <div className="col-span-6">Filename</div>
+            <div className="col-span-2">Size</div>
+            <div className="col-span-2">Upload Date</div>
+          </div>
+          
+          {/* Table Rows */}
+          <div className="space-y-2 mt-4">
+            {photoData.photos.map((photo: any) => (
+              <div key={photo.id} className="grid grid-cols-12 gap-4 py-2 border-b border-gray-800/50 last:border-b-0">
+                <div className="col-span-2">
+                  <div className="w-12 h-12 bg-gray-700 rounded overflow-hidden">
                     <img
                       src={photo.thumbnailUrl || photo.freeimagePUrl}
                       alt={photo.originalFilename}
@@ -457,21 +477,22 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                       onClick={() => window.open(photo.freeimagePUrl, "_blank")}
                     />
                   </div>
-                  <div className="text-xs text-center">
-                    <p className="truncate font-medium">
-                      {photo.originalFilename}
-                    </p>
-                    <p className="text-gray-500">
-                      {formatFileSize(photo.fileSize)}
-                    </p>
-                  </div>
                 </div>
-              ))}
-            </div>
+                <div className="col-span-6 text-gray-300 text-sm flex items-center">
+                  <span className="truncate">{photo.originalFilename}</span>
+                </div>
+                <div className="col-span-2 text-gray-400 text-sm flex items-center">
+                  {formatFileSize(photo.fileSize)}
+                </div>
+                <div className="col-span-2 text-gray-400 text-sm flex items-center">
+                  {new Date(photo.uploadDate).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 };
 
