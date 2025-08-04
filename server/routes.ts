@@ -894,12 +894,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Check latest video upload via Vimeo API
               if (project.vimeoFolderId) {
                 try {
-                  // Get user Vimeo folder ID to construct full path
-                  const userVimeoFolderId = project.vimeoUserFolderId || '244011105'; // fallback to known user folder
-                  const folderPath = `/users/${userVimeoFolderId}/projects/${project.vimeoFolderId}`;
-                  console.log(`Checking videos for project ${project.id} in folder: ${folderPath}`);
+                  // Use the project's vimeoFolderId which already contains the full path
+                  console.log(`Checking videos for project ${project.id} in folder: ${project.vimeoFolderId}`);
                   
-                  const vimeoVideos = await getFolderVideos(folderPath);
+                  const vimeoVideos = await getFolderVideos(project.vimeoFolderId);
                   if (vimeoVideos.length > 0) {
                     const videoDates = vimeoVideos
                       .map((v: any) => v.created_time ? new Date(v.created_time) : null)
@@ -922,12 +920,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.error(`Error calculating last activity for project ${project.id}:`, error);
             }
             
-            // Update project with calculated timestamp
-            const updated = await storage.updateProject(project.id, {
-              updatedAt: latestActivityDate,
-            });
+            console.log(`Final calculated last activity date for project ${project.id}: ${latestActivityDate}`);
             
-            return updated || { ...project, updatedAt: latestActivityDate.toISOString() };
+            // Only update if the calculated date is different from current updatedAt
+            const currentUpdatedAt = new Date(project.updatedAt);
+            if (Math.abs(latestActivityDate.getTime() - currentUpdatedAt.getTime()) > 1000) { // More than 1 second difference
+              const updated = await storage.updateProject(project.id, {
+                updatedAt: latestActivityDate,
+              });
+              return updated || { ...project, updatedAt: latestActivityDate.toISOString() };
+            }
+            
+            // Return project with calculated timestamp for display
+            return { ...project, updatedAt: latestActivityDate.toISOString() };
           })
         );
         
