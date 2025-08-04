@@ -2061,9 +2061,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Update project's updatedAt timestamp to reflect the photo upload
-        await storage.updateProject(projectId, {
+        console.log(`Updating project ${projectId} timestamp after photo upload`);
+        const updatedProject = await storage.updateProject(projectId, {
           updatedAt: new Date(),
         });
+        console.log(`Project ${projectId} updated timestamp:`, updatedProject?.updatedAt);
 
         res.json({
           success: true,
