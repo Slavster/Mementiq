@@ -922,17 +922,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`Final calculated last activity date for project ${project.id}: ${latestActivityDate}`);
             
-            // Only update if the calculated date is different from current updatedAt
-            const currentUpdatedAt = new Date(project.updatedAt);
-            if (Math.abs(latestActivityDate.getTime() - currentUpdatedAt.getTime()) > 1000) { // More than 1 second difference
-              const updated = await storage.updateProject(project.id, {
-                updatedAt: latestActivityDate,
-              });
-              return updated || { ...project, updatedAt: latestActivityDate.toISOString() };
-            }
+            // Always update with the calculated timestamp for accurate display
+            const updated = await storage.updateProject(project.id, {
+              updatedAt: latestActivityDate,
+            });
             
-            // Return project with calculated timestamp for display
-            return { ...project, updatedAt: latestActivityDate.toISOString() };
+            const finalProject = updated || { ...project, updatedAt: latestActivityDate.toISOString() };
+            console.log(`Returning project ${project.id} with updatedAt: ${finalProject.updatedAt}`);
+            
+            return finalProject;
           })
         );
         
