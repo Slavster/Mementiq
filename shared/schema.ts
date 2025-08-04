@@ -77,7 +77,7 @@ export const photoAlbums = pgTable("photo_albums", {
   projectId: integer("project_id").references(() => projects.id).notNull().unique(), // One album per project
   userId: text("user_id").references(() => users.id).notNull(),
   albumName: text("album_name").notNull(),
-  totalSizeLimit: bigint("total_size_limit", { mode: "number" }).default(10737418240), // 10GB default
+  totalSizeLimit: bigint("total_size_limit", { mode: "number" }).default(524288000), // 500MB default for images
   currentSize: bigint("current_size", { mode: "number" }).default(0),
   photoCount: integer("photo_count").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -89,9 +89,10 @@ export const photoFiles = pgTable("photo_files", {
   albumId: integer("album_id").references(() => photoAlbums.id).notNull(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   userId: text("user_id").references(() => users.id).notNull(),
-  freeimagePId: text("freeimage_pid"), // Freeimage.host photo ID
-  freeimagePUrl: text("freeimage_purl"), // Freeimage.host photo URL
-  freeimageThumbnailUrl: text("freeimage_thumbnail_url"), // Thumbnail URL
+  imagekitFileId: text("imagekit_file_id"), // ImageKit.io file ID
+  imagekitUrl: text("imagekit_url"), // ImageKit.io direct URL
+  imagekitThumbnailUrl: text("imagekit_thumbnail_url"), // ImageKit.io thumbnail URL
+  imagekitFolderPath: text("imagekit_folder_path"), // /users/{userId}/projects/{projectId}
   filename: text("filename").notNull(),
   originalFilename: text("original_filename").notNull(),
   fileSize: bigint("file_size", { mode: "number" }).notNull(),
@@ -172,9 +173,10 @@ export const updatePhotoAlbumSchema = createInsertSchema(photoAlbums).pick({
 export const insertPhotoFileSchema = createInsertSchema(photoFiles).pick({
   albumId: true,
   projectId: true,
-  freeimagePId: true,
-  freeimagePUrl: true,
-  freeimageThumbnailUrl: true,
+  imagekitFileId: true,
+  imagekitUrl: true,
+  imagekitThumbnailUrl: true,
+  imagekitFolderPath: true,
   filename: true,
   originalFilename: true,
   fileSize: true,

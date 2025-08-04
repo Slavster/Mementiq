@@ -33,9 +33,8 @@ interface UploadPhoto {
   status: "pending" | "uploading" | "completed" | "failed";
   progress: number;
   error?: string;
-  freeimagePId?: string;
-  freeimagePUrl?: string;
-  thumbnailUrl?: string;
+  imagekitUrl?: string;
+  imagekitThumbnailUrl?: string;
 }
 
 const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
@@ -64,9 +63,9 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
     },
   });
 
-  const uploadToFreeimage = async (uploadPhoto: UploadPhoto): Promise<void> => {
+  const uploadToImageKit = async (uploadPhoto: UploadPhoto): Promise<void> => {
     try {
-      console.log("Starting Freeimage upload for:", uploadPhoto.file.name);
+      console.log("Starting ImageKit upload for:", uploadPhoto.file.name);
 
       setSelectedPhotos((prev) =>
         prev.map((p) =>
@@ -117,9 +116,8 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                 ...p,
                 status: "completed",
                 progress: 100,
-                freeimagePId: result.photo.freeimagePId,
-                freeimagePUrl: result.photo.freeimagePUrl,
-                thumbnailUrl: result.photo.thumbnailUrl,
+                imagekitUrl: result.photo.imagekitUrl,
+                imagekitThumbnailUrl: result.photo.imagekitThumbnailUrl,
               }
             : p,
         ),
@@ -155,7 +153,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
 
     // Upload photos sequentially to avoid overwhelming the API
     for (const photo of pendingPhotos) {
-      await uploadToFreeimage(photo);
+      await uploadToImageKit(photo);
     }
 
     // Invalidate queries to refresh data
@@ -194,12 +192,12 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
           return;
         }
 
-        if (file.size > 50 * 1024 * 1024) {
-          // 50MB limit
+        if (file.size > 524288000) {
+          // 500MB limit
           toast({
             variant: "destructive",
             title: "File Too Large",
-            description: `${file.name} is larger than 50MB. Please choose a smaller image.`,
+            description: `${file.name} is larger than 500MB. Please choose a smaller image.`,
           });
           return;
         }
@@ -288,7 +286,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
   // Calculate current album usage
   const currentAlbumSize = photoData?.album?.currentSize || 0;
   const albumSizeLimit =
-    photoData?.album?.totalSizeLimit || 10 * 1024 * 1024 * 1024; // 10GB
+    photoData?.album?.totalSizeLimit || 524288000; // 500MB
   const albumUsagePercent = (currentAlbumSize / albumSizeLimit) * 100;
 
   return (
@@ -300,7 +298,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
           Photo Upload (Optional)
         </h2>
         <p className="text-gray-400">
-          Upload any photos you want included in your video, up to 10GB in total.
+          Upload any photos you want included in your video, up to 500MB in total.
         </p>
       </div>
 
@@ -310,7 +308,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
           <div className="flex justify-between text-sm">
             <span className="text-blue-400">Album Storage: {photoData.photoCount} photos</span>
             <span className="text-gray-300">
-              {formatFileSize(currentAlbumSize)} / 10 GB
+              {formatFileSize(currentAlbumSize)} / 500 MB
             </span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-2">
@@ -421,9 +419,9 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                     <p className="text-xs text-red-400 mt-1">{photo.error}</p>
                   )}
 
-                  {photo.status === "completed" && photo.freeimagePUrl && (
+                  {photo.status === "completed" && photo.imagekitUrl && (
                     <a
-                      href={photo.freeimagePUrl}
+                      href={photo.imagekitUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-blue-400 hover:text-blue-300 mt-1 block"
@@ -471,10 +469,10 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                 <div className="col-span-2">
                   <div className="w-12 h-12 bg-gray-700 rounded overflow-hidden">
                     <img
-                      src={photo.thumbnailUrl || photo.freeimagePUrl}
+                      src={photo.imagekitThumbnailUrl || photo.imagekitUrl}
                       alt={photo.originalFilename}
                       className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
-                      onClick={() => window.open(photo.freeimagePUrl, "_blank")}
+                      onClick={() => window.open(photo.imagekitUrl, "_blank")}
                     />
                   </div>
                 </div>
