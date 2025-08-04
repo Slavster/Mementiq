@@ -2060,6 +2060,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           photoCount: (album.photoCount || 0) + 1,
         });
 
+        // Update project's updatedAt timestamp to reflect the photo upload
+        await storage.updateProject(projectId, {
+          updatedAt: new Date(),
+        });
+
         res.json({
           success: true,
           message: "Photo uploaded successfully to ImageKit",
