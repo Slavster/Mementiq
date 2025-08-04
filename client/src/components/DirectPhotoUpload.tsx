@@ -124,6 +124,9 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
       );
 
       console.log("Photo upload completed:", result);
+      
+      // Invalidate queries immediately after each photo upload to refresh project data
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     } catch (error: any) {
       console.error("Photo upload error:", error);
       setSelectedPhotos((prev) =>
@@ -156,6 +159,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
       await uploadToImageKit(photo);
     }
 
+    console.log("Photo upload completed, invalidating queries...");
     // Invalidate queries to refresh data
     queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
     queryClient.invalidateQueries({
@@ -163,6 +167,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
     });
     // Also invalidate the main projects list to refresh status on dashboard
     queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    console.log("Query invalidation completed");
 
     if (onUploadComplete) {
       onUploadComplete();
