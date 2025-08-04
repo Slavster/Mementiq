@@ -1983,8 +1983,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Upload to Freeimage.host
-        const freeimagePid = await uploadToFreeimage(base64Data, filename);
+        // Create organized filename for Freeimage.host
+        const organizedFilename = `user_${req.user!.id}_project_${projectId}_${filename}`;
+        
+        // Upload to Freeimage.host with organized naming
+        const freeimagePid = await uploadToFreeimage(base64Data, organizedFilename);
         
         // Create photo file record
         const photoFile = await storage.createPhotoFile(req.user!.id, {
@@ -2067,17 +2070,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Helper function to upload to Freeimage.host
+// Helper function to upload to Freeimage.host with organized naming
 async function uploadToFreeimage(base64Data: string, filename: string): Promise<string> {
   const apiKey = process.env.FREEIMAGE_API_KEY;
   if (!apiKey) {
     throw new Error("Freeimage API key not configured");
   }
 
-  console.log("Uploading to Freeimage.host with filename:", filename);
-  console.log("API key length:", apiKey.length);
+  console.log("Uploading to Freeimage.host with organized filename:", filename);
   console.log("Base64 data length:", base64Data.length);
-  console.log("Base64 data prefix:", base64Data.substring(0, 50));
 
   // Clean base64 data - remove data URI prefix if present
   const base64Clean = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
@@ -2088,6 +2089,8 @@ async function uploadToFreeimage(base64Data: string, filename: string): Promise<
   formData.append('action', 'upload');
   formData.append('source', base64Clean);
   formData.append('format', 'json');
+  // Note: Freeimage.host API doesn't support album_id parameter for guest uploads
+  // Album organization is handled through our database system
 
   const response = await fetch("https://freeimage.host/api/1/upload", {
     method: "POST",
@@ -2115,6 +2118,9 @@ async function uploadToFreeimage(base64Data: string, filename: string): Promise<
   const photoId = urlParts[urlParts.length - 1];
   
   console.log("Successfully uploaded to Freeimage.host, photo ID:", photoId);
+  console.log("Direct image URL:", url);
+  console.log("Viewer URL:", result.image.url_viewer);
+  
   return photoId;
 }
 
