@@ -134,6 +134,13 @@ export class ImageKitService {
   }
 
   /**
+   * Verify user has access to a specific folder path
+   */
+  verifyUserFolderAccess(userId: string, folderPath: string): boolean {
+    return folderPath.includes(`/users/${userId}/`);
+  }
+
+  /**
    * Check if ImageKit is properly configured
    */
   isConfigured(): boolean {

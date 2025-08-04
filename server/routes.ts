@@ -2097,9 +2097,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ success: false, message: "Access denied" });
         }
 
-        // Get album and photos
+        // Get album and photos from database first
         const album = await storage.getPhotoAlbum(projectId);
-        const photos = album ? await storage.getPhotoFiles(album.id) : [];
+        let photos = album ? await storage.getPhotoFiles(album.id) : [];
+
+        // Also fetch photos directly from ImageKit media library for this user/project
+        try {
+          const folderPath = `/users/${req.user!.id}/projects/${projectId}`;
+          const imagekitFiles = await imagekitService.listFiles(folderPath);
+          
+          // Merge with database records and sync any missing files
+          for (const imagekitFile of imagekitFiles) {
+            const existingPhoto = photos.find(p => p.imagekitFileId === imagekitFile.fileId);
+            if (!existingPhoto && album) {
+              // Create database record for photos that exist in ImageKit but not in DB
+              const newPhoto = await storage.createPhotoFile(req.user!.id, {
+                albumId: album.id,
+                projectId,
+                imagekitFileId: imagekitFile.fileId,
+                imagekitUrl: imagekitFile.url,
+                imagekitThumbnailUrl: imagekitService.generateThumbnailUrl(imagekitFile.filePath),
+                imagekitFolderPath: folderPath,
+                filename: imagekitFile.name,
+                originalFilename: imagekitFile.name,
+                fileSize: imagekitFile.size,
+                mimeType: imagekitFile.mime || 'image/jpeg',
+                uploadStatus: "completed",
+              });
+              photos.push(newPhoto);
+            }
+          }
+        } catch (error) {
+          console.log('Could not sync with ImageKit media library:', error);
+          // Continue with database-only photos
+        }
 
         // Security check: verify all photos belong to this user's folder structure
         for (const photo of photos) {
