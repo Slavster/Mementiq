@@ -283,11 +283,12 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
     (p) => p.status === "uploading",
   ).length;
 
-  // Calculate current album usage
-  const currentAlbumSize = photoData?.album?.currentSize || 0;
-  const albumSizeLimit =
-    photoData?.album?.totalSizeLimit || 524288000; // 500MB
-  const albumUsagePercent = (currentAlbumSize / albumSizeLimit) * 100;
+  // Calculate current album usage - use actual photo files for accurate count
+  const actualPhotoSizes = photoData?.photos?.reduce((total: number, photo: any) => total + (photo.fileSize || 0), 0) || 0;
+  const albumSizeLimit = 524288000; // 500MB
+  const albumUsagePercent = (actualPhotoSizes / albumSizeLimit) * 100;
+  // Ensure minimum 2% visibility for any content, like video upload
+  const displayPercent = actualPhotoSizes > 0 ? Math.max(albumUsagePercent, 2) : 0;
 
   return (
     <div className="w-full space-y-6">
@@ -307,13 +308,13 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
         <div className="flex justify-between text-sm">
           <span className="text-blue-400">Current Storage Usage</span>
           <span className="text-gray-300">
-            {formatFileSize(currentAlbumSize)} / 500 MB
+            {formatFileSize(actualPhotoSizes)} / 500 MB
           </span>
         </div>
         <div className="w-full bg-gray-800 rounded-full h-2">
           <div
             className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${Math.min(albumUsagePercent, 100)}%` }}
+            style={{ width: `${Math.min(displayPercent, 100)}%` }}
           />
         </div>
       </div>
@@ -445,9 +446,9 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
         </div>
       )}
 
-      {/* Existing Photos - matching video upload style exactly */}
+      {/* Existing Photos - matching video upload style exactly with proper shading */}
       {photoData?.photos && photoData.photos.length > 0 && (
-        <div className="bg-gray-800/30 rounded-lg p-6">
+        <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
           <h3 className="text-white font-medium mb-4">
             Existing Photos ({photoData.photos.length})
           </h3>
@@ -464,7 +465,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
               </thead>
               <tbody>
                 {photoData.photos.map((photo: any) => (
-                  <tr key={photo.id} className="border-b border-gray-700 hover:bg-gray-700">
+                  <tr key={photo.id} className="border-b border-gray-700 hover:bg-gray-700/50">
                     <td className="py-2 px-3">
                       <span className="truncate max-w-xs block text-gray-200" title={photo.originalFilename}>
                         {photo.originalFilename}
