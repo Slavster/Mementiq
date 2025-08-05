@@ -1396,11 +1396,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Got download link for video ${videoId}: ${downloadLink}`);
 
       // Check if it's a direct file URL that we can proxy for download
-      if (downloadLink.includes('.mp4') || downloadLink.includes('.mov') || downloadLink.includes('akamaized') || downloadLink.includes('progressive')) {
+      if (downloadLink.includes('.mp4') || downloadLink.includes('.mov') || downloadLink.includes('akamaized') || downloadLink.includes('progressive') || downloadLink.includes('vimeocdn.com')) {
         try {
           console.log('Attempting to proxy direct video file download...');
           
-          // Fetch the video file
+          // Fetch the video file directly
           const response = await fetch(downloadLink, {
             method: 'GET',
             headers: {
