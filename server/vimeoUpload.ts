@@ -389,6 +389,66 @@ export const verifyVideoInProjectFolder = async (videoId: string, projectFolderI
   });
 };
 
+/**
+ * Configure video privacy settings for delivered videos
+ * Ensures videos are: 1) Unlisted, 2) Downloadable, 3) Embeddable
+ */
+export const configureDeliveredVideo = async (videoId: string): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const videoPath = videoId.startsWith('/videos/') ? videoId : `/videos/${videoId}`;
+    
+    console.log(`Configuring delivered video privacy settings for: ${videoId}`);
+    
+    client.request({
+      method: 'PATCH',
+      path: videoPath,
+      query: {
+        privacy: {
+          view: 'unlisted',      // REQUIREMENT 1: Not publicly accessible but viewable via direct link
+          embed: 'public',       // REQUIREMENT 3: Can be embedded
+          download: true,        // REQUIREMENT 2: Can be downloaded
+          add: false,           // Cannot be added to collections
+          comments: 'nobody'     // No comments allowed
+        },
+        embed: {
+          buttons: {
+            like: false,
+            watchlater: false,
+            share: false,
+            embed: false,
+            hd: true,
+            fullscreen: true,
+            scaling: true
+          },
+          color: '7c3aed',        // Purple brand color
+          logos: {
+            vimeo: false,         // Hide Vimeo branding
+            custom: {
+              active: false
+            }
+          },
+          playbar: true,
+          title: {
+            name: 'hide',         // Hide video title
+            owner: 'hide',        // Hide owner info
+            portrait: 'hide'      // Hide owner portrait
+          },
+          volume: true
+        }
+      }
+    }, (error: any, body: any) => {
+      if (error) {
+        console.error('Error configuring delivered video privacy:', error);
+        reject(new Error(`Failed to configure video privacy: ${error.message}`));
+        return;
+      }
+      
+      console.log(`Video privacy configured successfully: ${videoId} - Unlisted, Downloadable, Embeddable`);
+      resolve(body);
+    });
+  });
+};
+
 export const vimeoService = {
   createUploadSession,
   completeUpload,
@@ -397,5 +457,6 @@ export const vimeoService = {
   createProjectFolder,
   getFolderVideos,
   generateVideoDownloadLink,
-  verifyVideoInProjectFolder
+  verifyVideoInProjectFolder,
+  configureDeliveredVideo
 };
