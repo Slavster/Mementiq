@@ -916,14 +916,12 @@ export default function DashboardPage() {
       </Dialog>
 
       {/* Project Acceptance Modal */}
-      {acceptanceProject && (
-        <ProjectAcceptanceModal
-          open={acceptanceModalOpen}
-          onOpenChange={setAcceptanceModalOpen}
-          project={acceptanceProject}
-          downloadLink={downloadLink}
-        />
-      )}
+      <ProjectAcceptanceModal
+        open={acceptanceModalOpen && !!acceptanceProject}
+        onOpenChange={setAcceptanceModalOpen}
+        project={acceptanceProject || { id: 0, title: '', status: '' }}
+        downloadLink={downloadLink}
+      />
     </div>
   );
 }

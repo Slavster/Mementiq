@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Download, ExternalLink } from "lucide-react";
@@ -23,6 +24,13 @@ export function ProjectAcceptanceModal({
 }: ProjectAcceptanceModalProps) {
   const [showThankYou, setShowThankYou] = useState(false);
   const queryClient = useQueryClient();
+
+  // Reset state when modal closes or project changes
+  React.useEffect(() => {
+    if (!open) {
+      setShowThankYou(false);
+    }
+  }, [open, project.id]);
 
   const acceptProjectMutation = useMutation({
     mutationFn: async () => {
