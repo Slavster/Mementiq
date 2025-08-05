@@ -324,7 +324,7 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
       method: 'GET',
       path: `/videos/${videoId}`,
       query: {
-        fields: 'download,files,link,embed.html'
+        fields: 'download,files.link,files.quality,files.width,files.height,link,embed.html,transcode'
       }
     }, (error: any, body: any) => {
       if (error) {
@@ -362,24 +362,24 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
         }
       }
 
+      // Fallback: try to get direct file links first (for direct download)
+      if (body.files && body.files.length > 0) {
+        const bestFile = body.files
+          .filter((file: any) => file.link && file.quality !== 'hls' && file.quality !== 'dash')
+          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+        
+        if (bestFile?.link) {
+          console.log(`Direct file link found for video ${videoId}: quality ${bestFile.quality}`);
+          resolve(bestFile.link);
+          return;
+        }
+      }
+
       // Use the direct Vimeo link which includes the hash for private videos
       if (body.link) {
         console.log(`Using direct Vimeo link for video ${videoId}: ${body.link}`);
         resolve(body.link);
         return;
-      }
-
-      // Fallback: try to get direct file links
-      if (body.files && body.files.length > 0) {
-        const bestFile = body.files
-          .filter((file: any) => file.link && file.quality !== 'hls')
-          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
-        
-        if (bestFile?.link) {
-          console.log(`File link found for video ${videoId}: quality ${bestFile.quality}`);
-          resolve(bestFile.link);
-          return;
-        }
       }
 
       console.log(`No download link available for video ${videoId}`);
