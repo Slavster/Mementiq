@@ -320,84 +320,154 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
   return new Promise((resolve, reject) => {
     console.log(`Getting download link for video: ${videoId}`);
     
+    // First try to enable downloads on the video if they're not available
     client.request({
-      method: 'GET',
-      path: `/videos/${videoId}`
-      // Note: Not specifying fields parameter to get full response including download array
-    }, (error: any, body: any) => {
-      if (error) {
-        console.error(`Error getting video download link for ${videoId}:`, error);
-        reject(error);
-        return;
-      }
-
-      console.log('Video details:', JSON.stringify(body, null, 2));
-
-      // Priority 1: Check for direct download URLs in the download array (like the axios example)
-      if (body.download && Array.isArray(body.download) && body.download.length > 0) {
-        console.log(`✅ Found ${body.download.length} download options for video ${videoId}`);
-        
-        // Find the best quality MP4 download link (following the axios example pattern)
-        const mp4Download = body.download.find((file: any) => file.type === 'video/mp4');
-        
-        if (mp4Download?.link) {
-          console.log(`✅ Direct MP4 download link found for video ${videoId}:`, {
-            quality: mp4Download.quality,
-            type: mp4Download.type,
-            width: mp4Download.width,
-            height: mp4Download.height,
-            url: mp4Download.link.substring(0, 100) + '...'
-          });
-          resolve(mp4Download.link);
-          return;
+      method: 'PATCH',
+      path: `/videos/${videoId}`,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        privacy: {
+          download: true
         }
-        
-        // Fallback: get the highest quality download available
-        const bestDownload = body.download
-          .filter((dl: any) => dl.link && dl.type && dl.type.includes('video'))
-          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
-        
-        if (bestDownload?.link) {
-          console.log(`✅ Best quality download link found for video ${videoId}:`, {
-            quality: bestDownload.quality,
-            type: bestDownload.type,
-            width: bestDownload.width,
-            height: bestDownload.height,
-            url: bestDownload.link.substring(0, 100) + '...'
-          });
-          resolve(bestDownload.link);
-          return;
-        }
+      })
+    }, (patchError: any, patchBody: any) => {
+      if (patchError) {
+        console.log(`Could not enable downloads for video ${videoId}:`, patchError.message);
       } else {
-        console.log(`❌ No download array found for video ${videoId}`);
+        console.log(`✅ Successfully enabled downloads for video ${videoId}`);
       }
-
-      // Priority 2: Check files array for direct file links
-      if (body.files && Array.isArray(body.files) && body.files.length > 0) {
-        console.log(`Found ${body.files.length} file options for video ${videoId}`);
-        
-        const bestFile = body.files
-          .filter((file: any) => file.link && file.quality !== 'hls' && file.quality !== 'dash')
-          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
-        
-        if (bestFile?.link) {
-          console.log(`✅ Direct file link found for video ${videoId}: quality ${bestFile.quality}`);
-          resolve(bestFile.link);
+      
+      // Now get the video details with full response
+      client.request({
+        method: 'GET',
+        path: `/videos/${videoId}`
+        // Note: Not specifying fields parameter to get full response including download array
+      }, (error: any, body: any) => {
+        if (error) {
+          console.error(`Error getting video download link for ${videoId}:`, error);
+          reject(error);
           return;
         }
-      } else {
-        console.log(`❌ No files array found for video ${videoId}`);
-      }
 
-      // Priority 3: Use the direct Vimeo link (fallback to browser download)
-      if (body.link) {
-        console.log(`⚠️ Using Vimeo page link for video ${videoId}: ${body.link}`);
-        resolve(body.link);
-        return;
-      }
+        // Only log the relevant parts to avoid huge logs
+        console.log('Video download info:', {
+          hasDownload: !!body.download,
+          downloadCount: body.download?.length || 0,
+          hasFiles: !!body.files,
+          filesCount: body.files?.length || 0,
+          privacy: body.privacy
+        });
 
-      console.log(`No download link available for video ${videoId}`);
-      resolve(null);
+        // Priority 1: Check for direct download URLs in the download array (like the axios example)
+        if (body.download && Array.isArray(body.download) && body.download.length > 0) {
+          console.log(`✅ Found ${body.download.length} download options for video ${videoId}`);
+          
+          // Find the best quality MP4 download link (following the axios example pattern)
+          const mp4Download = body.download.find((file: any) => file.type === 'video/mp4');
+          
+          if (mp4Download?.link) {
+            console.log(`✅ Direct MP4 download link found for video ${videoId}:`, {
+              quality: mp4Download.quality,
+              type: mp4Download.type,
+              width: mp4Download.width,
+              height: mp4Download.height,
+              url: mp4Download.link.substring(0, 100) + '...'
+            });
+            resolve(mp4Download.link);
+            return;
+          }
+          
+          // Fallback: get the highest quality download available
+          const bestDownload = body.download
+            .filter((dl: any) => dl.link && dl.type && dl.type.includes('video'))
+            .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+          
+          if (bestDownload?.link) {
+            console.log(`✅ Best quality download link found for video ${videoId}:`, {
+              quality: bestDownload.quality,
+              type: bestDownload.type,
+              width: bestDownload.width,
+              height: bestDownload.height,
+              url: bestDownload.link.substring(0, 100) + '...'
+            });
+            resolve(bestDownload.link);
+            return;
+          }
+        } else {
+          console.log(`❌ No download array found for video ${videoId}`);
+        }
+
+        // Priority 2: Check files array for direct file links
+        if (body.files && Array.isArray(body.files) && body.files.length > 0) {
+          console.log(`Found ${body.files.length} file options for video ${videoId}`);
+          
+          const bestFile = body.files
+            .filter((file: any) => file.link && file.quality !== 'hls' && file.quality !== 'dash')
+            .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+          
+          if (bestFile?.link) {
+            console.log(`✅ Direct file link found for video ${videoId}: quality ${bestFile.quality}`);
+            resolve(bestFile.link);
+            return;
+          }
+        } else {
+          console.log(`❌ No files array found for video ${videoId}`);
+        }
+
+        // If still no download links, try the versions endpoint to get the original file
+        console.log('❌ No download links found, trying versions endpoint...');
+        
+        client.request({
+          method: 'GET',
+          path: `/videos/${videoId}/versions`
+        }, (versionsError: any, versionsBody: any) => {
+          if (versionsError) {
+            console.error(`Error getting video versions for ${videoId}:`, versionsError);
+            if (body.link) {
+              resolve(body.link); // Fallback to regular Vimeo link
+            } else {
+              resolve(null);
+            }
+            return;
+          }
+          
+          console.log('Video versions info:', {
+            total: versionsBody.total,
+            hasData: !!versionsBody.data,
+            dataLength: versionsBody.data?.length || 0
+          });
+          
+          if (versionsBody.data && versionsBody.data.length > 0) {
+            const activeVersion = versionsBody.data.find((v: any) => v.active) || versionsBody.data[0];
+            if (activeVersion && activeVersion.filesize) {
+              console.log(`✅ Found active version for video ${videoId}:`, {
+                filename: activeVersion.filename,
+                filesize: activeVersion.filesize,
+                duration: activeVersion.duration
+              });
+              
+              // Try to construct a direct download link using the version info
+              // This is experimental - some versions might have download URLs
+              const downloadUrl = `https://vimeo.com/${videoId}/download?version=${activeVersion.uri.split('/').pop()}`;
+              console.log(`🔄 Trying constructed download URL: ${downloadUrl}`);
+              resolve(downloadUrl);
+              return;
+            }
+          }
+          
+          // Priority 3: Use the direct Vimeo link (fallback to browser download)
+          if (body.link) {
+            console.log(`⚠️ Using Vimeo page link for video ${videoId}: ${body.link}`);
+            resolve(body.link);
+            return;
+          }
+
+          console.log(`No download link available for video ${videoId}`);
+          resolve(null);
+        });
+      });
     });
   });
 };
