@@ -52,12 +52,12 @@ export function ProjectAcceptanceModal({
       } else {
         // Demo: Using a public video for testing the video review interface
         // In production, this would be the actual edited video from the project
-        setVimeoVideoId('853751541'); // Professional demo video that allows embedding
+        setVimeoVideoId('76979871'); // Public demo video that allows embedding
       }
     } catch (error) {
       console.error('Error fetching latest video:', error);
       // Demo fallback video
-      setVimeoVideoId('853751541'); // Professional demo video
+      setVimeoVideoId('76979871'); // Public demo video that allows embedding
     }
   };
 
@@ -174,9 +174,17 @@ export function ProjectAcceptanceModal({
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
                 title={`${project.title} - Final Video`}
+                onError={() => console.log('Video failed to load')}
               />
             </div>
           )}
+
+          {/* Video Description */}
+          <div className="text-center py-2">
+            <p className="text-sm text-gray-400">
+              📹 Demo video for interface testing - Your actual edited video would appear here
+            </p>
+          </div>
           
           {/* Additional download option alongside video player */}
           {downloadLink && (
