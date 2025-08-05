@@ -1513,13 +1513,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get the latest video from project files
+      // Get the latest video from project files in database
       const projectFiles = await storage.getProjectFiles(projectId);
       const latestVideo = projectFiles
         .filter(file => file.vimeoVideoId)
         .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())[0];
 
       if (latestVideo?.vimeoVideoId) {
+        console.log(`Found video in DB for project ${projectId}:`, latestVideo.vimeoVideoId);
         res.json({
           success: true,
           videoId: latestVideo.vimeoVideoId,
@@ -1527,10 +1528,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uploadDate: latestVideo.uploadDate
         });
       } else {
-        res.json({
-          success: false,
-          message: "No video found for this project"
-        });
+        // If no video in DB, try to get from Vimeo folder directly
+        console.log(`No video in DB for project ${projectId}, checking Vimeo folder`);
+        try {
+          if (project.vimeoFolderId) {
+            const vimeoVideos = await getFolderVideos(project.vimeoFolderId);
+            if (vimeoVideos && vimeoVideos.length > 0) {
+              // Get the most recent video
+              const latestVimeoVideo = vimeoVideos[0]; // Already sorted by date
+              console.log(`Found video in Vimeo folder:`, latestVimeoVideo.uri);
+              const videoId = latestVimeoVideo.uri.split('/').pop();
+              res.json({
+                success: true,
+                videoId: videoId,
+                filename: latestVimeoVideo.name,
+                uploadDate: latestVimeoVideo.created_time
+              });
+            } else {
+              res.json({
+                success: false,
+                message: "No video found for this project"
+              });
+            }
+          } else {
+            res.json({
+              success: false,
+              message: "No Vimeo folder configured for this project"
+            });
+          }
+        } catch (vimeoError) {
+          console.error('Error fetching from Vimeo:', vimeoError);
+          res.json({
+            success: false,
+            message: "No video found for this project"
+          });
+        }
       }
     } catch (error) {
       console.error("Get latest video error:", error);
