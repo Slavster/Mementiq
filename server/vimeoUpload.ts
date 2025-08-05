@@ -416,57 +416,15 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
           console.log(`❌ No files array found for video ${videoId}`);
         }
 
-        // If still no download links, try the versions endpoint to get the original file
-        console.log('❌ No download links found, trying versions endpoint...');
-        
-        client.request({
-          method: 'GET',
-          path: `/videos/${videoId}/versions`
-        }, (versionsError: any, versionsBody: any) => {
-          if (versionsError) {
-            console.error(`Error getting video versions for ${videoId}:`, versionsError);
-            if (body.link) {
-              resolve(body.link); // Fallback to regular Vimeo link
-            } else {
-              resolve(null);
-            }
-            return;
-          }
-          
-          console.log('Video versions info:', {
-            total: versionsBody.total,
-            hasData: !!versionsBody.data,
-            dataLength: versionsBody.data?.length || 0
-          });
-          
-          if (versionsBody.data && versionsBody.data.length > 0) {
-            const activeVersion = versionsBody.data.find((v: any) => v.active) || versionsBody.data[0];
-            if (activeVersion && activeVersion.filesize) {
-              console.log(`✅ Found active version for video ${videoId}:`, {
-                filename: activeVersion.filename,
-                filesize: activeVersion.filesize,
-                duration: activeVersion.duration
-              });
-              
-              // Try to construct a direct download link using the version info
-              // This is experimental - some versions might have download URLs
-              const downloadUrl = `https://vimeo.com/${videoId}/download?version=${activeVersion.uri.split('/').pop()}`;
-              console.log(`🔄 Trying constructed download URL: ${downloadUrl}`);
-              resolve(downloadUrl);
-              return;
-            }
-          }
-          
-          // Priority 3: Use the direct Vimeo link (fallback to browser download)
-          if (body.link) {
-            console.log(`⚠️ Using Vimeo page link for video ${videoId}: ${body.link}`);
-            resolve(body.link);
-            return;
-          }
+        // Final fallback: Use the direct Vimeo link which has the hash for private access
+        if (body.link) {
+          console.log(`⚠️ No direct download available. Using Vimeo page link: ${body.link}`);
+          resolve(body.link);
+          return;
+        }
 
-          console.log(`No download link available for video ${videoId}`);
-          resolve(null);
-        });
+        console.log(`❌ No download link available for video ${videoId}`);
+        resolve(null);
       });
     });
   });
