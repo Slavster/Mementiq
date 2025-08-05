@@ -324,7 +324,7 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
       method: 'GET',
       path: `/videos/${videoId}`,
       query: {
-        fields: 'download,files'
+        fields: 'download,files,link,embed.html'
       }
     }, (error: any, body: any) => {
       if (error) {
@@ -332,6 +332,8 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
         reject(error);
         return;
       }
+
+      console.log('Video details:', JSON.stringify(body, null, 2));
 
       // Check if download is available and get the highest quality link
       if (body.download && body.download.length > 0) {
@@ -345,6 +347,13 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
           resolve(bestDownload.link);
           return;
         }
+      }
+
+      // Use the direct Vimeo link which includes the hash for private videos
+      if (body.link) {
+        console.log(`Using direct Vimeo link for video ${videoId}: ${body.link}`);
+        resolve(body.link);
+        return;
       }
 
       // Fallback: try to get direct file links
