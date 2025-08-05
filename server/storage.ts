@@ -26,12 +26,13 @@ import {
   type InsertPhotoFile
 } from "../shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   verifyUser(token: string): Promise<User | undefined>;
@@ -40,6 +41,7 @@ export interface IStorage {
   // Project methods
   getProject(id: number): Promise<Project | undefined>;
   getProjectsByUser(userId: string): Promise<Project[]>;
+  getProjectsByStatus(statuses: string[]): Promise<Project[]>;
   createProject(userId: string, project: InsertProject): Promise<Project>;
   updateProject(id: number, updates: UpdateProject): Promise<Project | undefined>;
   updateProjectVimeoInfo(id: number, vimeoFolderId: string, userFolderUri?: string): Promise<void>;
@@ -47,7 +49,7 @@ export interface IStorage {
   
   // Project file methods
   getProjectFiles(projectId: number): Promise<ProjectFile[]>;
-  createProjectFile(projectId: number, file: InsertProjectFile): Promise<ProjectFile>;
+  createProjectFile(file: InsertProjectFile): Promise<ProjectFile>;
   deleteProjectFile(id: number): Promise<void>;
   
   // Project status methods
@@ -115,6 +117,11 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserById(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user || undefined;
@@ -157,6 +164,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(projects)
       .where(eq(projects.userId, userId))
+      .orderBy(desc(projects.createdAt));
+  }
+
+  async getProjectsByStatus(statuses: string[]): Promise<Project[]> {
+    return await db
+      .select()
+      .from(projects)
+      .where(inArray(projects.status, statuses))
       .orderBy(desc(projects.createdAt));
   }
 
@@ -222,13 +237,10 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(projectFiles.uploadDate));
   }
 
-  async createProjectFile(projectId: number, file: InsertProjectFile): Promise<ProjectFile> {
+  async createProjectFile(file: InsertProjectFile): Promise<ProjectFile> {
     const [newFile] = await db
       .insert(projectFiles)
-      .values({
-        ...file,
-        projectId,
-      })
+      .values(file)
       .returning();
     return newFile;
   }

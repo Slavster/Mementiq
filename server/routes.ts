@@ -23,8 +23,11 @@ import {
   getVideoDetails,
   moveVideoToFolder,
   getFolderVideos,
+  generateVideoDownloadLink,
+  verifyVideoInProjectFolder,
 } from "./vimeoUpload";
 import { imagekitService } from "./imagekitService";
+import { emailService } from "./emailService";
 import "./types"; // Import session types
 import Stripe from "stripe";
 
@@ -472,6 +475,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+  // Vimeo webhook endpoint for video upload notifications
+  app.post("/api/webhooks/vimeo", async (req, res) => {
+    try {
+      console.log("Vimeo webhook received:", req.body);
+      
+      const { event_type, data } = req.body;
+      
+      if (event_type === 'video.upload.complete') {
+        const videoId = data.uri.split('/').pop();
+        const videoName = data.name;
+        
+        console.log(`Video upload completed: ${videoId} - ${videoName}`);
+        
+        // Find which project this video belongs to by checking all projects in "edit in progress" or "revision in progress" status
+        const projectsInProgress = await storage.getProjectsByStatus(['edit in progress', 'revision in progress']);
+        
+        for (const project of projectsInProgress) {
+          if (project.vimeoFolderId) {
+            try {
+              const belongsToProject = await verifyVideoInProjectFolder(videoId, project.vimeoFolderId);
+              
+              if (belongsToProject) {
+                console.log(`Video ${videoId} belongs to project ${project.id} (${project.title})`);
+                
+                // Generate download link
+                const downloadLink = await generateVideoDownloadLink(videoId);
+                
+                if (downloadLink) {
+                  // Update project status to "delivered"
+                  await storage.updateProject(project.id, {
+                    status: 'delivered',
+                    updatedAt: new Date(),
+                  });
+                  
+                  // Get user details for email
+                  const user = await storage.getUserById(project.userId);
+                  
+                  if (user) {
+                    // Send email notification
+                    const emailTemplate = emailService.generateVideoDeliveryEmail(
+                      user.email,
+                      project.title,
+                      downloadLink,
+                      project.id
+                    );
+                    
+                    await emailService.sendEmail(emailTemplate);
+                    console.log(`Video delivery email sent to ${user.email} for project ${project.id}`);
+                  }
+                  
+                  // Store the download link in project files
+                  await storage.createProjectFile({
+                    projectId: project.id,
+                    vimeoVideoId: videoId,
+                    vimeoVideoUrl: downloadLink,
+                    filename: videoName,
+                    originalFilename: videoName,
+                    fileType: 'video/mp4',
+                    fileSize: data.file_size || 0,
+                    uploadStatus: 'completed',
+                  });
+                  
+                } else {
+                  console.log(`Could not generate download link for video ${videoId}`);
+                }
+                
+                break; // Found the project, no need to check others
+              }
+            } catch (error) {
+              console.error(`Error checking if video ${videoId} belongs to project ${project.id}:`, error);
+            }
+          }
+        }
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Vimeo webhook processing error:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
   // Email signup endpoint
   app.post("/api/email-signup", async (req, res) => {
     try {
@@ -1093,6 +1178,193 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  // Project acceptance endpoint
+  app.post("/api/projects/:id/accept", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      // Verify project belongs to user
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Project not found" 
+        });
+      }
+      
+      // Verify project is in "delivered" status
+      if (project.status !== 'delivered') {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Project must be in delivered status to accept" 
+        });
+      }
+      
+      // Update project status to "complete"
+      await storage.updateProject(projectId, {
+        status: 'complete',
+        updatedAt: new Date(),
+      });
+      
+      // Get user details for completion email
+      const user = await storage.getUserById(userId);
+      
+      // Get the download link from project files
+      const projectFiles = await storage.getProjectFiles(projectId);
+      const deliveredVideo = projectFiles.find(file => file.vimeoVideoUrl);
+      
+      if (user && deliveredVideo?.vimeoVideoUrl) {
+        // Send completion confirmation email
+        const emailTemplate = emailService.generateProjectCompletionEmail(
+          user.email,
+          project.title,
+          deliveredVideo.vimeoVideoUrl
+        );
+        
+        await emailService.sendEmail(emailTemplate);
+        console.log(`Project completion email sent to ${user.email} for project ${projectId}`);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Project accepted successfully",
+        project: { ...project, status: 'complete' }
+      });
+    } catch (error) {
+      console.error("Project acceptance error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to accept project" 
+      });
+    }
+  });
+
+  // Get video download link endpoint
+  app.get("/api/projects/:id/download-link", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      // Verify project belongs to user
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Project not found" 
+        });
+      }
+      
+      // Get the download link from project files
+      const projectFiles = await storage.getProjectFiles(projectId);
+      const deliveredVideo = projectFiles.find(file => file.vimeoVideoUrl);
+      
+      if (!deliveredVideo?.vimeoVideoUrl) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "No download link available for this project" 
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        downloadLink: deliveredVideo.vimeoVideoUrl,
+        filename: deliveredVideo.filename
+      });
+    } catch (error) {
+      console.error("Get download link error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to get download link" 
+      });
+    }
+  });
+
+  // Request revision endpoint
+  app.post("/api/projects/:id/request-revision", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      const { revisionNotes } = req.body;
+      
+      // Verify project belongs to user
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Project not found" 
+        });
+      }
+      
+      // Verify project is in "delivered" or "complete" status
+      if (!['delivered', 'complete'].includes(project.status.toLowerCase())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Project must be delivered or complete to request revision" 
+        });
+      }
+      
+      // Update project status to "revision in progress"
+      await storage.updateProject(projectId, {
+        status: 'revision in progress',
+        updatedAt: new Date(),
+      });
+      
+      // Get user details for revision notification email
+      const user = await storage.getUserById(userId);
+      
+      if (user) {
+        // Send revision request notification to team (using same delivery template but different subject)
+        const emailTemplate = {
+          to: ['team@mementiq.com'], // Replace with actual team email
+          subject: `Revision Requested: ${project.title}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2abdee;">Revision Request</h2>
+              
+              <p>A revision has been requested for project: <strong>${project.title}</strong></p>
+              
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3>Client Details:</h3>
+                <p><strong>Name:</strong> ${user.firstName} ${user.lastName}</p>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Company:</strong> ${user.company || 'N/A'}</p>
+              </div>
+
+              ${revisionNotes ? `
+                <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h3>Revision Notes:</h3>
+                  <p style="white-space: pre-wrap;">${revisionNotes}</p>
+                </div>
+              ` : ''}
+              
+              <p>Please begin working on the revision for this project.</p>
+              
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #666;">
+                <p>This is an automated notification from Mementiq</p>
+              </div>
+            </div>
+          `,
+        };
+        
+        await emailService.sendEmail(emailTemplate);
+        console.log(`Revision request email sent for project ${projectId}`);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Revision requested successfully",
+        project: { ...project, status: 'revision in progress' }
+      });
+    } catch (error) {
+      console.error("Revision request error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to request revision" 
+      });
+    }
+  });
 
   // Get project by ID
   app.get("/api/projects/:id", async (req, res) => {

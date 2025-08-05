@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Check, ArrowLeft, CreditCard, Calendar, Plus } from "lucide-react";
+import { RevisionRequestModal } from "@/components/RevisionRequestModal";
 
 interface SubscriptionStatus {
   hasActiveSubscription: boolean;
@@ -116,6 +117,7 @@ const prepaidPackages = [
 
 export default function SubscribePage() {
   const [selectedTab, setSelectedTab] = useState<"subscription" | "prepaid">("subscription");
+  const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
@@ -418,7 +420,7 @@ export default function SubscribePage() {
         </div>
 
         {/* Revision Add-on Section */}
-        <div className="max-w-2xl mx-auto mb-8">
+        <div id="revision-addon" className="max-w-2xl mx-auto mb-8">
           <Card className="bg-gradient-to-r from-orange-900/20 to-red-900/20 border-2 border-orange-700/50 rounded-2xl">
             <CardContent className="p-8 text-center">
               <div className="flex items-center justify-center gap-3 mb-4">
@@ -433,7 +435,7 @@ export default function SubscribePage() {
               </p>
               <div className="text-3xl font-bold text-orange-400 mb-2">$5</div>
               <p className="text-sm text-gray-400 mb-6">per revision request</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300 max-w-md mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300 max-w-md mx-auto mb-6">
                 <div className="flex items-center justify-center md:justify-start">
                   <Check className="h-4 w-4 text-orange-400 mr-2" />
                   Minor tweaks & adjustments
@@ -443,6 +445,25 @@ export default function SubscribePage() {
                   48-hour turnaround
                 </div>
               </div>
+              {isAuthenticated && (
+                <Button
+                  onClick={() => setRevisionModalOpen(true)}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-8 py-3"
+                >
+                  Request Revision
+                </Button>
+              )}
+              {!isAuthenticated && (
+                <p className="text-sm text-gray-400">
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocation("/auth")}
+                    className="border-orange-600 text-orange-400 hover:bg-orange-600 hover:text-white"
+                  >
+                    Login to Request Revision
+                  </Button>
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -456,6 +477,12 @@ export default function SubscribePage() {
           </p>
         </div>
       </div>
+
+      {/* Revision Request Modal */}
+      <RevisionRequestModal
+        open={revisionModalOpen}
+        onOpenChange={setRevisionModalOpen}
+      />
     </div>
   );
 }

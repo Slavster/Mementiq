@@ -128,10 +128,12 @@ export const updateProjectSchema = createInsertSchema(projects).pick({
   vimeoUserFolderId: true,
   currentUploadSize: true,
   tallyFormUrl: true,
+  updatedAt: true,
 }).partial();
 
 // Project file schemas
 export const insertProjectFileSchema = createInsertSchema(projectFiles).pick({
+  projectId: true,
   vimeoVideoId: true,
   vimeoVideoUrl: true,
   filename: true,
