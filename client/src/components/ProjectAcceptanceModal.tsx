@@ -1,9 +1,21 @@
 import { useState, useEffect } from "react";
 import * as React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Download, ExternalLink, Play, Check, Plus } from "lucide-react";
+import {
+  CheckCircle,
+  Download,
+  ExternalLink,
+  Play,
+  Check,
+  Plus,
+} from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -19,11 +31,11 @@ interface ProjectAcceptanceModalProps {
   downloadLink?: string;
 }
 
-export function ProjectAcceptanceModal({ 
-  open, 
-  onOpenChange, 
-  project, 
-  downloadLink 
+export function ProjectAcceptanceModal({
+  open,
+  onOpenChange,
+  project,
+  downloadLink,
 }: ProjectAcceptanceModalProps) {
   const [showThankYou, setShowThankYou] = useState(false);
   const [vimeoVideoId, setVimeoVideoId] = useState<string | null>(null);
@@ -48,14 +60,14 @@ export function ProjectAcceptanceModal({
     try {
       const data = await apiRequest(`/api/projects/${project.id}/latest-video`);
       if (data?.success && data?.videoId) {
-        console.log('Using actual project video:', data.videoId);
+        console.log("Using actual project video:", data.videoId);
         setVimeoVideoId(data.videoId);
       } else {
-        console.log('No video found via API, using fallback logic');
+        console.log("No video found via API, using fallback logic");
         fetchLatestVideoFromVimeo();
       }
     } catch (error) {
-      console.error('Error fetching latest video:', error);
+      console.error("Error fetching latest video:", error);
       fetchLatestVideoFromVimeo();
     }
   };
@@ -63,10 +75,12 @@ export function ProjectAcceptanceModal({
   const fetchLatestVideoFromVimeo = () => {
     if (project.id === 5) {
       // Now that we have the correct video info, try embedding with the hash
-      console.log('Test 2 - attempting to embed video with correct URL including hash');
-      setVimeoVideoId('1107336225?h=46fe797c9e'); // Use video ID with hash from API
+      console.log(
+        "Test 2 - attempting to embed video with correct URL including hash",
+      );
+      setVimeoVideoId("1107336225?h=46fe797c9e"); // Use video ID with hash from API
     } else {
-      console.log('No video found for project', project.id);
+      console.log("No video found for project", project.id);
       setVimeoVideoId(null);
     }
   };
@@ -74,12 +88,12 @@ export function ProjectAcceptanceModal({
   const acceptProjectMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest(`/api/projects/${project.id}/accept`, {
-        method: 'POST',
+        method: "POST",
       });
     },
     onSuccess: () => {
       // Invalidate projects query to refresh the dashboard
-      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       setShowThankYou(true);
     },
   });
@@ -91,79 +105,92 @@ export function ProjectAcceptanceModal({
   const handleDownload = async () => {
     try {
       // First try to get direct download using apiRequest (which handles auth properly)
-      const data = await apiRequest(`/api/projects/${project.id}/download-link`);
-      
+      const data = await apiRequest(
+        `/api/projects/${project.id}/download-link`,
+      );
+
       if (data?.success && data?.downloadLink) {
         const downloadLink = data.downloadLink;
-        console.log('Got download link:', downloadLink);
-        
+        console.log("Got download link:", downloadLink);
+
         // Check if it's a direct file URL we can download
-        if (downloadLink.includes('.mp4') || downloadLink.includes('.mov') || downloadLink.includes('download') || downloadLink.includes('player.vimeo.com')) {
+        if (
+          downloadLink.includes(".mp4") ||
+          downloadLink.includes(".mov") ||
+          downloadLink.includes("download") ||
+          downloadLink.includes("player.vimeo.com")
+        ) {
           try {
             // For Vimeo player URLs, we can't directly download, so skip to fallback
-            if (downloadLink.includes('player.vimeo.com')) {
-              throw new Error('Player URL, redirect to Vimeo');
+            if (downloadLink.includes("player.vimeo.com")) {
+              throw new Error("Player URL, redirect to Vimeo");
             }
-            
+
             // Try to fetch the file directly with CORS headers
             const response = await fetch(downloadLink, {
-              mode: 'cors',
-              cache: 'no-cache'
+              mode: "cors",
+              cache: "no-cache",
             });
-            
+
             if (response.ok) {
               const blob = await response.blob();
-              
+
               // Create download link
               const url = window.URL.createObjectURL(blob);
-              const link = document.createElement('a');
+              const link = document.createElement("a");
               link.href = url;
-              link.download = data.filename || 'video.mp4';
-              link.style.display = 'none';
-              
+              link.download = data.filename || "video.mp4";
+              link.style.display = "none";
+
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
               window.URL.revokeObjectURL(url);
-              
-              console.log('Direct download successful');
+
+              console.log("Direct download successful");
               return;
             } else {
-              console.log('Direct fetch failed:', response.status, response.statusText);
+              console.log(
+                "Direct fetch failed:",
+                response.status,
+                response.statusText,
+              );
               throw new Error(`HTTP ${response.status}`);
             }
           } catch (downloadError) {
-            console.error('Direct download failed:', downloadError);
+            console.error("Direct download failed:", downloadError);
           }
         }
-        
+
         // Fallback: open Vimeo page
-        window.open(downloadLink, '_blank');
-        console.log('Opened Vimeo download page');
+        window.open(downloadLink, "_blank");
+        console.log("Opened Vimeo download page");
       } else {
-        throw new Error('No download link available');
+        throw new Error("No download link available");
       }
     } catch (error) {
-      console.error('Error initiating download:', error);
-      
+      console.error("Error initiating download:", error);
+
       // Fallback: try the original method
       try {
-        const data = await apiRequest(`/api/projects/${project.id}/download-link`);
+        const data = await apiRequest(
+          `/api/projects/${project.id}/download-link`,
+        );
         if (data?.success && data?.downloadLink) {
-          window.open(data.downloadLink, '_blank');
+          window.open(data.downloadLink, "_blank");
         } else {
           // For Test 2 project, use the correct Vimeo URL with hash
           if (project.id === 5) {
             const directVimeoUrl = `https://vimeo.com/1107336225/46fe797c9e`;
-            window.open(directVimeoUrl, '_blank');
+            window.open(directVimeoUrl, "_blank");
           }
         }
       } catch (fallbackError) {
-        console.error('Fallback download also failed:', fallbackError);
+        console.error("Fallback download also failed:", fallbackError);
         // Final fallback for Test 2
         if (project.id === 5) {
           const directVimeoUrl = `https://vimeo.com/1107336225/46fe797c9e`;
-          window.open(directVimeoUrl, '_blank');
+          window.open(directVimeoUrl, "_blank");
         }
       }
     }
@@ -184,32 +211,29 @@ export function ProjectAcceptanceModal({
               Project Accepted!
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Thank you for accepting your video project "{project.title}". 
+              Thank you for accepting your video project "{project.title}".
             </p>
-            
+
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <p className="text-sm text-amber-800">
-                <strong>Important Reminder:</strong> Please download your video within the next 30 days. 
-                After this period, the download link will expire and you'll need to contact support 
-                to request a new link.
+                <strong>Important Reminder:</strong> Please download your video
+                within the next 30 days. After this period, the download link
+                will expire and you'll need to contact support to request a new
+                link.
               </p>
             </div>
-            
+
             {downloadLink && (
-              <Button 
-                onClick={handleDownload}
-                className="w-full"
-                size="lg"
-              >
+              <Button onClick={handleDownload} className="w-full" size="lg">
                 <Download className="mr-2 h-4 w-4" />
                 Download Your Video
               </Button>
             )}
           </div>
-          
+
           <div className="flex justify-end">
             <Button variant="outline" onClick={handleClose}>
               Close
@@ -228,23 +252,24 @@ export function ProjectAcceptanceModal({
             Review Your Finished Video
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4 max-h-[calc(90vh-120px)] overflow-y-auto">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-white mb-2">
               Project: {project.title}
             </h3>
             <p className="text-gray-300 text-sm">
-              Your edited video is ready! Watch it below and let us know what you think.
+              Your professionally edited video is ready! 😎 Watch it below and
+              let us know whatyou think.
             </p>
           </div>
-          
+
           {/* Single Video Section - Show embedded player with download option below */}
           {vimeoVideoId ? (
             <div className="space-y-4">
               <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
                 <iframe
-                  src={`https://player.vimeo.com/video/${vimeoVideoId.includes('?') ? vimeoVideoId + '&' : vimeoVideoId + '?'}badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
+                  src={`https://player.vimeo.com/video/${vimeoVideoId.includes("?") ? vimeoVideoId + "&" : vimeoVideoId + "?"}badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
                   className="absolute inset-0 w-full h-full"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
@@ -254,10 +279,7 @@ export function ProjectAcceptanceModal({
                 />
               </div>
               <div className="text-center space-y-2">
-                <p className="text-sm text-gray-400">
-                  🎬 Your professionally edited video is ready for review
-                </p>
-                <Button 
+                <Button
                   onClick={handleDownload}
                   variant="outline"
                   className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
@@ -276,9 +298,11 @@ export function ProjectAcceptanceModal({
                 Your Finished Video is Ready!
               </h3>
               <p className="text-gray-300 max-w-md mx-auto">
-                Your edited video has been completed and is available for download. Due to privacy settings, the video cannot be previewed here but you can download the full quality version.
+                Your edited video has been completed and is available for
+                download. Due to privacy settings, the video cannot be previewed
+                here but you can download the full quality version.
               </p>
-              <Button 
+              <Button
                 onClick={handleDownload}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
               >
@@ -288,18 +312,14 @@ export function ProjectAcceptanceModal({
             </div>
           )}
 
-
-          
           {/* Action Cards - Styled like Revision Add-on */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
             {/* Accept Video Card */}
-            <Card className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-700/50 rounded-xl">
-              <CardContent className="p-6 text-center">
+            <Card className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-700/50 rounded-xl flex flex-col">
+              <CardContent className="p-6 text-center flex-1 flex flex-col">
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <CheckCircle className="h-6 w-6 text-green-400" />
-                  <h3 className="text-lg font-bold text-white">
-                    Accept Video
-                  </h3>
+                  <h3 className="text-lg font-bold text-white">Accept Video</h3>
                 </div>
                 <p className="text-gray-300 text-sm mb-4">
                   Love your video? Accept it to mark the project as complete.
@@ -307,33 +327,36 @@ export function ProjectAcceptanceModal({
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-center text-sm text-gray-300">
                     <Check className="h-4 w-4 text-green-400 mr-2" />
-                    Project marked complete
-                  </div>
-                  <div className="flex items-center justify-center text-sm text-gray-300">
-                    <Check className="h-4 w-4 text-green-400 mr-2" />
                     30-day download access
                   </div>
                 </div>
-                <Button 
-                  onClick={handleAcceptProject}
-                  disabled={acceptProjectMutation.isPending}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
-                >
-                  {acceptProjectMutation.isPending ? (
-                    "Accepting..."
-                  ) : (
-                    <>
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Accept Final Video
-                    </>
-                  )}
-                </Button>
+                <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-3 mb-4">
+                  <p className="text-xs text-amber-200 leading-relaxed">
+                    Once accepted, the project is archived, and no further changes can be made. Any revisions after this will require a new project - using a full video credit.
+                  </p>
+                </div>
+                <div className="mt-auto">
+                  <Button
+                    onClick={handleAcceptProject}
+                    disabled={acceptProjectMutation.isPending}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
+                  >
+                    {acceptProjectMutation.isPending ? (
+                      "Accepting..."
+                    ) : (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Accept Final Video
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* Request Revision Card */}
-            <Card className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border-2 border-orange-700/50 rounded-xl">
-              <CardContent className="p-6 text-center">
+            <Card className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border-2 border-orange-700/50 rounded-xl flex flex-col">
+              <CardContent className="p-6 text-center flex-1 flex flex-col">
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <Plus className="h-6 w-6 text-orange-400" />
                   <h3 className="text-lg font-bold text-white">
@@ -343,8 +366,12 @@ export function ProjectAcceptanceModal({
                 <p className="text-gray-300 text-sm mb-4">
                   Need changes? Request revisions with detailed feedback.
                 </p>
-                <div className="text-2xl font-bold text-orange-400 mb-1">$5</div>
-                <p className="text-xs text-gray-400 mb-4">per revision request</p>
+                <div className="text-2xl font-bold text-orange-400 mb-1">
+                  $5
+                </div>
+                <p className="text-xs text-gray-400 mb-4">
+                  per revision request
+                </p>
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-center text-sm text-gray-300">
                     <Check className="h-4 w-4 text-orange-400 mr-2" />
@@ -355,24 +382,19 @@ export function ProjectAcceptanceModal({
                     48-hour turnaround
                   </div>
                 </div>
-                <Button 
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3"
-                  onClick={() => {
-                    window.location.href = '/subscribe#revision-addon';
-                  }}
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Request Paid Revision
-                </Button>
+                <div className="mt-auto">
+                  <Button
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3"
+                    onClick={() => {
+                      window.location.href = "/subscribe#revision-addon";
+                    }}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Request Paid Revision
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-          </div>
-          
-          <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 text-center">
-            <p className="text-xs text-blue-300">
-              <strong>Important:</strong> Once you accept the video, the project will be marked as complete. 
-              Future revisions may require additional charges as shown above.
-            </p>
           </div>
         </div>
       </DialogContent>
