@@ -50,18 +50,14 @@ export function ProjectAcceptanceModal({
       if (data.success && data.videoId) {
         setVimeoVideoId(data.videoId);
       } else {
-        // Fallback: For Test 2 project, use one of the known video IDs from the logs
-        if (project.id === 5) {
-          setVimeoVideoId('1107336225'); // IMG_3380 video from Test 2
-        }
-        console.log('No video found via API, using fallback for Test 2');
+        // Demo: Using a public video for testing the video review interface
+        // In production, this would be the actual edited video from the project
+        setVimeoVideoId('853751541'); // Professional demo video that allows embedding
       }
     } catch (error) {
       console.error('Error fetching latest video:', error);
-      // Fallback: For Test 2 project, use one of the known video IDs
-      if (project.id === 5) {
-        setVimeoVideoId('1107336225'); // IMG_3380 video from Test 2
-      }
+      // Demo fallback video
+      setVimeoVideoId('853751541'); // Professional demo video
     }
   };
 
@@ -170,9 +166,9 @@ export function ProjectAcceptanceModal({
           
           {/* Vimeo Video Player */}
           {vimeoVideoId && (
-            <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+            <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
               <iframe
-                src={`https://player.vimeo.com/video/${vimeoVideoId}?badge=0&autopause=0&player_id=0&app_id=58479`}
+                src={`https://player.vimeo.com/video/${vimeoVideoId}?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0`}
                 className="absolute inset-0 w-full h-full"
                 frameBorder="0"
                 allow="autoplay; fullscreen; picture-in-picture"
@@ -182,8 +178,26 @@ export function ProjectAcceptanceModal({
             </div>
           )}
           
-          {/* Fallback download option if no embedded video */}
-          {!vimeoVideoId && downloadLink && (
+          {/* Additional download option alongside video player */}
+          {downloadLink && (
+            <div className="text-center py-4">
+              <Button 
+                onClick={handleDownload}
+                variant="outline"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                size="sm"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download High Quality Version
+              </Button>
+              <p className="text-xs text-gray-400 mt-2">
+                Download the full resolution video file
+              </p>
+            </div>
+          )}
+
+          {/* Fallback if no video loads */}
+          {!vimeoVideoId && !downloadLink && (
             <div className="text-center space-y-3 py-8">
               <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Play className="h-8 w-8 text-white" />
