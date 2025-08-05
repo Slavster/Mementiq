@@ -62,10 +62,10 @@ export function ProjectAcceptanceModal({
 
   const fetchLatestVideoFromVimeo = () => {
     if (project.id === 5) {
-      // For Test 2, the videos are still private and can't be embedded
-      // Show download option instead
-      console.log('Test 2 - videos are private, showing download option');
-      setVimeoVideoId(null); // Don't try to embed private videos
+      // Since you've manually configured the video to be unlisted, embeddable, and downloadable
+      // we can now embed it properly
+      console.log('Test 2 - attempting to embed video with updated privacy settings');
+      setVimeoVideoId('1107336225'); // Try embedding since privacy was manually updated
     } else {
       console.log('No video found for project', project.id);
       setVimeoVideoId(null);
@@ -102,16 +102,16 @@ export function ProjectAcceptanceModal({
           console.error('No download link available:', data?.message);
           // For Test 2 project, create a direct download link
           if (project.id === 5) {
-            // Use the latest video ID we know exists
-            const directVimeoUrl = `https://vimeo.com/1107336225`;
+            // Use the proper Vimeo download URL format
+            const directVimeoUrl = `https://vimeo.com/1107336225/download`;
             window.open(directVimeoUrl, '_blank');
           }
         }
       } catch (error) {
         console.error('Error fetching download link:', error);
-        // Fallback for Test 2
+        // Fallback for Test 2 with proper download URL
         if (project.id === 5) {
-          const directVimeoUrl = `https://vimeo.com/1107336225`;
+          const directVimeoUrl = `https://vimeo.com/1107336225/download`;
           window.open(directVimeoUrl, '_blank');
         }
       }
@@ -188,48 +188,34 @@ export function ProjectAcceptanceModal({
             </p>
           </div>
           
-          {/* Vimeo Video Player */}
-          {vimeoVideoId && (
-            <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
-              <iframe
-                src={`https://player.vimeo.com/video/${vimeoVideoId}?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0`}
-                className="absolute inset-0 w-full h-full"
-                frameBorder="0"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                title={`${project.title} - Final Video`}
-                onError={() => console.log('Video failed to load')}
-              />
+          {/* Single Video Section - Show embedded player with download option below */}
+          {vimeoVideoId ? (
+            <div className="space-y-4">
+              <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
+                <iframe
+                  src={`https://player.vimeo.com/video/${vimeoVideoId}?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
+                  className="absolute inset-0 w-full h-full"
+                  frameBorder="0"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  title={`${project.title} - Final Video`}
+                />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-sm text-gray-400">
+                  🎬 Your professionally edited video is ready for review
+                </p>
+                <Button 
+                  onClick={handleDownload}
+                  variant="outline"
+                  className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download High Quality Version
+                </Button>
+              </div>
             </div>
-          )}
-
-          {/* Video Description */}
-          <div className="text-center py-2">
-            <p className="text-sm text-gray-400">
-              Your edited video from the project folder
-            </p>
-          </div>
-          
-          {/* Additional download option alongside video player */}
-          {downloadLink && (
-            <div className="text-center py-4">
-              <Button 
-                onClick={handleDownload}
-                variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                size="sm"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download High Quality Version
-              </Button>
-              <p className="text-xs text-gray-400 mt-2">
-                Download the full resolution video file
-              </p>
-            </div>
-          )}
-
-          {/* Show message for private videos that can't be embedded */}
-          {!vimeoVideoId && (
+          ) : (
             <div className="text-center space-y-4 py-8 bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-lg border border-purple-500/20">
               <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Play className="h-8 w-8 text-white" />
@@ -250,26 +236,7 @@ export function ProjectAcceptanceModal({
             </div>
           )}
 
-          {/* Fallback if no video or download link */}
-          {!vimeoVideoId && !downloadLink && (
-            <div className="text-center space-y-3 py-8">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Play className="h-8 w-8 text-white" />
-              </div>
-              <Button 
-                onClick={handleDownload}
-                variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                size="lg"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download & Watch Video
-              </Button>
-              <p className="text-xs text-gray-400">
-                Click to download and watch your finished video
-              </p>
-            </div>
-          )}
+
           
           {/* Action Cards - Styled like Revision Add-on */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
