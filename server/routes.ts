@@ -1247,14 +1247,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get video download link endpoint
-  app.get("/api/projects/:id/download-link", requireAuth, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/projects/:id/download-link", async (req: AuthenticatedRequest, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const userId = req.user!.id;
+      
+      // Handle both session and Supabase auth
+      const userId = req.session?.userId || req.user?.claims?.sub || req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required"
+        });
+      }
       
       // Verify project belongs to user
       const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
+      if (!project || project.userId !== String(userId)) {
         return res.status(404).json({ 
           success: false, 
           message: "Project not found" 
