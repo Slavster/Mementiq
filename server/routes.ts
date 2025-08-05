@@ -1486,6 +1486,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test video delivery email (for debugging)
+  app.post("/api/test-delivery-email", async (req, res) => {
+    try {
+      console.log("Testing video delivery email...");
+      const { userEmail, projectTitle, downloadLink, projectId } = req.body;
+      
+      if (!userEmail || !projectTitle || !downloadLink || !projectId) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields: userEmail, projectTitle, downloadLink, projectId"
+        });
+      }
+
+      // Generate and send video delivery email using the actual service
+      const emailTemplate = emailService.generateVideoDeliveryEmail(
+        userEmail,
+        projectTitle,
+        downloadLink,
+        projectId
+      );
+      
+      await emailService.sendEmail(emailTemplate);
+      
+      res.json({
+        success: true,
+        message: "Video delivery email sent successfully",
+        recipient: userEmail,
+        projectTitle,
+        projectId
+      });
+    } catch (error: any) {
+      console.error("Video delivery email test error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Video delivery email test failed"
+      });
+    }
+  });
+
+  // Test email integration (for debugging)
+  app.post("/api/test-email", async (req, res) => {
+    try {
+      console.log("Testing Resend email integration...");
+      const { to, subject, message } = req.body;
+      
+      if (!to || !subject || !message) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields: to, subject, message"
+        });
+      }
+
+      const emailTemplate = {
+        to: [to],
+        subject: subject,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2abdee;">Test Email - Mementiq System</h2>
+            <p>${message}</p>
+            <p><strong>This is a test email to verify the Resend API integration.</strong></p>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #666;">
+              <p>This is an automated test email from Mementiq</p>
+            </div>
+          </div>
+        `,
+      };
+
+      await emailService.sendEmail(emailTemplate);
+      
+      res.json({
+        success: true,
+        message: "Test email sent successfully",
+        recipient: to
+      });
+    } catch (error: any) {
+      console.error("Email test error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Email test failed"
+      });
+    }
+  });
+
   // Test ImageKit integration (for debugging)
   app.post("/api/test-imagekit", async (req, res) => {
     try {
