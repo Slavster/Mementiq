@@ -322,10 +322,8 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
     
     client.request({
       method: 'GET',
-      path: `/videos/${videoId}`,
-      query: {
-        fields: 'download.quality,download.type,download.width,download.height,download.link,files.link,files.quality,files.width,files.height,link,embed.html'
-      }
+      path: `/videos/${videoId}`
+      // Note: Not specifying fields parameter to get full response including download array
     }, (error: any, body: any) => {
       if (error) {
         console.error(`Error getting video download link for ${videoId}:`, error);
@@ -335,27 +333,32 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
 
       console.log('Video details:', JSON.stringify(body, null, 2));
 
-      // Priority 1: Check for direct download URLs in the download array
+      // Priority 1: Check for direct download URLs in the download array (like the axios example)
       if (body.download && Array.isArray(body.download) && body.download.length > 0) {
-        console.log(`Found ${body.download.length} download options for video ${videoId}`);
+        console.log(`✅ Found ${body.download.length} download options for video ${videoId}`);
         
-        // Sort by quality (highest resolution first) and get the best download option
+        // Find the best quality MP4 download link (following the axios example pattern)
+        const mp4Download = body.download.find((file: any) => file.type === 'video/mp4');
+        
+        if (mp4Download?.link) {
+          console.log(`✅ Direct MP4 download link found for video ${videoId}:`, {
+            quality: mp4Download.quality,
+            type: mp4Download.type,
+            width: mp4Download.width,
+            height: mp4Download.height,
+            url: mp4Download.link.substring(0, 100) + '...'
+          });
+          resolve(mp4Download.link);
+          return;
+        }
+        
+        // Fallback: get the highest quality download available
         const bestDownload = body.download
-          .filter((dl: any) => dl.link && dl.type && dl.type.includes('video')) // Only video download links
-          .sort((a: any, b: any) => {
-            // Sort by width (resolution), then by quality name
-            const widthDiff = (b.width || 0) - (a.width || 0);
-            if (widthDiff !== 0) return widthDiff;
-            
-            // If same width, prefer hd > sd > mobile
-            const qualityOrder = { 'hd': 3, 'sd': 2, 'mobile': 1 };
-            const aQuality = qualityOrder[a.quality as keyof typeof qualityOrder] || 0;
-            const bQuality = qualityOrder[b.quality as keyof typeof qualityOrder] || 0;
-            return bQuality - aQuality;
-          })[0];
+          .filter((dl: any) => dl.link && dl.type && dl.type.includes('video'))
+          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
         
         if (bestDownload?.link) {
-          console.log(`✅ Direct download link found for video ${videoId}:`, {
+          console.log(`✅ Best quality download link found for video ${videoId}:`, {
             quality: bestDownload.quality,
             type: bestDownload.type,
             width: bestDownload.width,
