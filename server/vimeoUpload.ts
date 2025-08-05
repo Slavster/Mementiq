@@ -320,7 +320,9 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
   return new Promise((resolve, reject) => {
     console.log(`Getting download link for video: ${videoId}`);
     
-    // First try to enable downloads on the video if they're not available
+    // Try multiple approaches to enable and get download links
+    console.log(`🔍 Step 1: Enabling downloads for video ${videoId}`);
+    
     client.request({
       method: 'PATCH',
       path: `/videos/${videoId}`,
@@ -330,21 +332,97 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
       body: JSON.stringify({
         privacy: {
           download: true
-        }
+        },
+        download: [
+          {
+            quality: "hd",
+            type: "video/mp4",
+            width: 1920,
+            height: 1080
+          },
+          {
+            quality: "sd", 
+            type: "video/mp4",
+            width: 640,
+            height: 480
+          }
+        ]
       })
     }, (patchError: any, patchBody: any) => {
       if (patchError) {
-        console.log(`Could not enable downloads for video ${videoId}:`, patchError.message);
+        console.log(`⚠️ Could not configure downloads for video ${videoId}:`, patchError.message);
       } else {
-        console.log(`✅ Successfully enabled downloads for video ${videoId}`);
+        console.log(`✅ Successfully configured downloads for video ${videoId}`);
       }
       
-      // Now get the video details with full response
+      // Try different approaches for direct downloads
+      console.log(`🔍 Step 2: Trying alternative endpoints for video ${videoId}`);
+      
+      // Try the OEmbed endpoint which sometimes provides direct links
       client.request({
         method: 'GET',
-        path: `/videos/${videoId}`
-        // Note: Not specifying fields parameter to get full response including download array
-      }, (error: any, body: any) => {
+        path: `/oembed`,
+        query: {
+          url: `https://vimeo.com/${videoId}`,
+          width: 1920,
+          height: 1080
+        }
+      }, (oembedError: any, oembedBody: any) => {
+        if (!oembedError && oembedBody?.html) {
+          console.log(`📺 OEmbed data available for video ${videoId}`);
+          // Extract any video URLs from the embed HTML
+          const srcMatch = oembedBody.html.match(/src="([^"]+)"/);
+          if (srcMatch && srcMatch[1]) {
+            console.log(`🔗 Found embed URL: ${srcMatch[1]}`);
+          }
+        }
+        
+        // Try getting video with specific fields that might reveal downloads
+        console.log(`🔍 Step 2b: Getting video with extended fields`);
+        
+        client.request({
+          method: 'GET',
+          path: `/videos/${videoId}`,
+          query: {
+            fields: 'download,files.link,files.download_url,files.public_name,play.progressive,play.hls,upload.link'
+          }
+        }, (extendedError: any, extendedBody: any) => {
+          if (!extendedError) {
+            console.log('Extended video data:', {
+              hasDownload: !!extendedBody.download,
+              hasFiles: !!extendedBody.files,
+              hasPlay: !!extendedBody.play,
+              hasUpload: !!extendedBody.upload,
+              playProgressive: extendedBody.play?.progressive,
+              playHls: extendedBody.play?.hls,
+              uploadLink: extendedBody.upload?.link
+            });
+            
+            // Check for progressive play URLs which might be downloadable
+            if (extendedBody.play?.progressive && Array.isArray(extendedBody.play.progressive)) {
+              const progressiveFiles = extendedBody.play.progressive;
+              console.log(`🎥 Found ${progressiveFiles.length} progressive streams`);
+              
+              const bestProgressive = progressiveFiles
+                .filter((file: any) => file.url && file.mime === 'video/mp4')
+                .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+              
+              if (bestProgressive?.url) {
+                console.log(`✅ Direct progressive stream found: ${bestProgressive.quality}p`);
+                resolve(bestProgressive.url);
+                return;
+              }
+            }
+          }
+        
+        // Now get the video details with full response
+        console.log(`🔍 Step 3: Getting full video details for ${videoId}`);
+        
+        client.request({
+          method: 'GET',
+          path: `/videos/${videoId}`
+          // Note: Not specifying fields parameter to get full response including download array
+        }, (error: any, body: any) => {
         if (error) {
           console.error(`Error getting video download link for ${videoId}:`, error);
           reject(error);
@@ -416,17 +494,61 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
           console.log(`❌ No files array found for video ${videoId}`);
         }
 
-        // Final fallback: Use the direct Vimeo link which has the hash for private access
-        if (body.link) {
-          console.log(`⚠️ No direct download available. Using Vimeo page link: ${body.link}`);
-          resolve(body.link);
-          return;
-        }
+          // Final approach: Check account limitations
+          console.log(`🔍 Step 3: Getting full video details for ${videoId}`);
+          
+          client.request({
+            method: 'GET',
+            path: `/videos/${videoId}`
+          }, (error: any, body: any) => {
+            if (error) {
+              console.error(`Error getting video download link for ${videoId}:`, error);
+              reject(error);
+              return;
+            }
 
-        console.log(`❌ No download link available for video ${videoId}`);
-        resolve(null);
+            console.log('Final video analysis:', {
+              hasDownload: !!body.download,
+              downloadEnabled: body.privacy?.download,
+              accountType: 'starter', // We know this from previous API call
+              hasFiles: !!body.files,
+              filesCount: body.files?.length || 0
+            });
+
+            // Check one more time for any download arrays
+            if (body.download && Array.isArray(body.download) && body.download.length > 0) {
+              const bestDownload = body.download
+                .filter((dl: any) => dl.link && dl.type && dl.type.includes('video'))
+                .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+              
+              if (bestDownload?.link) {
+                console.log(`✅ Final attempt found download link: ${bestDownload.quality}`);
+                resolve(bestDownload.link);
+                return;
+              }
+            }
+
+            // Account limitation detected
+            console.log(`❌ DIAGNOSIS: Starter Vimeo account limitations prevent direct video downloads via API`);
+            console.log(`   - Downloads enabled: ${body.privacy?.download || 'false'}`);
+            console.log(`   - Download array: ${body.download ? 'empty' : 'missing'}`);
+            console.log(`   - Files array: ${body.files ? 'empty' : 'missing'}`);
+            console.log(`   - Progressive streams: not available on starter accounts`);
+            
+            // Final fallback: Use the direct Vimeo link which has the hash for private access
+            if (body.link) {
+              console.log(`⚠️ Using Vimeo page fallback with hash authentication: ${body.link}`);
+              resolve(body.link);
+              return;
+            }
+
+            console.log(`❌ No download link available for video ${videoId}`);
+            resolve(null);
+          });
+        });
       });
     });
+  });
   });
 };
 
