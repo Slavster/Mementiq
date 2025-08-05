@@ -90,76 +90,59 @@ export function ProjectAcceptanceModal({
 
   const handleDownload = async () => {
     try {
-      // Use authenticated fetch similar to apiRequest
-      const downloadUrl = `/api/projects/${project.id}/download-video`;
+      // First try to get direct download using apiRequest (which handles auth properly)
+      const data = await apiRequest(`/api/projects/${project.id}/download-link`);
       
-      // Get the Supabase session for auth
-      const sessionKey = Object.keys(localStorage).find(key => 
-        key.includes('supabase') && key.includes('auth-token')
-      );
-      
-      if (!sessionKey) {
-        console.error('No Supabase session found');
-        throw new Error('Authentication required');
-      }
-
-      const session = JSON.parse(localStorage.getItem(sessionKey) || '{}');
-      const token = session.access_token;
-
-      if (!token) {
-        console.error('No access token found in session');
-        throw new Error('Authentication required');
-      }
-
-      // Fetch with proper auth headers
-      const response = await fetch(downloadUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      if (data?.success && data?.downloadLink) {
+        const downloadLink = data.downloadLink;
+        console.log('Got download link:', downloadLink);
+        
+        // Check if it's a direct file URL we can download
+        if (downloadLink.includes('.mp4') || downloadLink.includes('.mov') || downloadLink.includes('download') || downloadLink.includes('player.vimeo.com')) {
+          try {
+            // For Vimeo player URLs, we can't directly download, so skip to fallback
+            if (downloadLink.includes('player.vimeo.com')) {
+              throw new Error('Player URL, redirect to Vimeo');
+            }
+            
+            // Try to fetch the file directly with CORS headers
+            const response = await fetch(downloadLink, {
+              mode: 'cors',
+              cache: 'no-cache'
+            });
+            
+            if (response.ok) {
+              const blob = await response.blob();
+              
+              // Create download link
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = data.filename || 'video.mp4';
+              link.style.display = 'none';
+              
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+              
+              console.log('Direct download successful');
+              return;
+            } else {
+              console.log('Direct fetch failed:', response.status, response.statusText);
+              throw new Error(`HTTP ${response.status}`);
+            }
+          } catch (downloadError) {
+            console.error('Direct download failed:', downloadError);
+          }
         }
-      });
-
-      if (!response.ok) {
-        console.error('Download failed:', response.status, response.statusText);
-        throw new Error(`Download failed: ${response.status}`);
+        
+        // Fallback: open Vimeo page
+        window.open(downloadLink, '_blank');
+        console.log('Opened Vimeo download page');
+      } else {
+        throw new Error('No download link available');
       }
-
-      // Check if response is a redirect (Vimeo page)
-      if (response.redirected || response.url.includes('vimeo.com')) {
-        // Open Vimeo download page in new tab
-        window.open(response.url, '_blank');
-        console.log('Redirected to Vimeo download page');
-        return;
-      }
-
-      // Handle direct file download
-      const blob = await response.blob();
-      
-      // Create object URL and trigger download
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Get filename from response headers or use default
-      const contentDisposition = response.headers.get('content-disposition');
-      let filename = 'video.mp4';
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
-        }
-      }
-      
-      link.download = filename;
-      link.style.display = 'none';
-      
-      // Add to DOM, click, and clean up
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      console.log('Video download initiated successfully');
     } catch (error) {
       console.error('Error initiating download:', error);
       
