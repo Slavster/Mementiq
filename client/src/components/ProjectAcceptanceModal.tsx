@@ -192,11 +192,12 @@ export function ProjectAcceptanceModal({
             <div className="space-y-4">
               <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
                 <iframe
-                  src={`https://player.vimeo.com/video/${vimeoVideoId}?badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
+                  src={`https://player.vimeo.com/video/${vimeoVideoId.includes('?') ? vimeoVideoId + '&' : vimeoVideoId + '?'}badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
                   className="absolute inset-0 w-full h-full"
                   frameBorder="0"
-                  allow="autoplay; fullscreen; picture-in-picture"
+                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
                   allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
                   title={`${project.title} - Final Video`}
                 />
               </div>
