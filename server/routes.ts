@@ -1395,9 +1395,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Got download link for video ${videoId}: ${downloadLink}`);
 
-      // For now, redirect to Vimeo download page since direct file streaming is complex
-      // The user will get a proper download page from Vimeo
-      res.redirect(downloadLink);
+      // Check if it's a direct file URL that we can proxy for download
+      if (downloadLink.includes('.mp4') || downloadLink.includes('.mov') || downloadLink.includes('akamaized') || downloadLink.includes('progressive')) {
+        try {
+          console.log('Attempting to proxy direct video file download...');
+          
+          // Fetch the video file
+          const response = await fetch(downloadLink, {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+          
+          if (!response.ok) {
+            console.error(`Failed to fetch video file: ${response.status} ${response.statusText}`);
+            return res.redirect(downloadLink);
+          }
+          
+          // Set headers for file download
+          const filename = `${latestVideo.name || `video_${videoId}`}.mp4`;
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          res.setHeader('Content-Type', 'video/mp4');
+          
+          // Get content length if available
+          const contentLength = response.headers.get('content-length');
+          if (contentLength) {
+            res.setHeader('Content-Length', contentLength);
+          }
+          
+          console.log(`Streaming video file: ${filename} (${contentLength || 'unknown size'})`);
+          
+          // Stream the video file using Node.js streams
+          if (response.body) {
+            const reader = response.body.getReader();
+            
+            const pump = async () => {
+              try {
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  res.write(Buffer.from(value));
+                }
+                res.end();
+                console.log('✅ Video download completed successfully');
+              } catch (streamError) {
+                console.error('Error during video streaming:', streamError);
+                if (!res.headersSent) {
+                  res.status(500).json({ success: false, message: 'Stream error' });
+                }
+              }
+            };
+            
+            await pump();
+          } else {
+            throw new Error('No response body available');
+          }
+        } catch (proxyError) {
+          console.error('Error proxying video file:', proxyError);
+          // Fallback to redirect
+          res.redirect(downloadLink);
+        }
+      } else {
+        // Redirect to Vimeo page for non-direct URLs
+        console.log('Redirecting to Vimeo page for download');
+        res.redirect(downloadLink);
+      }
     } catch (error) {
       console.error("Error downloading video:", error);
       res.status(500).json({
