@@ -1331,6 +1331,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Direct video download endpoint - triggers file download to user's device
+  app.get("/api/projects/:id/download-video", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      
+      // Get user ID from authenticated request
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required"
+        });
+      }
+      
+      // Verify project belongs to user
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Project not found" 
+        });
+      }
+      
+      // Get the latest video from the Vimeo folder
+      if (!project.vimeoFolderId) {
+        return res.status(404).json({
+          success: false,
+          message: "No Vimeo folder configured for this project"
+        });
+      }
+      
+      const vimeoVideos = await getFolderVideos(project.vimeoFolderId);
+      if (!vimeoVideos || vimeoVideos.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No videos found for this project"
+        });
+      }
+
+      const latestVideo = vimeoVideos[0];
+      const videoId = latestVideo.uri.split('/').pop();
+
+      if (!videoId) {
+        return res.status(404).json({
+          success: false,
+          message: "Invalid video ID"
+        });
+      }
+
+      // Get the direct download link
+      const { generateVideoDownloadLink } = await import('./vimeoUpload');
+      const downloadLink = await generateVideoDownloadLink(videoId);
+
+      if (!downloadLink) {
+        return res.status(404).json({
+          success: false,
+          message: "No download link available"
+        });
+      }
+
+      // Check if it's a direct file URL that we can proxy
+      if (downloadLink.includes('.mp4') || downloadLink.includes('.mov') || downloadLink.includes('download')) {
+        try {
+          const response = await fetch(downloadLink);
+          
+          if (!response.ok) {
+            console.error(`Failed to fetch video from ${downloadLink}: ${response.status}`);
+            return res.redirect(downloadLink); // Fallback to direct redirect
+          }
+
+          // Set headers for file download
+          const filename = `${latestVideo.name || `video_${videoId}`}.mp4`;
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          res.setHeader('Content-Type', 'video/mp4');
+          
+          // Get content length if available
+          const contentLength = response.headers.get('content-length');
+          if (contentLength) {
+            res.setHeader('Content-Length', contentLength);
+          }
+          
+          // Stream the video file
+          if (response.body) {
+            const reader = response.body.getReader();
+            
+            const pump = async () => {
+              try {
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  res.write(Buffer.from(value));
+                }
+                res.end();
+              } catch (error) {
+                console.error('Error streaming video:', error);
+                if (!res.headersSent) {
+                  res.status(500).json({ success: false, message: 'Stream error' });
+                }
+              }
+            };
+            
+            pump();
+          } else {
+            res.redirect(downloadLink);
+          }
+        } catch (fetchError) {
+          console.error('Error fetching video file:', fetchError);
+          // Fallback to redirect
+          res.redirect(downloadLink);
+        }
+      } else {
+        // Redirect to the download page if it's not a direct file
+        res.redirect(downloadLink);
+      }
+    } catch (error) {
+      console.error("Error downloading video:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to download video"
+      });
+    }
+  });
+
   // Request revision endpoint
   app.post("/api/projects/:id/request-revision", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {

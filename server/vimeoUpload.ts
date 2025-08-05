@@ -343,8 +343,21 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
           .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
         
         if (bestDownload?.link) {
-          console.log(`Download link found for video ${videoId}: quality ${bestDownload.quality || 'unknown'}`);
+          console.log(`Direct download link found for video ${videoId}: quality ${bestDownload.quality || 'unknown'}`);
           resolve(bestDownload.link);
+          return;
+        }
+      }
+
+      // Try to get direct file links for download
+      if (body.files && body.files.length > 0) {
+        const bestFile = body.files
+          .filter((file: any) => file.link && file.quality !== 'hls' && file.quality !== 'dash')
+          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+        
+        if (bestFile?.link) {
+          console.log(`Direct file download link found for video ${videoId}: quality ${bestFile.quality}`);
+          resolve(bestFile.link);
           return;
         }
       }

@@ -89,26 +89,40 @@ export function ProjectAcceptanceModal({
   };
 
   const handleDownload = async () => {
-    if (downloadLink) {
-      window.open(downloadLink, '_blank');
-    } else {
-      // Fetch download link if not already available
+    try {
+      // Create a direct download link to our backend endpoint that will handle the file download
+      const downloadUrl = `/api/projects/${project.id}/download-video`;
+      
+      // Create a temporary anchor element to trigger the download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = ''; // Let the server set the filename
+      link.style.display = 'none';
+      
+      // Add to DOM, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Video download initiated');
+    } catch (error) {
+      console.error('Error initiating download:', error);
+      
+      // Fallback: try the original method
       try {
         const data = await apiRequest(`/api/projects/${project.id}/download-link`);
         if (data?.success && data?.downloadLink) {
           window.open(data.downloadLink, '_blank');
         } else {
-          console.error('No download link available:', data?.message);
           // For Test 2 project, use the correct Vimeo URL with hash
           if (project.id === 5) {
-            // Use the actual Vimeo URL from the API which includes the hash
             const directVimeoUrl = `https://vimeo.com/1107336225/46fe797c9e`;
             window.open(directVimeoUrl, '_blank');
           }
         }
-      } catch (error) {
-        console.error('Error fetching download link:', error);
-        // Fallback for Test 2 - use correct Vimeo URL with hash
+      } catch (fallbackError) {
+        console.error('Fallback download also failed:', fallbackError);
+        // Final fallback for Test 2
         if (project.id === 5) {
           const directVimeoUrl = `https://vimeo.com/1107336225/46fe797c9e`;
           window.open(directVimeoUrl, '_blank');
