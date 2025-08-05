@@ -62,10 +62,10 @@ export function ProjectAcceptanceModal({
 
   const fetchLatestVideoFromVimeo = () => {
     if (project.id === 5) {
-      // For Test 2, we know the videos exist. Since we've configured privacy settings
-      // to allow embedding, let's try to embed the latest video
-      console.log('Test 2 - attempting to embed latest video: 1107336225');
-      setVimeoVideoId('1107336225'); // Try embedding with new privacy settings
+      // For Test 2, the videos are still private and can't be embedded
+      // Show download option instead
+      console.log('Test 2 - videos are private, showing download option');
+      setVimeoVideoId(null); // Don't try to embed private videos
     } else {
       console.log('No video found for project', project.id);
       setVimeoVideoId(null);
@@ -74,19 +74,9 @@ export function ProjectAcceptanceModal({
 
   const acceptProjectMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/projects/${project.id}/accept`, {
+      return await apiRequest(`/api/projects/${project.id}/accept`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to accept project');
-      }
-      
-      return response.json();
     },
     onSuccess: () => {
       // Invalidate projects query to refresh the dashboard

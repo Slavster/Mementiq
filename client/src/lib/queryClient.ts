@@ -8,16 +8,40 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Overloaded apiRequest function to handle both old and new signatures
 export async function apiRequest(
-  method: string,
-  url: string,
+  urlOrMethod: string,
+  urlOrOptions?: string | { method?: string; body?: unknown },
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<any> {
+  let url: string;
+  let method: string;
+  let body: unknown;
+
+  // Handle new signature: apiRequest(url, options)
+  if (typeof urlOrOptions === 'object' && urlOrOptions !== null) {
+    url = urlOrMethod;
+    method = urlOrOptions.method || 'GET';
+    body = urlOrOptions.body;
+  }
+  // Handle old signature: apiRequest(method, url, data)
+  else if (typeof urlOrOptions === 'string') {
+    method = urlOrMethod;
+    url = urlOrOptions;
+    body = data;
+  }
+  // Handle simple signature: apiRequest(url)
+  else {
+    url = urlOrMethod;
+    method = 'GET';
+    body = undefined;
+  }
+
   // Get current Supabase session token
   const { data: { session } } = await supabase.auth.getSession();
   
   const headers: Record<string, string> = {};
-  if (data) {
+  if (body) {
     headers["Content-Type"] = "application/json";
   }
   if (session?.access_token) {
@@ -27,11 +51,11 @@ export async function apiRequest(
   const res = await fetch(url, {
     method,
     headers,
-    body: data ? JSON.stringify(data) : undefined,
+    body: body ? JSON.stringify(body) : undefined,
   });
 
   await throwIfResNotOk(res);
-  return res;
+  return await res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
