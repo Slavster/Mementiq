@@ -1504,8 +1504,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if user owns this project
-      if (project.userId !== String(req.session.userId)) {
+      // Check if user owns this project (handle both session and Supabase auth)
+      const userId = req.session?.userId || req.user?.claims?.sub;
+      if (project.userId !== String(userId)) {
         return res.status(403).json({
           success: false,
           message: "Access denied",
