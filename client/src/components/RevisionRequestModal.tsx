@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,10 +31,20 @@ export function RevisionRequestModal({ open, onOpenChange }: RevisionRequestModa
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Reset state when modal closes
+  React.useEffect(() => {
+    if (!open) {
+      setSelectedProjectId("");
+      setRevisionNotes("");
+      setShowThankYou(false);
+    }
+  }, [open]);
+
   // Get user's completed projects
   const { data: projectsData } = useQuery({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated && open,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const projects: Project[] = (projectsData as any)?.projects || [];
@@ -159,9 +170,9 @@ export function RevisionRequestModal({ open, onOpenChange }: RevisionRequestModa
                 </SelectTrigger>
                 <SelectContent>
                   {completedProjects.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
+                    <SelectItem value="none" disabled>
                       No completed projects available for revision
-                    </div>
+                    </SelectItem>
                   ) : (
                     completedProjects.map((project) => (
                       <SelectItem key={project.id} value={project.id.toString()}>
