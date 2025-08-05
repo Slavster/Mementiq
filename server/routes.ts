@@ -491,10 +491,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Find which project this video belongs to by checking all projects in "edit in progress" or "revision in progress" status
         const projectsInProgress = await storage.getProjectsByStatus(['edit in progress', 'revision in progress']);
         
+        console.log(`Found ${projectsInProgress.length} projects in progress to check`);
+        
         for (const project of projectsInProgress) {
+          console.log(`Checking project ${project.id} (${project.title}) with folder: ${project.vimeoFolderId}`);
+          
           if (project.vimeoFolderId) {
             try {
               const belongsToProject = await verifyVideoInProjectFolder(videoId, project.vimeoFolderId);
+              console.log(`Does video ${videoId} belong to project ${project.id}? ${belongsToProject}`);
               
               if (belongsToProject) {
                 console.log(`Video ${videoId} belongs to project ${project.id} (${project.title})`);
