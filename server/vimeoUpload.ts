@@ -324,7 +324,7 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
       method: 'GET',
       path: `/videos/${videoId}`,
       query: {
-        fields: 'download,files.link,files.quality,files.width,files.height,link,embed.html,transcode'
+        fields: 'download.quality,download.type,download.width,download.height,download.link,files.link,files.quality,files.width,files.height,link,embed.html'
       }
     }, (error: any, body: any) => {
       if (error) {
@@ -335,49 +335,60 @@ export const generateVideoDownloadLink = async (videoId: string): Promise<string
 
       console.log('Video details:', JSON.stringify(body, null, 2));
 
-      // Check if download is available and get the highest quality link
-      if (body.download && body.download.length > 0) {
-        // Sort by quality (highest first) and get the best download option
+      // Priority 1: Check for direct download URLs in the download array
+      if (body.download && Array.isArray(body.download) && body.download.length > 0) {
+        console.log(`Found ${body.download.length} download options for video ${videoId}`);
+        
+        // Sort by quality (highest resolution first) and get the best download option
         const bestDownload = body.download
-          .filter((dl: any) => dl.link) // Only links that exist
-          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+          .filter((dl: any) => dl.link && dl.type && dl.type.includes('video')) // Only video download links
+          .sort((a: any, b: any) => {
+            // Sort by width (resolution), then by quality name
+            const widthDiff = (b.width || 0) - (a.width || 0);
+            if (widthDiff !== 0) return widthDiff;
+            
+            // If same width, prefer hd > sd > mobile
+            const qualityOrder = { 'hd': 3, 'sd': 2, 'mobile': 1 };
+            const aQuality = qualityOrder[a.quality as keyof typeof qualityOrder] || 0;
+            const bQuality = qualityOrder[b.quality as keyof typeof qualityOrder] || 0;
+            return bQuality - aQuality;
+          })[0];
         
         if (bestDownload?.link) {
-          console.log(`Direct download link found for video ${videoId}: quality ${bestDownload.quality || 'unknown'}`);
+          console.log(`✅ Direct download link found for video ${videoId}:`, {
+            quality: bestDownload.quality,
+            type: bestDownload.type,
+            width: bestDownload.width,
+            height: bestDownload.height,
+            url: bestDownload.link.substring(0, 100) + '...'
+          });
           resolve(bestDownload.link);
           return;
         }
+      } else {
+        console.log(`❌ No download array found for video ${videoId}`);
       }
 
-      // Try to get direct file links for download
-      if (body.files && body.files.length > 0) {
+      // Priority 2: Check files array for direct file links
+      if (body.files && Array.isArray(body.files) && body.files.length > 0) {
+        console.log(`Found ${body.files.length} file options for video ${videoId}`);
+        
         const bestFile = body.files
           .filter((file: any) => file.link && file.quality !== 'hls' && file.quality !== 'dash')
           .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
         
         if (bestFile?.link) {
-          console.log(`Direct file download link found for video ${videoId}: quality ${bestFile.quality}`);
+          console.log(`✅ Direct file link found for video ${videoId}: quality ${bestFile.quality}`);
           resolve(bestFile.link);
           return;
         }
+      } else {
+        console.log(`❌ No files array found for video ${videoId}`);
       }
 
-      // Fallback: try to get direct file links first (for direct download)
-      if (body.files && body.files.length > 0) {
-        const bestFile = body.files
-          .filter((file: any) => file.link && file.quality !== 'hls' && file.quality !== 'dash')
-          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
-        
-        if (bestFile?.link) {
-          console.log(`Direct file link found for video ${videoId}: quality ${bestFile.quality}`);
-          resolve(bestFile.link);
-          return;
-        }
-      }
-
-      // Use the direct Vimeo link which includes the hash for private videos
+      // Priority 3: Use the direct Vimeo link (fallback to browser download)
       if (body.link) {
-        console.log(`Using direct Vimeo link for video ${videoId}: ${body.link}`);
+        console.log(`⚠️ Using Vimeo page link for video ${videoId}: ${body.link}`);
         resolve(body.link);
         return;
       }
