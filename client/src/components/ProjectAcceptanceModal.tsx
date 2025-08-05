@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Download, ExternalLink } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle, Download, ExternalLink, Play, Check, Plus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface ProjectAcceptanceModalProps {
@@ -12,6 +13,7 @@ interface ProjectAcceptanceModalProps {
     id: number;
     title: string;
     status: string;
+    vimeoFolderId?: string;
   };
   downloadLink?: string;
 }
@@ -23,14 +25,37 @@ export function ProjectAcceptanceModal({
   downloadLink 
 }: ProjectAcceptanceModalProps) {
   const [showThankYou, setShowThankYou] = useState(false);
+  const [vimeoVideoId, setVimeoVideoId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Reset state when modal closes or project changes
   React.useEffect(() => {
     if (!open) {
       setShowThankYou(false);
+      setVimeoVideoId(null);
     }
   }, [open, project.id]);
+
+  // Fetch the latest video from the project folder when modal opens
+  useEffect(() => {
+    if (open && project.vimeoFolderId) {
+      fetchLatestVideo();
+    }
+  }, [open, project.vimeoFolderId]);
+
+  const fetchLatestVideo = async () => {
+    try {
+      const response = await fetch(`/api/projects/${project.id}/latest-video`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.videoId) {
+          setVimeoVideoId(data.videoId);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching latest video:', error);
+    }
+  };
 
   const acceptProjectMutation = useMutation({
     mutationFn: async () => {
@@ -118,76 +143,140 @@ export function ProjectAcceptanceModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-gradient-to-br from-secondary via-purple-900 to-primary">
         <DialogHeader>
-          <DialogTitle>Review Your Video</DialogTitle>
+          <DialogTitle className="text-white text-xl font-bold">
+            Review Your Finished Video
+          </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
-          <div>
-            <h3 className="font-semibold mb-2">Project: {project.title}</h3>
-            <p className="text-sm text-muted-foreground">
-              Your video is ready for review! Please download and watch it before accepting.
+        <div className="space-y-6 py-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Project: {project.title}
+            </h3>
+            <p className="text-gray-300 text-sm">
+              Your edited video is ready! Watch it below and let us know what you think.
             </p>
           </div>
           
-          {downloadLink && (
-            <div className="space-y-3">
+          {/* Vimeo Video Player */}
+          {vimeoVideoId && (
+            <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+              <iframe
+                src={`https://player.vimeo.com/video/${vimeoVideoId}?badge=0&autopause=0&player_id=0&app_id=58479`}
+                className="absolute inset-0 w-full h-full"
+                frameBorder="0"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title={`${project.title} - Final Video`}
+              />
+            </div>
+          )}
+          
+          {/* Fallback download option if no embedded video */}
+          {!vimeoVideoId && downloadLink && (
+            <div className="text-center space-y-3 py-8">
+              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Play className="h-8 w-8 text-white" />
+              </div>
               <Button 
                 onClick={handleDownload}
                 variant="outline"
-                className="w-full"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                 size="lg"
               >
                 <Download className="mr-2 h-4 w-4" />
-                Download & Review Video
+                Download & Watch Video
               </Button>
-              
-              <p className="text-xs text-muted-foreground text-center">
-                Download link opens in a new tab
+              <p className="text-xs text-gray-400">
+                Click to download and watch your finished video
               </p>
             </div>
           )}
           
-          <div className="border-t pt-4 space-y-3">
-            <p className="text-sm font-medium">What would you like to do?</p>
-            
-            <div className="space-y-2">
-              <Button 
-                onClick={handleAcceptProject}
-                disabled={acceptProjectMutation.isPending}
-                className="w-full bg-green-600 hover:bg-green-700"
-                size="lg"
-              >
-                {acceptProjectMutation.isPending ? (
-                  "Accepting..."
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Accept Final Video
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full"
-                size="lg"
-                onClick={() => {
-                  // Navigate to subscription page with revision addon focus
-                  window.location.href = '/subscribe#revision-addon';
-                }}
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Request Paid Revision
-              </Button>
-            </div>
+          {/* Action Cards - Styled like Revision Add-on */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            {/* Accept Video Card */}
+            <Card className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-700/50 rounded-xl">
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <CheckCircle className="h-6 w-6 text-green-400" />
+                  <h3 className="text-lg font-bold text-white">
+                    Accept Video
+                  </h3>
+                </div>
+                <p className="text-gray-300 text-sm mb-4">
+                  Love your video? Accept it to mark the project as complete.
+                </p>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-center text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-green-400 mr-2" />
+                    Project marked complete
+                  </div>
+                  <div className="flex items-center justify-center text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-green-400 mr-2" />
+                    30-day download access
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleAcceptProject}
+                  disabled={acceptProjectMutation.isPending}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
+                >
+                  {acceptProjectMutation.isPending ? (
+                    "Accepting..."
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Accept Final Video
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Request Revision Card */}
+            <Card className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border-2 border-orange-700/50 rounded-xl">
+              <CardContent className="p-6 text-center">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Plus className="h-6 w-6 text-orange-400" />
+                  <h3 className="text-lg font-bold text-white">
+                    Request Revision
+                  </h3>
+                </div>
+                <p className="text-gray-300 text-sm mb-4">
+                  Need changes? Request revisions with detailed feedback.
+                </p>
+                <div className="text-2xl font-bold text-orange-400 mb-1">$5</div>
+                <p className="text-xs text-gray-400 mb-4">per revision request</p>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-center text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-orange-400 mr-2" />
+                    Minor tweaks & adjustments
+                  </div>
+                  <div className="flex items-center justify-center text-sm text-gray-300">
+                    <Check className="h-4 w-4 text-orange-400 mr-2" />
+                    48-hour turnaround
+                  </div>
+                </div>
+                <Button 
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3"
+                  onClick={() => {
+                    window.location.href = '/subscribe#revision-addon';
+                  }}
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Request Paid Revision
+                </Button>
+              </CardContent>
+            </Card>
           </div>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs text-blue-800">
-              <strong>Note:</strong> Once you accept the video, the project will be marked as complete. 
-              Revisions after acceptance may require additional charges.
+          <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 text-center">
+            <p className="text-xs text-blue-300">
+              <strong>Important:</strong> Once you accept the video, the project will be marked as complete. 
+              Future revisions may require additional charges as shown above.
             </p>
           </div>
         </div>

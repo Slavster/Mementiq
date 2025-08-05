@@ -1486,6 +1486,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get latest video from project folder
+  app.get("/api/projects/:id/latest-video", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProject(projectId);
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found",
+        });
+      }
+
+      // Check if user owns this project
+      if (project.userId !== String(req.session.userId)) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        });
+      }
+
+      // Get the latest video from project files
+      const projectFiles = await storage.getProjectFiles(projectId);
+      const latestVideo = projectFiles
+        .filter(file => file.vimeoVideoId)
+        .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())[0];
+
+      if (latestVideo?.vimeoVideoId) {
+        res.json({
+          success: true,
+          videoId: latestVideo.vimeoVideoId,
+          filename: latestVideo.filename,
+          uploadDate: latestVideo.uploadDate
+        });
+      } else {
+        res.json({
+          success: false,
+          message: "No video found for this project"
+        });
+      }
+    } catch (error) {
+      console.error("Get latest video error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get latest video",
+      });
+    }
+  });
+
   // Test video delivery email (for debugging)
   app.post("/api/test-delivery-email", async (req, res) => {
     try {
