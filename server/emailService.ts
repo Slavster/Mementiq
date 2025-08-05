@@ -1,4 +1,4 @@
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -12,20 +12,20 @@ export class EmailService {
   async sendEmail(template: EmailTemplate): Promise<void> {
     try {
       const { data, error } = await resend.emails.send({
-        from: 'Mementiq <noreply@mementiq.com>',
+        from: "Mementiq <noreply@mementiq.com>",
         to: template.to,
         subject: template.subject,
         html: template.html,
       });
 
       if (error) {
-        console.error('Email sending error:', error);
+        console.error("Email sending error:", error);
         throw new Error(`Failed to send email: ${error.message}`);
       }
 
-      console.log('Email sent successfully:', data?.id);
+      console.log("Email sent successfully:", data?.id);
     } catch (error) {
-      console.error('Email service error:', error);
+      console.error("Email service error:", error);
       throw error;
     }
   }
@@ -35,7 +35,7 @@ export class EmailService {
     userEmail: string,
     projectTitle: string,
     downloadLink: string,
-    projectId: number
+    projectId: number,
   ): EmailTemplate {
     return {
       to: userEmail,
@@ -63,8 +63,10 @@ export class EmailService {
             <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
               <h3 style="margin-top: 0; color: #667eea;">What's Next?</h3>
               <ol style="margin: 0; padding-left: 20px;">
-                <li>Review your video using the download link below</li>
-                <li>Accept the final video or request a revision</li>
+                <li>Watch your video using the download link below</li>
+                <li>Accept the final video or request a revision. Please visit your 
+                <a href="${process.env.VITE_APP_URL || "https://mementiq.com"}/dashboard/projects/${projectId}">
+                project dashboard</a> to complete this step.</li>
                 <li>Download your video within 30 days</li>
               </ol>
             </div>
@@ -75,7 +77,7 @@ export class EmailService {
                 📥 Download Video
               </a>
               
-              <a href="${process.env.VITE_APP_URL || 'https://mementiq.com'}/dashboard" 
+              <a href="${process.env.VITE_APP_URL || "https://mementiq.com"}/dashboard" 
                  style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
                 🎯 Review in Dashboard
               </a>
@@ -101,7 +103,7 @@ export class EmailService {
   generateProjectCompletionEmail(
     userEmail: string,
     projectTitle: string,
-    downloadLink: string
+    downloadLink: string,
   ): EmailTemplate {
     return {
       to: userEmail,
@@ -127,7 +129,7 @@ export class EmailService {
             </p>
             
             <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #28a745;">Final Download</h3>
+              <h3 style="margin-top: 0; color: #28a745;">Download Your Completed Video</h3>
               <p style="margin: 0;">
                 Your video will remain available for download for the next <strong>30 days</strong>. 
                 Please save it to your local storage to ensure you have permanent access.
@@ -137,7 +139,7 @@ export class EmailService {
             <div style="text-align: center; margin: 30px 0;">
               <a href="${downloadLink}" 
                  style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-                📥 Final Download
+                📥 Download Your Completed Video
               </a>
             </div>
             

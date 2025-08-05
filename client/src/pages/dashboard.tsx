@@ -587,7 +587,7 @@ export default function DashboardPage() {
                           }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          Review & Accept Video
+                          Review Your Finished Video
                         </Button>
                       ) : project.status.toLowerCase() === "complete" ? (
                         <div className="space-y-2">
