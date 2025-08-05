@@ -25,6 +25,7 @@ import {
   getFolderVideos,
   generateVideoDownloadLink,
   verifyVideoInProjectFolder,
+  configureDeliveredVideo,
 } from "./vimeoUpload";
 import { imagekitService } from "./imagekitService";
 import { emailService } from "./emailService";
@@ -503,6 +504,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (belongsToProject) {
                 console.log(`Video ${videoId} belongs to project ${project.id} (${project.title})`);
+                
+                // CRITICAL: Configure video privacy settings for delivery
+                // Ensures: 1) Unlisted, 2) Downloadable, 3) Embeddable
+                try {
+                  await configureDeliveredVideo(videoId);
+                  console.log(`Privacy settings configured for delivered video: ${videoId}`);
+                } catch (privacyError) {
+                  console.error(`Failed to configure privacy for video ${videoId}:`, privacyError);
+                  // Continue with delivery even if privacy config fails
+                }
                 
                 // Generate download link
                 const downloadLink = await generateVideoDownloadLink(videoId);
@@ -1270,21 +1281,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get the download link from project files
+      // Try to get download link from project files first
       const projectFiles = await storage.getProjectFiles(projectId);
       const deliveredVideo = projectFiles.find(file => file.vimeoVideoUrl);
       
-      if (!deliveredVideo?.vimeoVideoUrl) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "No download link available for this project" 
+      if (deliveredVideo?.vimeoVideoUrl) {
+        return res.json({ 
+          success: true, 
+          downloadLink: deliveredVideo.vimeoVideoUrl,
+          filename: deliveredVideo.filename
         });
       }
       
-      res.json({ 
-        success: true, 
-        downloadLink: deliveredVideo.vimeoVideoUrl,
-        filename: deliveredVideo.filename
+      // If no stored download link, try to generate one from Vimeo videos
+      if (project.vimeoFolderId) {
+        try {
+          const vimeoVideos = await getFolderVideos(project.vimeoFolderId);
+          if (vimeoVideos && vimeoVideos.length > 0) {
+            const latestVideo = vimeoVideos[0];
+            const videoId = latestVideo.uri.split('/').pop();
+            
+            // Generate download link for the latest video
+            const { generateVideoDownloadLink } = await import('./vimeoUpload');
+            const downloadLink = await generateVideoDownloadLink(videoId);
+            
+            if (downloadLink) {
+              return res.json({
+                success: true,
+                downloadLink: downloadLink,
+                filename: latestVideo.name
+              });
+            }
+          }
+        } catch (vimeoError) {
+          console.error('Error generating download link from Vimeo:', vimeoError);
+        }
+      }
+      
+      return res.status(404).json({ 
+        success: false, 
+        message: "No download link available for this project" 
       });
     } catch (error) {
       console.error("Get download link error:", error);

@@ -46,7 +46,12 @@ export function ProjectAcceptanceModal({
 
   const fetchLatestVideo = async () => {
     try {
-      const data = await apiRequest(`/api/projects/${project.id}/latest-video`);
+      const response = await fetch(`/api/projects/${project.id}/latest-video`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
+        },
+      });
+      const data = await response.json();
       if (data?.success && data?.videoId) {
         console.log('Using actual project video:', data.videoId);
         setVimeoVideoId(data.videoId);
@@ -103,9 +108,26 @@ export function ProjectAcceptanceModal({
     acceptProjectMutation.mutate();
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (downloadLink) {
       window.open(downloadLink, '_blank');
+    } else {
+      // Fetch download link if not already available
+      try {
+        const response = await fetch(`/api/projects/${project.id}/download-link`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
+          },
+        });
+        const data = await response.json();
+        if (data?.success && data?.downloadLink) {
+          window.open(data.downloadLink, '_blank');
+        } else {
+          console.error('No download link available');
+        }
+      } catch (error) {
+        console.error('Error fetching download link:', error);
+      }
     }
   };
 
