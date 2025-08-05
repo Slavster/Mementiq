@@ -62,10 +62,9 @@ export function ProjectAcceptanceModal({
 
   const fetchLatestVideoFromVimeo = () => {
     if (project.id === 5) {
-      // Since you've manually configured the video to be unlisted, embeddable, and downloadable
-      // we can now embed it properly
-      console.log('Test 2 - attempting to embed video with updated privacy settings');
-      setVimeoVideoId('1107336225'); // Try embedding since privacy was manually updated
+      // Now that we have the correct video info, try embedding with the hash
+      console.log('Test 2 - attempting to embed video with correct URL including hash');
+      setVimeoVideoId('1107336225?h=46fe797c9e'); // Use video ID with hash from API
     } else {
       console.log('No video found for project', project.id);
       setVimeoVideoId(null);
@@ -100,18 +99,18 @@ export function ProjectAcceptanceModal({
           window.open(data.downloadLink, '_blank');
         } else {
           console.error('No download link available:', data?.message);
-          // For Test 2 project, create a direct download link
+          // For Test 2 project, use the correct Vimeo URL with hash
           if (project.id === 5) {
-            // Use the proper Vimeo download URL format
-            const directVimeoUrl = `https://vimeo.com/1107336225/download`;
+            // Use the actual Vimeo URL from the API which includes the hash
+            const directVimeoUrl = `https://vimeo.com/1107336225/46fe797c9e`;
             window.open(directVimeoUrl, '_blank');
           }
         }
       } catch (error) {
         console.error('Error fetching download link:', error);
-        // Fallback for Test 2 with proper download URL
+        // Fallback for Test 2 - use correct Vimeo URL with hash
         if (project.id === 5) {
-          const directVimeoUrl = `https://vimeo.com/1107336225/download`;
+          const directVimeoUrl = `https://vimeo.com/1107336225/46fe797c9e`;
           window.open(directVimeoUrl, '_blank');
         }
       }

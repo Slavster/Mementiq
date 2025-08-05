@@ -1583,11 +1583,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const latestVimeoVideo = vimeoVideos[0]; // Already sorted by date
               console.log(`Found video in Vimeo folder:`, latestVimeoVideo.uri);
               const videoId = latestVimeoVideo.uri.split('/').pop();
+              
+              // Extract the hash from the player_embed_url for proper embedding
+              let videoIdWithHash = videoId;
+              if (latestVimeoVideo.player_embed_url) {
+                const hashMatch = latestVimeoVideo.player_embed_url.match(/\?h=([^&]+)/);
+                if (hashMatch) {
+                  videoIdWithHash = `${videoId}?h=${hashMatch[1]}`;
+                }
+              }
+              
               res.json({
                 success: true,
-                videoId: videoId,
+                videoId: videoIdWithHash, // Include hash for proper embedding
                 filename: latestVimeoVideo.name,
-                uploadDate: latestVimeoVideo.created_time
+                uploadDate: latestVimeoVideo.created_time,
+                directLink: latestVimeoVideo.link || `https://vimeo.com/${videoId}`
               });
             } else {
               res.json({
