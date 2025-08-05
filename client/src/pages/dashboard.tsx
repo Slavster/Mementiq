@@ -37,10 +37,14 @@ import {
   CreditCard,
   Crown,
   Settings,
+  Download,
+  Play,
+  Eye
 } from "lucide-react";
 import DirectVideoUpload from "@/components/DirectVideoUpload";
 import DirectPhotoUpload from "@/components/DirectPhotoUpload";
 import TallyFormStep from "@/components/TallyFormStep";
+import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
 
 interface User {
   id: number;
@@ -88,6 +92,10 @@ const getStatusColor = (status: string) => {
       return "bg-primary";
     case "video is ready":
       return "bg-green-600";
+    case "delivered":
+      return "bg-green-600";
+    case "complete":
+      return "bg-emerald-600";
     case "revision in progress":
       return "bg-orange-600";
     default:
@@ -104,6 +112,10 @@ const getStatusIcon = (status: string) => {
     case "edit in progress":
       return <Video className="h-3 w-3" />;
     case "video is ready":
+      return <CheckCircle className="h-3 w-3" />;
+    case "delivered":
+      return <Download className="h-3 w-3" />;
+    case "complete":
       return <CheckCircle className="h-3 w-3" />;
     case "revision in progress":
       return <Clock className="h-3 w-3" />;
@@ -122,6 +134,9 @@ export default function DashboardPage() {
   const [currentStep, setCurrentStep] = useState<
     "upload" | "form" | "confirmation"
   >("upload");
+  const [acceptanceModalOpen, setAcceptanceModalOpen] = useState(false);
+  const [acceptanceProject, setAcceptanceProject] = useState<Project | null>(null);
+  const [downloadLink, setDownloadLink] = useState<string | undefined>();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects - always fetch fresh data to show latest updates
@@ -235,6 +250,27 @@ export default function DashboardPage() {
       return;
     }
     setShowCreateForm(true);
+  };
+
+  // Handle opening acceptance modal and fetching download link
+  const handleAcceptanceModal = async (project: Project) => {
+    setAcceptanceProject(project);
+    setAcceptanceModalOpen(true);
+    
+    // Fetch download link for the project
+    try {
+      const response = await fetch(`/api/projects/${project.id}/download-link`);
+      if (response.ok) {
+        const data = await response.json();
+        setDownloadLink(data.downloadLink);
+      } else {
+        console.error('Failed to fetch download link');
+        setDownloadLink(undefined);
+      }
+    } catch (error) {
+      console.error('Error fetching download link:', error);
+      setDownloadLink(undefined);
+    }
   };
 
   const handleLogout = async () => {
@@ -541,23 +577,74 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <Button
-                        size="sm"
-                        className="w-full bg-accent text-secondary hover:bg-yellow-500"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedProject(project);
-                          // If project has "Edit in Progress" status, show confirmation screen
-                          if (project.status === "Edit in Progress") {
-                            setCurrentStep("confirmation");
-                          } else {
-                            setCurrentStep("upload");
-                          }
-                        }}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Manage & Upload Footage
-                      </Button>
+                      {project.status.toLowerCase() === "delivered" ? (
+                        <Button
+                          size="sm"
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAcceptanceModal(project);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Review & Accept Video
+                        </Button>
+                      ) : project.status.toLowerCase() === "complete" ? (
+                        <div className="space-y-2">
+                          <Badge className="w-full bg-emerald-600 text-white py-2 text-center">
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Project Complete
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                const response = await fetch(`/api/projects/${project.id}/download-link`);
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  window.open(data.downloadLink, '_blank');
+                                } else {
+                                  toast({
+                                    title: "Download unavailable",
+                                    description: "The download link is no longer available. Contact support for assistance.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: "Download error",
+                                  description: "Failed to get download link. Please try again.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Video
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="w-full bg-accent text-secondary hover:bg-yellow-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedProject(project);
+                            // If project has "Edit in Progress" status, show confirmation screen
+                            if (project.status === "Edit in Progress") {
+                              setCurrentStep("confirmation");
+                            } else {
+                              setCurrentStep("upload");
+                            }
+                          }}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Manage & Upload Footage
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -827,6 +914,16 @@ export default function DashboardPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Project Acceptance Modal */}
+      {acceptanceProject && (
+        <ProjectAcceptanceModal
+          open={acceptanceModalOpen}
+          onOpenChange={setAcceptanceModalOpen}
+          project={acceptanceProject}
+          downloadLink={downloadLink}
+        />
+      )}
     </div>
   );
 }

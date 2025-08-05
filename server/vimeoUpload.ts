@@ -315,11 +315,87 @@ export const createProjectFolder = async (userFolderUri: string, projectId: numb
   });
 };
 
+// Generate a shareable download link for a Vimeo video
+export const generateVideoDownloadLink = async (videoId: string): Promise<string | null> => {
+  return new Promise((resolve, reject) => {
+    console.log(`Getting download link for video: ${videoId}`);
+    
+    client.request({
+      method: 'GET',
+      path: `/videos/${videoId}`,
+      query: {
+        fields: 'download,files'
+      }
+    }, (error: any, body: any) => {
+      if (error) {
+        console.error(`Error getting video download link for ${videoId}:`, error);
+        reject(error);
+        return;
+      }
+
+      // Check if download is available and get the highest quality link
+      if (body.download && body.download.length > 0) {
+        // Sort by quality (highest first) and get the best download option
+        const bestDownload = body.download
+          .filter((dl: any) => dl.link) // Only links that exist
+          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+        
+        if (bestDownload?.link) {
+          console.log(`Download link found for video ${videoId}: quality ${bestDownload.quality || 'unknown'}`);
+          resolve(bestDownload.link);
+          return;
+        }
+      }
+
+      // Fallback: try to get direct file links
+      if (body.files && body.files.length > 0) {
+        const bestFile = body.files
+          .filter((file: any) => file.link && file.quality !== 'hls')
+          .sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+        
+        if (bestFile?.link) {
+          console.log(`File link found for video ${videoId}: quality ${bestFile.quality}`);
+          resolve(bestFile.link);
+          return;
+        }
+      }
+
+      console.log(`No download link available for video ${videoId}`);
+      resolve(null);
+    });
+  });
+};
+
+// Verify if a video belongs to a specific project folder
+export const verifyVideoInProjectFolder = async (videoId: string, projectFolderId: string): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
+    client.request({
+      method: 'GET',
+      path: `/videos/${videoId}`,
+      query: {
+        fields: 'parent_folder'
+      }
+    }, (error: any, body: any) => {
+      if (error) {
+        console.error(`Error verifying video ${videoId} in folder ${projectFolderId}:`, error);
+        reject(error);
+        return;
+      }
+
+      // Check if the video's parent folder matches the project folder
+      const videoFolderId = body.parent_folder?.uri?.split('/').pop();
+      resolve(videoFolderId === projectFolderId);
+    });
+  });
+};
+
 export const vimeoService = {
   createUploadSession,
   completeUpload,
   verifyVideoUpload,
   createUserFolder,
   createProjectFolder,
-  getFolderVideos
+  getFolderVideos,
+  generateVideoDownloadLink,
+  verifyVideoInProjectFolder
 };
