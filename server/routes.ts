@@ -1336,10 +1336,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const projectId = parseInt(req.params.id);
       
-      // Get user ID from authenticated request
-      const userId = req.user?.id;
+      // Get user ID from authenticated request (handle both session and Supabase auth)
+      const userId = req.session?.userId || req.user?.id;
       
       if (!userId) {
+        console.error('No user ID found in request:', { session: !!req.session, user: !!req.user });
         return res.status(401).json({
           success: false,
           message: "Authentication required"
@@ -1392,60 +1393,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if it's a direct file URL that we can proxy
-      if (downloadLink.includes('.mp4') || downloadLink.includes('.mov') || downloadLink.includes('download')) {
-        try {
-          const response = await fetch(downloadLink);
-          
-          if (!response.ok) {
-            console.error(`Failed to fetch video from ${downloadLink}: ${response.status}`);
-            return res.redirect(downloadLink); // Fallback to direct redirect
-          }
+      console.log(`Got download link for video ${videoId}: ${downloadLink}`);
 
-          // Set headers for file download
-          const filename = `${latestVideo.name || `video_${videoId}`}.mp4`;
-          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-          res.setHeader('Content-Type', 'video/mp4');
-          
-          // Get content length if available
-          const contentLength = response.headers.get('content-length');
-          if (contentLength) {
-            res.setHeader('Content-Length', contentLength);
-          }
-          
-          // Stream the video file
-          if (response.body) {
-            const reader = response.body.getReader();
-            
-            const pump = async () => {
-              try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-                  res.write(Buffer.from(value));
-                }
-                res.end();
-              } catch (error) {
-                console.error('Error streaming video:', error);
-                if (!res.headersSent) {
-                  res.status(500).json({ success: false, message: 'Stream error' });
-                }
-              }
-            };
-            
-            pump();
-          } else {
-            res.redirect(downloadLink);
-          }
-        } catch (fetchError) {
-          console.error('Error fetching video file:', fetchError);
-          // Fallback to redirect
-          res.redirect(downloadLink);
-        }
-      } else {
-        // Redirect to the download page if it's not a direct file
-        res.redirect(downloadLink);
-      }
+      // For now, redirect to Vimeo download page since direct file streaming is complex
+      // The user will get a proper download page from Vimeo
+      res.redirect(downloadLink);
     } catch (error) {
       console.error("Error downloading video:", error);
       res.status(500).json({

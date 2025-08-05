@@ -90,21 +90,76 @@ export function ProjectAcceptanceModal({
 
   const handleDownload = async () => {
     try {
-      // Create a direct download link to our backend endpoint that will handle the file download
+      // Use authenticated fetch similar to apiRequest
       const downloadUrl = `/api/projects/${project.id}/download-video`;
       
-      // Create a temporary anchor element to trigger the download
+      // Get the Supabase session for auth
+      const sessionKey = Object.keys(localStorage).find(key => 
+        key.includes('supabase') && key.includes('auth-token')
+      );
+      
+      if (!sessionKey) {
+        console.error('No Supabase session found');
+        throw new Error('Authentication required');
+      }
+
+      const session = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+      const token = session.access_token;
+
+      if (!token) {
+        console.error('No access token found in session');
+        throw new Error('Authentication required');
+      }
+
+      // Fetch with proper auth headers
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Download failed:', response.status, response.statusText);
+        throw new Error(`Download failed: ${response.status}`);
+      }
+
+      // Check if response is a redirect (Vimeo page)
+      if (response.redirected || response.url.includes('vimeo.com')) {
+        // Open Vimeo download page in new tab
+        window.open(response.url, '_blank');
+        console.log('Redirected to Vimeo download page');
+        return;
+      }
+
+      // Handle direct file download
+      const blob = await response.blob();
+      
+      // Create object URL and trigger download
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = ''; // Let the server set the filename
+      link.href = url;
+      
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = 'video.mp4';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.download = filename;
       link.style.display = 'none';
       
-      // Add to DOM, click, and remove
+      // Add to DOM, click, and clean up
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
-      console.log('Video download initiated');
+      console.log('Video download initiated successfully');
     } catch (error) {
       console.error('Error initiating download:', error);
       
