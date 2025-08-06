@@ -44,9 +44,15 @@ export function ProjectAcceptanceModal({
   // Revision payment mutation
   const revisionPaymentMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      const response = await apiRequest("POST", "/api/stripe/create-revision-session", {
-        projectId,
-      });
+      console.log("Sending revision payment request for project:", projectId);
+      const response = await apiRequest(
+        "POST",
+        "/api/stripe/create-revision-session",
+        {
+          projectId,
+        },
+      );
+      console.log("Revision payment response:", response);
       return response;
     },
     onSuccess: (data) => {
@@ -57,6 +63,7 @@ export function ProjectAcceptanceModal({
     },
     onError: (error) => {
       console.error("Error creating revision payment session:", error);
+      // You could add a toast notification here if you want to show the error to the user
     },
   });
 
@@ -351,7 +358,9 @@ export function ProjectAcceptanceModal({
                 </div>
                 <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-3 mb-4">
                   <p className="text-xs text-amber-200 leading-relaxed">
-                    Once accepted, the project is archived, and no further changes can be made. Any revisions after this will require a new project - using a full video credit.
+                    Once accepted, the project is archived, and no further
+                    changes can be made. Any revisions after this will require a
+                    new project - using a full video credit.
                   </p>
                 </div>
                 <div className="mt-auto">
@@ -386,7 +395,7 @@ export function ProjectAcceptanceModal({
                   Need changes? Request revisions with detailed feedback.
                 </p>
                 <div className="text-2xl font-bold text-orange-400 mb-1">
-                  $50
+                  $5
                 </div>
                 <p className="text-xs text-gray-400 mb-4">
                   per revision request
@@ -408,10 +417,9 @@ export function ProjectAcceptanceModal({
                     disabled={revisionPaymentMutation.isPending}
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    {revisionPaymentMutation.isPending 
-                      ? "Processing..." 
-                      : "Request Paid Revision"
-                    }
+                    {revisionPaymentMutation.isPending
+                      ? "Processing..."
+                      : "Request Paid Revision"}
                   </Button>
                 </div>
               </CardContent>

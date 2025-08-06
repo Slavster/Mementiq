@@ -1503,8 +1503,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/stripe/create-revision-session", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { projectId } = req.body;
+      console.log("Revision payment request body:", req.body);
+      console.log("ProjectId received:", projectId, "Type:", typeof projectId);
 
-      if (!projectId || typeof projectId !== 'number') {
+      // Convert to number if it's a string
+      const numericProjectId = typeof projectId === 'string' ? parseInt(projectId, 10) : projectId;
+
+      if (!numericProjectId || typeof numericProjectId !== 'number' || isNaN(numericProjectId)) {
+        console.log("Invalid project ID validation failed:", numericProjectId);
         return res.status(400).json({
           success: false,
           message: "Valid project ID is required",
@@ -1512,8 +1518,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify project exists and user has access
-      const project = await storage.getProject(projectId);
+      const project = await storage.getProject(numericProjectId);
       if (!project || project.userId !== req.user!.id) {
+        console.log("Project access check failed:", {
+          projectExists: !!project,
+          projectUserId: project?.userId,
+          requestUserId: req.user!.id
+        });
         return res.status(404).json({
           success: false,
           message: "Project not found or access denied",
@@ -1545,7 +1556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard?revision_payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard?revision_payment=cancelled`,
         metadata: {
-          projectId: projectId.toString(),
+          projectId: numericProjectId.toString(),
           userId: req.user!.id,
           type: 'revision_payment',
         },
@@ -1553,7 +1564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Store revision payment record
       await storage.createRevisionPayment(req.user!.id, {
-        projectId,
+        projectId: numericProjectId,
         stripeCheckoutSessionId: session.id,
         paymentAmount: 5000,
         currency: 'usd',
