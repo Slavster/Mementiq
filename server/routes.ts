@@ -1591,8 +1591,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quantity: 1,
           },
         ],
-        success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard?revision_payment=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard?revision_payment=cancelled`,
+        success_url: `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=cancelled`,
         metadata: {
           projectId: numericProjectId.toString(),
           userId: req.user!.id,
