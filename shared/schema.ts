@@ -28,6 +28,7 @@ export const projects = pgTable("projects", {
   vimeoFolderId: text("vimeo_folder_id"), // Vimeo folder URI for this project
   vimeoUserFolderId: text("vimeo_user_folder_id"), // User's main folder URI
   tallyFormUrl: text("tally_form_url"),
+  vimeoReviewLink: text("vimeo_review_link"), // Vimeo review link for revisions
   uploadSizeLimit: bigint("upload_size_limit", { mode: "number" }).default(10737418240), // 10GB default
   currentUploadSize: bigint("current_upload_size", { mode: "number" }).default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),

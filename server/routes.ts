@@ -27,6 +27,8 @@ import {
   generateVideoDownloadLink,
   verifyVideoInProjectFolder,
   configureDeliveredVideo,
+  createVimeoReviewLink,
+  getLatestVideoForReview,
 } from "./vimeoUpload";
 import { imagekitService } from "./imagekitService";
 import { emailService } from "./emailService";
@@ -737,6 +739,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to get user data",
+      });
+    }
+  });
+
+  // Revision API Routes
+
+  // Generate Vimeo review link for revisions
+  app.post('/api/projects/:id/generate-review-link', requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user!.id;
+
+      // Verify user owns the project
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ success: false, message: 'Project not found' });
+      }
+
+      // Project must be in 'awaiting revision instructions' status
+      if (project.status !== 'awaiting revision instructions') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Review link can only be generated for projects awaiting revision instructions' 
+        });
+      }
+
+      // Extract project folder ID (remove /users/{userId}/projects/ prefix)
+      const projectFolderId = project.vimeoFolderId?.split('/').pop();
+      if (!projectFolderId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No Vimeo folder found for this project' 
+        });
+      }
+
+      // Generate review link
+      const reviewLink = await createVimeoReviewLink(projectFolderId);
+      if (!reviewLink) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No videos found in project or failed to create review link' 
+        });
+      }
+
+      // Save review link to database
+      await storage.updateProjectVimeoReviewLink(projectId, reviewLink);
+
+      // Send email with review link and instructions
+      await emailService.sendRevisionInstructionsEmail(
+        req.user!.email,
+        req.user!.firstName,
+        project.title,
+        reviewLink
+      );
+
+      res.json({ 
+        success: true, 
+        reviewLink,
+        message: 'Review link generated and email sent successfully' 
+      });
+    } catch (error) {
+      console.error('Error generating review link:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to generate review link' 
+      });
+    }
+  });
+
+  // Submit revision request with instructions
+  app.post('/api/projects/:id/request-revision', requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      const { instructions } = req.body;
+
+      // Verify user owns the project
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ success: false, message: 'Project not found' });
+      }
+
+      // Project must be in 'awaiting revision instructions' status
+      if (project.status !== 'awaiting revision instructions') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Revision instructions can only be submitted for projects awaiting them' 
+        });
+      }
+
+      // Update project status to 'revision in progress'
+      const updatedProject = await storage.updateProject(projectId, {
+        status: 'revision in progress'
+      });
+
+      // TODO: Send notification to editors about revision request
+      // This could be an email to the editing team with:
+      // - Project details
+      // - Vimeo review link
+      // - User's written instructions
+      // - Link to any new assets uploaded
+
+      res.json({ 
+        success: true, 
+        message: 'Revision instructions submitted successfully',
+        project: updatedProject
+      });
+    } catch (error) {
+      console.error('Error submitting revision request:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to submit revision request' 
       });
     }
   });
@@ -1619,6 +1733,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to create revision payment session",
+      });
+    }
+  });
+
+  // Generate Vimeo review link and start revision process
+  app.post("/api/projects/:id/generate-review-link", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user!.id;
+
+      console.log(`Generating review link for project ${projectId} by user ${userId}`);
+
+      // Get project details
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found",
+        });
+      }
+
+      // Verify ownership
+      if (project.userId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        });
+      }
+
+      // Check if project is in correct status for review link generation
+      if (project.status.toLowerCase() !== "awaiting revision instructions") {
+        return res.status(400).json({
+          success: false,
+          message: "Project must be awaiting revision instructions to generate review link",
+        });
+      }
+
+      // Get the latest video for review
+      const latestVideo = await getLatestVideoForReview(project.vimeoFolderId!);
+      if (!latestVideo) {
+        return res.status(404).json({
+          success: false,
+          message: "No video found for review",
+        });
+      }
+
+      // Create Vimeo review link
+      const reviewLink = await createVimeoReviewLink(latestVideo.videoId);
+
+      // Store review link in project
+      await storage.updateProject(projectId, {
+        vimeoReviewLink: reviewLink,
+        updatedAt: new Date(),
+      });
+
+      // Get user for email
+      const user = await storage.getUser(userId);
+      if (user && user.email) {
+        // Send revision instruction email
+        const emailTemplate = emailService.generateRevisionInstructionEmail(
+          user.email,
+          project.title,
+          reviewLink,
+          projectId
+        );
+
+        try {
+          await emailService.sendEmail(emailTemplate);
+          console.log(`Revision instruction email sent to ${user.email} for project ${projectId}`);
+        } catch (emailError) {
+          console.error("Failed to send revision instruction email:", emailError);
+        }
+      }
+
+      res.json({
+        success: true,
+        reviewLink,
+        videoName: latestVideo.name,
+        message: "Review link generated successfully",
+      });
+
+    } catch (error) {
+      console.error("Error generating review link:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to generate review link",
       });
     }
   });

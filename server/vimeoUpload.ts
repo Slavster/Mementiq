@@ -139,6 +139,90 @@ export const moveVideoToFolder = async (videoUri: string, folderId: string): Pro
 };
 
 /**
+ * Create a Vimeo review link for a video
+ */
+export const createVimeoReviewLink = async (projectFolderId: string): Promise<string | null> => {
+  return new Promise((resolve, reject) => {
+    // First, get the latest video from the project folder
+    getFolderVideos(projectFolderId)
+      .then((videos) => {
+        if (!videos || videos.length === 0) {
+          console.log(`No videos found in project folder ${projectFolderId}`);
+          resolve(null);
+          return;
+        }
+
+        // Get the most recent video
+        const latestVideo = videos.sort((a, b) => 
+          new Date(b.created_time || b.modified_time).getTime() - 
+          new Date(a.created_time || a.modified_time).getTime()
+        )[0];
+
+        const videoId = latestVideo.uri.split('/').pop();
+        console.log(`Creating review link for video ${videoId}`);
+
+        // Set video privacy to allow review link sharing
+        client.request({
+          method: 'PATCH',
+          path: `/videos/${videoId}`,
+          query: {
+            privacy: {
+              view: 'anybody', // Allow anyone with link to view
+              download: false, // Don't allow downloads
+              add: false,
+              comments: 'anybody', // Allow comments for feedback
+              embed: 'private'
+            }
+          }
+        }, (error: any, body: any) => {
+          if (error) {
+            console.error(`Error updating video privacy for ${videoId}:`, error);
+            reject(error);
+            return;
+          }
+
+          // Generate the review link - Vimeo automatically creates review links for videos
+          const reviewLink = `https://vimeo.com/${videoId}`;
+          console.log(`✅ Review link created: ${reviewLink}`);
+          resolve(reviewLink);
+        });
+      })
+      .catch((error) => {
+        console.error('Error getting folder videos for review link:', error);
+        reject(error);
+      });
+  });
+};
+
+/**
+ * Get the latest video from a project folder for review link generation
+ */
+export const getLatestVideoForReview = async (projectFolderId: string): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    getFolderVideos(projectFolderId)
+      .then((videos) => {
+        if (!videos || videos.length === 0) {
+          console.log(`No videos found in project folder ${projectFolderId}`);
+          resolve(null);
+          return;
+        }
+
+        // Get the most recent video
+        const latestVideo = videos.sort((a, b) => 
+          new Date(b.created_time || b.modified_time).getTime() - 
+          new Date(a.created_time || a.modified_time).getTime()
+        )[0];
+
+        resolve(latestVideo);
+      })
+      .catch((error) => {
+        console.error('Error getting latest video for review:', error);
+        reject(error);
+      });
+  });
+};
+
+/**
  * Get videos in a Vimeo folder/project
  */
 
@@ -635,6 +719,8 @@ export const configureDeliveredVideo = async (videoId: string): Promise<any> => 
   });
 };
 
+
+
 export const vimeoService = {
   createUploadSession,
   completeUpload,
@@ -644,5 +730,7 @@ export const vimeoService = {
   getFolderVideos,
   generateVideoDownloadLink,
   verifyVideoInProjectFolder,
-  configureDeliveredVideo
+  configureDeliveredVideo,
+  createVimeoReviewLink,
+  getLatestVideoForReview
 };
