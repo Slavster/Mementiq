@@ -1552,11 +1552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'payment',
         line_items: [
           {
-            price_data: {
-              currency: 'usd',
-              product: 'prod_Sofv7gScQiz672', // Revision product ID
-              unit_amount: 5000, // $50.00 in cents
-            },
+            price: 'price_1QZf96IhONyBUJsL6L8iKcfH', // Use the actual price ID from Stripe for the $5 revision
             quantity: 1,
           },
         ],
@@ -1573,7 +1569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createRevisionPayment(req.user!.id, {
         projectId: numericProjectId,
         stripeCheckoutSessionId: session.id,
-        paymentAmount: 5000,
+        paymentAmount: 500, // $5.00 in cents
         currency: 'usd',
       });
 
