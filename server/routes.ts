@@ -1507,19 +1507,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("ProjectId received:", projectId, "Type:", typeof projectId);
       console.log("User ID:", req.user!.id);
 
-      // Create a new price on-the-fly to ensure correct $5 amount
-      let revisionPrice;
+      // Verify the price from Stripe
+      let priceToUse = 'price_1Rt2ZhCp6pJe31oC6uMZuOev';
       try {
-        revisionPrice = await stripe.prices.create({
-          unit_amount: 500, // $5.00 in cents
-          currency: 'usd',
-          product: 'prod_Sofv7gScQiz672', // Your revision product
+        const priceInfo = await stripe.prices.retrieve(priceToUse);
+        console.log("Stripe price verification:", {
+          id: priceInfo.id,
+          unit_amount: priceInfo.unit_amount,
+          currency: priceInfo.currency,
+          product: priceInfo.product,
+          active: priceInfo.active
         });
-        console.log("Created new price:", revisionPrice.id, "Amount:", revisionPrice.unit_amount);
+        
+        // If this price is not $5, let's find the correct one
+        if (priceInfo.unit_amount !== 500) {
+          console.log("Price amount mismatch. Looking for correct $5 price...");
+          const prices = await stripe.prices.list({
+            product: 'prod_Sofv7gScQiz672',
+            active: true
+          });
+          console.log("All prices for product:", prices.data.map(p => ({
+            id: p.id,
+            unit_amount: p.unit_amount,
+            currency: p.currency
+          })));
+          
+          const correctPrice = prices.data.find(p => p.unit_amount === 500);
+          if (correctPrice) {
+            priceToUse = correctPrice.id;
+            console.log("Found correct $5 price:", correctPrice.id);
+          }
+        }
       } catch (error) {
-        console.error("Error creating new price:", error);
-        // Fallback to inline price_data
-        revisionPrice = null;
+        console.error("Error verifying price:", error);
       }
 
       // Convert to number if it's a string
@@ -1566,18 +1586,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payment_method_types: ['card'],
         mode: 'payment',
         line_items: [
-          revisionPrice ? {
-            price: revisionPrice.id,
-            quantity: 1,
-          } : {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: 'Video Revision Request',
-                description: 'One-time revision request for video editing project',
-              },
-              unit_amount: 500, // $5.00 in cents
-            },
+          {
+            price: priceToUse,
             quantity: 1,
           },
         ],
