@@ -11,6 +11,7 @@ import {
   insertProjectFileSchema,
   insertPhotoAlbumSchema,
   insertPhotoFileSchema,
+  insertRevisionPaymentSchema,
 } from "../shared/schema";
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
@@ -31,6 +32,8 @@ import { imagekitService } from "./imagekitService";
 import { emailService } from "./emailService";
 import "./types"; // Import session types
 import Stripe from "stripe";
+
+
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -299,7 +302,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const session = event.data.object as Stripe.Checkout.Session;
             console.log("Checkout completed:", session.id);
 
-            if (session.mode === "subscription" && session.subscription) {
+            // Handle revision payments
+            if (session.metadata?.type === 'revision_payment') {
+              try {
+                const projectId = parseInt(session.metadata.projectId);
+                
+                // Update revision payment status
+                await storage.updateRevisionPaymentStatus(
+                  session.id,
+                  'completed',
+                  session.payment_intent as string,
+                  new Date()
+                );
+
+                // Update project status to "awaiting revision instructions"
+                await storage.updateProject(projectId, {
+                  status: "awaiting revision instructions",
+                  updatedAt: new Date(),
+                });
+
+                console.log(`Revision payment completed for project ${projectId}`);
+
+              } catch (error) {
+                console.error("Error processing revision payment webhook:", error);
+              }
+            }
+            // Handle subscription payments
+            else if (session.mode === "subscription" && session.subscription) {
               const subscription = await stripe.subscriptions.retrieve(
                 session.subscription as string,
               );
@@ -1466,6 +1495,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to download video"
+      });
+    }
+  });
+
+  // Create revision payment session endpoint
+  app.post("/api/stripe/create-revision-session", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { projectId } = req.body;
+
+      if (!projectId || typeof projectId !== 'number') {
+        return res.status(400).json({
+          success: false,
+          message: "Valid project ID is required",
+        });
+      }
+
+      // Verify project exists and user has access
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== req.user!.id) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found or access denied",
+        });
+      }
+
+      // Check if project is in correct status for revision request
+      if (project.status !== "video is ready") {
+        return res.status(400).json({
+          success: false,
+          message: "Project must be in 'video is ready' status to request revisions",
+        });
+      }
+
+      // Create Stripe checkout session for revision payment
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        mode: 'payment',
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product: 'prod_Sofv7gScQiz672', // Revision product ID
+              unit_amount: 5000, // $50.00 in cents
+            },
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard?revision_payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard?revision_payment=cancelled`,
+        metadata: {
+          projectId: projectId.toString(),
+          userId: req.user!.id,
+          type: 'revision_payment',
+        },
+      });
+
+      // Store revision payment record
+      await storage.createRevisionPayment(req.user!.id, {
+        projectId,
+        stripeCheckoutSessionId: session.id,
+        paymentAmount: 5000,
+        currency: 'usd',
+      });
+
+      res.json({
+        success: true,
+        sessionUrl: session.url,
+        sessionId: session.id,
+      });
+
+    } catch (error) {
+      console.error("Error creating revision payment session:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create revision payment session",
       });
     }
   });
@@ -3062,3 +3166,5 @@ async function downloadAsset(
 
   return { content, contentType };
 }
+
+

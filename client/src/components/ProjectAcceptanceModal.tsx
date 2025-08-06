@@ -41,6 +41,25 @@ export function ProjectAcceptanceModal({
   const [vimeoVideoId, setVimeoVideoId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  // Revision payment mutation
+  const revisionPaymentMutation = useMutation({
+    mutationFn: async (projectId: number) => {
+      const response = await apiRequest("POST", "/api/stripe/create-revision-session", {
+        projectId,
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      if (data.success && data.sessionUrl) {
+        // Redirect to Stripe checkout
+        window.location.href = data.sessionUrl;
+      }
+    },
+    onError: (error) => {
+      console.error("Error creating revision payment session:", error);
+    },
+  });
+
   // Reset state when modal closes or project changes
   React.useEffect(() => {
     if (!open) {
@@ -367,7 +386,7 @@ export function ProjectAcceptanceModal({
                   Need changes? Request revisions with detailed feedback.
                 </p>
                 <div className="text-2xl font-bold text-orange-400 mb-1">
-                  $5
+                  $50
                 </div>
                 <p className="text-xs text-gray-400 mb-4">
                   per revision request
@@ -385,12 +404,14 @@ export function ProjectAcceptanceModal({
                 <div className="mt-auto">
                   <Button
                     className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3"
-                    onClick={() => {
-                      window.location.href = "/subscribe#revision-addon";
-                    }}
+                    onClick={() => revisionPaymentMutation.mutate(project.id)}
+                    disabled={revisionPaymentMutation.isPending}
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    Request Paid Revision
+                    {revisionPaymentMutation.isPending 
+                      ? "Processing..." 
+                      : "Request Paid Revision"
+                    }
                   </Button>
                 </div>
               </CardContent>

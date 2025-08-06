@@ -88,6 +88,8 @@ const getStatusColor = (status: string) => {
       return "bg-gray-600";
     case "awaiting instructions":
       return "bg-orange-600";
+    case "awaiting revision instructions":
+      return "bg-yellow-600";
     case "edit in progress":
       return "bg-primary";
     case "video is ready":
@@ -109,6 +111,8 @@ const getStatusIcon = (status: string) => {
       return <AlertCircle className="h-3 w-3" />;
     case "awaiting instructions":
       return <Upload className="h-3 w-3" />;
+    case "awaiting revision instructions":
+      return <CreditCard className="h-3 w-3" />;
     case "edit in progress":
       return <Video className="h-3 w-3" />;
     case "video is ready":
@@ -138,6 +142,31 @@ export default function DashboardPage() {
   const [acceptanceProject, setAcceptanceProject] = useState<Project | null>(null);
   const [downloadLink, setDownloadLink] = useState<string | undefined>();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+
+  // Handle revision payment success/failure from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const revisionPayment = urlParams.get('revision_payment');
+    
+    if (revisionPayment === 'success') {
+      toast({
+        title: "Revision Payment Successful",
+        description: "Your revision request has been submitted. We'll start working on it right away!",
+      });
+      // Clean up URL parameters
+      window.history.replaceState({}, '', '/dashboard');
+      // Refresh project data to show updated status
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    } else if (revisionPayment === 'cancelled') {
+      toast({
+        title: "Revision Payment Cancelled",
+        description: "Your revision payment was cancelled. You can try again anytime.",
+        variant: "destructive",
+      });
+      // Clean up URL parameters
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [toast, queryClient]);
 
   // Get user projects - always fetch fresh data to show latest updates
   const { data: projectsData, isLoading: projectsLoading } = useQuery({

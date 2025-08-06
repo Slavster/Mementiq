@@ -101,6 +101,19 @@ export const photoFiles = pgTable("photo_files", {
   uploadDate: timestamp("upload_date").defaultNow().notNull(),
 });
 
+export const revisionPayments = pgTable("revision_payments", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  userId: text("user_id").references(() => users.id).notNull(),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeCheckoutSessionId: text("stripe_checkout_session_id").notNull().unique(),
+  paymentStatus: text("payment_status").notNull().default("pending"), // pending, completed, failed, refunded
+  paymentAmount: integer("payment_amount").notNull(), // Amount in cents
+  currency: text("currency").notNull().default("usd"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  paidAt: timestamp("paid_at"),
+});
+
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -186,6 +199,14 @@ export const insertPhotoFileSchema = createInsertSchema(photoFiles).pick({
   uploadStatus: true,
 });
 
+// Revision payment schemas
+export const insertRevisionPaymentSchema = createInsertSchema(revisionPayments).pick({
+  projectId: true,
+  stripeCheckoutSessionId: true,
+  paymentAmount: true,
+  currency: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginUser = z.infer<typeof loginUserSchema>;
@@ -212,3 +233,6 @@ export type UpdatePhotoAlbum = z.infer<typeof updatePhotoAlbumSchema>;
 
 export type PhotoFile = typeof photoFiles.$inferSelect;
 export type InsertPhotoFile = z.infer<typeof insertPhotoFileSchema>;
+
+export type RevisionPayment = typeof revisionPayments.$inferSelect;
+export type InsertRevisionPayment = z.infer<typeof insertRevisionPaymentSchema>;
