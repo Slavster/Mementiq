@@ -1507,6 +1507,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("ProjectId received:", projectId, "Type:", typeof projectId);
       console.log("User ID:", req.user!.id);
 
+      // Debug: Check the price in Stripe
+      try {
+        const priceInfo = await stripe.prices.retrieve('price_1Rt2ZhCp6pJe31oC6uMZuOev');
+        console.log("Stripe price info:", {
+          id: priceInfo.id,
+          unit_amount: priceInfo.unit_amount,
+          currency: priceInfo.currency,
+          product: priceInfo.product
+        });
+      } catch (error) {
+        console.error("Error retrieving price from Stripe:", error);
+      }
+
       // Convert to number if it's a string
       const numericProjectId = typeof projectId === 'string' ? parseInt(projectId, 10) : projectId;
 
