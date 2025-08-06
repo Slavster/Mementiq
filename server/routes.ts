@@ -1552,14 +1552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'payment',
         line_items: [
           {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: 'Video Revision Request',
-                description: 'One-time revision request for video editing project',
-              },
-              unit_amount: 500, // $5.00 in cents
-            },
+            price: 'price_1Rt2ZhCp6pJe31oC6uMZuOev', // Your actual $5 revision price ID
             quantity: 1,
           },
         ],
