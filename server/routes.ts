@@ -1505,6 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { projectId } = req.body;
       console.log("Revision payment request body:", req.body);
       console.log("ProjectId received:", projectId, "Type:", typeof projectId);
+      console.log("User ID:", req.user!.id);
 
       // Convert to number if it's a string
       const numericProjectId = typeof projectId === 'string' ? parseInt(projectId, 10) : projectId;
@@ -1519,12 +1520,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify project exists and user has access
       const project = await storage.getProject(numericProjectId);
+      console.log("Project lookup result:", {
+        projectExists: !!project,
+        projectId: project?.id,
+        projectStatus: project?.status,
+        projectUserId: project?.userId,
+        requestUserId: req.user!.id
+      });
+      
       if (!project || project.userId !== req.user!.id) {
-        console.log("Project access check failed:", {
-          projectExists: !!project,
-          projectUserId: project?.userId,
-          requestUserId: req.user!.id
-        });
+        console.log("Project access check failed - no access");
         return res.status(404).json({
           success: false,
           message: "Project not found or access denied",
@@ -1532,10 +1537,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if project is in correct status for revision request
-      if (project.status !== "video is ready") {
+      const validRevisionStatuses = ["video is ready", "delivered", "complete"];
+      if (!validRevisionStatuses.includes(project.status.toLowerCase())) {
+        console.log("Invalid project status for revision:", project.status);
         return res.status(400).json({
           success: false,
-          message: "Project must be in 'video is ready' status to request revisions",
+          message: "Project must be delivered or completed to request revisions",
         });
       }
 
