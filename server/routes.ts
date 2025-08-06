@@ -1552,7 +1552,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'payment',
         line_items: [
           {
-            price: 'price_1QZf96IhONyBUJsL6L8iKcfH', // Use the actual price ID from Stripe for the $5 revision
+            price_data: {
+              currency: 'usd',
+              product: 'prod_Sofv7gScQiz672', // Revision product ID
+              unit_amount: 500, // $5.00 in cents (not $50)
+            },
             quantity: 1,
           },
         ],
