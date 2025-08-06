@@ -197,6 +197,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projects.id, projectId));
   }
 
+  async updateProjectVimeoReviewLink(projectId: number, vimeoReviewLink: string): Promise<Project | null> {
+    const [result] = await db
+      .update(projects)
+      .set({ 
+        vimeoReviewLink,
+        updatedAt: new Date()
+      })
+      .where(eq(projects.id, projectId))
+      .returning();
+    
+    return result || null;
+  }
+
   async updateProject(id: number, updates: UpdateProject): Promise<Project | undefined> {
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
     if (!project) return undefined;

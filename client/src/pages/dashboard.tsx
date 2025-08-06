@@ -45,6 +45,7 @@ import DirectVideoUpload from "@/components/DirectVideoUpload";
 import DirectPhotoUpload from "@/components/DirectPhotoUpload";
 import TallyFormStep from "@/components/TallyFormStep";
 import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
+import { RevisionModal } from "@/components/RevisionModal";
 
 interface User {
   id: number;
@@ -141,6 +142,9 @@ export default function DashboardPage() {
   const [acceptanceModalOpen, setAcceptanceModalOpen] = useState(false);
   const [acceptanceProject, setAcceptanceProject] = useState<Project | null>(null);
   const [downloadLink, setDownloadLink] = useState<string | undefined>();
+  const [revisionModalOpen, setRevisionModalOpen] = useState(false);
+  const [revisionProject, setRevisionProject] = useState<Project | null>(null);
+  const [revisionStep, setRevisionStep] = useState<"instructions" | "uploads" | "confirmation">("instructions");
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Handle revision payment success/failure from URL parameters
@@ -300,6 +304,12 @@ export default function DashboardPage() {
       console.error('Error fetching download link:', error);
       setDownloadLink(undefined);
     }
+  };
+
+  const handleRevisionModal = async (project: Project) => {
+    setRevisionProject(project);
+    setRevisionStep("instructions");
+    setRevisionModalOpen(true);
   };
 
   const handleLogout = async () => {
@@ -617,6 +627,18 @@ export default function DashboardPage() {
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Review Your Finished Video
+                        </Button>
+                      ) : project.status.toLowerCase() === "awaiting revision instructions" ? (
+                        <Button
+                          size="sm"
+                          className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRevisionModal(project);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Request Revisions
                         </Button>
                       ) : project.status.toLowerCase() === "complete" ? (
                         <div className="space-y-2">
@@ -950,6 +972,15 @@ export default function DashboardPage() {
         onOpenChange={setAcceptanceModalOpen}
         project={acceptanceProject || { id: 0, title: '', status: '' }}
         downloadLink={downloadLink}
+      />
+
+      {/* Revision Modal */}
+      <RevisionModal
+        open={revisionModalOpen && !!revisionProject}
+        onOpenChange={setRevisionModalOpen}
+        project={revisionProject}
+        step={revisionStep}
+        onStepChange={setRevisionStep}
       />
     </div>
   );
