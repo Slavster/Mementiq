@@ -1507,17 +1507,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("ProjectId received:", projectId, "Type:", typeof projectId);
       console.log("User ID:", req.user!.id);
 
-      // Debug: Check the price in Stripe
+      // Create a new price on-the-fly to ensure correct $5 amount
+      let revisionPrice;
       try {
-        const priceInfo = await stripe.prices.retrieve('price_1Rt2ZhCp6pJe31oC6uMZuOev');
-        console.log("Stripe price info:", {
-          id: priceInfo.id,
-          unit_amount: priceInfo.unit_amount,
-          currency: priceInfo.currency,
-          product: priceInfo.product
+        revisionPrice = await stripe.prices.create({
+          unit_amount: 500, // $5.00 in cents
+          currency: 'usd',
+          product: 'prod_Sofv7gScQiz672', // Your revision product
         });
+        console.log("Created new price:", revisionPrice.id, "Amount:", revisionPrice.unit_amount);
       } catch (error) {
-        console.error("Error retrieving price from Stripe:", error);
+        console.error("Error creating new price:", error);
+        // Fallback to inline price_data
+        revisionPrice = null;
       }
 
       // Convert to number if it's a string
@@ -1564,8 +1566,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payment_method_types: ['card'],
         mode: 'payment',
         line_items: [
-          {
-            price: 'price_1Rt2ZhCp6pJe31oC6uMZuOev', // Your actual $5 revision price ID
+          revisionPrice ? {
+            price: revisionPrice.id,
+            quantity: 1,
+          } : {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: 'Video Revision Request',
+                description: 'One-time revision request for video editing project',
+              },
+              unit_amount: 500, // $5.00 in cents
+            },
             quantity: 1,
           },
         ],
