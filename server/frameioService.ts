@@ -249,54 +249,54 @@ export class FrameioService {
     console.log('Using Frame.io OAuth App credentials for full API access');
 
     try {
-      // Try teams-based approach first (for team accounts)
-      const teams = await this.makeRequest('GET', '/teams');
-      console.log('Available teams:', teams.length);
+      // Use account-based approach for personal Frame.io accounts with OAuth
+      console.log('Using OAuth account-based approach with account ID:', this.teamId);
       
-      if (teams && teams.length > 0) {
-        const team = teams[0];
-        console.log('Using team:', team.name, '(ID:', team.id, ')');
-        
-        // List projects for this team
-        const projects = await this.makeRequest('GET', `/teams/${team.id}/projects`);
-        console.log('Team projects found:', projects.length);
+      try {
+        const projects = await this.makeRequest('GET', `/accounts/${this.teamId}/projects`);
+        console.log('Account projects found:', projects.length);
         
         const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
-
         if (rootProject) {
-          console.log('Found existing root project:', rootProject.id);
+          console.log('Found existing account root project:', rootProject.id);
           return rootProject;
         }
 
-        // Create root project using team endpoint
-        const newProject = await this.makeRequest('POST', `/teams/${team.id}/projects`, {
+        // Create using account endpoint with OAuth credentials
+        const newProject = await this.makeRequest('POST', `/accounts/${this.teamId}/projects`, {
           name: 'Mementiq_Users',
           description: 'Root project for organizing all Mementiq user content'
         });
 
-        console.log('Created Frame.io team project:', newProject.id);
+        console.log('Created Frame.io account project:', newProject.id);
         return newProject;
+      } catch (accountError) {
+        console.log('Account endpoint failed, trying direct projects endpoint...');
+        
+        // Fallback: try general projects endpoint (works for some OAuth configurations)
+        try {
+          const projects = await this.makeRequest('GET', '/projects');
+          console.log('General projects found:', projects.length);
+          
+          const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
+          if (rootProject) {
+            console.log('Found existing root project via general endpoint:', rootProject.id);
+            return rootProject;
+          }
+
+          // For personal accounts, create a simple project
+          const newProject = await this.makeRequest('POST', '/projects', {
+            name: 'Mementiq_Users',
+            description: 'Root project for organizing all Mementiq user content'
+          });
+
+          console.log('Created Frame.io project via general endpoint:', newProject.id);
+          return newProject;
+        } catch (generalError) {
+          console.error('All project creation approaches failed:', { accountError, generalError });
+          throw new Error(`Unable to create Frame.io project structure. Account error: ${accountError.message}, General error: ${generalError.message}`);
+        }
       }
-
-      // Use account-based approach for personal/Pro accounts with OAuth
-      console.log('Using OAuth account-based approach with account ID:', this.teamId);
-      const projects = await this.makeRequest('GET', `/accounts/${this.teamId}/projects`);
-      console.log('Account projects found:', projects.length);
-      
-      const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
-      if (rootProject) {
-        console.log('Found existing account root project:', rootProject.id);
-        return rootProject;
-      }
-
-      // Create using account endpoint with OAuth credentials
-      const newProject = await this.makeRequest('POST', `/accounts/${this.teamId}/projects`, {
-        name: 'Mementiq_Users',
-        description: 'Root project for organizing all Mementiq user content'
-      });
-
-      console.log('Created Frame.io account project:', newProject.id);
-      return newProject;
     } catch (error) {
       console.error('Frame.io OAuth project management failed:', error);
       throw new Error(`Unable to create Frame.io project structure with OAuth: ${error instanceof Error ? error.message : String(error)}`);
