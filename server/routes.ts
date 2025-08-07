@@ -819,7 +819,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate review link
+      console.log(`🎬 Generating review link for project ${projectId}, folder: ${projectFolderId}`);
       const reviewLink = await createVimeoReviewLink(projectFolderId);
+      console.log(`🔗 Review link result:`, reviewLink);
+      
       if (!reviewLink) {
         return res.status(400).json({ 
           success: false, 
