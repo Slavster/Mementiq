@@ -2314,6 +2314,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test comprehensive Frame.io OAuth functionality
+  app.post("/api/test-frameio-oauth", async (req, res) => {
+    try {
+      console.log("Testing comprehensive Frame.io OAuth integration...");
+      
+      if (!frameioService.isConfigured()) {
+        return res.status(500).json({
+          success: false,
+          message: "Frame.io service is not properly configured"
+        });
+      }
+
+      // Test OAuth authentication
+      const userInfo = await frameioService.initialize();
+      console.log('OAuth user authenticated:', userInfo.name, userInfo.email);
+
+      // Test project creation capabilities
+      const rootProject = await frameioService.getOrCreateRootProject();
+      console.log('Root project access confirmed:', rootProject.name);
+
+      // Test folder creation within project
+      const testFolderName = `OAuth_Test_${Date.now()}`;
+      const testFolder = await frameioService.makeRequest('POST', `/assets/${rootProject.root_asset_id}/children`, {
+        name: testFolderName,
+        type: 'folder'
+      });
+      console.log('Test folder created:', testFolder.id);
+
+      res.json({
+        success: true,
+        message: "Frame.io OAuth integration fully operational",
+        capabilities: {
+          authentication: "✅ OAuth token valid",
+          projectAccess: "✅ Account-level project access confirmed", 
+          folderCreation: "✅ Asset creation permissions verified"
+        },
+        testResults: {
+          user: userInfo.name,
+          email: userInfo.email,
+          accountId: userInfo.account_id,
+          rootProject: rootProject.name,
+          testFolder: testFolderName
+        }
+      });
+    } catch (error) {
+      console.error("Frame.io OAuth test error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Frame.io OAuth test failed",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Frame.io OAuth endpoints
   app.get('/api/frameio/oauth/url', (req, res) => {
     try {
