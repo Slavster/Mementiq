@@ -774,7 +774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Revision API Routes
 
-  // Generate Vimeo review link for revisions
+  // Generate media platform review link for revisions
   app.post('/api/projects/:id/generate-review-link', requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const projectId = parseInt(req.params.id);
@@ -882,7 +882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // TODO: Send notification to editors about revision request
       // This could be an email to the editing team with:
       // - Project details
-      // - Vimeo review link
+      // - Media platform review link
       // - User's written instructions
       // - Link to any new assets uploaded
 
@@ -1644,8 +1644,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.redirect(downloadLink);
         }
       } else {
-        // Redirect to Vimeo page for non-direct URLs
-        console.log('Redirecting to Vimeo page for download');
+        // Redirect to media platform page for non-direct URLs
+        console.log('Redirecting to media platform page for download');
         res.redirect(downloadLink);
       }
     } catch (error) {
@@ -1781,7 +1781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate Vimeo review link and start revision process
+  // Generate media platform review link and start revision process
   app.post("/api/projects/:id/generate-review-link", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const projectId = parseInt(req.params.id);
@@ -1825,12 +1825,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create Vimeo review link using project folder ID
+      // Create media platform review link using project folder ID
       const projectFolderId = project.mediaFolderId?.split('/').pop();
       if (!projectFolderId) {
         return res.status(400).json({
           success: false,
-          message: "No Vimeo folder found for this project",
+          message: "No media platform folder found for this project",
         });
       }
       
@@ -2480,14 +2480,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(410).json({
         success: false,
         message:
-          "Server uploads are no longer supported. Please use direct TUS upload to Vimeo.",
+          "Server uploads are no longer supported. Please use direct TUS upload to media platform.",
         migration:
           "Use /api/projects/:id/upload-session endpoint for direct uploads",
       });
     },
   );
 
-  // Create direct Vimeo upload session
+  // Create direct media platform upload session
   app.post(
     "/api/projects/:id/upload-session",
     requireAuth,
@@ -2565,7 +2565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Complete direct Vimeo upload (modernized for API 3.4+)
+  // Complete direct media platform upload
   app.post(
     "/api/projects/:id/complete-upload",
     requireAuth,
@@ -2663,7 +2663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Get project files with Vimeo data and storage usage
+  // Get project files with media platform data and storage usage
   app.get(
     "/api/projects/:id/files",
     requireAuth,
@@ -2739,7 +2739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 file_size: fileSize,
                 created_time: video.created_time,
                 uri: video.id,
-                vimeo_id: video.id,
+                media_id: video.id,
               };
             });
 
@@ -2748,7 +2748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               frameioVideos.map((v) => ({
                 name: v.name,
                 size: v.file_size,
-                id: v.vimeo_id,
+                id: v.media_id,
               })),
             );
           } catch (error) {
@@ -2775,7 +2775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } else {
           console.log(
-            "No Vimeo folder, using database files. Files found:",
+            "No media platform folder, using database files. Files found:",
             files.length,
           );
           // Use database files if no Frame.io folder

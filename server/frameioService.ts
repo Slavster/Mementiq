@@ -1,5 +1,5 @@
 /**
- * Frame.io Service - Replaces both Vimeo and ImageKit functionality
+ * Frame.io Service - Unified media platform functionality
  * Handles video uploads, photo uploads, folder management, and review links
  */
 
@@ -276,7 +276,7 @@ export class FrameioService {
       console.log('Created asset placeholder:', asset.id);
 
       // For Frame.io uploads, we'll use their upload URL approach
-      // This is similar to Vimeo's TUS protocol but Frame.io specific
+      // Frame.io specific upload protocol
       
       // Note: Frame.io uses chunked uploads for large files
       // For now, we'll implement basic upload and can extend for chunking later
@@ -373,7 +373,7 @@ export class FrameioService {
   }
 
   /**
-   * Create review link for an asset (replaces Vimeo review links)
+   * Create review link for an asset
    */
   async createReviewLink(assetId: string, options?: {
     allow_download?: boolean;
@@ -412,7 +412,7 @@ export class FrameioService {
   }
 
   /**
-   * Verify upload status (replaces Vimeo upload verification)
+   * Verify upload status
    */
   async verifyUploadStatus(assetId: string): Promise<{
     isUploaded: boolean;
