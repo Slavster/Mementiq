@@ -142,9 +142,13 @@ export class FrameioService {
       body: bodyParams.toString()
     });
 
+    console.log('Token exchange response status:', response.status);
+    
     if (!response.ok) {
       const error = await response.text();
       console.error('Token exchange failed response:', error);
+      console.error('Full response status:', response.status);
+      console.error('Full response headers:', Object.fromEntries(response.headers.entries()));
       throw new Error(`OAuth token exchange failed: ${response.status} - ${error}`);
     }
 
