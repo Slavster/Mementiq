@@ -346,14 +346,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       // Get user info to send email
                       const user = await storage.getUserById(project.userId);
                       if (user) {
-                        // Send email with review link and instructions
-                        await emailService.sendRevisionInstructionsEmail(
-                          user.email,
-                          user.firstName,
-                          project.title,
-                          reviewLink
-                        );
-                        console.log(`Review link automatically generated and email sent for project ${projectId}`);
+                        // Try to send email with review link and instructions
+                        try {
+                          await emailService.sendRevisionInstructionsEmail(
+                            user.email,
+                            user.firstName,
+                            project.title,
+                            reviewLink
+                          );
+                          console.log(`Review link automatically generated and email sent for project ${projectId}`);
+                        } catch (emailError) {
+                          console.error(`Email sending failed for project ${projectId}:`, emailError);
+                          console.log(`Review link automatically generated for project ${projectId} (email failed)`);
+                        }
                       }
                     }
                   }
@@ -828,19 +833,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedAt: new Date()
       });
 
-      // Send email with review link and instructions
-      await emailService.sendRevisionInstructionsEmail(
-        req.user!.email,
-        req.user!.firstName,
-        project.title,
-        reviewLink
-      );
-
-      res.json({ 
-        success: true, 
-        reviewLink,
-        message: 'Review link generated and email sent successfully' 
-      });
+      // Try to send email with review link and instructions
+      try {
+        await emailService.sendRevisionInstructionsEmail(
+          req.user!.email,
+          req.user!.firstName,
+          project.title,
+          reviewLink
+        );
+        
+        res.json({ 
+          success: true, 
+          reviewLink,
+          message: 'Review link generated and email sent successfully' 
+        });
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        // Still return success if review link was generated
+        res.json({ 
+          success: true, 
+          reviewLink,
+          message: 'Review link generated successfully (email delivery failed)' 
+        });
+      }
     } catch (error) {
       console.error('Error generating review link:', error);
       res.status(500).json({ 
