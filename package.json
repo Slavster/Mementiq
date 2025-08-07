@@ -186,7 +186,6 @@
     "http-proxy-agent": "^5.0.0",
     "https-proxy-agent": "^7.0.6",
     "iconv-lite": "^0.4.24",
-    "imagekit": "^6.0.0",
     "inherits": "^2.0.4",
     "input-otp": "^1.4.2",
     "internmap": "^2.0.3",
