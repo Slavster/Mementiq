@@ -2422,7 +2422,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/frameio/oauth/callback`;
+      // Use the same redirect URI that was used in the authorization request
+      const redirectUri = 'https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/frameio/oauth/callback';
       const tokenData = await frameioService.exchangeOAuthCode(code as string, redirectUri);
       
       // Display success page with token instructions
