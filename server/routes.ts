@@ -2413,9 +2413,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/frameio/oauth/callback', async (req, res) => {
     try {
+      console.log('OAuth callback received with query:', req.query);
       const { code, state } = req.query;
       
       if (!code) {
+        console.log('No authorization code provided');
         return res.status(400).json({
           success: false,
           error: 'Authorization code not provided'
@@ -2424,6 +2426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use the same redirect URI that was used in the authorization request
       const redirectUri = 'https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/frameio/oauth/callback';
+      console.log('About to call exchangeOAuthCode with redirect URI:', redirectUri);
       const tokenData = await frameioService.exchangeOAuthCode(code as string, redirectUri);
       
       // Display success page with token instructions
