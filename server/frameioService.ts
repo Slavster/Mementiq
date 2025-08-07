@@ -82,11 +82,18 @@ export class FrameioService {
     this.clientSecret = process.env.FRAMEIO_CLIENT_SECRET || '';
     
     if (!this.apiToken) {
-      throw new Error('FRAMEIO_API_TOKEN environment variable is required');
+      console.warn('FRAMEIO_API_TOKEN not found - Frame.io integration will be limited');
     }
     if (!this.clientId || !this.clientSecret) {
       console.warn('Frame.io OAuth credentials not found - using developer token with limited permissions');
     }
+  }
+
+  /**
+   * Check if Frame.io service is properly configured
+   */
+  isConfigured(): boolean {
+    return !!(this.clientId && this.clientSecret);
   }
 
   /**
@@ -139,6 +146,11 @@ export class FrameioService {
   async initialize(): Promise<void> {
     if (this.teamId) return;
 
+    if (!this.apiToken) {
+      console.warn('Skipping Frame.io initialization - API token not configured');
+      return;
+    }
+
     try {
       console.log('Initializing Frame.io service...');
       const response = await this.makeRequest('GET', '/me');
@@ -163,6 +175,10 @@ export class FrameioService {
    * Make authenticated request to Frame.io API
    */
   private async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
+    if (!this.apiToken) {
+      throw new Error('Frame.io API token is not configured. Please provide FRAMEIO_API_TOKEN environment variable.');
+    }
+    
     const url = `${FRAMEIO_API_BASE}${endpoint}`;
     
     const options: RequestInit = {
@@ -606,7 +622,7 @@ export class FrameioService {
       const mimeType = this.getMimeTypeFromFilename(filename);
       
       // Upload to Frame.io using existing uploadFile method
-      const asset = await this.uploadFile(Uint8Array.from(buffer), filename, buffer.length, mimeType, parentFolderId);
+      const asset = await this.uploadFile(new Uint8Array(buffer), filename, buffer.length, mimeType, parentFolderId);
       
       // Generate thumbnail URL
       const thumbnailUrl = this.generateThumbnailUrl(asset.id);
