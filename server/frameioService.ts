@@ -119,21 +119,32 @@ export class FrameioService {
     const tokenUrl = 'https://applications.frame.io/oauth2/token';
     const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
     
+    console.log('Token exchange debug:');
+    console.log('- Code:', code?.substring(0, 20) + '...');
+    console.log('- Redirect URI:', redirectUri);
+    console.log('- Client ID:', this.clientId);
+    console.log('- Has Client Secret:', !!this.clientSecret);
+    
+    const bodyParams = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: redirectUri
+    });
+    
+    console.log('Request body:', bodyParams.toString());
+    
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: redirectUri
-      }).toString()
+      body: bodyParams.toString()
     });
 
     if (!response.ok) {
       const error = await response.text();
+      console.error('Token exchange failed response:', error);
       throw new Error(`OAuth token exchange failed: ${response.status} - ${error}`);
     }
 
