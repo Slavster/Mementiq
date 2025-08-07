@@ -1839,8 +1839,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create Vimeo review link
-      const reviewLink = await createVimeoReviewLink(latestVideo.videoId);
+      // Create Vimeo review link using project folder ID
+      const projectFolderId = project.vimeoFolderId?.split('/').pop();
+      if (!projectFolderId) {
+        return res.status(400).json({
+          success: false,
+          message: "No Vimeo folder found for this project",
+        });
+      }
+      
+      const reviewLink = await createVimeoReviewLink(projectFolderId);
 
       // Store review link in project
       await storage.updateProject(projectId, {
@@ -2150,7 +2158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 videoId: videoIdWithHash, // Include hash for proper embedding
                 filename: latestVimeoVideo.name,
                 uploadDate: latestVimeoVideo.created_time,
-                directLink: latestVimeoVideo.link || `https://vimeo.com/${videoId}`
+                directLink: latestVimeoVideo.link
               });
             } else {
               res.json({
