@@ -186,7 +186,7 @@ export class EmailService {
             <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #fd7e14; margin: 20px 0;">
               <h3 style="margin-top: 0; color: #fd7e14;">How to Provide Revision Instructions</h3>
               <ol style="margin: 0; padding-left: 20px;">
-                <li><strong>Review your video</strong> using the Vimeo link below</li>
+                <li><strong>Review your video</strong> using the media platform link below</li>
                 <li><strong>Leave specific comments</strong> on any object in any frame by clicking on them </li>
                 <li><strong>Be as detailed as possible</strong> - the more specific your feedback, the better the result</li>
                 <li><strong>Upload additional video clips or photos via your dashboard</strong> if needed (optional)</li>
@@ -197,7 +197,7 @@ export class EmailService {
             <div style="text-align: center; margin: 30px 0;">
               <a href="${reviewLink}" 
                  style="background: #fd7e14; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
-                🎬 Review Video on Vimeo
+                🎬 Review Video
               </a>
               
               <a href="${process.env.VITE_APP_URL || "https://mementiq.com"}/dashboard" 
@@ -208,7 +208,7 @@ export class EmailService {
             
             <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p style="margin: 0; color: #0c5460;">
-                <strong>💡 Pro Tip:</strong> Click anywhere on the Vimeo video timeline to leave timestamp-specific comments. This helps our editors understand exactly what needs to be changed!
+                <strong>💡 Pro Tip:</strong> Click anywhere on the video timeline to leave timestamp-specific comments. This helps our editors understand exactly what needs to be changed!
               </p>
             </div>
             
@@ -227,12 +227,12 @@ export class EmailService {
     userEmail: string,
     userName: string,
     projectTitle: string,
-    frameioReviewLink: string,
+    mediaReviewLink: string,
   ) {
     const emailData = this.generateRevisionInstructionEmail(
       userEmail,
       projectTitle,
-      frameioReviewLink,
+      mediaReviewLink,
       0,
     );
     return await this.sendEmail(emailData);

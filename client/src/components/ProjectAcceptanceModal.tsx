@@ -26,7 +26,7 @@ interface ProjectAcceptanceModalProps {
     id: number;
     title: string;
     status: string;
-    frameioFolderId?: string;
+    mediaFolderId?: string;
   };
   downloadLink?: string;
 }
@@ -38,7 +38,7 @@ export function ProjectAcceptanceModal({
   downloadLink,
 }: ProjectAcceptanceModalProps) {
   const [showThankYou, setShowThankYou] = useState(false);
-  const [frameioVideoId, setFrameioVideoId] = useState<string | null>(null);
+  const [mediaAssetId, setMediaAssetId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Revision payment mutation
@@ -71,7 +71,7 @@ export function ProjectAcceptanceModal({
   React.useEffect(() => {
     if (!open) {
       setShowThankYou(false);
-      setFrameioVideoId(null);
+      setMediaAssetId(null);
     }
   }, [open, project.id]);
 
@@ -87,27 +87,27 @@ export function ProjectAcceptanceModal({
       const data = await apiRequest(`/api/projects/${project.id}/latest-video`);
       if (data?.success && data?.videoId) {
         console.log("Using actual project video:", data.videoId);
-        setFrameioVideoId(data.videoId);
+        setMediaAssetId(data.videoId);
       } else {
         console.log("No video found via API, using fallback logic");
-        fetchLatestVideoFromFrameio();
+        fetchLatestVideoFromMediaPlatform();
       }
     } catch (error) {
       console.error("Error fetching latest video:", error);
-      fetchLatestVideoFromFrameio();
+      fetchLatestVideoFromMediaPlatform();
     }
   };
 
-  const fetchLatestVideoFromFrameio = () => {
+  const fetchLatestVideoFromMediaPlatform = () => {
     if (project.id === 5) {
       // Now that we have the correct video info, try embedding with the hash
       console.log(
         "Test 2 - attempting to embed video with correct URL including hash",
       );
-      setFrameioVideoId("1107336225?h=46fe797c9e"); // Use video ID with hash from API
+      setMediaAssetId("1107336225?h=46fe797c9e"); // Use video ID with hash from API
     } else {
       console.log("No video found for project", project.id);
-      setFrameioVideoId(null);
+      setMediaAssetId(null);
     }
   };
 
@@ -188,7 +188,7 @@ export function ProjectAcceptanceModal({
           }
         }
 
-        // Fallback: open Vimeo page
+        // Fallback: open media platform page
         window.open(downloadLink, "_blank");
         console.log("Opened Frame.io download page");
       } else {
@@ -291,11 +291,11 @@ export function ProjectAcceptanceModal({
           </div>
 
           {/* Single Video Section - Show embedded player with download option below */}
-          {frameioVideoId ? (
+          {mediaAssetId ? (
             <div className="space-y-4">
               <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
                 <iframe
-                  src={`https://app.frame.io/presentations/${frameioVideoId.includes("?") ? frameioVideoId + "&" : frameioVideoId + "?"}badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
+                  src={`https://app.frame.io/presentations/${mediaAssetId.includes("?") ? mediaAssetId + "&" : mediaAssetId + "?"}badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
                   className="absolute inset-0 w-full h-full"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"

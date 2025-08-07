@@ -7,7 +7,7 @@ Mementiq is a professional video editing services website designed as a modern f
 - **Complete Migration to Frame.io**: Replaced Vimeo API with Frame.io API for all video operations including uploads, review links, folder management, and asset downloads. This migration removes the Pro/Business account restrictions that limited Vimeo review functionality.
 - **Unified Media Management**: Frame.io now handles both video and photo management, providing a single API for all media operations.
 - **Enhanced Webhook System**: Updated webhook handling from Vimeo events to Frame.io asset completion events for real-time project status updates.
-- **Generic Database Schema**: Migrated all platform-specific field names (vimeoFolderId, vimeoVideoId, etc.) to generic equivalents (mediaFolderId, mediaAssetId, etc.) for easier future migrations between media platforms.
+- **Generic Database Schema Migration (August 2025)**: Successfully completed migration from platform-specific field names (vimeoFolderId, vimeoVideoId, etc.) to generic equivalents (mediaFolderId, mediaAssetId, etc.) across entire codebase. This enables seamless future migrations between media platforms without code changes. Updated all database tables, API endpoints, service methods, client components, and documentation to use generic terminology.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
