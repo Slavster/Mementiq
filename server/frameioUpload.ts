@@ -1,5 +1,5 @@
 /**
- * Frame.io Upload Service - Replaces vimeoUpload.ts
+ * Frame.io Upload Service - Media platform upload functionality
  * Handles video upload sessions, TUS-like upload protocol, and upload completion
  */
 
@@ -32,7 +32,7 @@ export interface FrameioUploadResponse {
 }
 
 /**
- * Create upload session for Frame.io (replaces Vimeo TUS session creation)
+ * Create upload session for Frame.io (TUS-like session creation)
  */
 export async function createFrameioUploadSession(
   fileName: string,
@@ -47,7 +47,7 @@ export async function createFrameioUploadSession(
     const asset = await frameioService.uploadFile('', fileName, fileSize, mimeType, parentFolderId);
 
     // Generate upload URL for the asset
-    // Note: Frame.io uses a different upload mechanism than Vimeo TUS
+    // Note: Frame.io uses its own upload mechanism
     // We'll create a session structure compatible with our existing frontend
     const uploadSession: FrameioUploadSession = {
       uploadUrl: `https://api.frame.io/v2/assets/${asset.id}/upload`,
@@ -73,7 +73,7 @@ export async function createFrameioUploadSession(
 }
 
 /**
- * Complete Frame.io upload (replaces Vimeo upload completion)
+ * Complete Frame.io upload
  */
 export async function completeFrameioUpload(
   assetId: string,
@@ -120,7 +120,7 @@ export async function completeFrameioUpload(
 }
 
 /**
- * Get folder videos (replaces Vimeo getFolderVideos)
+ * Get folder videos
  */
 export async function getFolderVideos(folderId: string): Promise<FrameioUploadResponse[]> {
   try {
@@ -156,7 +156,7 @@ export async function getFolderVideos(folderId: string): Promise<FrameioUploadRe
 }
 
 /**
- * Create Frame.io review link (replaces Vimeo review link creation)
+ * Create Frame.io review link
  */
 export async function createFrameioReviewLink(projectFolderId: string): Promise<string | null> {
   try {
@@ -202,7 +202,7 @@ export async function createFrameioReviewLink(projectFolderId: string): Promise<
 }
 
 /**
- * Verify Frame.io video upload status (replaces Vimeo verification)
+ * Verify Frame.io video upload status
  */
 export async function verifyFrameioUpload(assetId: string): Promise<{
   isUploaded: boolean;
@@ -246,7 +246,7 @@ export async function deleteFrameioAsset(assetId: string): Promise<boolean> {
   }
 }
 
-// Legacy exports for compatibility with existing code
+// Legacy compatibility exports (deprecated)
 export const uploadToVimeo = createFrameioUploadSession;
 export const createVimeoReviewLink = createFrameioReviewLink;
 export const verifyVimeoUpload = verifyFrameioUpload;
