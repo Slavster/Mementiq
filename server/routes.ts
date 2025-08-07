@@ -2404,6 +2404,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test specific Frame.io endpoints
+  app.get("/api/frameio/teams", async (req, res) => {
+    try {
+      await frameioService.initialize();
+      const teams = await frameioService.makeRequest('GET', '/teams');
+      res.json(teams);
+    } catch (error) {
+      console.error("Frame.io /teams endpoint error:", error);
+      res.status(error.message.includes('401') ? 401 : 500).json({
+        success: false,
+        message: error.message || "Failed to get teams",
+        endpoint: "GET /teams"
+      });
+    }
+  });
+
+  app.get("/api/frameio/workspaces/:accountId", async (req, res) => {
+    try {
+      await frameioService.initialize();
+      const { accountId } = req.params;
+      const workspaces = await frameioService.makeRequest('GET', `/accounts/${accountId}/workspaces`);
+      res.json(workspaces);
+    } catch (error) {
+      console.error(`Frame.io /accounts/${req.params.accountId}/workspaces endpoint error:`, error);
+      res.status(error.message.includes('401') ? 401 : error.message.includes('404') ? 404 : 500).json({
+        success: false,
+        message: error.message || "Failed to get workspaces",
+        endpoint: `GET /accounts/${req.params.accountId}/workspaces`
+      });
+    }
+  });
+
   // List accessible Frame.io projects
   app.get("/api/frameio/projects", async (req, res) => {
     try {
