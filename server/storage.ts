@@ -47,7 +47,7 @@ export interface IStorage {
   getProjectsByStatus(statuses: string[]): Promise<Project[]>;
   createProject(userId: string, project: InsertProject): Promise<Project>;
   updateProject(id: number, updates: UpdateProject): Promise<Project | undefined>;
-  updateProjectVimeoInfo(id: number, vimeoFolderId: string, userFolderUri?: string): Promise<void>;
+  updateProjectVimeoInfo(id: number, frameioFolderId: string, userFolderUri?: string): Promise<void>;
   deleteProject(id: number): Promise<void>;
   
   // Project file methods
@@ -185,10 +185,10 @@ export class DatabaseStorage implements IStorage {
     return newProject;
   }
 
-  async updateProjectVimeoInfo(projectId: number, vimeoFolderId: string, vimeoUserFolderId?: string): Promise<void> {
-    const updateData: any = { vimeoFolderId };
-    if (vimeoUserFolderId) {
-      updateData.vimeoUserFolderId = vimeoUserFolderId;
+  async updateProjectVimeoInfo(projectId: number, frameioFolderId: string, frameioUserFolderId?: string): Promise<void> {
+    const updateData: any = { vimeoFolderId: frameioFolderId };
+    if (frameioUserFolderId) {
+      updateData.vimeoUserFolderId = frameioUserFolderId;
     }
 
     await db
@@ -197,11 +197,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projects.id, projectId));
   }
 
-  async updateProjectVimeoReviewLink(projectId: number, vimeoReviewLink: string): Promise<Project | null> {
+  async updateProjectVimeoReviewLink(projectId: number, frameioReviewLink: string): Promise<Project | null> {
     const [result] = await db
       .update(projects)
       .set({ 
-        vimeoReviewLink,
+        vimeoReviewLink: frameioReviewLink,
         updatedAt: new Date()
       })
       .where(eq(projects.id, projectId))

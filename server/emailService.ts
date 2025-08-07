@@ -227,12 +227,12 @@ export class EmailService {
     userEmail: string,
     userName: string,
     projectTitle: string,
-    vimeoReviewLink: string,
+    frameioReviewLink: string,
   ) {
     const emailData = this.generateRevisionInstructionEmail(
       userEmail,
       projectTitle,
-      vimeoReviewLink,
+      frameioReviewLink,
       0,
     );
     return await this.sendEmail(emailData);
