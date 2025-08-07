@@ -33,7 +33,7 @@ interface UploadPhoto {
   status: "pending" | "uploading" | "completed" | "failed";
   progress: number;
   error?: string;
-  imagekitUrl?: string;
+  mediaUrl?: string;
   imagekitThumbnailUrl?: string;
 }
 
@@ -423,9 +423,9 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                     <p className="text-xs text-red-400 mt-1">{photo.error}</p>
                   )}
 
-                  {photo.status === "completed" && photo.imagekitUrl && (
+                  {photo.status === "completed" && photo.mediaUrl && (
                     <a
-                      href={photo.imagekitUrl}
+                      href={photo.mediaUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-blue-400 hover:text-blue-300 mt-1 block"
@@ -484,7 +484,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                     </td>
                     <td className="py-2 px-3">
                       <a
-                        href={photo.imagekitUrl}
+                        href={photo.mediaUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs"

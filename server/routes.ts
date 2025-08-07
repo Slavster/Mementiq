@@ -326,14 +326,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Automatically generate review link after successful payment
                 try {
                   const project = await storage.getProject(projectId);
-                  const projectFolderId = project?.vimeoFolderId?.split('/').pop();
+                  const projectFolderId = project?.mediaFolderId?.split('/').pop();
                   
                   if (projectFolderId) {
                     const reviewLink = await createFrameioReviewLink(projectFolderId);
                     if (reviewLink) {
                       // Save review link to database
                       await storage.updateProject(projectId, {
-                        vimeoReviewLink: reviewLink,
+                        mediaReviewLink: reviewLink,
                         updatedAt: new Date()
                       });
 
@@ -564,12 +564,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Found ${projectsInProgress.length} projects in progress to check`);
         
         for (const project of projectsInProgress) {
-          console.log(`Checking project ${project.id} (${project.title}) with folder: ${project.vimeoFolderId}`);
+          console.log(`Checking project ${project.id} (${project.title}) with folder: ${project.mediaFolderId}`);
           
-          if (project.vimeoFolderId) {
+          if (project.mediaFolderId) {
             try {
               // Check if asset belongs to this project's folder
-              const belongsToProject = await frameioService.verifyAssetInProjectFolder(assetId, project.vimeoFolderId);
+              const belongsToProject = await frameioService.verifyAssetInProjectFolder(assetId, project.mediaFolderId);
               console.log(`Does asset ${assetId} belong to project ${project.id}? ${belongsToProject}`);
               
               if (belongsToProject) {
@@ -604,8 +604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Store the download link in project files
                   await storage.createProjectFile({
                     projectId: project.id,
-                    vimeoVideoId: assetId,
-                    vimeoVideoUrl: downloadLink,
+                    mediaAssetId: assetId,
+                    mediaAssetUrl: downloadLink,
                     filename: assetName,
                     originalFilename: assetName,
                     fileType: data.type || 'video/mp4',
@@ -795,7 +795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Extract project folder ID 
-      const projectFolderId = project.vimeoFolderId;
+      const projectFolderId = project.mediaFolderId;
       if (!projectFolderId) {
         return res.status(400).json({ 
           success: false, 
@@ -817,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save review link to database
       await storage.updateProject(projectId, {
-        vimeoReviewLink: reviewLink,
+        mediaReviewLink: reviewLink,
         updatedAt: new Date()
       });
 
@@ -1181,12 +1181,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               // Check latest video upload via Frame.io API
-              if (project.vimeoFolderId) {
+              if (project.mediaFolderId) {
                 try {
-                  // Use the project's vimeoFolderId which already contains the full path
-                  console.log(`Checking videos for project ${project.id} in folder: ${project.vimeoFolderId}`);
+                  // Use the project's mediaFolderId which already contains the full path
+                  console.log(`Checking videos for project ${project.id} in folder: ${project.mediaFolderId}`);
                   
-                  const frameioVideos = await frameioService.getFolderAssets(project.vimeoFolderId);
+                  const frameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
                   if (frameioVideos.length > 0) {
                     const videoDates = frameioVideos
                       .map((v: any) => v.created_time ? new Date(v.created_time) : null)
@@ -1331,7 +1331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
 
           // Step 3: Update project with Frame.io folder information
-          await storage.updateProjectVimeoInfo(
+          await storage.updateProjectMediaInfo(
             project.id,
             projectFolderId,
             userFolderId,
@@ -1417,14 +1417,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get the download link from project files
       const projectFiles = await storage.getProjectFiles(projectId);
-      const deliveredVideo = projectFiles.find(file => file.vimeoVideoUrl);
+      const deliveredVideo = projectFiles.find(file => file.mediaAssetUrl);
       
-      if (user && deliveredVideo?.vimeoVideoUrl) {
+      if (user && deliveredVideo?.mediaAssetUrl) {
         // Send completion confirmation email
         const emailTemplate = emailService.generateProjectCompletionEmail(
           user.email,
           project.title,
-          deliveredVideo.vimeoVideoUrl
+          deliveredVideo.mediaAssetUrl
         );
         
         await emailService.sendEmail(emailTemplate);
@@ -1471,20 +1471,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try to get download link from project files first
       const projectFiles = await storage.getProjectFiles(projectId);
-      const deliveredVideo = projectFiles.find(file => file.vimeoVideoUrl);
+      const deliveredVideo = projectFiles.find(file => file.mediaAssetUrl);
       
-      if (deliveredVideo?.vimeoVideoUrl) {
+      if (deliveredVideo?.mediaAssetUrl) {
         return res.json({ 
           success: true, 
-          downloadLink: deliveredVideo.vimeoVideoUrl,
+          downloadLink: deliveredVideo.mediaAssetUrl,
           filename: deliveredVideo.filename
         });
       }
       
       // If no stored download link, try to generate one from Frame.io videos
-      if (project.vimeoFolderId) {
+      if (project.mediaFolderId) {
         try {
-          const frameioVideos = await frameioService.getFolderAssets(project.vimeoFolderId);
+          const frameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
           if (frameioVideos && frameioVideos.length > 0) {
             const latestVideo = frameioVideos[0];
             const videoId = latestVideo.id || latestVideo.uri?.split('/').pop();
@@ -1544,14 +1544,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get the latest video from the Frame.io folder
-      if (!project.vimeoFolderId) {
+      if (!project.mediaFolderId) {
         return res.status(404).json({
           success: false,
           message: "No Frame.io folder configured for this project"
         });
       }
       
-      const frameioVideos = await frameioService.getFolderAssets(project.vimeoFolderId);
+      const frameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
       if (!frameioVideos || frameioVideos.length === 0) {
         return res.status(404).json({
           success: false,
@@ -1816,7 +1816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get the latest video for review
       // Get videos from the folder and find latest
-      const folderVideos = await frameioService.getFolderAssets(project.vimeoFolderId!);
+      const folderVideos = await frameioService.getFolderAssets(project.mediaFolderId!);
       const latestVideo = folderVideos.find(asset => asset.type === 'video');
       if (!latestVideo) {
         return res.status(404).json({
@@ -1826,7 +1826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create Vimeo review link using project folder ID
-      const projectFolderId = project.vimeoFolderId?.split('/').pop();
+      const projectFolderId = project.mediaFolderId?.split('/').pop();
       if (!projectFolderId) {
         return res.status(400).json({
           success: false,
@@ -1838,7 +1838,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Store review link in project
       await storage.updateProject(projectId, {
-        vimeoReviewLink: reviewLink,
+        mediaReviewLink: reviewLink,
         updatedAt: new Date(),
       });
 
@@ -2107,14 +2107,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the latest video from project files in database
       const projectFiles = await storage.getProjectFiles(projectId);
       const latestVideo = projectFiles
-        .filter(file => file.vimeoVideoId)
+        .filter(file => file.mediaAssetId)
         .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())[0];
 
-      if (latestVideo?.vimeoVideoId) {
-        console.log(`Found video in DB for project ${projectId}:`, latestVideo.vimeoVideoId);
+      if (latestVideo?.mediaAssetId) {
+        console.log(`Found video in DB for project ${projectId}:`, latestVideo.mediaAssetId);
         res.json({
           success: true,
-          videoId: latestVideo.vimeoVideoId,
+          videoId: latestVideo.mediaAssetId,
           filename: latestVideo.filename,
           uploadDate: latestVideo.uploadDate
         });
@@ -2122,8 +2122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If no video in DB, try to get from Frame.io folder directly
         console.log(`No video in DB for project ${projectId}, checking Frame.io folder`);
         try {
-          if (project.vimeoFolderId) {
-            const frameioAssets = await frameioService.getFolderAssets(project.vimeoFolderId);
+          if (project.mediaFolderId) {
+            const frameioAssets = await frameioService.getFolderAssets(project.mediaFolderId);
             if (frameioAssets && frameioAssets.length > 0) {
               // Get the most recent asset
               const latestAsset = frameioAssets[0]; // Already sorted by date
@@ -2536,7 +2536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileName,
           fileSize,
           'video/mp4', // Default MIME type, should be passed from frontend
-          project.vimeoFolderId || '', // Frame.io folder ID
+          project.mediaFolderId || '', // Frame.io folder ID
         );
 
         console.log("Raw Frame.io uploadSession object:", uploadSession);
@@ -2633,7 +2633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Save file record
         const fileRecord = await storage.createProjectFile(projectId, {
-          vimeoVideoId: videoUri.replace("/videos/", ""),
+          mediaAssetId: videoUri.replace("/videos/", ""),
           filename: fileName,
           originalFilename: fileName,
           fileType: "video",
@@ -2691,9 +2691,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Get Frame.io folder videos if folder exists
         let frameioVideos: any[] = [];
-        if (project.vimeoFolderId) {
+        if (project.mediaFolderId) {
           try {
-            const rawFrameioVideos = await frameioService.getFolderAssets(project.vimeoFolderId);
+            const rawFrameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
             console.log(
               "Frame.io videos fetched:",
               rawFrameioVideos.length,
@@ -2710,7 +2710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Fallback to database file size
                 const videoId = video.id;
                 const dbFile = files.find(
-                  (f) => f.vimeoVideoId && f.vimeoVideoId.includes(videoId),
+                  (f) => f.mediaAssetId && f.mediaAssetId.includes(videoId),
                 );
                 if (dbFile) {
                   fileSize = dbFile.fileSize || 0;
@@ -2727,7 +2727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Find matching database file for better name
                 const videoId = video.id;
                 const dbFile = files.find(
-                  (f) => f.vimeoVideoId && f.vimeoVideoId.includes(videoId),
+                  (f) => f.mediaAssetId && f.mediaAssetId.includes(videoId),
                 );
                 if (dbFile) {
                   videoName = dbFile.filename;
@@ -2769,7 +2769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 name: file.filename,
                 file_size: file.fileSize || 0,
                 created_time: file.uploadDate,
-                uri: file.vimeoVideoId,
+                uri: file.mediaAssetId,
               };
             });
           }
@@ -2790,7 +2790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: file.filename,
               file_size: file.fileSize || 0,
               created_time: file.uploadDate,
-              uri: file.vimeoVideoId,
+              uri: file.mediaAssetId,
             };
           });
         }
@@ -3058,7 +3058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ success: false, message: "Access denied" });
         }
 
-        if (!project.vimeoFolderId) {
+        if (!project.mediaFolderId) {
           return res.json({
             success: true,
             hasVideos: false,
@@ -3068,7 +3068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Check folder contents using Frame.io API
-        const folderVideos = await frameioService.getFolderAssets(project.vimeoFolderId);
+        const folderVideos = await frameioService.getFolderAssets(project.mediaFolderId);
 
         res.json({
           success: true,
@@ -3162,10 +3162,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const photoFile = await storage.createPhotoFile(req.user!.id, {
           albumId: album.id,
           projectId,
-          imagekitFileId: uploadResult.fileId,
-          imagekitUrl: uploadResult.url,
-          imagekitThumbnailUrl: uploadResult.thumbnailUrl,
-          imagekitFolderPath: folderPath,
+          mediaFileId: uploadResult.fileId,
+          mediaUrl: uploadResult.url,
+          mediaThumbnailUrl: uploadResult.thumbnailUrl,
+          mediaFolderPath: folderPath,
           filename: filename,
           originalFilename: filename,
           fileSize,
@@ -3230,9 +3230,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           const project = await storage.getProject(projectId);
-          if (project?.vimeoFolderId) {
-            console.log(`Fetching photos from Frame.io folder: ${project.vimeoFolderId}`);
-            const frameioAssets = await frameioService.getFolderAssets(project.vimeoFolderId);
+          if (project?.mediaFolderId) {
+            console.log(`Fetching photos from Frame.io folder: ${project.mediaFolderId}`);
+            const frameioAssets = await frameioService.getFolderAssets(project.mediaFolderId);
             const frameioPhotos = frameioAssets.filter(asset => 
               asset.type === 'file' && 
               asset.filetype && 
@@ -3253,17 +3253,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               // Convert Frame.io assets to photo objects and sync to database
               for (const frameioAsset of frameioPhotos) {
-                let existingPhoto = await storage.getPhotoFileByImageKitId(frameioAsset.id);
+                let existingPhoto = await storage.getPhotoFileByMediaId(frameioAsset.id);
                 
                 if (!existingPhoto) {
                   // Create database record for photos that exist in Frame.io but not in DB
                   existingPhoto = await storage.createPhotoFile(req.user!.id, {
                     albumId: album.id,
                     projectId,
-                    imagekitFileId: frameioAsset.id,
-                    imagekitUrl: frameioAsset.download_url || '',
-                    imagekitThumbnailUrl: frameioAsset.thumb_url || frameioAsset.download_url || '',
-                    imagekitFolderPath: project.vimeoFolderId,
+                    mediaFileId: frameioAsset.id,
+                    mediaUrl: frameioAsset.download_url || '',
+                    mediaThumbnailUrl: frameioAsset.thumb_url || frameioAsset.download_url || '',
+                    mediaFolderPath: project.mediaFolderId,
                     filename: frameioAsset.name,
                     originalFilename: frameioAsset.name,
                     fileSize: frameioAsset.filesize || 0,

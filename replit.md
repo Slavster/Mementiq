@@ -7,6 +7,7 @@ Mementiq is a professional video editing services website designed as a modern f
 - **Complete Migration to Frame.io**: Replaced Vimeo API with Frame.io API for all video operations including uploads, review links, folder management, and asset downloads. This migration removes the Pro/Business account restrictions that limited Vimeo review functionality.
 - **Unified Media Management**: Frame.io now handles both video and photo management, providing a single API for all media operations.
 - **Enhanced Webhook System**: Updated webhook handling from Vimeo events to Frame.io asset completion events for real-time project status updates.
+- **Generic Database Schema**: Migrated all platform-specific field names (vimeoFolderId, vimeoVideoId, etc.) to generic equivalents (mediaFolderId, mediaAssetId, etc.) for easier future migrations between media platforms.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -31,8 +32,9 @@ Preferred communication style: Simple, everyday language.
 ### Database Schema
 - `users`: User authentication and subscription details (`id`, `username`, `password`, `firstName`, `lastName`, `company`, `stripe_customer_id`, `stripe_subscription_id`, `subscription_status`, `subscription_tier`, `subscription_usage`, `subscription_allowance`, `subscription_period_start`, `subscription_period_end`).
 - `email_signups`: Email capture for lead generation (`id`, `email`, `created_at`).
-- `projects`: Video projects managed by users (`id`, `user_id`, `title`, `status`, `vimeo_folder_id`, `tally_form_url`, `tally_submission_id`, `created_at`, `updated_at`).
-- `project_files`: Tracks files associated with projects (`id`, `project_id`, `vimeo_video_id`, `filename`, `file_type`, `file_size`, `upload_date`).
+- `projects`: Video projects managed by users (`id`, `user_id`, `title`, `status`, `media_folder_id`, `media_user_folder_id`, `media_review_link`, `tally_form_url`, `created_at`, `updated_at`).
+- `project_files`: Tracks files associated with projects (`id`, `project_id`, `media_asset_id`, `media_asset_url`, `filename`, `file_type`, `file_size`, `upload_date`).
+- `photo_files`: Tracks photo files (`id`, `album_id`, `project_id`, `user_id`, `media_file_id`, `media_url`, `media_thumbnail_url`, `media_folder_path`, `filename`, `file_size`, `upload_date`).
 - `project_status_log`: Audit trail for project status changes (`id`, `project_id`, `old_status`, `new_status`, `changed_at`).
 
 ### Core Features

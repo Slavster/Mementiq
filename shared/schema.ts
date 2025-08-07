@@ -25,10 +25,10 @@ export const projects = pgTable("projects", {
   userId: text("user_id").references(() => users.id).notNull(), // Changed to text
   title: text("title").notNull(),
   status: text("status").notNull().default("draft"),
-  vimeoFolderId: text("vimeo_folder_id"), // Frame.io folder URI for this project (kept for backward compatibility)
-  vimeoUserFolderId: text("vimeo_user_folder_id"), // User's main folder URI (kept for backward compatibility)
+  mediaFolderId: text("media_folder_id"), // Media platform folder ID (Frame.io, etc.)
+  mediaUserFolderId: text("media_user_folder_id"), // User's main folder ID on media platform
   tallyFormUrl: text("tally_form_url"),
-  vimeoReviewLink: text("vimeo_review_link"), // Frame.io review link for revisions (kept for backward compatibility)
+  mediaReviewLink: text("media_review_link"), // Media platform review link for revisions
   uploadSizeLimit: bigint("upload_size_limit", { mode: "number" }).default(10737418240), // 10GB default
   currentUploadSize: bigint("current_upload_size", { mode: "number" }).default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -38,8 +38,8 @@ export const projects = pgTable("projects", {
 export const projectFiles = pgTable("project_files", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
-  vimeoVideoId: text("vimeo_video_id"), // Frame.io video URI (kept for backward compatibility)
-  vimeoVideoUrl: text("vimeo_video_url"), // Public Frame.io URL (kept for backward compatibility)
+  mediaAssetId: text("media_asset_id"), // Media platform asset ID (Frame.io, etc.)
+  mediaAssetUrl: text("media_asset_url"), // Public media platform URL
   filename: text("filename").notNull(),
   originalFilename: text("original_filename").notNull(),
   fileType: text("file_type").notNull(),
@@ -90,10 +90,10 @@ export const photoFiles = pgTable("photo_files", {
   albumId: integer("album_id").references(() => photoAlbums.id).notNull(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   userId: text("user_id").references(() => users.id).notNull(),
-  imagekitFileId: text("imagekit_file_id"), // ImageKit.io file ID
-  imagekitUrl: text("imagekit_url"), // ImageKit.io direct URL
-  imagekitThumbnailUrl: text("imagekit_thumbnail_url"), // ImageKit.io thumbnail URL
-  imagekitFolderPath: text("imagekit_folder_path"), // /users/{userId}/projects/{projectId}
+  mediaFileId: text("media_file_id"), // Media platform file ID (Frame.io, etc.)
+  mediaUrl: text("media_url"), // Direct media platform URL
+  mediaThumbnailUrl: text("media_thumbnail_url"), // Media platform thumbnail URL
+  mediaFolderPath: text("media_folder_path"), // Folder path on media platform
   filename: text("filename").notNull(),
   originalFilename: text("original_filename").notNull(),
   fileSize: bigint("file_size", { mode: "number" }).notNull(),
