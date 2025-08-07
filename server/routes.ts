@@ -2286,6 +2286,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Initialize service to get team ID
+      await frameioService.initialize();
+
       // Create test folder for API verification
       const rootProject = await frameioService.getOrCreateRootProject();
       const testFolder = await frameioService.getOrCreateFolder('API_Test', rootProject.root_asset_id);
