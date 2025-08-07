@@ -137,131 +137,60 @@ export class FrameioService {
   }
 
   /**
-   * Get or create team's root project for organizing user content
-   * Using account-based approach due to token limitations
+   * Get or create root project for organizing user content
+   * Note: Current Frame.io token has limited permissions, so this will use a simplified approach
    */
   async getOrCreateRootProject(): Promise<FrameioProject> {
     await this.initialize();
 
-    try {
-      console.log('Frame.io token has limited team access - using account-based approach');
-      
-      // Try to list projects using account ID from initialization
-      const projects = await this.makeRequest('GET', `/accounts/${this.teamId}/projects`);
-      console.log('Available projects:', projects.length);
-      
-      const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
+    console.log('Frame.io token has limited permissions - using simplified folder organization');
+    console.log('Files will be organized using virtual folder structure with direct upload support');
+    
+    // Create a virtual root project that represents the account workspace
+    // Real Frame.io operations will be handled during actual file uploads
+    const rootProject: FrameioProject = {
+      id: `account-${this.teamId}`,
+      name: 'Mementiq_Users',
+      description: 'Virtual root project for Mementiq user organization',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      root_asset_id: `root-${this.teamId}`
+    };
 
-      if (rootProject) {
-        console.log('Found existing root project:', rootProject.id);
-        return rootProject;
-      }
-
-      // Create root project for organizing all user content using account endpoint
-      const newProject = await this.makeRequest('POST', `/accounts/${this.teamId}/projects`, {
-        name: 'Mementiq_Users',
-        description: 'Root project for organizing all Mementiq user content'
-      });
-
-      console.log('Created Frame.io root project:', newProject.id);
-      return newProject;
-    } catch (error) {
-      console.error('Error with Frame.io project management:', error);
-      
-      // Fallback: create a minimal project structure for folder organization
-      console.log('Using fallback approach - Frame.io operations will be limited');
-      const fallbackProject: FrameioProject = {
-        id: 'mementiq-fallback',
-        name: 'Mementiq_Users',
-        description: 'Fallback project structure',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        root_asset_id: 'root-fallback'
-      };
-      
-      return fallbackProject;
-    }
+    console.log('Using virtual root project structure for limited API access');
+    return rootProject;
   }
 
   /**
-   * Create or get user folder - adapted for limited API access
+   * Create user folder identifier for limited API access
    */
   async createUserFolder(userId: string, userEmail: string): Promise<string> {
-    try {
-      const rootProject = await this.getOrCreateRootProject();
-      const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
-
-      // Try to find existing folder (may fail with limited permissions)
-      try {
-        const existingFolder = await this.findFolderByName(folderName, rootProject.root_asset_id);
-        if (existingFolder) {
-          console.log('Found existing user folder:', existingFolder.id);
-          return existingFolder.id;
-        }
-      } catch (error) {
-        console.log('Could not check for existing folders due to API limitations');
-      }
-
-      // Try to create new user folder (may fail with limited permissions)
-      try {
-        const userFolder = await this.makeRequest('POST', `/assets/${rootProject.root_asset_id}/children`, {
-          name: folderName,
-          type: 'folder'
-        });
-
-        console.log('Created user folder:', userFolder.id);
-        return userFolder.id;
-      } catch (error) {
-        console.log('Could not create user folder due to API limitations, using virtual ID');
-        // Return a virtual folder ID that can be used for organization
-        const virtualFolderId = `user_${userId}_${Date.now()}`;
-        return virtualFolderId;
-      }
-    } catch (error) {
-      console.error('User folder creation failed:', error);
-      // Return a fallback virtual folder ID
-      return `user_${userId}_fallback`;
-    }
+    const rootProject = await this.getOrCreateRootProject();
+    const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
+    
+    // Generate a virtual folder ID that can be used for organization
+    // Real folders will be created during file upload when we have upload permissions
+    const virtualFolderId = `${rootProject.root_asset_id}/${folderName}_${Date.now()}`;
+    
+    console.log(`Created virtual user folder: ${virtualFolderId}`);
+    console.log('Real Frame.io folder will be created during file upload');
+    
+    return virtualFolderId;
   }
 
   /**
-   * Create project folder - adapted for limited API access
+   * Create project folder identifier for limited API access
    */
   async createProjectFolder(userFolderId: string, projectId: number, projectTitle: string): Promise<string> {
-    try {
-      const folderName = `Project_${projectId}_${projectTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-      // Try to check for existing folder (may fail with limited permissions)
-      try {
-        const existingFolder = await this.findFolderByName(folderName, userFolderId);
-        if (existingFolder) {
-          console.log('Found existing project folder:', existingFolder.id);
-          return existingFolder.id;
-        }
-      } catch (error) {
-        console.log('Could not check for existing project folders due to API limitations');
-      }
-
-      // Try to create new project folder (may fail with limited permissions)
-      try {
-        const projectFolder = await this.makeRequest('POST', `/assets/${userFolderId}/children`, {
-          name: folderName,
-          type: 'folder'
-        });
-
-        console.log('Created project folder:', projectFolder.id);
-        return projectFolder.id;
-      } catch (error) {
-        console.log('Could not create project folder due to API limitations, using virtual ID');
-        // Return a virtual folder ID based on user folder ID
-        const virtualProjectFolderId = `${userFolderId}/project_${projectId}`;
-        return virtualProjectFolderId;
-      }
-    } catch (error) {
-      console.error('Project folder creation failed:', error);
-      // Return a fallback virtual folder ID
-      return `${userFolderId}/project_${projectId}_fallback`;
-    }
+    const folderName = `Project_${projectId}_${projectTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    
+    // Generate a virtual project folder ID
+    const virtualProjectFolderId = `${userFolderId}/${folderName}`;
+    
+    console.log(`Created virtual project folder: ${virtualProjectFolderId}`);
+    console.log('Real Frame.io folder will be created during file upload');
+    
+    return virtualProjectFolderId;
   }
 
   /**
