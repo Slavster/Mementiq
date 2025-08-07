@@ -167,38 +167,7 @@ export function RevisionModal({
               </p>
             </div>
 
-            {!reviewLink && !project.vimeoReviewLink ? (
-              <Card className="border-orange-200 bg-orange-50">
-                <CardHeader>
-                  <CardTitle className="text-orange-800 flex items-center">
-                    <Eye className="h-5 w-5 mr-2" />
-                    Generate Review Link
-                  </CardTitle>
-                  <CardDescription className="text-orange-700">
-                    First, we need to create a review link for your video so you can watch it and leave specific feedback.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    onClick={handleGenerateLink}
-                    disabled={generateLinkMutation.isPending || isGeneratingLink}
-                    className="w-full bg-orange-600 hover:bg-orange-700"
-                  >
-                    {generateLinkMutation.isPending ? (
-                      <>
-                        <Clock className="h-4 w-4 mr-2 animate-spin" />
-                        Generating Review Link...
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Generate Vimeo Review Link
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
+            {reviewLink || project.vimeoReviewLink ? (
               <>
                 <Card className="border-green-200 bg-green-50">
                   <CardHeader>
@@ -245,6 +214,37 @@ export function RevisionModal({
                   </p>
                 </div>
               </>
+            ) : (
+              <Card className="border-orange-200 bg-orange-50">
+                <CardHeader>
+                  <CardTitle className="text-orange-800 flex items-center">
+                    <AlertTriangle className="h-5 w-5 mr-2" />
+                    Review Link Needed
+                  </CardTitle>
+                  <CardDescription className="text-orange-700">
+                    We couldn't automatically generate your review link. Please click below to create it manually.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={handleGenerateLink}
+                    disabled={generateLinkMutation.isPending || isGeneratingLink}
+                    className="w-full bg-orange-600 hover:bg-orange-700"
+                  >
+                    {generateLinkMutation.isPending ? (
+                      <>
+                        <Clock className="h-4 w-4 mr-2 animate-spin" />
+                        Generating Review Link...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Generate Vimeo Review Link
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </div>
         );
