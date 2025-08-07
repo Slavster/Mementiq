@@ -313,38 +313,10 @@ export default function DashboardPage() {
     }
   };
 
-  const handleRevisionModal = async (project: Project) => {
+  const handleRevisionModal = (project: Project) => {
     setRevisionProject(project);
     setRevisionStep("instructions");
     setRevisionModalOpen(true);
-
-    // Automatically generate review link if it doesn't exist
-    if (!project.vimeoReviewLink) {
-      try {
-        const response = await fetch(`/api/projects/${project.id}/generate-review-link`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            // Update the project with the new review link
-            queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-            toast({
-              title: "Review Link Generated",
-              description: "Your Vimeo review link has been created automatically!",
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Failed to auto-generate review link:', error);
-        // Don't show error to user - they can manually generate it in the modal
-      }
-    }
   };
 
   const handleLogout = async () => {

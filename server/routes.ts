@@ -329,6 +329,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   updatedAt: new Date(),
                 });
 
+                // Automatically generate review link after successful payment
+                try {
+                  const project = await storage.getProject(projectId);
+                  const projectFolderId = project?.vimeoFolderId?.split('/').pop();
+                  
+                  if (projectFolderId) {
+                    const reviewLink = await createVimeoReviewLink(projectFolderId);
+                    if (reviewLink) {
+                      // Save review link to database
+                      await storage.updateProject(projectId, {
+                        vimeoReviewLink: reviewLink,
+                        updatedAt: new Date()
+                      });
+
+                      // Get user info to send email
+                      const user = await storage.getUserById(project.userId);
+                      if (user) {
+                        // Send email with review link and instructions
+                        await emailService.sendRevisionInstructionsEmail(
+                          user.email,
+                          user.firstName,
+                          project.title,
+                          reviewLink
+                        );
+                        console.log(`Review link automatically generated and email sent for project ${projectId}`);
+                      }
+                    }
+                  }
+                } catch (reviewLinkError) {
+                  console.error(`Failed to auto-generate review link for project ${projectId}:`, reviewLinkError);
+                  // Don't fail the webhook if review link generation fails
+                }
+
                 console.log(`Revision payment completed for project ${projectId}`);
 
               } catch (error) {
