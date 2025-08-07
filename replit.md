@@ -3,6 +3,11 @@
 ## Overview
 Mementiq is a professional video editing services website designed as a modern full-stack web application. Its primary purpose is to serve as a landing page and lead generation platform for video editing services, incorporating a subscription-based pricing model with email capture functionality. The project aims to provide a comprehensive platform for users to manage video projects, track subscription usage, and interact with video editing services seamlessly.
 
+## Recent Changes (August 2025)
+- **Complete Migration to Frame.io**: Replaced Vimeo API with Frame.io API for all video operations including uploads, review links, folder management, and asset downloads. This migration removes the Pro/Business account restrictions that limited Vimeo review functionality.
+- **Unified Media Management**: Frame.io now handles both video and photo management, providing a single API for all media operations.
+- **Enhanced Webhook System**: Updated webhook handling from Vimeo events to Frame.io asset completion events for real-time project status updates.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
@@ -49,6 +54,6 @@ Preferred communication style: Simple, everyday language.
 - **Form Validation**: `zod`.
 - **Authentication**: `Supabase Auth` (`@supabase/supabase-js`).
 - **Payment Processing**: `Stripe` (for subscriptions, checkout sessions, webhooks).
-- **Video Hosting/Upload**: `Vimeo API` (for direct uploads via TUS protocol, video management).
+- **Video Hosting/Upload**: `Frame.io API` (for direct uploads via TUS protocol, video management, review links).
 - **Object Storage (Internal)**: `@replit/object-storage` SDK for serving static assets.
 - **Development Tools**: `Vite`, `esbuild`, `TypeScript`, `tsx`.

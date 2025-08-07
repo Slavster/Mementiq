@@ -63,9 +63,9 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
     },
   });
 
-  const uploadToImageKit = async (uploadPhoto: UploadPhoto): Promise<void> => {
+  const uploadToFrameio = async (uploadPhoto: UploadPhoto): Promise<void> => {
     try {
-      console.log("Starting ImageKit upload for:", uploadPhoto.file.name);
+      console.log("Starting Frame.io upload for:", uploadPhoto.file.name);
 
       setSelectedPhotos((prev) =>
         prev.map((p) =>
@@ -90,7 +90,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
         prev.map((p) => (p.id === uploadPhoto.id ? { ...p, progress: 30 } : p)),
       );
 
-      // Upload to Freeimage.host via our backend
+      // Upload to Frame.io via our backend
       const uploadResponse = await apiRequest("POST", "/api/photos/upload", {
         projectId,
         filename: uploadPhoto.file.name,
@@ -116,7 +116,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                 ...p,
                 status: "completed",
                 progress: 100,
-                imagekitUrl: result.photo.imagekitUrl,
+                frameioUrl: result.photo.frameioUrl,
                 imagekitThumbnailUrl: result.photo.imagekitThumbnailUrl,
               }
             : p,

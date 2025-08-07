@@ -794,12 +794,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Extract project folder ID (remove /users/{userId}/projects/ prefix)
-      const projectFolderId = project.vimeoFolderId?.split('/').pop();
+      // Extract project folder ID 
+      const projectFolderId = project.vimeoFolderId;
       if (!projectFolderId) {
         return res.status(400).json({ 
           success: false, 
-          message: 'No Vimeo folder found for this project' 
+          message: 'No Frame.io folder found for this project' 
         });
       }
 
@@ -1490,8 +1490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const videoId = latestVideo.uri.split('/').pop();
             
             // Generate download link for the latest video
-            const { generateVideoDownloadLink } = await import('./vimeoUpload');
-            const downloadLink = await generateVideoDownloadLink(videoId);
+            const downloadLink = await frameioService.generateAssetDownloadLink(videoId);
             
             if (downloadLink) {
               return res.json({
@@ -1501,8 +1500,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
           }
-        } catch (vimeoError) {
-          console.error('Error generating download link from Vimeo:', vimeoError);
+        } catch (frameioError) {
+          console.error('Error generating download link from Frame.io:', frameioError);
         }
       }
       
@@ -2688,32 +2687,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const totalSize = await getProjectUploadSize(projectId);
         const maxSize = 10 * 1024 * 1024 * 1024; // 10GB limit
 
-        // Get Vimeo folder videos if folder exists
-        let vimeoVideos: any[] = [];
+        // Get Frame.io folder videos if folder exists
+        let frameioVideos: any[] = [];
         if (project.vimeoFolderId) {
           try {
-            const rawVimeoVideos = await getFolderVideos(project.vimeoFolderId);
+            const rawFrameioVideos = await getFolderVideos(project.vimeoFolderId);
             console.log(
-              "Vimeo videos fetched:",
-              rawVimeoVideos.length,
+              "Frame.io videos fetched:",
+              rawFrameioVideos.length,
               "videos",
             );
 
-            // Process Vimeo videos to extract proper names and file sizes
-            vimeoVideos = rawVimeoVideos.map((video) => {
+            // Process Frame.io videos to extract proper names and file sizes
+            frameioVideos = rawFrameioVideos.map((video) => {
               // Get file size - try multiple possible fields
               let fileSize = 0;
-              if (video.file_size) {
-                fileSize = video.file_size;
-              } else if (video.files && video.files.length > 0) {
-                // Find the largest file (usually original quality)
-                const largestFile = video.files.reduce((prev: any, current: any) =>
-                  current.size > prev.size ? current : prev,
-                );
-                fileSize = largestFile.size;
+              if (video.filesize) {
+                fileSize = video.filesize;
               } else {
                 // Fallback to database file size
-                const videoId = video.uri.split("/").pop();
+                const videoId = video.id;
                 const dbFile = files.find(
                   (f) => f.vimeoVideoId && f.vimeoVideoId.includes(videoId),
                 );
@@ -2730,7 +2723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 videoName.includes(".mp4")
               ) {
                 // Find matching database file for better name
-                const videoId = video.uri.split("/").pop();
+                const videoId = video.id;
                 const dbFile = files.find(
                   (f) => f.vimeoVideoId && f.vimeoVideoId.includes(videoId),
                 );
@@ -2743,27 +2736,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 name: videoName || "Unnamed Video",
                 file_size: fileSize,
                 created_time: video.created_time,
-                uri: video.uri,
-                vimeo_id: video.uri.split("/").pop(),
+                uri: video.id,
+                vimeo_id: video.id,
               };
             });
 
             console.log(
-              "Processed Vimeo videos:",
-              vimeoVideos.map((v) => ({
+              "Processed Frame.io videos:",
+              frameioVideos.map((v) => ({
                 name: v.name,
                 size: v.file_size,
                 id: v.vimeo_id,
               })),
             );
           } catch (error) {
-            console.warn("Failed to fetch Vimeo folder videos:", error);
+            console.warn("Failed to fetch Frame.io folder videos:", error);
             console.log(
               "Using database files as fallback. Files found:",
               files.length,
             );
             // Try to get project files from database as fallback
-            vimeoVideos = files.map((file) => {
+            frameioVideos = files.map((file) => {
               console.log(
                 "Mapping file:",
                 file.filename,
@@ -2863,16 +2856,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Get user's Vimeo folders (security check)
+  // Get user's Frame.io folders (security check)
   app.get(
-    "/api/vimeo/folders",
+    "/api/frameio/folders",
     requireAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const folders = await vimeoService.getUserFolders(req.user!.id);
+        const folders = await frameioService.getUserFolders(req.user!.id);
         res.json({ success: true, data: folders });
       } catch (error) {
-        console.error("Error fetching Vimeo folders:", error);
+        console.error("Error fetching Frame.io folders:", error);
         res
           .status(500)
           .json({ success: false, message: "Failed to fetch folders" });
@@ -3068,7 +3061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             success: true,
             hasVideos: false,
             videoCount: 0,
-            message: "Vimeo folder not yet created",
+            message: "Frame.io folder not yet created",
           });
         }
 
@@ -3095,7 +3088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Photo upload and album management endpoints using ImageKit
   
-  // Upload photo to ImageKit.io
+  // Upload photo to Frame.io
   app.post(
     "/api/photos/upload",
     requireAuth,
@@ -3228,62 +3221,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ success: false, message: "Access denied" });
         }
 
-        // Fetch photos ONLY from ImageKit media library for this user/project
+        // Fetch photos ONLY from Frame.io media library for this user/project
         let photos: any[] = [];
         let album = null;
         let currentSize = 0;
         
         try {
-          const folderPath = `/users/${req.user!.id}/projects/${projectId}`;
-          console.log(`Fetching photos from ImageKit folder: ${folderPath}`);
-          const imagekitFiles = await imagekitService.listFiles(folderPath);
-          console.log(`Found ${imagekitFiles.length} files in ImageKit folder`);
+          const project = await storage.getProject(projectId);
+          if (project?.vimeoFolderId) {
+            console.log(`Fetching photos from Frame.io folder: ${project.vimeoFolderId}`);
+            const frameioAssets = await frameioService.getFolderAssets(project.vimeoFolderId);
+            const frameioPhotos = frameioAssets.filter(asset => 
+              asset.type === 'file' && 
+              asset.filetype && 
+              asset.filetype.startsWith('image/')
+            );
+            console.log(`Found ${frameioPhotos.length} photo files in Frame.io folder`);
           
-          if (imagekitFiles.length > 0) {
-            // Get or create album only if there are actual photos in ImageKit
-            album = await storage.getPhotoAlbum(projectId);
-            if (!album) {
-              album = await storage.createPhotoAlbum(req.user!.id, {
-                projectId,
-                albumName: `${project.title} - Photos`,
-                totalSizeLimit: 524288000, // 500MB default for images
-              });
-            }
-
-            // Convert ImageKit files to photo objects and sync to database
-            for (const imagekitFile of imagekitFiles) {
-              let existingPhoto = await storage.getPhotoFileByImageKitId(imagekitFile.fileId);
-              
-              if (!existingPhoto) {
-                // Create database record for photos that exist in ImageKit but not in DB
-                existingPhoto = await storage.createPhotoFile(req.user!.id, {
-                  albumId: album.id,
+            if (frameioPhotos.length > 0) {
+              // Get or create album only if there are actual photos in Frame.io
+              album = await storage.getPhotoAlbum(projectId);
+              if (!album) {
+                album = await storage.createPhotoAlbum(req.user!.id, {
                   projectId,
-                  imagekitFileId: imagekitFile.fileId,
-                  imagekitUrl: imagekitFile.url,
-                  imagekitThumbnailUrl: imagekitService.generateThumbnailUrl(imagekitFile.filePath),
-                  imagekitFolderPath: folderPath,
-                  filename: imagekitFile.name,
-                  originalFilename: imagekitFile.name,
-                  fileSize: imagekitFile.size,
-                  mimeType: imagekitFile.mime || 'image/jpeg',
-                  uploadStatus: "completed",
+                  albumName: `${project.title} - Photos`,
+                  totalSizeLimit: 524288000, // 500MB default for images
                 });
               }
-              
-              photos.push(existingPhoto);
-              currentSize += imagekitFile.size;
-            }
 
-            // Update album with current stats from ImageKit
-            await storage.updatePhotoAlbum(album.id, {
-              currentSize,
-              photoCount: imagekitFiles.length,
-            });
+              // Convert Frame.io assets to photo objects and sync to database
+              for (const frameioAsset of frameioPhotos) {
+                let existingPhoto = await storage.getPhotoFileByImageKitId(frameioAsset.id);
+                
+                if (!existingPhoto) {
+                  // Create database record for photos that exist in Frame.io but not in DB
+                  existingPhoto = await storage.createPhotoFile(req.user!.id, {
+                    albumId: album.id,
+                    projectId,
+                    imagekitFileId: frameioAsset.id,
+                    imagekitUrl: frameioAsset.download_url || '',
+                    imagekitThumbnailUrl: frameioAsset.thumb_url || frameioAsset.download_url || '',
+                    imagekitFolderPath: project.vimeoFolderId,
+                    filename: frameioAsset.name,
+                    originalFilename: frameioAsset.name,
+                    fileSize: frameioAsset.filesize || 0,
+                    mimeType: frameioAsset.filetype || 'image/jpeg',
+                    uploadStatus: "completed",
+                  });
+                }
+                
+                photos.push(existingPhoto);
+                currentSize += frameioAsset.filesize || 0;
+              }
+
+              // Update album with current stats from Frame.io
+              await storage.updatePhotoAlbum(album.id, {
+                currentSize,
+                photoCount: frameioPhotos.length,
+              });
+            }
           }
         } catch (error) {
-          console.log('ImageKit folder does not exist or is empty:', error);
-          // Return empty results - no photos in ImageKit means no photos to display
+          console.log('Frame.io folder does not exist or is empty:', error);
+          // Return empty results - no photos in Frame.io means no photos to display
         }
 
         res.json({
