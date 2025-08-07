@@ -34,7 +34,7 @@ interface UploadPhoto {
   progress: number;
   error?: string;
   mediaUrl?: string;
-  imagekitThumbnailUrl?: string;
+  thumbnailUrl?: string;
 }
 
 const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
@@ -117,7 +117,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                 status: "completed",
                 progress: 100,
                 frameioUrl: result.photo.frameioUrl,
-                imagekitThumbnailUrl: result.photo.imagekitThumbnailUrl,
+                thumbnailUrl: result.photo.mediaThumbnailUrl,
               }
             : p,
         ),
@@ -156,7 +156,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
 
     // Upload photos sequentially to avoid overwhelming the API
     for (const photo of pendingPhotos) {
-      await uploadToImageKit(photo);
+      await uploadToFrameio(photo);
     }
 
     console.log("Photo upload completed, invalidating queries...");

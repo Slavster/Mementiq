@@ -2274,36 +2274,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test ImageKit integration (for debugging)
-  app.post("/api/test-imagekit", async (req, res) => {
+  // Test Frame.io photo integration (for debugging)
+  app.post("/api/test-frameio-photo", async (req, res) => {
     try {
-      console.log("Testing ImageKit integration...");
+      console.log("Testing Frame.io photo integration...");
       
-      if (!imagekitService.isConfigured()) {
+      if (!frameioService.isConfigured()) {
         return res.status(500).json({
           success: false,
-          message: "ImageKit is not properly configured"
+          message: "Frame.io is not properly configured"
         });
       }
 
-      // Upload a test image
-      const result = await imagekitService.uploadFile({
-        file: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-        fileName: 'api-test.png',
-        folder: '/test/api-verification',
-        tags: ['test', 'api']
-      });
+      // Create test folder for API verification
+      const rootProject = await frameioService.getOrCreateRootProject();
+      const testFolder = await frameioService.getOrCreateFolder('API_Test', rootProject.root_asset_id);
+
+      // Upload a test photo (1x1 pixel PNG)
+      const result = await frameioService.uploadPhoto(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        'api-test.png',
+        testFolder.id,
+        'test-user'
+      );
 
       res.json({
         success: true,
-        message: "ImageKit integration working properly",
+        message: "Frame.io photo integration working properly",
         result
       });
     } catch (error: any) {
-      console.error("ImageKit test error:", error);
+      console.error("Frame.io photo test error:", error);
       res.status(500).json({
         success: false,
-        message: error.message || "ImageKit test failed"
+        message: error.message || "Frame.io photo test failed"
       });
     }
   });
@@ -3088,7 +3092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Photo upload and album management endpoints using ImageKit
+  // Photo upload and album management endpoints using Frame.io
   
   // Upload photo to Frame.io
   app.post(
@@ -3147,11 +3151,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Create ImageKit folder structure: /users/{userId}/projects/{projectId}
-        const folderPath = await imagekitService.createUserProjectFolder(req.user!.id, projectId);
+        // Create Frame.io folder structure: /users/{userId}/projects/{projectId}/Photos
+        const folderPath = await frameioService.createUserProjectPhotoFolder(req.user!.id, projectId);
         
-        // Upload to ImageKit.io
-        const uploadResult = await imagekitService.uploadImage(
+        // Upload to Frame.io
+        const uploadResult = await frameioService.uploadPhoto(
           base64Data,
           filename,
           folderPath,
@@ -3188,7 +3192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           success: true,
-          message: "Photo uploaded successfully to ImageKit",
+          message: "Photo uploaded successfully to Frame.io",
           photo: photoFile,
         });
       } catch (error: any) {
@@ -3308,8 +3312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// ImageKit.io integration is handled by the imagekitService
-// Removed old Freeimage.host upload function
+// Frame.io integration handles both video and photo uploads
+// Legacy ImageKit and Vimeo integrations have been fully migrated to Frame.io
 
 async function downloadAsset(
   assetPath: string,
