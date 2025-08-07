@@ -39,7 +39,7 @@ import {
   Settings,
   Download,
   Play,
-  Eye
+  Eye,
 } from "lucide-react";
 import DirectVideoUpload from "@/components/DirectVideoUpload";
 import DirectPhotoUpload from "@/components/DirectPhotoUpload";
@@ -78,6 +78,7 @@ interface Project {
   vimeoFolderId?: string;
   vimeoUserFolderId?: string;
   tallyFormUrl?: string;
+  vimeoReviewLink?: string;
   currentUploadSize?: number;
   uploadSizeLimit?: number;
 }
@@ -140,35 +141,41 @@ export default function DashboardPage() {
     "upload" | "form" | "confirmation"
   >("upload");
   const [acceptanceModalOpen, setAcceptanceModalOpen] = useState(false);
-  const [acceptanceProject, setAcceptanceProject] = useState<Project | null>(null);
+  const [acceptanceProject, setAcceptanceProject] = useState<Project | null>(
+    null,
+  );
   const [downloadLink, setDownloadLink] = useState<string | undefined>();
   const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [revisionProject, setRevisionProject] = useState<Project | null>(null);
-  const [revisionStep, setRevisionStep] = useState<"instructions" | "uploads" | "confirmation">("instructions");
+  const [revisionStep, setRevisionStep] = useState<
+    "instructions" | "uploads" | "confirmation"
+  >("instructions");
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Handle revision payment success/failure from URL parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const revisionPayment = urlParams.get('revision_payment');
-    
-    if (revisionPayment === 'success') {
+    const revisionPayment = urlParams.get("revision_payment");
+
+    if (revisionPayment === "success") {
       toast({
         title: "Revision Payment Successful",
-        description: "Your revision request has been submitted. We'll start working on it right away!",
+        description:
+          "Your revision request has been submitted. We'll start working on it right away!",
       });
       // Clean up URL parameters
-      window.history.replaceState({}, '', '/dashboard');
+      window.history.replaceState({}, "", "/dashboard");
       // Refresh project data to show updated status
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-    } else if (revisionPayment === 'cancelled') {
+    } else if (revisionPayment === "cancelled") {
       toast({
         title: "Revision Payment Cancelled",
-        description: "Your revision payment was cancelled. You can try again anytime.",
+        description:
+          "Your revision payment was cancelled. You can try again anytime.",
         variant: "destructive",
       });
       // Clean up URL parameters
-      window.history.replaceState({}, '', '/dashboard');
+      window.history.replaceState({}, "", "/dashboard");
     }
   }, [toast, queryClient]);
 
@@ -289,7 +296,7 @@ export default function DashboardPage() {
   const handleAcceptanceModal = async (project: Project) => {
     setAcceptanceProject(project);
     setAcceptanceModalOpen(true);
-    
+
     // Fetch download link for the project
     try {
       const response = await fetch(`/api/projects/${project.id}/download-link`);
@@ -297,11 +304,11 @@ export default function DashboardPage() {
         const data = await response.json();
         setDownloadLink(data.downloadLink);
       } else {
-        console.error('Failed to fetch download link');
+        console.error("Failed to fetch download link");
         setDownloadLink(undefined);
       }
     } catch (error) {
-      console.error('Error fetching download link:', error);
+      console.error("Error fetching download link:", error);
       setDownloadLink(undefined);
     }
   };
@@ -310,6 +317,34 @@ export default function DashboardPage() {
     setRevisionProject(project);
     setRevisionStep("instructions");
     setRevisionModalOpen(true);
+
+    // Automatically generate review link if it doesn't exist
+    if (!project.vimeoReviewLink) {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/generate-review-link`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            // Update the project with the new review link
+            queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+            toast({
+              title: "Review Link Generated",
+              description: "Your Vimeo review link has been created automatically!",
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to auto-generate review link:', error);
+        // Don't show error to user - they can manually generate it in the modal
+      }
+    }
   };
 
   const handleLogout = async () => {
@@ -628,7 +663,8 @@ export default function DashboardPage() {
                           <Eye className="h-4 w-4 mr-2" />
                           Review Your Finished Video
                         </Button>
-                      ) : project.status.toLowerCase() === "awaiting revision instructions" ? (
+                      ) : project.status.toLowerCase() ===
+                        "awaiting revision instructions" ? (
                         <Button
                           size="sm"
                           className="w-full bg-accent text-secondary hover:bg-yellow-500 font-semibold"
@@ -638,7 +674,7 @@ export default function DashboardPage() {
                           }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          Request Revisions
+                          Describe Your Revisions
                         </Button>
                       ) : project.status.toLowerCase() === "complete" ? (
                         <div className="space-y-2">
@@ -653,21 +689,25 @@ export default function DashboardPage() {
                             onClick={async (e) => {
                               e.stopPropagation();
                               try {
-                                const response = await fetch(`/api/projects/${project.id}/download-link`);
+                                const response = await fetch(
+                                  `/api/projects/${project.id}/download-link`,
+                                );
                                 if (response.ok) {
                                   const data = await response.json();
-                                  window.open(data.downloadLink, '_blank');
+                                  window.open(data.downloadLink, "_blank");
                                 } else {
                                   toast({
                                     title: "Download unavailable",
-                                    description: "The download link is no longer available. Contact support for assistance.",
+                                    description:
+                                      "The download link is no longer available. Contact support for assistance.",
                                     variant: "destructive",
                                   });
                                 }
                               } catch (error) {
                                 toast({
                                   title: "Download error",
-                                  description: "Failed to get download link. Please try again.",
+                                  description:
+                                    "Failed to get download link. Please try again.",
                                   variant: "destructive",
                                 });
                               }
@@ -814,7 +854,7 @@ export default function DashboardPage() {
                       queryClient.invalidateQueries({ queryKey: ["projects"] });
                     }}
                   />
-                  
+
                   <DirectPhotoUpload
                     projectId={selectedProject.id}
                     onUploadComplete={() => {
@@ -970,7 +1010,7 @@ export default function DashboardPage() {
       <ProjectAcceptanceModal
         open={acceptanceModalOpen && !!acceptanceProject}
         onOpenChange={setAcceptanceModalOpen}
-        project={acceptanceProject || { id: 0, title: '', status: '' }}
+        project={acceptanceProject || { id: 0, title: "", status: "" }}
         downloadLink={downloadLink}
       />
 
