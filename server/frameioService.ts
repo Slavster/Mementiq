@@ -158,12 +158,10 @@ export class FrameioService {
   /**
    * Initialize the service and get team ID
    */
-  async initialize(): Promise<void> {
-    if (this.teamId) return;
-
+  async initialize(): Promise<any> {
     if (!this.apiToken) {
       console.warn('Skipping Frame.io initialization - API token not configured');
-      return;
+      throw new Error('Frame.io API token not configured');
     }
 
     try {
@@ -180,6 +178,7 @@ export class FrameioService {
       }
       
       console.log('Frame.io service initialized with team ID:', this.teamId);
+      return response; // Return user info for testing
     } catch (error) {
       console.error('Failed to initialize Frame.io service:', error);
       throw error;
@@ -195,6 +194,7 @@ export class FrameioService {
     }
     
     const url = `${FRAMEIO_API_BASE}${endpoint}`;
+    console.log(`Making Frame.io API request: ${method} ${url}`);
     
     const options: RequestInit = {
       method,
@@ -208,15 +208,35 @@ export class FrameioService {
       options.body = JSON.stringify(data);
     }
 
-    const response = await fetch(url, options);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Frame.io API error (${response.status}):`, errorText);
-      throw new Error(`Frame.io API error: ${response.status} - ${errorText}`);
+    try {
+      const response = await fetch(url, options);
+      console.log(`Response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Frame.io API error response: ${errorText}`);
+        
+        // Check if it's HTML (likely an error page)
+        if (errorText.includes('<!DOCTYPE') || errorText.includes('<html>')) {
+          throw new Error(`Frame.io API returned HTML error page (status: ${response.status}). Check API token validity.`);
+        }
+        
+        throw new Error(`Frame.io API error: ${response.status} - ${errorText}`);
+      }
+      
+      const responseText = await response.text();
+      console.log('Response received, length:', responseText.length);
+      
+      // Check if response is HTML (error page)
+      if (responseText.includes('<!DOCTYPE') || responseText.includes('<html>')) {
+        throw new Error('Frame.io API returned HTML instead of JSON. Check authentication and endpoint.');
+      }
+      
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.error(`Frame.io API request failed: ${method} ${url}`, error);
+      throw error;
     }
-
-    return await response.json();
   }
 
   /**
