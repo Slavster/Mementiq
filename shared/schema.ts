@@ -138,9 +138,9 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
 export const updateProjectSchema = createInsertSchema(projects).pick({
   title: true,
   status: true,
-  vimeoFolderId: true,
-  vimeoUserFolderId: true,
-  vimeoReviewLink: true,
+  mediaFolderId: true,
+  mediaUserFolderId: true,
+  mediaReviewLink: true,
   currentUploadSize: true,
   tallyFormUrl: true,
   updatedAt: true,
@@ -149,8 +149,8 @@ export const updateProjectSchema = createInsertSchema(projects).pick({
 // Project file schemas
 export const insertProjectFileSchema = createInsertSchema(projectFiles).pick({
   projectId: true,
-  vimeoVideoId: true,
-  vimeoVideoUrl: true,
+  mediaAssetId: true,
+  mediaAssetUrl: true,
   filename: true,
   originalFilename: true,
   fileType: true,
@@ -190,10 +190,10 @@ export const updatePhotoAlbumSchema = createInsertSchema(photoAlbums).pick({
 export const insertPhotoFileSchema = createInsertSchema(photoFiles).pick({
   albumId: true,
   projectId: true,
-  imagekitFileId: true,
-  imagekitUrl: true,
-  imagekitThumbnailUrl: true,
-  imagekitFolderPath: true,
+  mediaFileId: true,
+  mediaUrl: true,
+  mediaThumbnailUrl: true,
+  mediaFolderPath: true,
   filename: true,
   originalFilename: true,
   fileSize: true,

@@ -39,7 +39,7 @@ interface Project {
   status: string;
   createdAt: string;
   updatedAt: string;
-  frameioReviewLink?: string;
+  mediaReviewLink?: string;
 }
 
 interface RevisionModalProps {
@@ -78,7 +78,7 @@ export function RevisionModal({
         toast({
           title: "Review Link Generated",
           description:
-            "Your Vimeo review link has been created. Check your email for instructions!",
+            "Your review link has been created. Check your email for instructions!",
         });
       } else {
         toast({
@@ -184,7 +184,7 @@ export function RevisionModal({
               </p>
             </div>
 
-            {reviewLink || project.frameioReviewLink ? (
+            {reviewLink || project.mediaReviewLink ? (
               <>
                 <Card className="border-green-200 bg-green-50">
                   <CardHeader>
@@ -201,7 +201,7 @@ export function RevisionModal({
                     <Button
                       onClick={() =>
                         window.open(
-                          reviewLink || project.frameioReviewLink,
+                          reviewLink || project.mediaReviewLink,
                           "_blank",
                         )
                       }
@@ -249,7 +249,7 @@ export function RevisionModal({
                     className="min-h-[120px]"
                   />
                   <p className="text-sm text-gray-600">
-                    You can leave detailed timestamp comments on Vimeo and use
+                    You can leave detailed timestamp comments on the media platform and use
                     this field for general notes.
                   </p>
                 </div>
@@ -282,7 +282,7 @@ export function RevisionModal({
                     ) : (
                       <>
                         <Eye className="h-4 w-4 mr-2" />
-                        Generate Vimeo Review Link
+                        Generate Review Link
                       </>
                     )}
                   </Button>
@@ -385,7 +385,7 @@ export function RevisionModal({
                   <span className="font-medium">Project:</span> {project.title}
                 </div>
                 <div>
-                  <span className="font-medium">Vimeo Comments:</span>
+                  <span className="font-medium">Media Platform Comments:</span>
                   <span className="ml-2 text-blue-600">
                     Left directly on the video timeline
                   </span>
@@ -411,7 +411,7 @@ export function RevisionModal({
                   <p className="text-red-700 text-sm">
                     Once you submit these revision instructions, our editors
                     will begin working on your changes. Make sure you've left
-                    all necessary feedback on the Vimeo video before submitting.
+                    all necessary feedback on the video before submitting.
                   </p>
                 </div>
               </div>
@@ -513,7 +513,7 @@ export function RevisionModal({
               disabled={
                 step === "instructions" &&
                 !reviewLink &&
-                !project.frameioReviewLink
+                !project.mediaReviewLink
               }
             >
               Next
