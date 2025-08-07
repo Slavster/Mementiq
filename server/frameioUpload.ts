@@ -246,7 +246,3 @@ export async function deleteFrameioAsset(assetId: string): Promise<boolean> {
   }
 }
 
-// Legacy compatibility exports (deprecated)
-export const uploadToVimeo = createFrameioUploadSession;
-export const createVimeoReviewLink = createFrameioReviewLink;
-export const verifyVimeoUpload = verifyFrameioUpload;
