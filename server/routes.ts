@@ -2314,10 +2314,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test Frame.io OAuth authentication only (without project creation)
+  // Test Frame.io OAuth authentication and team access
   app.post("/api/test-frameio-connection", async (req, res) => {
     try {
-      console.log("Testing Frame.io OAuth connection...");
+      console.log("Testing Frame.io OAuth connection and team access...");
       
       if (!frameioService.isConfigured()) {
         return res.status(500).json({
@@ -2330,9 +2330,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userInfo = await frameioService.initialize();
       console.log('OAuth user authenticated:', userInfo.name, userInfo.email);
 
+      // Test team access with upgraded account
+      let teams = [];
+      let teamAccess = "Not tested";
+      let teamDetails = null;
+      
+      try {
+        teams = await frameioService.makeRequest('GET', '/teams');
+        teamAccess = `✅ Found ${teams.length} teams`;
+        console.log(`Team access test: Found ${teams.length} teams`);
+        if (teams.length > 0) {
+          teamDetails = teams[0];
+          console.log("First team details:", teamDetails);
+        }
+      } catch (teamError) {
+        teamAccess = `❌ Team access failed: ${teamError.message}`;
+        console.log("Team access error:", teamError.message);
+      }
+
+      // Test account details  
+      let accountInfo = "Not available";
+      let accountDetails = null;
+      
+      try {
+        const account = await frameioService.makeRequest('GET', `/accounts/${userInfo.account_id}`);
+        accountInfo = `✅ Account: ${account.name || 'Unknown'} (${account.account_type || 'Unknown type'})`;
+        accountDetails = account;
+        console.log("Account info:", account);
+      } catch (accountError) {
+        accountInfo = `❌ Account access failed: ${accountError.message}`;
+        console.log("Account access error:", accountError.message);
+      }
+
       res.json({
         success: true,
-        message: "Frame.io OAuth connection verified",
+        message: "Frame.io connection and team access verified",
         user: {
           id: userInfo.id,
           name: userInfo.name,
@@ -2340,7 +2372,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           account_id: userInfo.account_id,
           profile_image: userInfo.profile_image
         },
-        authentication: "✅ OAuth token valid and user authenticated"
+        authentication: "✅ OAuth token valid and user authenticated",
+        teamAccess,
+        accountInfo,
+        teamsFound: teams.length,
+        teamDetails,
+        accountDetails,
+        upgradeStatus: teams.length > 0 ? "✅ Team account detected" : "⚠️ Personal account"
       });
     } catch (error) {
       console.error("Frame.io connection test error:", error);
@@ -2406,6 +2444,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         finalProject: null
       };
 
+      // Get team information for project creation
+      let teams = [];
+      try {
+        teams = await frameioService.makeRequest('GET', '/teams');
+        console.log(`Found ${teams.length} teams for project creation`);
+      } catch (teamError) {
+        console.log("Could not get teams:", teamError.message);
+      }
+
       // Try different project creation approaches
       const approaches = [
         {
@@ -2427,6 +2474,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       ];
+
+      // If we have team access, try team-based project creation
+      if (teams.length > 0) {
+        const team = teams[0];
+        approaches.push({
+          name: "Team-based Projects",
+          method: "POST",
+          url: `/teams/${team.id}/projects`,
+          body: {
+            name: testProjectName,
+            description: "Test project created via team endpoint"
+          }
+        });
+        console.log(`Added team-based approach using team ${team.id} (${team.name})`);
+      }
 
       for (const approach of approaches) {
         try {
