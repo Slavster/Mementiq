@@ -138,59 +138,113 @@ export class FrameioService {
 
   /**
    * Get or create root project for organizing user content
-   * Note: Current Frame.io token has limited permissions, so this will use a simplified approach
+   * With Frame.io Pro plan and full API permissions
    */
   async getOrCreateRootProject(): Promise<FrameioProject> {
     await this.initialize();
 
-    console.log('Frame.io token has limited permissions - using simplified folder organization');
-    console.log('Files will be organized using virtual folder structure with direct upload support');
-    
-    // Create a virtual root project that represents the account workspace
-    // Real Frame.io operations will be handled during actual file uploads
-    const rootProject: FrameioProject = {
-      id: `account-${this.teamId}`,
-      name: 'Mementiq_Users',
-      description: 'Virtual root project for Mementiq user organization',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      root_asset_id: `root-${this.teamId}`
-    };
+    try {
+      // Try teams-based approach first (for team accounts)
+      const teams = await this.makeRequest('GET', '/teams');
+      console.log('Available teams:', teams.length);
+      
+      if (teams && teams.length > 0) {
+        const team = teams[0];
+        console.log('Using team:', team.name, '(ID:', team.id, ')');
+        
+        // List projects for this team
+        const projects = await this.makeRequest('GET', `/teams/${team.id}/projects`);
+        console.log('Team projects found:', projects.length);
+        
+        const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
 
-    console.log('Using virtual root project structure for limited API access');
-    return rootProject;
+        if (rootProject) {
+          console.log('Found existing root project:', rootProject.id);
+          return rootProject;
+        }
+
+        // Create root project using team endpoint
+        const newProject = await this.makeRequest('POST', `/teams/${team.id}/projects`, {
+          name: 'Mementiq_Users',
+          description: 'Root project for organizing all Mementiq user content'
+        });
+
+        console.log('Created Frame.io team project:', newProject.id);
+        return newProject;
+      }
+
+      // Use account-based approach for personal/Pro accounts
+      console.log('Using account-based approach with account ID:', this.teamId);
+      const projects = await this.makeRequest('GET', `/accounts/${this.teamId}/projects`);
+      console.log('Account projects found:', projects.length);
+      
+      const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
+      if (rootProject) {
+        console.log('Found existing account root project:', rootProject.id);
+        return rootProject;
+      }
+
+      // Create using account endpoint  
+      const newProject = await this.makeRequest('POST', `/accounts/${this.teamId}/projects`, {
+        name: 'Mementiq_Users',
+        description: 'Root project for organizing all Mementiq user content'
+      });
+
+      console.log('Created Frame.io account project:', newProject.id);
+      return newProject;
+    } catch (error) {
+      console.error('Frame.io project management failed:', error);
+      throw new Error(`Unable to create Frame.io project structure: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
-   * Create user folder identifier for limited API access
+   * Create or get user folder within root project
+   * With full Frame.io Pro API permissions
    */
   async createUserFolder(userId: string, userEmail: string): Promise<string> {
     const rootProject = await this.getOrCreateRootProject();
     const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
-    
-    // Generate a virtual folder ID that can be used for organization
-    // Real folders will be created during file upload when we have upload permissions
-    const virtualFolderId = `${rootProject.root_asset_id}/${folderName}_${Date.now()}`;
-    
-    console.log(`Created virtual user folder: ${virtualFolderId}`);
-    console.log('Real Frame.io folder will be created during file upload');
-    
-    return virtualFolderId;
+
+    // Check if user folder already exists
+    const existingFolder = await this.findFolderByName(folderName, rootProject.root_asset_id);
+    if (existingFolder) {
+      console.log('Found existing user folder:', existingFolder.id);
+      return existingFolder.id;
+    }
+
+    // Create new user folder with Pro API permissions
+    const userFolder = await this.makeRequest('POST', `/assets/${rootProject.root_asset_id}/children`, {
+      name: folderName,
+      type: 'folder'
+    });
+
+    console.log('Created real Frame.io user folder:', userFolder.id);
+    return userFolder.id;
   }
 
   /**
-   * Create project folder identifier for limited API access
+   * Create project folder within user folder
+   * With full Frame.io Pro API permissions
    */
   async createProjectFolder(userFolderId: string, projectId: number, projectTitle: string): Promise<string> {
     const folderName = `Project_${projectId}_${projectTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
-    
-    // Generate a virtual project folder ID
-    const virtualProjectFolderId = `${userFolderId}/${folderName}`;
-    
-    console.log(`Created virtual project folder: ${virtualProjectFolderId}`);
-    console.log('Real Frame.io folder will be created during file upload');
-    
-    return virtualProjectFolderId;
+
+    // Check if project folder already exists
+    const existingFolder = await this.findFolderByName(folderName, userFolderId);
+    if (existingFolder) {
+      console.log('Found existing project folder:', existingFolder.id);
+      return existingFolder.id;
+    }
+
+    // Create new project folder with Pro API permissions
+    const projectFolder = await this.makeRequest('POST', `/assets/${userFolderId}/children`, {
+      name: folderName,
+      type: 'folder'
+    });
+
+    console.log('Created real Frame.io project folder:', projectFolder.id);
+    return projectFolder.id;
   }
 
   /**
