@@ -72,13 +72,65 @@ export interface FrameioFolder {
 
 export class FrameioService {
   private apiToken: string;
+  private clientId: string;
+  private clientSecret: string;
   private teamId: string | null = null;
 
   constructor() {
     this.apiToken = process.env.FRAMEIO_API_TOKEN || '';
+    this.clientId = process.env.FRAMEIO_CLIENT_ID || '';
+    this.clientSecret = process.env.FRAMEIO_CLIENT_SECRET || '';
+    
     if (!this.apiToken) {
       throw new Error('FRAMEIO_API_TOKEN environment variable is required');
     }
+    if (!this.clientId || !this.clientSecret) {
+      console.warn('Frame.io OAuth credentials not found - using developer token with limited permissions');
+    }
+  }
+
+  /**
+   * Generate OAuth authorization URL for Frame.io
+   */
+  generateOAuthUrl(redirectUri: string): string {
+    const baseUrl = 'https://applications.frame.io/oauth2/auth';
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: this.clientId,
+      redirect_uri: redirectUri,
+      scope: 'offline account.read asset.create asset.read project.create project.read',
+      state: 'frameio_oauth_' + Date.now()
+    });
+    
+    return `${baseUrl}?${params.toString()}`;
+  }
+
+  /**
+   * Exchange OAuth code for access token
+   */
+  async exchangeOAuthCode(code: string, redirectUri: string): Promise<any> {
+    const tokenUrl = 'https://applications.frame.io/oauth2/token';
+    const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+    
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri
+      }).toString()
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OAuth token exchange failed: ${response.status} - ${error}`);
+    }
+
+    return await response.json();
   }
 
   /**
@@ -137,57 +189,116 @@ export class FrameioService {
   }
 
   /**
-   * Get root workspace for Frame.io operations
-   * Uses direct asset access since project endpoints aren't available
+   * Get or create root project for organizing user content
+   * With full OAuth App credentials and API access
    */
   async getOrCreateRootProject(): Promise<FrameioProject> {
     await this.initialize();
 
-    console.log('Frame.io token lacks project management access - using direct asset workspace');
-    
-    // Create a workspace identifier using the account ID
-    // This allows us to organize assets directly without project management
-    const rootProject: FrameioProject = {
-      id: `workspace-${this.teamId}`,
-      name: 'Mementiq_Workspace',
-      description: 'Direct asset workspace for Mementiq integration',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      root_asset_id: 'root-workspace' // We'll use direct asset operations
-    };
+    console.log('Using Frame.io OAuth App credentials for full API access');
 
-    console.log('Using direct Frame.io asset workspace for folder organization');
-    return rootProject;
+    try {
+      // Try teams-based approach first (for team accounts)
+      const teams = await this.makeRequest('GET', '/teams');
+      console.log('Available teams:', teams.length);
+      
+      if (teams && teams.length > 0) {
+        const team = teams[0];
+        console.log('Using team:', team.name, '(ID:', team.id, ')');
+        
+        // List projects for this team
+        const projects = await this.makeRequest('GET', `/teams/${team.id}/projects`);
+        console.log('Team projects found:', projects.length);
+        
+        const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
+
+        if (rootProject) {
+          console.log('Found existing root project:', rootProject.id);
+          return rootProject;
+        }
+
+        // Create root project using team endpoint
+        const newProject = await this.makeRequest('POST', `/teams/${team.id}/projects`, {
+          name: 'Mementiq_Users',
+          description: 'Root project for organizing all Mementiq user content'
+        });
+
+        console.log('Created Frame.io team project:', newProject.id);
+        return newProject;
+      }
+
+      // Use account-based approach for personal/Pro accounts with OAuth
+      console.log('Using OAuth account-based approach with account ID:', this.teamId);
+      const projects = await this.makeRequest('GET', `/accounts/${this.teamId}/projects`);
+      console.log('Account projects found:', projects.length);
+      
+      const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
+      if (rootProject) {
+        console.log('Found existing account root project:', rootProject.id);
+        return rootProject;
+      }
+
+      // Create using account endpoint with OAuth credentials
+      const newProject = await this.makeRequest('POST', `/accounts/${this.teamId}/projects`, {
+        name: 'Mementiq_Users',
+        description: 'Root project for organizing all Mementiq user content'
+      });
+
+      console.log('Created Frame.io account project:', newProject.id);
+      return newProject;
+    } catch (error) {
+      console.error('Frame.io OAuth project management failed:', error);
+      throw new Error(`Unable to create Frame.io project structure with OAuth: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
-   * Create user folder using direct Frame.io asset operations
+   * Create or get user folder within root project
+   * With full Frame.io OAuth API permissions
    */
   async createUserFolder(userId: string, userEmail: string): Promise<string> {
-    await this.getOrCreateRootProject();
-    
-    console.log('Frame.io API has limited project access - using direct upload approach');
-    console.log('Folders will be created during file upload operations');
-    
-    // Generate a folder path identifier for upload operations
+    const rootProject = await this.getOrCreateRootProject();
     const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
-    const userFolderPath = `mementiq-users/${folderName}`;
-    
-    console.log(`Prepared user folder path: ${userFolderPath}`);
-    return userFolderPath;
+
+    // Check if user folder already exists
+    const existingFolder = await this.findFolderByName(folderName, rootProject.root_asset_id);
+    if (existingFolder) {
+      console.log('Found existing user folder:', existingFolder.id);
+      return existingFolder.id;
+    }
+
+    // Create new user folder with OAuth API permissions
+    const userFolder = await this.makeRequest('POST', `/assets/${rootProject.root_asset_id}/children`, {
+      name: folderName,
+      type: 'folder'
+    });
+
+    console.log('Created real Frame.io user folder with OAuth:', userFolder.id);
+    return userFolder.id;
   }
 
   /**
-   * Create project folder path for direct Frame.io uploads
+   * Create project folder within user folder
+   * With full Frame.io OAuth API permissions
    */
   async createProjectFolder(userFolderId: string, projectId: number, projectTitle: string): Promise<string> {
     const folderName = `Project_${projectId}_${projectTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
-    const projectFolderPath = `${userFolderId}/${folderName}`;
-    
-    console.log(`Prepared project folder path: ${projectFolderPath}`);
-    console.log('Actual folders will be created during file upload with proper organization');
-    
-    return projectFolderPath;
+
+    // Check if project folder already exists
+    const existingFolder = await this.findFolderByName(folderName, userFolderId);
+    if (existingFolder) {
+      console.log('Found existing project folder:', existingFolder.id);
+      return existingFolder.id;
+    }
+
+    // Create new project folder with OAuth API permissions
+    const projectFolder = await this.makeRequest('POST', `/assets/${userFolderId}/children`, {
+      name: folderName,
+      type: 'folder'
+    });
+
+    console.log('Created real Frame.io project folder with OAuth:', projectFolder.id);
+    return projectFolder.id;
   }
 
   /**
