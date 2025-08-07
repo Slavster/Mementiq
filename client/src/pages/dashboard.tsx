@@ -631,7 +631,7 @@ export default function DashboardPage() {
                       ) : project.status.toLowerCase() === "awaiting revision instructions" ? (
                         <Button
                           size="sm"
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          className="w-full bg-accent text-secondary hover:bg-yellow-500 font-semibold"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRevisionModal(project);
