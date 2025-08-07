@@ -326,7 +326,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Automatically generate review link after successful payment
                 try {
                   const project = await storage.getProject(projectId);
-                  const projectFolderId = project?.mediaFolderId?.split('/').pop();
+                  if (!project) {
+                    throw new Error(`Project ${projectId} not found`);
+                  }
+                  const projectFolderId = project.mediaFolderId?.split('/').pop();
                   
                   if (projectFolderId) {
                     const reviewLink = await createFrameioReviewLink(projectFolderId);
@@ -688,19 +691,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // User Logout
+  // User Logout - Note: This endpoint is not used with Supabase auth
   app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Logout failed",
-        });
-      }
-      res.json({
-        success: true,
-        message: "Logged out successfully",
-      });
+    // Session-based logout not needed with Supabase JWT auth
+    res.json({
+      success: true,
+      message: "Logged out successfully",
     });
   });
 
@@ -1486,7 +1482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const frameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
           if (frameioVideos && frameioVideos.length > 0) {
             const latestVideo = frameioVideos[0];
-            const videoId = latestVideo.id || latestVideo.uri?.split('/').pop();
+            const videoId = latestVideo.id;
             
             // Generate download link for the latest video
             const downloadLink = await frameioService.generateAssetDownloadLink(videoId);
@@ -1943,7 +1939,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `,
         };
         
-        await emailService.sendEmail(emailTemplate);
+        await emailService.sendEmail({
+          to: 'support@example.com',
+          subject: emailTemplate.subject,
+          html: emailTemplate.html
+        });
         console.log(`Revision request email sent for project ${projectId}`);
       }
       
@@ -3622,6 +3622,10 @@ async function downloadAsset(
   return { content, contentType };
 }
 
-export { setupRoutes };
+// Function required for compatibility - all routes are registered in registerRoutes
+export function setupRoutes(app: Express): void {
+  // This function is a placeholder - actual routes are registered in registerRoutes
+  console.log('setupRoutes called - routes are already registered via registerRoutes');
+}
 
 
