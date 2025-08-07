@@ -9,11 +9,11 @@ import { pool } from "./db";
 
 const app = express();
 
-// CORS configuration for Vimeo direct uploads
+// CORS configuration for Frame.io direct uploads
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://vimeo.com', 'https://*.vimeo.com'] 
-    : ['http://localhost:5000', 'https://vimeo.com', 'https://*.vimeo.com'],
+    ? ['https://app.frame.io', 'https://*.frame.io'] 
+    : ['http://localhost:5000', 'https://app.frame.io', 'https://*.frame.io'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']

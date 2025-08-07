@@ -1487,7 +1487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const vimeoVideos = await getFolderVideos(project.vimeoFolderId);
           if (vimeoVideos && vimeoVideos.length > 0) {
             const latestVideo = vimeoVideos[0];
-            const videoId = latestVideo.uri.split('/').pop();
+            const videoId = latestVideo.id || latestVideo.uri?.split('/').pop();
             
             // Generate download link for the latest video
             const downloadLink = await frameioService.generateAssetDownloadLink(videoId);
@@ -1815,7 +1815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get the latest video for review
-      const latestVideo = await getLatestVideoForReview(project.vimeoFolderId!);
+      const latestVideo = await frameioService.getLatestVideoForReview(project.vimeoFolderId!);
       if (!latestVideo) {
         return res.status(404).json({
           success: false,
@@ -1847,7 +1847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const emailTemplate = emailService.generateRevisionInstructionEmail(
           user.email,
           project.title,
-          reviewLink,
+          reviewLink || '',
           projectId
         );
 
@@ -2776,8 +2776,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             "No Vimeo folder, using database files. Files found:",
             files.length,
           );
-          // Use database files if no Vimeo folder
-          vimeoVideos = files.map((file) => {
+          // Use database files if no Frame.io folder
+          frameioVideos = files.map((file) => {
             console.log(
               "Mapping file (no folder):",
               file.filename,
@@ -2793,11 +2793,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Calculate storage from Vimeo videos if available, fallback to database files
+        // Calculate storage from Frame.io videos if available, fallback to database files
         let calculatedSize = totalSize;
-        if (vimeoVideos.length > 0) {
-          calculatedSize = vimeoVideos.reduce(
-            (sum, video) => sum + (video.file_size || 0),
+        if (frameioVideos.length > 0) {
+          calculatedSize = frameioVideos.reduce(
+            (sum: number, video: any) => sum + (video.file_size || 0),
             0,
           );
         }
@@ -2814,8 +2814,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log("Final response data:", {
           filesCount: files.length,
-          vimeoVideosCount: vimeoVideos.length,
-          vimeoVideoSizes: vimeoVideos.map((v) => ({
+          frameioVideosCount: frameioVideos.length,
+          frameioVideoSizes: frameioVideos.map((v: any) => ({
             name: v.name,
             size: v.file_size,
           })),
@@ -2836,7 +2836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           data: {
             files,
-            vimeoVideos,
+            frameioVideos,
             storage: {
               used: calculatedSize,
               max: maxSize,

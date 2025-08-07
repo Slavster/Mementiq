@@ -78,7 +78,7 @@ interface Project {
   vimeoFolderId?: string;
   vimeoUserFolderId?: string;
   tallyFormUrl?: string;
-  vimeoReviewLink?: string;
+  frameioReviewLink?: string;
   currentUploadSize?: number;
   uploadSizeLimit?: number;
 }
