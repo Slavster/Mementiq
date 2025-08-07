@@ -39,7 +39,7 @@ interface Project {
   status: string;
   createdAt: string;
   updatedAt: string;
-  vimeoReviewLink?: string;
+  frameioReviewLink?: string;
 }
 
 interface RevisionModalProps {
@@ -184,7 +184,7 @@ export function RevisionModal({
               </p>
             </div>
 
-            {reviewLink || project.vimeoReviewLink ? (
+            {reviewLink || project.frameioReviewLink ? (
               <>
                 <Card className="border-green-200 bg-green-50">
                   <CardHeader>
@@ -201,7 +201,7 @@ export function RevisionModal({
                     <Button
                       onClick={() =>
                         window.open(
-                          reviewLink || project.vimeoReviewLink,
+                          reviewLink || project.frameioReviewLink,
                           "_blank",
                         )
                       }
@@ -513,7 +513,7 @@ export function RevisionModal({
               disabled={
                 step === "instructions" &&
                 !reviewLink &&
-                !project.vimeoReviewLink
+                !project.frameioReviewLink
               }
             >
               Next

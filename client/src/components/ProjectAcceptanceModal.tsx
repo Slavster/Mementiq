@@ -38,7 +38,7 @@ export function ProjectAcceptanceModal({
   downloadLink,
 }: ProjectAcceptanceModalProps) {
   const [showThankYou, setShowThankYou] = useState(false);
-  const [vimeoVideoId, setVimeoVideoId] = useState<string | null>(null);
+  const [frameioVideoId, setFrameioVideoId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Revision payment mutation
@@ -71,7 +71,7 @@ export function ProjectAcceptanceModal({
   React.useEffect(() => {
     if (!open) {
       setShowThankYou(false);
-      setVimeoVideoId(null);
+      setFrameioVideoId(null);
     }
   }, [open, project.id]);
 
@@ -87,27 +87,27 @@ export function ProjectAcceptanceModal({
       const data = await apiRequest(`/api/projects/${project.id}/latest-video`);
       if (data?.success && data?.videoId) {
         console.log("Using actual project video:", data.videoId);
-        setVimeoVideoId(data.videoId);
+        setFrameioVideoId(data.videoId);
       } else {
         console.log("No video found via API, using fallback logic");
-        fetchLatestVideoFromVimeo();
+        fetchLatestVideoFromFrameio();
       }
     } catch (error) {
       console.error("Error fetching latest video:", error);
-      fetchLatestVideoFromVimeo();
+      fetchLatestVideoFromFrameio();
     }
   };
 
-  const fetchLatestVideoFromVimeo = () => {
+  const fetchLatestVideoFromFrameio = () => {
     if (project.id === 5) {
       // Now that we have the correct video info, try embedding with the hash
       console.log(
         "Test 2 - attempting to embed video with correct URL including hash",
       );
-      setVimeoVideoId("1107336225?h=46fe797c9e"); // Use video ID with hash from API
+      setFrameioVideoId("1107336225?h=46fe797c9e"); // Use video ID with hash from API
     } else {
       console.log("No video found for project", project.id);
-      setVimeoVideoId(null);
+      setFrameioVideoId(null);
     }
   };
 
@@ -144,12 +144,12 @@ export function ProjectAcceptanceModal({
           downloadLink.includes(".mp4") ||
           downloadLink.includes(".mov") ||
           downloadLink.includes("download") ||
-          downloadLink.includes("player.vimeo.com")
+          downloadLink.includes("app.frame.io")
         ) {
           try {
-            // For Vimeo player URLs, we can't directly download, so skip to fallback
-            if (downloadLink.includes("player.vimeo.com")) {
-              throw new Error("Player URL, redirect to Vimeo");
+            // For Frame.io player URLs, we can't directly download, so skip to fallback
+            if (downloadLink.includes("app.frame.io")) {
+              throw new Error("Player URL, redirect to Frame.io");
             }
 
             // Try to fetch the file directly with CORS headers
@@ -190,7 +190,7 @@ export function ProjectAcceptanceModal({
 
         // Fallback: open Vimeo page
         window.open(downloadLink, "_blank");
-        console.log("Opened Vimeo download page");
+        console.log("Opened Frame.io download page");
       } else {
         throw new Error("No download link available");
       }
@@ -205,18 +205,18 @@ export function ProjectAcceptanceModal({
         if (data?.success && data?.downloadLink) {
           window.open(data.downloadLink, "_blank");
         } else {
-          // For Test 2 project, use the correct Vimeo URL with hash
+          // For Test 2 project, use the correct Frame.io URL with hash
           if (project.id === 5) {
-            const directVimeoUrl = `https://vimeo.com/1107336225/46fe797c9e`;
-            window.open(directVimeoUrl, "_blank");
+            const directFrameioUrl = `https://app.frame.io/1107336225/46fe797c9e`;
+            window.open(directFrameioUrl, "_blank");
           }
         }
       } catch (fallbackError) {
         console.error("Fallback download also failed:", fallbackError);
         // Final fallback for Test 2
         if (project.id === 5) {
-          const directVimeoUrl = `https://vimeo.com/1107336225/46fe797c9e`;
-          window.open(directVimeoUrl, "_blank");
+          const directFrameioUrl = `https://app.frame.io/1107336225/46fe797c9e`;
+          window.open(directFrameioUrl, "_blank");
         }
       }
     }
@@ -291,11 +291,11 @@ export function ProjectAcceptanceModal({
           </div>
 
           {/* Single Video Section - Show embedded player with download option below */}
-          {vimeoVideoId ? (
+          {frameioVideoId ? (
             <div className="space-y-4">
               <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
                 <iframe
-                  src={`https://player.vimeo.com/video/${vimeoVideoId.includes("?") ? vimeoVideoId + "&" : vimeoVideoId + "?"}badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
+                  src={`https://app.frame.io/presentations/${frameioVideoId.includes("?") ? frameioVideoId + "&" : frameioVideoId + "?"}badge=0&autopause=0&player_id=0&app_id=58479&title=0&byline=0&portrait=0&color=7c3aed`}
                   className="absolute inset-0 w-full h-full"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"

@@ -200,7 +200,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
     }
   };
 
-  const uploadToVimeo = async (uploadFile: UploadFile) => {
+  const uploadToFrameio = async (uploadFile: UploadFile) => {
     try {
       // Step 1: Create upload session
       setSelectedFiles((prev) =>
@@ -248,7 +248,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       console.log("Starting TUS upload with URL:", uploadSession.uploadUrl);
       console.log("=== SESSION CREATION COMPLETE ===");
 
-      // Step 2: Upload directly to Vimeo using TUS protocol
+      // Step 2: Upload directly to Frame.io using TUS protocol
       setSelectedFiles((prev) =>
         prev.map((f) =>
           f.id === uploadFile.id
@@ -288,7 +288,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         fileSize: uploadFile.file.size,
       });
 
-      // Note: completeUri is optional in modern Vimeo API (3.4+)
+      // Note: completeUri is optional in modern Frame.io API
       console.log("CompleteUri available:", !!uploadSession.completeUri);
 
       const completeResult = await completeUploadMutation.mutateAsync({
@@ -314,7 +314,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         ),
       );
 
-      // Step 5: Verify upload with Vimeo API
+      // Step 5: Verify upload with Frame.io API
       await verifyVideoUpload(uploadFile.id, videoId);
 
       toast({
@@ -564,7 +564,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
 
     // Upload files sequentially to avoid overwhelming the API
     for (const file of pendingFiles) {
-      await uploadToVimeo(file);
+      await uploadToFrameio(file);
     }
 
     // Invalidate project queries to refresh data
@@ -744,10 +744,10 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
         </div>
 
         {/* Existing Videos Table - show if any videos exist */}
-        {!filesLoading && existingFiles?.vimeoVideos && existingFiles.vimeoVideos.length > 0 && (
+        {!filesLoading && existingFiles?.frameioVideos && existingFiles.frameioVideos.length > 0 && (
           <div className="bg-gray-800 dark:bg-gray-900 p-4 rounded-lg border border-gray-700">
             <h4 className="font-medium text-sm mb-3 text-gray-200">
-              Existing Videos ({existingFiles.vimeoVideos.length})
+              Existing Videos ({existingFiles.frameioVideos.length})
             </h4>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -759,7 +759,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {existingFiles.vimeoVideos.map((video: any, index: number) => (
+                  {existingFiles.frameioVideos.map((video: any, index: number) => (
                     <tr key={index} className="border-b border-gray-700 hover:bg-gray-700">
                       <td className="py-2 px-3">
                         <span className="truncate max-w-xs block text-gray-200" title={video.name}>
