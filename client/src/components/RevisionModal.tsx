@@ -8,7 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -60,7 +66,10 @@ export function RevisionModal({
   // Generate review link mutation
   const generateLinkMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/projects/${project!.id}/generate-review-link`);
+      const response = await apiRequest(
+        "POST",
+        `/api/projects/${project!.id}/generate-review-link`,
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -68,7 +77,8 @@ export function RevisionModal({
         setReviewLink(data.reviewLink);
         toast({
           title: "Review Link Generated",
-          description: "Your Vimeo review link has been created. Check your email for instructions!",
+          description:
+            "Your Vimeo review link has been created. Check your email for instructions!",
         });
       } else {
         toast({
@@ -90,16 +100,21 @@ export function RevisionModal({
   // Submit revision request mutation
   const submitRevisionMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/projects/${project!.id}/request-revision`, {
-        instructions: revisionInstructions,
-      });
+      const response = await apiRequest(
+        "POST",
+        `/api/projects/${project!.id}/request-revision`,
+        {
+          instructions: revisionInstructions,
+        },
+      );
       return response.json();
     },
     onSuccess: (data) => {
       if (data.success) {
         toast({
           title: "Revision Request Submitted",
-          description: "Your revision instructions have been submitted. We'll start working on them right away!",
+          description:
+            "Your revision instructions have been submitted. We'll start working on them right away!",
         });
         onOpenChange(false);
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -161,7 +176,9 @@ export function RevisionModal({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">Step 1: Provide Revision Instructions</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Step 1: Provide Revision Instructions
+              </h3>
               <p className="text-gray-600 mb-4">
                 Review your video and provide detailed feedback for our editors.
               </p>
@@ -176,32 +193,54 @@ export function RevisionModal({
                       Review Your Video
                     </CardTitle>
                     <CardDescription className="text-green-700">
-                      Click the link below to watch your video on Vimeo and leave timestamp-specific comments.
+                      Click the link below to watch your video in review mode,
+                      highlight and leave comments on anything you want changed.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Button
-                      onClick={() => window.open(reviewLink || project.vimeoReviewLink, '_blank')}
+                      onClick={() =>
+                        window.open(
+                          reviewLink || project.vimeoReviewLink,
+                          "_blank",
+                        )
+                      }
                       className="w-full bg-blue-600 hover:bg-blue-700"
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Open Video on Vimeo
+                      Open Video in Review Mode
                     </Button>
                   </CardContent>
                 </Card>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">💡 How to Leave Effective Feedback:</h4>
+                  <h4 className="font-semibold text-blue-800 mb-2">
+                    💡 How to Leave Effective Feedback:
+                  </h4>
                   <ul className="text-blue-700 text-sm space-y-1">
-                    <li>• Click anywhere on the video timeline to leave timestamp-specific comments</li>
-                    <li>• Be as detailed as possible about what needs to be changed</li>
-                    <li>• Mention specific elements like text, music, transitions, or pacing</li>
-                    <li>• If you have new assets, you can upload them in the next step</li>
+                    <li>
+                      • Click anywhere on the video timeline to leave
+                      timestamp-specific comments
+                    </li>
+                    <li>
+                      • Be as detailed as possible about what needs to be
+                      changed
+                    </li>
+                    <li>
+                      • Mention specific elements like text, music, transitions,
+                      or pacing
+                    </li>
+                    <li>
+                      • If you have new assets, you can upload them in the next
+                      step
+                    </li>
                   </ul>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="instructions">Additional Instructions (Optional)</Label>
+                  <Label htmlFor="instructions">
+                    Additional Instructions (Optional)
+                  </Label>
                   <Textarea
                     id="instructions"
                     placeholder="Add any general feedback or instructions that don't relate to specific timestamps..."
@@ -210,7 +249,8 @@ export function RevisionModal({
                     className="min-h-[120px]"
                   />
                   <p className="text-sm text-gray-600">
-                    You can leave detailed timestamp comments on Vimeo and use this field for general notes.
+                    You can leave detailed timestamp comments on Vimeo and use
+                    this field for general notes.
                   </p>
                 </div>
               </>
@@ -222,13 +262,16 @@ export function RevisionModal({
                     Review Link Needed
                   </CardTitle>
                   <CardDescription className="text-orange-700">
-                    We couldn't automatically generate your review link. Please click below to create it manually.
+                    We couldn't automatically generate your review link. Please
+                    click below to create it manually.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button
                     onClick={handleGenerateLink}
-                    disabled={generateLinkMutation.isPending || isGeneratingLink}
+                    disabled={
+                      generateLinkMutation.isPending || isGeneratingLink
+                    }
                     className="w-full bg-orange-600 hover:bg-orange-700"
                   >
                     {generateLinkMutation.isPending ? (
@@ -253,7 +296,9 @@ export function RevisionModal({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">Step 2: Upload Additional Assets (Optional)</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Step 2: Upload Additional Assets (Optional)
+              </h3>
               <p className="text-gray-600 mb-4">
                 Upload any new videos or photos needed for your revisions.
               </p>
@@ -268,10 +313,12 @@ export function RevisionModal({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <DirectVideoUpload 
+                  <DirectVideoUpload
                     projectId={project.id}
                     onUploadComplete={() => {
-                      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                      queryClient.invalidateQueries({
+                        queryKey: ["/api/projects"],
+                      });
                     }}
                   />
                 </CardContent>
@@ -285,10 +332,12 @@ export function RevisionModal({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <DirectPhotoUpload 
+                  <DirectPhotoUpload
                     projectId={project.id}
                     onUploadComplete={() => {
-                      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                      queryClient.invalidateQueries({
+                        queryKey: ["/api/projects"],
+                      });
                     }}
                   />
                 </CardContent>
@@ -299,10 +348,13 @@ export function RevisionModal({
               <div className="flex items-start">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-yellow-800">Optional Step</h4>
+                  <h4 className="font-semibold text-yellow-800">
+                    Optional Step
+                  </h4>
                   <p className="text-yellow-700 text-sm">
-                    Only upload new assets if they're needed for your revisions. 
-                    You can skip this step if your feedback only involves editing existing content.
+                    Only upload new assets if they're needed for your revisions.
+                    You can skip this step if your feedback only involves
+                    editing existing content.
                   </p>
                 </div>
               </div>
@@ -314,7 +366,9 @@ export function RevisionModal({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">Step 3: Confirm Your Revision Request</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Step 3: Confirm Your Revision Request
+              </h3>
               <p className="text-gray-600 mb-4">
                 Review your submission before sending it to our editors.
               </p>
@@ -322,21 +376,25 @@ export function RevisionModal({
 
             <Card className="border-blue-200 bg-blue-50">
               <CardHeader>
-                <CardTitle className="text-blue-800">Revision Summary</CardTitle>
+                <CardTitle className="text-blue-800">
+                  Revision Summary
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
                   <span className="font-medium">Project:</span> {project.title}
                 </div>
                 <div>
-                  <span className="font-medium">Vimeo Comments:</span> 
+                  <span className="font-medium">Vimeo Comments:</span>
                   <span className="ml-2 text-blue-600">
                     Left directly on the video timeline
                   </span>
                 </div>
                 {revisionInstructions && (
                   <div>
-                    <span className="font-medium">Additional Instructions:</span>
+                    <span className="font-medium">
+                      Additional Instructions:
+                    </span>
                     <div className="mt-1 p-2 bg-white rounded border text-sm">
                       {revisionInstructions}
                     </div>
@@ -351,8 +409,9 @@ export function RevisionModal({
                 <div>
                   <h4 className="font-semibold text-red-800">Important</h4>
                   <p className="text-red-700 text-sm">
-                    Once you submit these revision instructions, our editors will begin working on your changes. 
-                    Make sure you've left all necessary feedback on the Vimeo video before submitting.
+                    Once you submit these revision instructions, our editors
+                    will begin working on your changes. Make sure you've left
+                    all necessary feedback on the Vimeo video before submitting.
                   </p>
                 </div>
               </div>
@@ -399,22 +458,34 @@ export function RevisionModal({
         {/* Progress Indicator */}
         <div className="flex items-center justify-center mb-6">
           <div className="flex items-center space-x-4">
-            <div className={`flex items-center ${step === "instructions" ? "text-blue-600" : step === "uploads" || step === "confirmation" ? "text-green-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "instructions" ? "bg-blue-600 text-white" : step === "uploads" || step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}>
+            <div
+              className={`flex items-center ${step === "instructions" ? "text-blue-600" : step === "uploads" || step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "instructions" ? "bg-blue-600 text-white" : step === "uploads" || step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+              >
                 1
               </div>
               <span className="ml-2 text-sm font-medium">Instructions</span>
             </div>
             <div className="w-8 h-px bg-gray-300"></div>
-            <div className={`flex items-center ${step === "uploads" ? "text-blue-600" : step === "confirmation" ? "text-green-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "uploads" ? "bg-blue-600 text-white" : step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}>
+            <div
+              className={`flex items-center ${step === "uploads" ? "text-blue-600" : step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "uploads" ? "bg-blue-600 text-white" : step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+              >
                 2
               </div>
               <span className="ml-2 text-sm font-medium">Assets</span>
             </div>
             <div className="w-8 h-px bg-gray-300"></div>
-            <div className={`flex items-center ${step === "confirmation" ? "text-blue-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "confirmation" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
+            <div
+              className={`flex items-center ${step === "confirmation" ? "text-blue-600" : "text-gray-400"}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "confirmation" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+              >
                 3
               </div>
               <span className="ml-2 text-sm font-medium">Confirm</span>
@@ -439,7 +510,11 @@ export function RevisionModal({
           {step !== "confirmation" && (
             <Button
               onClick={handleNext}
-              disabled={step === "instructions" && !reviewLink && !project.vimeoReviewLink}
+              disabled={
+                step === "instructions" &&
+                !reviewLink &&
+                !project.vimeoReviewLink
+              }
             >
               Next
               <ArrowRight className="h-4 w-4 ml-2" />

@@ -159,7 +159,13 @@ export const createVimeoReviewLink = async (projectFolderId: string): Promise<st
         )[0];
 
         const videoId = latestVideo.uri.split('/').pop();
-        console.log(`Creating review link for video ${videoId}`);
+        console.log(`🔍 Creating review link for video ${videoId}`);
+        console.log(`Video details:`, {
+          name: latestVideo.name,
+          uri: latestVideo.uri,
+          created: latestVideo.created_time,
+          modified: latestVideo.modified_time
+        });
 
         // First, set video privacy to allow review link sharing and comments
         client.request({
@@ -187,18 +193,29 @@ export const createVimeoReviewLink = async (projectFolderId: string): Promise<st
           client.request({
             method: 'POST',
             path: `/videos/${videoId}/review_links`,
-            query: {
-              // No additional options needed - Vimeo will generate a unique review token
-            }
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
           }, (reviewError: any, reviewBody: any) => {
             if (reviewError) {
               console.error(`Error creating review link for ${videoId}:`, reviewError);
+              console.log('Review error details:', reviewError.message || reviewError);
+              
               // Fallback: try to get existing review links
               client.request({
                 method: 'GET',
                 path: `/videos/${videoId}/review_links`
               }, (getError: any, getBody: any) => {
-                if (getError || !getBody.data || getBody.data.length === 0) {
+                if (getError) {
+                  console.error(`Error getting existing review links for ${videoId}:`, getError);
+                  reject(new Error('Failed to create or retrieve review link'));
+                  return;
+                }
+                
+                console.log('Get review links response:', getBody);
+                
+                if (!getBody.data || getBody.data.length === 0) {
                   console.error(`No review links available for ${videoId}`);
                   reject(new Error('Failed to create or retrieve review link'));
                   return;
@@ -211,6 +228,7 @@ export const createVimeoReviewLink = async (projectFolderId: string): Promise<st
               return;
             }
 
+            console.log('Review link creation response:', reviewBody);
             const reviewLink = reviewBody.link;
             console.log(`✅ Review link created: ${reviewLink}`);
             resolve(reviewLink);
