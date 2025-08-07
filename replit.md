@@ -9,6 +9,7 @@ Mementiq is a professional video editing services website designed as a modern f
 - **Enhanced Webhook System**: Updated webhook handling from Vimeo events to Frame.io asset completion events for real-time project status updates.
 - **Generic Database Schema Migration (August 2025)**: Successfully completed migration from platform-specific field names (vimeoFolderId, vimeoVideoId, etc.) to generic equivalents (mediaFolderId, mediaAssetId, etc.) across entire codebase. This enables seamless future migrations between media platforms without code changes. Updated all database tables, API endpoints, service methods, client components, and documentation to use generic terminology.
 - **Final Vimeo Cleanup (August 2025)**: Removed all remaining legacy Vimeo compatibility exports from frameioUpload.ts, completing the full migration to Frame.io platform.
+- **Complete ImageKit Migration (August 2025)**: Successfully migrated all photo upload functionality from ImageKit to Frame.io. Added photo upload capabilities to Frame.io service, updated all API endpoints to use Frame.io for photos, removed imagekitService.ts, and updated client components. Frame.io now serves as the unified platform for both video and photo management with consistent folder structure and thumbnail generation.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -57,6 +58,6 @@ Preferred communication style: Simple, everyday language.
 - **Form Validation**: `zod`.
 - **Authentication**: `Supabase Auth` (`@supabase/supabase-js`).
 - **Payment Processing**: `Stripe` (for subscriptions, checkout sessions, webhooks).
-- **Video Hosting/Upload**: `Frame.io API` (for direct uploads via TUS protocol, video management, review links).
+- **Video & Photo Hosting/Upload**: `Frame.io API` (unified platform for direct uploads via TUS protocol, video management, photo management, review links, and thumbnail generation).
 - **Object Storage (Internal)**: `@replit/object-storage` SDK for serving static assets.
 - **Development Tools**: `Vite`, `esbuild`, `TypeScript`, `tsx`.

@@ -460,6 +460,87 @@ export class FrameioService {
   }
 
   /**
+   * Upload photo file to Frame.io (replaces ImageKit photo uploads)
+   */
+  async uploadPhoto(
+    base64Data: string,
+    filename: string,
+    parentFolderId: string,
+    userId: string
+  ): Promise<{
+    fileId: string;
+    url: string;
+    thumbnailUrl: string;
+    name: string;
+    size: number;
+    downloadUrl?: string;
+  }> {
+    try {
+      // Convert base64 to buffer for upload
+      const buffer = Buffer.from(base64Data, 'base64');
+      const mimeType = this.getMimeTypeFromFilename(filename);
+      
+      // Upload to Frame.io using existing uploadFile method
+      const asset = await this.uploadFile(buffer, filename, buffer.length, mimeType, parentFolderId);
+      
+      // Generate thumbnail URL
+      const thumbnailUrl = this.generateThumbnailUrl(asset.id);
+      
+      return {
+        fileId: asset.id,
+        url: asset.download_url || asset.stream_url || '',
+        thumbnailUrl,
+        name: asset.name,
+        size: asset.filesize || buffer.length,
+        downloadUrl: asset.download_url
+      };
+    } catch (error) {
+      console.error('Frame.io photo upload error:', error);
+      throw new Error(`Frame.io photo upload failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Create user project folder structure for photos (replaces ImageKit folder structure)
+   */
+  async createUserProjectPhotoFolder(userId: string, projectId: number): Promise<string> {
+    try {
+      // Get or create user folder
+      const userFolder = await this.getOrCreateUserFolder(userId);
+      
+      // Get or create project folder within user folder
+      const projectFolderName = `Project_${projectId}`;
+      const projectFolder = await this.getOrCreateFolder(projectFolderName, userFolder.id);
+      
+      // Create Photos subfolder within project
+      const photosFolderName = 'Photos';
+      const photosFolder = await this.getOrCreateFolder(photosFolderName, projectFolder.id);
+      
+      return photosFolder.id;
+    } catch (error) {
+      console.error('Error creating photo folder structure:', error);
+      throw new Error(`Failed to create photo folder structure: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Get MIME type from filename
+   */
+  private getMimeTypeFromFilename(filename: string): string {
+    const ext = filename.toLowerCase().split('.').pop() || '';
+    const mimeTypes: Record<string, string> = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'bmp': 'image/bmp',
+      'svg': 'image/svg+xml'
+    };
+    return mimeTypes[ext] || 'image/jpeg';
+  }
+
+  /**
    * Check if service is properly configured
    */
   isConfigured(): boolean {
