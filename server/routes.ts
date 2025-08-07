@@ -1309,20 +1309,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Increment user usage count for successful project creation
         await storage.incrementUserUsage(req.user!.id);
 
-        // Create Frame.io folder structure (virtual for limited API access)
+        // Create real Frame.io folder structure with Pro API permissions
         try {
-          // Step 1: Create virtual user folder identifier
+          // Step 1: Create real user folder in Frame.io
           console.log(
-            `Creating user folder identifier for user ${req.user!.id} (${req.user!.email})`,
+            `Creating Frame.io user folder for user ${req.user!.id} (${req.user!.email})`,
           );
           const userFolderId = await frameioService.createUserFolder(
             req.user!.id,
             req.user!.email,
           );
 
-          // Step 2: Create virtual project subfolder identifier
+          // Step 2: Create real project subfolder in Frame.io
           console.log(
-            `Creating project folder identifier for project ${project.id}: "${project.title}"`,
+            `Creating Frame.io project folder for project ${project.id}: "${project.title}"`,
           );
           const projectFolderId = await frameioService.createProjectFolder(
             userFolderId,
@@ -1330,7 +1330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             project.title,
           );
 
-          // Step 3: Update project with Frame.io folder information
+          // Step 3: Update project with real Frame.io folder information
           await storage.updateProjectMediaInfo(
             project.id,
             projectFolderId,
@@ -1341,12 +1341,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const updatedProject = await storage.getProject(project.id);
 
           console.log(
-            `Successfully created virtual folder structure: User(${userFolderId}) -> Project(${projectFolderId})`,
+            `Successfully created real Frame.io folders: User(${userFolderId}) -> Project(${projectFolderId})`,
           );
 
           res.status(201).json({
             success: true,
-            message: "Project created successfully with Frame.io integration ready",
+            message: "Project created successfully with hierarchical Frame.io folder structure",
             project: updatedProject,
             folders: {
               userFolder: userFolderId,
@@ -1354,14 +1354,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
           });
         } catch (frameioError) {
-          console.error("Frame.io setup failed:", frameioError);
+          console.error("Frame.io folder creation failed:", frameioError);
           // Project is still created, just without Frame.io integration
           res.status(201).json({
             success: true,
             message: "Project created successfully",
             project,
             warning:
-              "Frame.io setup failed - files will be uploaded without folder organization.",
+              "Frame.io folder setup failed - contact support for assistance.",
           });
         }
       } catch (error) {
