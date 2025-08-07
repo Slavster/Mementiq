@@ -2189,6 +2189,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Vimeo video API to check for review links (for debugging)
+  app.get("/api/test-vimeo-video/:videoId", async (req, res) => {
+    try {
+      const { videoId } = req.params;
+      console.log(`Testing Vimeo API for video ${videoId}...`);
+      
+      // Test with direct HTTP call instead
+      const vimeoAccessToken = process.env.VIMEO_ACCESS_TOKEN;
+      if (!vimeoAccessToken) {
+        return res.json({
+          success: false,
+          error: "VIMEO_ACCESS_TOKEN not configured",
+          videoId
+        });
+      }
+      
+      const response = await fetch(`https://api.vimeo.com/videos/${videoId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${vimeoAccessToken}`,
+          'Accept': 'application/vnd.vimeo.*+json;version=3.4'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Vimeo API error response:', errorText);
+        return res.json({
+          success: false,
+          error: `HTTP ${response.status}: ${errorText}`,
+          videoId,
+          errorCode: response.status
+        });
+      }
+      
+      const body = await response.json();
+      console.log('Video API Response received');
+      
+      // Check for review link fields
+      const reviewFields = {
+        review_link: body.review_link,
+        review_page: body.review_page,
+        link: body.link,
+        manage_link: body.manage_link,
+        player_embed_url: body.player_embed_url,
+        hasReviewInLink: body.link ? body.link.includes('/review/') : false,
+        allKeys: Object.keys(body).filter(key => key.toLowerCase().includes('review') || key.toLowerCase().includes('link'))
+      };
+      
+      console.log('Review link fields:', reviewFields);
+      
+      res.json({
+        success: true,
+        videoId,
+        reviewFields,
+        hasApiAccess: true,
+        sampleFields: {
+          name: body.name,
+          status: body.status,
+          created_time: body.created_time
+        },
+        allLinkFields: {
+          link: body.link,
+          manage_link: body.manage_link,
+          review_page: body.review_page,
+          player_embed_url: body.player_embed_url
+        }
+      });
+    } catch (error: any) {
+      console.error("Test Vimeo API error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to test Vimeo API",
+        error: error.message
+      });
+    }
+  });
+
   // Test video delivery email (for debugging)
   app.post("/api/test-delivery-email", async (req, res) => {
     try {
