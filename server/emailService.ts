@@ -187,10 +187,10 @@ export class EmailService {
               <h3 style="margin-top: 0; color: #fd7e14;">How to Provide Revision Instructions</h3>
               <ol style="margin: 0; padding-left: 20px;">
                 <li><strong>Review your video</strong> using the Vimeo link below</li>
-                <li><strong>Leave specific comments</strong> on any frame by clicking on the video timeline</li>
+                <li><strong>Leave specific comments</strong> on any object in any frame by clicking on them </li>
                 <li><strong>Be as detailed as possible</strong> - the more specific your feedback, the better the result</li>
-                <li><strong>Upload additional assets</strong> if needed (optional)</li>
-                <li><strong>Submit your instructions</strong> when ready</li>
+                <li><strong>Upload additional video clips or photos via your dashboard</strong> if needed (optional)</li>
+                <li><strong>Submit your instructions on the dashboard</strong> when ready</li>
               </ol>
             </div>
             
@@ -227,9 +227,14 @@ export class EmailService {
     userEmail: string,
     userName: string,
     projectTitle: string,
-    vimeoReviewLink: string
+    vimeoReviewLink: string,
   ) {
-    const emailData = this.generateRevisionInstructionEmail(userEmail, projectTitle, vimeoReviewLink, 0);
+    const emailData = this.generateRevisionInstructionEmail(
+      userEmail,
+      projectTitle,
+      vimeoReviewLink,
+      0,
+    );
     return await this.sendEmail(emailData);
   }
 }
