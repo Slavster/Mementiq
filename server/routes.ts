@@ -1309,20 +1309,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Increment user usage count for successful project creation
         await storage.incrementUserUsage(req.user!.id);
 
-        // Set up Frame.io integration with available permissions
+        // Create real Frame.io folder structure with OAuth credentials
         try {
-          // Step 1: Prepare user folder path for Frame.io uploads
+          // Step 1: Create real user folder in Frame.io
           console.log(
-            `Preparing Frame.io integration for user ${req.user!.id} (${req.user!.email})`,
+            `Creating Frame.io user folder for user ${req.user!.id} (${req.user!.email})`,
           );
           const userFolderId = await frameioService.createUserFolder(
             req.user!.id,
             req.user!.email,
           );
 
-          // Step 2: Prepare project folder path for organized uploads
+          // Step 2: Create real project subfolder in Frame.io
           console.log(
-            `Setting up project organization for project ${project.id}: "${project.title}"`,
+            `Creating Frame.io project folder for project ${project.id}: "${project.title}"`,
           );
           const projectFolderId = await frameioService.createProjectFolder(
             userFolderId,
@@ -1330,23 +1330,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             project.title,
           );
 
-          // Step 3: Update project with Frame.io organization paths
+          // Step 3: Update project with real Frame.io folder information
           await storage.updateProjectMediaInfo(
             project.id,
             projectFolderId,
             userFolderId,
           );
 
-          // Get updated project with organization info
+          // Get updated project with folder info
           const updatedProject = await storage.getProject(project.id);
 
           console.log(
-            `Successfully configured Frame.io integration: ${userFolderId} -> ${projectFolderId}`,
+            `Successfully created real Frame.io folders with OAuth: User(${userFolderId}) -> Project(${projectFolderId})`,
           );
 
           res.status(201).json({
             success: true,
-            message: "Project created successfully with Frame.io integration configured",
+            message: "Project created successfully with hierarchical Frame.io folder structure",
             project: updatedProject,
             folders: {
               userFolder: userFolderId,
@@ -1354,14 +1354,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
           });
         } catch (frameioError) {
-          console.error("Frame.io setup failed:", frameioError);
+          console.error("Frame.io OAuth folder creation failed:", frameioError);
           // Project is still created, just without Frame.io integration
           res.status(201).json({
             success: true,
             message: "Project created successfully",
             project,
             warning:
-              "Frame.io setup failed - files will be uploaded without organization.",
+              "Frame.io OAuth setup failed - contact support for assistance.",
           });
         }
       } catch (error) {
@@ -2311,6 +2311,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: error.message || "Frame.io photo test failed"
       });
+    }
+  });
+
+  // Frame.io OAuth endpoints
+  app.get('/api/frameio/oauth/url', (req, res) => {
+    try {
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/frameio/oauth/callback`;
+      const authUrl = frameioService.generateOAuthUrl(redirectUri);
+      
+      res.json({
+        success: true,
+        authUrl: authUrl,
+        message: 'Use this URL to authorize Frame.io access'
+      });
+    } catch (error) {
+      console.error('Frame.io OAuth URL generation failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate Frame.io OAuth URL'
+      });
+    }
+  });
+
+  app.get('/api/frameio/oauth/callback', async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code) {
+        return res.status(400).json({
+          success: false,
+          error: 'Authorization code not provided'
+        });
+      }
+
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/frameio/oauth/callback`;
+      const tokenData = await frameioService.exchangeOAuthCode(code as string, redirectUri);
+      
+      // Display success page with token instructions
+      res.send(`
+        <html>
+          <head><title>Frame.io OAuth Success</title></head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
+            <h2 style="color: green;">✅ Frame.io OAuth Authorization Successful!</h2>
+            <p>Your access token has been generated. To use it:</p>
+            <ol>
+              <li>Copy the access token below</li>
+              <li>Replace your current FRAMEIO_API_TOKEN in Replit Secrets</li>
+              <li>The token expires in ${tokenData.expires_in} seconds (1 hour)</li>
+            </ol>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <strong>Access Token:</strong><br>
+              <textarea readonly style="width: 100%; height: 100px; font-family: monospace;">${tokenData.access_token}</textarea>
+            </div>
+            <p><a href="/">← Back to Mementiq</a></p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('Frame.io OAuth callback failed:', error);
+      res.send(`
+        <html>
+          <head><title>Frame.io OAuth Error</title></head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
+            <h2 style="color: red;">❌ Frame.io OAuth Authorization Failed</h2>
+            <p>Error: ${error instanceof Error ? error.message : String(error)}</p>
+            <p><a href="/">← Back to Mementiq</a></p>
+          </body>
+        </html>
+      `);
     }
   });
 
@@ -3480,5 +3549,7 @@ async function downloadAsset(
 
   return { content, contentType };
 }
+
+export { setupRoutes };
 
 
