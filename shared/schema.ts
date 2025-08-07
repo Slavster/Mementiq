@@ -140,6 +140,7 @@ export const updateProjectSchema = createInsertSchema(projects).pick({
   status: true,
   vimeoFolderId: true,
   vimeoUserFolderId: true,
+  vimeoReviewLink: true,
   currentUploadSize: true,
   tallyFormUrl: true,
   updatedAt: true,
