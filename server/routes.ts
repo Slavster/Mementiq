@@ -2368,16 +2368,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Frame.io OAuth endpoints
+  // Frame.io OAuth endpoints with multiple redirect URI options
   app.get('/api/frameio/oauth/url', (req, res) => {
     try {
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/frameio/oauth/callback`;
+      const host = req.get('host');
+      const protocol = req.protocol;
+      
+      // Generate multiple potential redirect URIs for Frame.io OAuth app registration
+      const redirectUris = [
+        `${protocol}://${host}/api/frameio/oauth/callback`,
+        `https://${host}/api/frameio/oauth/callback`,
+        'http://localhost:5000/api/frameio/oauth/callback'
+      ];
+      
+      // Use the most likely correct URI for current environment
+      const redirectUri = redirectUris[0];
       const authUrl = frameioService.generateOAuthUrl(redirectUri);
       
       res.json({
         success: true,
         authUrl: authUrl,
-        message: 'Use this URL to authorize Frame.io access'
+        redirectUri: redirectUri,
+        allRedirectUris: redirectUris,
+        message: 'Use this URL to authorize Frame.io access',
+        troubleshooting: {
+          error: 'If you get "invalid_request" error about redirect_uri',
+          solution: 'Add these redirect URIs to your Frame.io OAuth app settings',
+          urls: redirectUris
+        }
       });
     } catch (error) {
       console.error('Frame.io OAuth URL generation failed:', error);
