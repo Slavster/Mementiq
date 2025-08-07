@@ -47,7 +47,7 @@ export interface IStorage {
   getProjectsByStatus(statuses: string[]): Promise<Project[]>;
   createProject(userId: string, project: InsertProject): Promise<Project>;
   updateProject(id: number, updates: UpdateProject): Promise<Project | undefined>;
-  updateProjectVimeoInfo(id: number, frameioFolderId: string, userFolderUri?: string): Promise<void>;
+  updateProjectMediaInfo(id: number, mediaFolderId: string, userFolderUri?: string): Promise<void>;
   deleteProject(id: number): Promise<void>;
   
   // Project file methods
@@ -79,6 +79,7 @@ export interface IStorage {
   // Photo file methods
   getPhotoFiles(albumId: number): Promise<PhotoFile[]>;
   getPhotoFilesByProject(projectId: number): Promise<PhotoFile[]>;
+  getPhotoFileByMediaId(mediaFileId: string): Promise<PhotoFile | undefined>;
   createPhotoFile(userId: string, file: InsertPhotoFile): Promise<PhotoFile>;
   updatePhotoFile(id: number, updates: Partial<PhotoFile>): Promise<PhotoFile | undefined>;
   deletePhotoFile(id: number): Promise<void>;
@@ -185,10 +186,10 @@ export class DatabaseStorage implements IStorage {
     return newProject;
   }
 
-  async updateProjectVimeoInfo(projectId: number, frameioFolderId: string, frameioUserFolderId?: string): Promise<void> {
-    const updateData: any = { vimeoFolderId: frameioFolderId };
-    if (frameioUserFolderId) {
-      updateData.vimeoUserFolderId = frameioUserFolderId;
+  async updateProjectMediaInfo(projectId: number, mediaFolderId: string, mediaUserFolderId?: string): Promise<void> {
+    const updateData: any = { mediaFolderId: mediaFolderId };
+    if (mediaUserFolderId) {
+      updateData.mediaUserFolderId = mediaUserFolderId;
     }
 
     await db
@@ -197,11 +198,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projects.id, projectId));
   }
 
-  async updateProjectVimeoReviewLink(projectId: number, frameioReviewLink: string): Promise<Project | null> {
+  async updateProjectMediaReviewLink(projectId: number, mediaReviewLink: string): Promise<Project | null> {
     const [result] = await db
       .update(projects)
       .set({ 
-        vimeoReviewLink: frameioReviewLink,
+        mediaReviewLink: mediaReviewLink,
         updatedAt: new Date()
       })
       .where(eq(projects.id, projectId))
@@ -483,11 +484,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(photoFiles.uploadDate));
   }
 
-  async getPhotoFileByImageKitId(imagekitFileId: string): Promise<PhotoFile | undefined> {
+  async getPhotoFileByMediaId(mediaFileId: string): Promise<PhotoFile | undefined> {
     const [file] = await db
       .select()
       .from(photoFiles)
-      .where(eq(photoFiles.imagekitFileId, imagekitFileId));
+      .where(eq(photoFiles.mediaFileId, mediaFileId));
     return file || undefined;
   }
 
