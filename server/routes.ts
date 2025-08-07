@@ -16,21 +16,15 @@ import {
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
-import { vimeoService } from "./vimeo";
+import { frameioService } from "./frameioService";
 import { getProjectUploadSize } from "./upload";
 import {
-  createUploadSession,
-  completeUpload,
-  getVideoDetails,
-  moveVideoToFolder,
+  createFrameioUploadSession,
+  completeFrameioUpload,
   getFolderVideos,
-  generateVideoDownloadLink,
-  verifyVideoInProjectFolder,
-  configureDeliveredVideo,
-  createVimeoReviewLink,
-  getLatestVideoForReview,
-} from "./vimeoUpload";
-import { imagekitService } from "./imagekitService";
+  createFrameioReviewLink,
+  verifyFrameioUpload,
+} from "./frameioUpload";
 import { emailService } from "./emailService";
 import "./types"; // Import session types
 import Stripe from "stripe";
@@ -335,7 +329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const projectFolderId = project?.vimeoFolderId?.split('/').pop();
                   
                   if (projectFolderId) {
-                    const reviewLink = await createVimeoReviewLink(projectFolderId);
+                    const reviewLink = await createFrameioReviewLink(projectFolderId);
                     if (reviewLink) {
                       // Save review link to database
                       await storage.updateProject(projectId, {
@@ -551,20 +545,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
-  // Vimeo webhook endpoint for video upload notifications
-  app.post("/api/webhooks/vimeo", async (req, res) => {
+  // Frame.io webhook endpoint for video upload notifications
+  app.post("/api/webhooks/frameio", async (req, res) => {
     try {
-      console.log("Vimeo webhook received:", req.body);
+      console.log("Frame.io webhook received:", req.body);
       
-      const { event_type, data } = req.body;
+      const { type, data } = req.body;
       
-      if (event_type === 'video.upload.complete') {
-        const videoId = data.uri.split('/').pop();
-        const videoName = data.name;
+      if (type === 'asset.uploaded' || type === 'asset.processing_complete') {
+        const assetId = data.id;
+        const assetName = data.name;
         
-        console.log(`Video upload completed: ${videoId} - ${videoName}`);
+        console.log(`Video processing completed: ${assetId} - ${assetName}`);
         
-        // Find which project this video belongs to by checking all projects in "edit in progress" or "revision in progress" status
+        // Find which project this asset belongs to by checking all projects in "edit in progress" or "revision in progress" status
         const projectsInProgress = await storage.getProjectsByStatus(['edit in progress', 'revision in progress']);
         
         console.log(`Found ${projectsInProgress.length} projects in progress to check`);
@@ -574,24 +568,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (project.vimeoFolderId) {
             try {
-              const belongsToProject = await verifyVideoInProjectFolder(videoId, project.vimeoFolderId);
-              console.log(`Does video ${videoId} belong to project ${project.id}? ${belongsToProject}`);
+              // Check if asset belongs to this project's folder
+              const belongsToProject = await frameioService.verifyAssetInProjectFolder(assetId, project.vimeoFolderId);
+              console.log(`Does asset ${assetId} belong to project ${project.id}? ${belongsToProject}`);
               
               if (belongsToProject) {
-                console.log(`Video ${videoId} belongs to project ${project.id} (${project.title})`);
+                console.log(`Asset ${assetId} belongs to project ${project.id} (${project.title})`);
                 
-                // CRITICAL: Configure video privacy settings for delivery
-                // Ensures: 1) Unlisted, 2) Downloadable, 3) Embeddable
-                try {
-                  await configureDeliveredVideo(videoId);
-                  console.log(`Privacy settings configured for delivered video: ${videoId}`);
-                } catch (privacyError) {
-                  console.error(`Failed to configure privacy for video ${videoId}:`, privacyError);
-                  // Continue with delivery even if privacy config fails
-                }
-                
-                // Generate download link
-                const downloadLink = await generateVideoDownloadLink(videoId);
+                // Generate download link from Frame.io
+                const downloadLink = await frameioService.generateAssetDownloadLink(assetId);
                 
                 if (downloadLink) {
                   // Update project status to "delivered"
@@ -619,23 +604,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Store the download link in project files
                   await storage.createProjectFile({
                     projectId: project.id,
-                    vimeoVideoId: videoId,
+                    vimeoVideoId: assetId,
                     vimeoVideoUrl: downloadLink,
-                    filename: videoName,
-                    originalFilename: videoName,
-                    fileType: 'video/mp4',
-                    fileSize: data.file_size || 0,
+                    filename: assetName,
+                    originalFilename: assetName,
+                    fileType: data.type || 'video/mp4',
+                    fileSize: data.filesize || 0,
                     uploadStatus: 'completed',
                   });
                   
                 } else {
-                  console.log(`Could not generate download link for video ${videoId}`);
+                  console.log(`Could not generate download link for asset ${assetId}`);
                 }
                 
                 break; // Found the project, no need to check others
               }
             } catch (error) {
-              console.error(`Error checking if video ${videoId} belongs to project ${project.id}:`, error);
+              console.error(`Error checking if asset ${assetId} belongs to project ${project.id}:`, error);
             }
           }
         }
@@ -643,7 +628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ received: true });
     } catch (error) {
-      console.error("Vimeo webhook processing error:", error);
+      console.error("Frame.io webhook processing error:", error);
       res.status(500).json({ error: "Webhook processing failed" });
     }
   });
@@ -818,9 +803,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Generate review link
+      // Generate Frame.io review link
       console.log(`🎬 Generating review link for project ${projectId}, folder: ${projectFolderId}`);
-      const reviewLink = await createVimeoReviewLink(projectFolderId);
+      const reviewLink = await createFrameioReviewLink(projectFolderId);
       console.log(`🔗 Review link result:`, reviewLink);
       
       if (!reviewLink) {
@@ -1324,13 +1309,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Increment user usage count for successful project creation
         await storage.incrementUserUsage(req.user!.id);
 
-        // Create hierarchical Vimeo folder structure
+        // Create hierarchical Frame.io folder structure
         try {
-          // Step 1: Ensure user has a main folder in Vimeo
+          // Step 1: Ensure user has a main folder in Frame.io
           console.log(
             `Creating/getting user folder for user ${req.user!.id} (${req.user!.email})`,
           );
-          const userFolderUri = await vimeoService.createUserFolder(
+          const userFolderId = await frameioService.createUserFolder(
             req.user!.id,
             req.user!.email,
           );
@@ -1339,45 +1324,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(
             `Creating project subfolder for project ${project.id}: "${project.title}"`,
           );
-          const projectFolderUri = await vimeoService.createProjectFolder(
-            userFolderUri,
+          const projectFolderId = await frameioService.createProjectFolder(
+            userFolderId,
             project.id,
             project.title,
           );
 
-          // Step 3: Update project with Vimeo folder information
+          // Step 3: Update project with Frame.io folder information
           await storage.updateProjectVimeoInfo(
             project.id,
-            projectFolderUri,
-            userFolderUri,
+            projectFolderId,
+            userFolderId,
           );
 
           // Get updated project with folder info
           const updatedProject = await storage.getProject(project.id);
 
           console.log(
-            `Successfully created hierarchical folders: User(${userFolderUri}) -> Project(${projectFolderUri})`,
+            `Successfully created hierarchical folders: User(${userFolderId}) -> Project(${projectFolderId})`,
           );
 
           res.status(201).json({
             success: true,
             message:
-              "Project created successfully with hierarchical Vimeo folder structure",
+              "Project created successfully with hierarchical Frame.io folder structure",
             project: updatedProject,
             folders: {
-              userFolder: userFolderUri,
-              projectFolder: projectFolderUri,
+              userFolder: userFolderId,
+              projectFolder: projectFolderId,
             },
           });
-        } catch (vimeoError) {
-          console.error("Vimeo folder creation failed:", vimeoError);
-          // Project is still created, just without Vimeo integration
+        } catch (frameioError) {
+          console.error("Frame.io folder creation failed:", frameioError);
+          // Project is still created, just without Frame.io integration
           res.status(201).json({
             success: true,
             message: "Project created successfully",
             project,
             warning:
-              "Vimeo folder setup failed - videos will be uploaded to root. Contact support for assistance.",
+              "Frame.io folder setup failed - videos will be uploaded to root. Contact support for assistance.",
           });
         }
       } catch (error) {
@@ -1848,7 +1833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const reviewLink = await createVimeoReviewLink(projectFolderId);
+      const reviewLink = await createFrameioReviewLink(projectFolderId);
 
       // Store review link in project
       await storage.updateProject(projectId, {
@@ -2133,32 +2118,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uploadDate: latestVideo.uploadDate
         });
       } else {
-        // If no video in DB, try to get from Vimeo folder directly
-        console.log(`No video in DB for project ${projectId}, checking Vimeo folder`);
+        // If no video in DB, try to get from Frame.io folder directly
+        console.log(`No video in DB for project ${projectId}, checking Frame.io folder`);
         try {
           if (project.vimeoFolderId) {
-            const vimeoVideos = await getFolderVideos(project.vimeoFolderId);
-            if (vimeoVideos && vimeoVideos.length > 0) {
-              // Get the most recent video
-              const latestVimeoVideo = vimeoVideos[0]; // Already sorted by date
-              console.log(`Found video in Vimeo folder:`, latestVimeoVideo.uri);
-              const videoId = latestVimeoVideo.uri.split('/').pop();
-              
-              // Extract the hash from the player_embed_url for proper embedding
-              let videoIdWithHash = videoId;
-              if (latestVimeoVideo.player_embed_url) {
-                const hashMatch = latestVimeoVideo.player_embed_url.match(/\?h=([^&]+)/);
-                if (hashMatch) {
-                  videoIdWithHash = `${videoId}?h=${hashMatch[1]}`;
-                }
-              }
+            const frameioAssets = await getFolderVideos(project.vimeoFolderId);
+            if (frameioAssets && frameioAssets.length > 0) {
+              // Get the most recent asset
+              const latestAsset = frameioAssets[0]; // Already sorted by date
+              console.log(`Found asset in Frame.io folder:`, latestAsset.id);
               
               res.json({
                 success: true,
-                videoId: videoIdWithHash, // Include hash for proper embedding
-                filename: latestVimeoVideo.name,
-                uploadDate: latestVimeoVideo.created_time,
-                directLink: latestVimeoVideo.link
+                videoId: latestAsset.id,
+                filename: latestAsset.name,
+                uploadDate: latestAsset.uploaded_at,
+                directLink: latestAsset.download_url
               });
             } else {
               res.json({
@@ -2169,11 +2144,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             res.json({
               success: false,
-              message: "No Vimeo folder configured for this project"
+              message: "No Frame.io folder configured for this project"
             });
           }
-        } catch (vimeoError) {
-          console.error('Error fetching from Vimeo:', vimeoError);
+        } catch (frameioError) {
+          console.error('Error fetching from Frame.io:', frameioError);
           res.json({
             success: false,
             message: "No video found for this project"
@@ -2189,80 +2164,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test Vimeo video API to check for review links (for debugging)
-  app.get("/api/test-vimeo-video/:videoId", async (req, res) => {
+  // Test Frame.io asset API to check for asset details (for debugging)
+  app.get("/api/test-frameio-asset/:assetId", async (req, res) => {
     try {
-      const { videoId } = req.params;
-      console.log(`Testing Vimeo API for video ${videoId}...`);
+      const { assetId } = req.params;
+      console.log(`Testing Frame.io API for asset ${assetId}...`);
       
-      // Test with direct HTTP call instead
-      const vimeoAccessToken = process.env.VIMEO_ACCESS_TOKEN;
-      if (!vimeoAccessToken) {
-        return res.json({
-          success: false,
-          error: "VIMEO_ACCESS_TOKEN not configured",
-          videoId
-        });
-      }
-      
-      const response = await fetch(`https://api.vimeo.com/videos/${videoId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${vimeoAccessToken}`,
-          'Accept': 'application/vnd.vimeo.*+json;version=3.4'
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Vimeo API error response:', errorText);
-        return res.json({
-          success: false,
-          error: `HTTP ${response.status}: ${errorText}`,
-          videoId,
-          errorCode: response.status
-        });
-      }
-      
-      const body = await response.json();
-      console.log('Video API Response received');
-      
-      // Check for review link fields
-      const reviewFields = {
-        review_link: body.review_link,
-        review_page: body.review_page,
-        link: body.link,
-        manage_link: body.manage_link,
-        player_embed_url: body.player_embed_url,
-        hasReviewInLink: body.link ? body.link.includes('/review/') : false,
-        allKeys: Object.keys(body).filter(key => key.toLowerCase().includes('review') || key.toLowerCase().includes('link'))
-      };
-      
-      console.log('Review link fields:', reviewFields);
+      const assetDetails = await frameioService.getAssetDetails(assetId);
       
       res.json({
         success: true,
-        videoId,
-        reviewFields,
-        hasApiAccess: true,
-        sampleFields: {
-          name: body.name,
-          status: body.status,
-          created_time: body.created_time
-        },
-        allLinkFields: {
-          link: body.link,
-          manage_link: body.manage_link,
-          review_page: body.review_page,
-          player_embed_url: body.player_embed_url
-        }
+        assetId,
+        assetData: assetDetails,
+        hasApiAccess: true
       });
+      
     } catch (error: any) {
-      console.error("Test Vimeo API error:", error);
+      console.error("Test Frame.io API error:", error);
       res.status(500).json({
         success: false,
-        message: "Failed to test Vimeo API",
-        error: error.message
+        message: "Failed to test Frame.io API",
+        error: error.message,
+        assetId: req.params.assetId
       });
     }
   });
@@ -2607,21 +2530,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Create upload session
-        const uploadSession = await createUploadSession(
+        // Create Frame.io upload session
+        const uploadSession = await createFrameioUploadSession(
           fileName,
           fileSize,
-          project.vimeoFolderId || undefined,
+          'video/mp4', // Default MIME type, should be passed from frontend
+          project.vimeoFolderId || '', // Frame.io folder ID
         );
 
-        console.log("Raw Vimeo uploadSession object:", uploadSession);
+        console.log("Raw Frame.io uploadSession object:", uploadSession);
         console.log("Upload session keys:", Object.keys(uploadSession));
 
         const sessionResponse = {
-          uploadUrl: uploadSession.upload_link,
-          videoUri: uploadSession.video_uri,
-          completeUri: uploadSession.complete_uri,
-          ticketId: uploadSession.ticket_id,
+          uploadUrl: uploadSession.uploadUrl,
+          videoUri: uploadSession.assetId,
+          completeUri: uploadSession.completeUri,
+          assetId: uploadSession.assetId,
         };
 
         console.log("Sending upload session response:", sessionResponse);
@@ -2693,31 +2617,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Complete the upload (only if completeUri is available)
-        if (completeUri) {
-          await completeUpload(completeUri);
-        } else {
-          console.log(
-            "No completeUri provided - using modern API flow (completion checked via video status)",
-          );
-        }
+        // Complete the Frame.io upload
+        console.log(
+          "Completing Frame.io upload for asset:",
+          videoUri
+        );
 
-        // Move video to project folder if needed
-        if (project.vimeoFolderId) {
-          try {
-            console.log(
-              `Attempting to move video ${videoUri} to folder ${project.vimeoFolderId}`,
-            );
-            await moveVideoToFolder(videoUri, project.vimeoFolderId);
-            console.log("Video moved to folder successfully");
-          } catch (moveError) {
-            console.warn("Failed to move video to folder:", moveError);
-            // Continue even if move fails - this is not critical
-          }
-        }
-
-        // Get video details
-        const videoDetails = await getVideoDetails(videoUri);
+        // Get asset details from Frame.io
+        const videoDetails = await completeFrameioUpload(
+          videoUri,
+          fileName,
+          fileSize
+        );
 
         // Save file record
         const fileRecord = await storage.createProjectFile(projectId, {
@@ -2993,8 +2904,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Verify video upload status with Vimeo
-        const verification = await vimeoService.verifyVideoUpload(videoId);
+        // Verify video upload status with Frame.io
+        const verification = await verifyFrameioUpload(videoId);
 
         res.json({
           success: true,
@@ -3161,7 +3072,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Check folder contents using Vimeo API
+        // Check folder contents using Frame.io API
         const folderVideos = await getFolderVideos(project.vimeoFolderId);
 
         res.json({
