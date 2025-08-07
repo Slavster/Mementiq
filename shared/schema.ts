@@ -25,10 +25,10 @@ export const projects = pgTable("projects", {
   userId: text("user_id").references(() => users.id).notNull(), // Changed to text
   title: text("title").notNull(),
   status: text("status").notNull().default("draft"),
-  vimeoFolderId: text("vimeo_folder_id"), // Vimeo folder URI for this project
-  vimeoUserFolderId: text("vimeo_user_folder_id"), // User's main folder URI
+  vimeoFolderId: text("vimeo_folder_id"), // Frame.io folder URI for this project (kept for backward compatibility)
+  vimeoUserFolderId: text("vimeo_user_folder_id"), // User's main folder URI (kept for backward compatibility)
   tallyFormUrl: text("tally_form_url"),
-  vimeoReviewLink: text("vimeo_review_link"), // Vimeo review link for revisions
+  vimeoReviewLink: text("vimeo_review_link"), // Frame.io review link for revisions (kept for backward compatibility)
   uploadSizeLimit: bigint("upload_size_limit", { mode: "number" }).default(10737418240), // 10GB default
   currentUploadSize: bigint("current_upload_size", { mode: "number" }).default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -38,8 +38,8 @@ export const projects = pgTable("projects", {
 export const projectFiles = pgTable("project_files", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
-  vimeoVideoId: text("vimeo_video_id"), // Vimeo video URI
-  vimeoVideoUrl: text("vimeo_video_url"), // Public Vimeo URL
+  vimeoVideoId: text("vimeo_video_id"), // Frame.io video URI (kept for backward compatibility)
+  vimeoVideoUrl: text("vimeo_video_url"), // Public Frame.io URL (kept for backward compatibility)
   filename: text("filename").notNull(),
   originalFilename: text("original_filename").notNull(),
   fileType: text("file_type").notNull(),

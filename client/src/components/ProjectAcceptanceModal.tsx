@@ -26,7 +26,7 @@ interface ProjectAcceptanceModalProps {
     id: number;
     title: string;
     status: string;
-    vimeoFolderId?: string;
+    frameioFolderId?: string;
   };
   downloadLink?: string;
 }

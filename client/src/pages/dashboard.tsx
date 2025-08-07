@@ -75,8 +75,8 @@ interface Project {
   status: string;
   createdAt: string;
   updatedAt: string;
-  vimeoFolderId?: string;
-  vimeoUserFolderId?: string;
+  frameioFolderId?: string;
+  frameioUserFolderId?: string;
   tallyFormUrl?: string;
   frameioReviewLink?: string;
   currentUploadSize?: number;
@@ -756,7 +756,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm text-gray-400">Video Integration</p>
                   <div className="flex items-center gap-2">
-                    {selectedProject.vimeoFolderId ? (
+                    {selectedProject.frameioFolderId ? (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-400" />
                         <span className="text-sm text-green-400">
@@ -815,7 +815,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Step Content */}
-              {currentStep === "upload" && selectedProject.vimeoFolderId ? (
+              {currentStep === "upload" && selectedProject.frameioFolderId ? (
                 <div className="space-y-6">
                   <DirectVideoUpload
                     projectId={selectedProject.id}
