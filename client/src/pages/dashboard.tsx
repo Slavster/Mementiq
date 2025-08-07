@@ -90,7 +90,7 @@ const getStatusColor = (status: string) => {
     case "awaiting instructions":
       return "bg-orange-600";
     case "awaiting revision instructions":
-      return "bg-yellow-600";
+      return "bg-orange-600";
     case "edit in progress":
       return "bg-primary";
     case "video is ready":
@@ -631,7 +631,7 @@ export default function DashboardPage() {
                       ) : project.status.toLowerCase() === "awaiting revision instructions" ? (
                         <Button
                           size="sm"
-                          className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRevisionModal(project);
