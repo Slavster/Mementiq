@@ -2322,7 +2322,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!frameioService.isConfigured()) {
         return res.status(500).json({
           success: false,
-          message: "Frame.io service is not properly configured"
+          message: "Frame.io OAuth credentials (Client ID/Secret) are not configured. Please check environment variables.",
+          troubleshooting: {
+            required: "FRAMEIO_CLIENT_ID and FRAMEIO_CLIENT_SECRET",
+            note: "OAuth flow requires client credentials for token exchange"
+          }
         });
       }
 

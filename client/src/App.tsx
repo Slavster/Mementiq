@@ -10,6 +10,7 @@ import SettingsPage from "@/pages/settings";
 import Subscribe from "@/pages/subscribe";
 import PaymentCancelledPage from "@/pages/payment-cancelled";
 import PaymentSuccessPage from "@/pages/payment-success";
+import FrameioTest from "@/pages/FrameioTest";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/payment-cancelled" component={PaymentCancelledPage} />
       <Route path="/payment-success" component={PaymentSuccessPage} />
+      <Route path="/frameio-test" component={FrameioTest} />
       <Route component={NotFound} />
     </Switch>
   );
