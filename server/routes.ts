@@ -2386,8 +2386,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/frameio/oauth/callback'
       ];
       
-      // Use the HTTPS version for Replit production environment
-      const redirectUri = host.includes('replit.dev') ? `https://${host}/api/frameio/oauth/callback` : redirectUris[0];
+      // Always use the Replit production URL that matches Frame.io OAuth app settings
+      const redirectUri = 'https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/frameio/oauth/callback';
       const authUrl = frameioService.generateOAuthUrl(redirectUri);
       
       res.json({

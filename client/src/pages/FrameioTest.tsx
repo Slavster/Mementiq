@@ -232,8 +232,11 @@ export default function FrameioTest() {
             </ol>
             <p className="mt-2 text-sm font-medium">
               Redirect URL configured: <code className="text-xs bg-gray-100 px-1 rounded">
-                /api/frameio/oauth/callback
+                https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/frameio/oauth/callback
               </code>
+            </p>
+            <p className="mt-1 text-xs text-green-600">
+              ✅ Frame.io OAuth app updated with correct redirect URI
             </p>
           </AlertDescription>
         </Alert>
