@@ -88,8 +88,18 @@ export class FrameioService {
     if (this.teamId) return;
 
     try {
+      console.log('Initializing Frame.io service...');
       const response = await this.makeRequest('GET', '/me');
-      this.teamId = response.team_id;
+      console.log('Frame.io /me response:', response);
+      
+      // Frame.io API may return team_id, account_id, or id depending on the account type
+      this.teamId = response.team_id || response.account_id || response.id;
+      
+      if (!this.teamId) {
+        console.error('No team/account ID found in Frame.io response:', response);
+        throw new Error('Unable to retrieve Frame.io team ID from API response');
+      }
+      
       console.log('Frame.io service initialized with team ID:', this.teamId);
     } catch (error) {
       console.error('Failed to initialize Frame.io service:', error);
@@ -195,6 +205,27 @@ export class FrameioService {
 
     console.log('Created project folder:', projectFolder.id);
     return projectFolder.id;
+  }
+
+  /**
+   * Create subfolder within a parent folder
+   */
+  async createSubfolder(parentFolderId: string, folderName: string): Promise<string> {
+    // Check if subfolder already exists
+    const existingFolder = await this.findFolderByName(folderName, parentFolderId);
+    if (existingFolder) {
+      console.log('Found existing subfolder:', existingFolder.id);
+      return existingFolder.id;
+    }
+
+    // Create new subfolder
+    const subfolder = await this.makeRequest('POST', `/assets/${parentFolderId}/children`, {
+      name: folderName,
+      type: 'folder'
+    });
+
+    console.log('Created subfolder:', subfolder.id);
+    return subfolder.id;
   }
 
   /**
@@ -481,7 +512,7 @@ export class FrameioService {
       const mimeType = this.getMimeTypeFromFilename(filename);
       
       // Upload to Frame.io using existing uploadFile method
-      const asset = await this.uploadFile(buffer, filename, buffer.length, mimeType, parentFolderId);
+      const asset = await this.uploadFile(Uint8Array.from(buffer), filename, buffer.length, mimeType, parentFolderId);
       
       // Generate thumbnail URL
       const thumbnailUrl = this.generateThumbnailUrl(asset.id);
@@ -506,17 +537,17 @@ export class FrameioService {
   async createUserProjectPhotoFolder(userId: string, projectId: number): Promise<string> {
     try {
       // Get or create user folder
-      const userFolder = await this.getOrCreateUserFolder(userId);
+      const userFolderId = await this.createUserFolder(userId, `user_${userId}`);
       
       // Get or create project folder within user folder
       const projectFolderName = `Project_${projectId}`;
-      const projectFolder = await this.getOrCreateFolder(projectFolderName, userFolder.id);
+      const projectFolderId = await this.createProjectFolder(userFolderId, projectId, projectFolderName);
       
       // Create Photos subfolder within project
       const photosFolderName = 'Photos';
-      const photosFolder = await this.getOrCreateFolder(photosFolderName, projectFolder.id);
+      const photosFolder = await this.createSubfolder(projectFolderId, photosFolderName);
       
-      return photosFolder.id;
+      return photosFolder;
     } catch (error) {
       console.error('Error creating photo folder structure:', error);
       throw new Error(`Failed to create photo folder structure: ${error instanceof Error ? error.message : String(error)}`);

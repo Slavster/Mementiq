@@ -3,8 +3,16 @@ import { supabase } from './supabase';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let message;
+    try {
+      // Try to parse as JSON first for structured errors
+      const errorData = await res.json();
+      message = errorData.message || errorData.error || JSON.stringify(errorData);
+    } catch {
+      // Fallback to text if JSON parsing fails
+      message = await res.text() || res.statusText;
+    }
+    throw new Error(`${res.status}: ${message}`);
   }
 }
 
@@ -55,7 +63,15 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return await res.json();
+  
+  // Only parse JSON if response has content
+  const contentType = res.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return await res.json();
+  }
+  
+  // Return empty object for successful non-JSON responses
+  return {};
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -81,7 +97,15 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    
+    // Only parse JSON if response has content
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await res.json();
+    }
+    
+    // Return empty object for successful non-JSON responses
+    return {};
   };
 
 export const queryClient = new QueryClient({
