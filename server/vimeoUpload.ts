@@ -161,7 +161,7 @@ export const createVimeoReviewLink = async (projectFolderId: string): Promise<st
         const videoId = latestVideo.uri.split('/').pop();
         console.log(`Creating review link for video ${videoId}`);
 
-        // Set video privacy to allow review link sharing
+        // First, set video privacy to allow review link sharing and comments
         client.request({
           method: 'PATCH',
           path: `/videos/${videoId}`,
@@ -174,17 +174,47 @@ export const createVimeoReviewLink = async (projectFolderId: string): Promise<st
               embed: 'private'
             }
           }
-        }, (error: any, body: any) => {
-          if (error) {
-            console.error(`Error updating video privacy for ${videoId}:`, error);
-            reject(error);
+        }, (privacyError: any, privacyBody: any) => {
+          if (privacyError) {
+            console.error(`Error updating video privacy for ${videoId}:`, privacyError);
+            reject(privacyError);
             return;
           }
 
-          // Generate the review link - Vimeo automatically creates review links for videos
-          const reviewLink = `https://vimeo.com/${videoId}`;
-          console.log(`✅ Review link created: ${reviewLink}`);
-          resolve(reviewLink);
+          console.log(`✅ Video privacy updated for ${videoId}`);
+
+          // Now create a review link using Vimeo's review link API
+          client.request({
+            method: 'POST',
+            path: `/videos/${videoId}/review_links`,
+            query: {
+              // No additional options needed - Vimeo will generate a unique review token
+            }
+          }, (reviewError: any, reviewBody: any) => {
+            if (reviewError) {
+              console.error(`Error creating review link for ${videoId}:`, reviewError);
+              // Fallback: try to get existing review links
+              client.request({
+                method: 'GET',
+                path: `/videos/${videoId}/review_links`
+              }, (getError: any, getBody: any) => {
+                if (getError || !getBody.data || getBody.data.length === 0) {
+                  console.error(`No review links available for ${videoId}`);
+                  reject(new Error('Failed to create or retrieve review link'));
+                  return;
+                }
+                
+                const reviewLink = getBody.data[0].link;
+                console.log(`✅ Found existing review link: ${reviewLink}`);
+                resolve(reviewLink);
+              });
+              return;
+            }
+
+            const reviewLink = reviewBody.link;
+            console.log(`✅ Review link created: ${reviewLink}`);
+            resolve(reviewLink);
+          });
         });
       })
       .catch((error) => {
