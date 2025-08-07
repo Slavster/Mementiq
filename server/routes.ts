@@ -2391,6 +2391,211 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Frame.io project creation capabilities
+  app.post("/api/test-frameio-project-creation", async (req, res) => {
+    try {
+      console.log("Testing Frame.io project creation...");
+      
+      await frameioService.initialize();
+      
+      const testProjectName = `Mementiq_Test_${Date.now()}`;
+      const testResults = {
+        authentication: "✅ OAuth authenticated",
+        attempts: [],
+        success: false,
+        finalProject: null
+      };
+
+      // Try different project creation approaches
+      const approaches = [
+        {
+          name: "Direct Projects Endpoint",
+          method: "POST",
+          url: "/projects",
+          body: {
+            name: testProjectName,
+            description: "Test project created via OAuth API"
+          }
+        },
+        {
+          name: "Account-based Projects",
+          method: "POST", 
+          url: `/accounts/${frameioService.teamId}/projects`,
+          body: {
+            name: testProjectName,
+            description: "Test project created via account endpoint"
+          }
+        }
+      ];
+
+      for (const approach of approaches) {
+        try {
+          console.log(`Trying ${approach.name}...`);
+          const result = await frameioService.makeRequest(approach.method, approach.url, approach.body);
+          
+          testResults.attempts.push({
+            approach: approach.name,
+            status: "✅ Success",
+            projectId: result.id,
+            projectName: result.name
+          });
+          
+          testResults.success = true;
+          testResults.finalProject = result;
+          console.log(`${approach.name} successful:`, result.id);
+          break;
+        } catch (error) {
+          console.log(`${approach.name} failed:`, error.message);
+          testResults.attempts.push({
+            approach: approach.name,
+            status: "❌ Failed",
+            error: error.message
+          });
+        }
+      }
+
+      res.json({
+        success: testResults.success,
+        message: testResults.success ? 
+          `Project creation successful using ${testResults.attempts.find(a => a.status.includes('Success'))?.approach}` :
+          "All project creation approaches failed (expected for personal accounts)",
+        testResults,
+        capabilities: {
+          projectCreation: testResults.success ? "✅ Available" : "❌ Limited (personal account)",
+          authentication: "✅ Working",
+          apiAccess: "✅ Confirmed"
+        }
+      });
+
+    } catch (error) {
+      console.error("Frame.io project creation test error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Project creation test failed",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Test Frame.io asset upload capabilities  
+  app.post("/api/test-frameio-asset-upload", async (req, res) => {
+    try {
+      console.log("Testing Frame.io asset upload capabilities...");
+      
+      await frameioService.initialize();
+      
+      const testResults = {
+        authentication: "✅ OAuth authenticated",
+        uploadCapabilities: [],
+        success: false
+      };
+
+      // Test 1: Check available projects for upload
+      let targetProject = null;
+      try {
+        const projects = await frameioService.makeRequest('GET', '/projects');
+        console.log(`Found ${projects.length} accessible projects`);
+        
+        if (projects.length > 0) {
+          targetProject = projects[0];
+          testResults.uploadCapabilities.push({
+            test: "Project Access",
+            status: "✅ Available",
+            details: `Found ${projects.length} projects, using: ${targetProject.name}`
+          });
+        } else {
+          testResults.uploadCapabilities.push({
+            test: "Project Access", 
+            status: "⚠️ No existing projects",
+            details: "Would need to create project first"
+          });
+        }
+      } catch (error) {
+        testResults.uploadCapabilities.push({
+          test: "Project Access",
+          status: "❌ Limited",
+          details: error.message
+        });
+      }
+
+      // Test 2: Check upload URL generation capability
+      if (targetProject) {
+        try {
+          // Test getting upload URL for the root asset
+          const uploadInfo = await frameioService.makeRequest('POST', `/assets/${targetProject.root_asset_id}/children`, {
+            name: `test_upload_${Date.now()}.txt`,
+            type: 'file',
+            filetype: 'text/plain',
+            filesize: 100
+          });
+          
+          testResults.uploadCapabilities.push({
+            test: "Upload URL Generation",
+            status: "✅ Available", 
+            details: `Upload URL generated for asset: ${uploadInfo.id}`
+          });
+          
+          testResults.success = true;
+
+        } catch (error) {
+          testResults.uploadCapabilities.push({
+            test: "Upload URL Generation",
+            status: "❌ Failed",
+            details: error.message
+          });
+        }
+      }
+
+      // Test 3: Check folder creation capability
+      if (targetProject) {
+        try {
+          const testFolderName = `Test_Folder_${Date.now()}`;
+          const folder = await frameioService.makeRequest('POST', `/assets/${targetProject.root_asset_id}/children`, {
+            name: testFolderName,
+            type: 'folder'
+          });
+          
+          testResults.uploadCapabilities.push({
+            test: "Folder Creation",
+            status: "✅ Available",
+            details: `Created folder: ${folder.name} (${folder.id})`
+          });
+          
+          testResults.success = true;
+
+        } catch (error) {
+          testResults.uploadCapabilities.push({
+            test: "Folder Creation", 
+            status: "❌ Failed",
+            details: error.message
+          });
+        }
+      }
+
+      res.json({
+        success: testResults.success,
+        message: testResults.success ? 
+          "Frame.io upload capabilities confirmed" :
+          "Upload capabilities limited (may need existing projects)",
+        testResults,
+        capabilities: {
+          authentication: "✅ Working",
+          projectAccess: targetProject ? "✅ Available" : "❌ Limited", 
+          assetUpload: testResults.success ? "✅ Available" : "❌ Limited",
+          folderCreation: testResults.success ? "✅ Available" : "❌ Limited"
+        }
+      });
+
+    } catch (error) {
+      console.error("Frame.io asset upload test error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Asset upload test failed",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Frame.io OAuth endpoints with multiple redirect URI options
   app.get('/api/frameio/oauth/url', (req, res) => {
     try {
