@@ -17,6 +17,7 @@ import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
 import { frameioService } from "./frameioService";
+import { frameioV4Service } from "./frameioV4Service";
 import { getProjectUploadSize } from "./upload";
 import {
   createFrameioUploadSession,
@@ -3307,6 +3308,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   const httpServer = createServer(app);
+  // Frame.io V4 OAuth endpoints
+  app.get("/api/auth/frameio", async (req: Request, res: Response) => {
+    try {
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/frameio/callback`;
+      const state = Math.random().toString(36).substring(7);
+      
+      // Store state in session for verification
+      req.session.frameioOAuthState = state;
+      
+      const authUrl = frameioV4Service.getAuthorizationUrl(redirectUri, state);
+      
+      console.log(`Generated Frame.io V4 OAuth URL: ${authUrl}`);
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("OAuth URL generation failed:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to generate OAuth URL" 
+      });
+    }
+  });
+
+  app.get("/api/auth/frameio/callback", async (req: Request, res: Response) => {
+    try {
+      const { code, state, error } = req.query;
+
+      if (error) {
+        console.error("OAuth authorization error:", error);
+        return res.status(400).json({ 
+          success: false, 
+          message: `OAuth error: ${error}` 
+        });
+      }
+
+      if (!code) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing authorization code" 
+        });
+      }
+
+      // Verify state parameter (CSRF protection)
+      if (state !== req.session.frameioOAuthState) {
+        console.error("OAuth state mismatch");
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid state parameter" 
+        });
+      }
+
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/frameio/callback`;
+      
+      // Exchange code for access token
+      await frameioV4Service.exchangeCodeForToken(code as string, redirectUri);
+      
+      // Clear OAuth state
+      delete req.session.frameioOAuthState;
+      
+      console.log("Frame.io V4 OAuth flow completed successfully");
+      
+      // Redirect to success page
+      res.redirect(`${req.protocol}://${req.get('host')}/dashboard?frameio_connected=true`);
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "OAuth callback failed" 
+      });
+    }
+  });
+
+  // Test Frame.io V4 connection
+  app.get("/api/frameio/test", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      console.log("Testing Frame.io V4 connection...");
+      
+      await frameioV4Service.initialize();
+      const rootProject = await frameioV4Service.getOrCreateRootProject();
+      
+      res.json({
+        success: true,
+        message: "Frame.io V4 connection successful",
+        project: {
+          id: rootProject.id,
+          name: rootProject.name,
+          root_asset_id: rootProject.root_asset_id
+        }
+      });
+    } catch (error) {
+      console.error("Frame.io V4 test failed:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Frame.io V4 connection failed"
+      });
+    }
+  });
+
   return httpServer;
 }
 
