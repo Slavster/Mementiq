@@ -3308,30 +3308,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   const httpServer = createServer(app);
-  // Frame.io V4 OAuth endpoints
+  // Frame.io V4 OAuth endpoints - Manual approach for Adobe's static URI requirement
   app.get("/api/auth/frameio", async (req: Request, res: Response) => {
     try {
-      // Use stable Replit URL for production OAuth
-      const host = req.get('host');
-      const protocol = 'https'; // Always use HTTPS for OAuth
+      console.log('=== Manual Frame.io V4 OAuth URL Generation ===');
       
-      // Use the current host for redirect URI (works with dynamic .replit.dev URLs)
-      const redirectUri = `${protocol}://${host}/api/auth/frameio/callback`;
+      // Since Adobe requires static URIs, provide manual OAuth URL
+      const clientId = process.env.ADOBE_CLIENT_ID;
+      if (!clientId) {
+        throw new Error('ADOBE_CLIENT_ID not configured');
+      }
       
       const state = Math.random().toString(36).substring(7);
+      const host = req.get('host');
       
-      console.log(`OAuth callback URI: ${redirectUri}`);
-      console.log(`Host: ${host}, Protocol: ${protocol}`);
-      
-      // Store state in session for verification
+      // Store state and callback info in session
       req.session.frameioOAuthState = state;
+      req.session.frameioCallbackHost = host;
       
-      const authUrl = frameioV4Service.getAuthorizationUrl(redirectUri, state);
+      console.log(`Current host: ${host}`);
+      console.log(`Generated state: ${state}`);
       
-      console.log(`Generated Frame.io V4 OAuth URL: ${authUrl}`);
+      // Create manual OAuth URL - user will need to configure this URI in Adobe Console
+      const manualRedirectUri = `https://${host}/api/auth/frameio/callback`;
+      const manualAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(manualRedirectUri)}&response_type=code&scope=openid%2Ccreative_sdk&state=${state}`;
       
-      // Redirect directly to OAuth instead of returning JSON
-      res.redirect(authUrl);
+      console.log(`Manual OAuth URL: ${manualAuthUrl}`);
+      console.log(`Required redirect URI for Adobe Console: ${manualRedirectUri}`);
+      
+      res.json({
+        success: true,
+        message: 'Manual OAuth configuration required',
+        instructions: [
+          '1. Copy the redirect URI below to Adobe Developer Console',
+          '2. Add it as an approved redirect URI in your Frame.io OAuth app',
+          '3. Then visit the OAuth URL to authenticate'
+        ],
+        redirectUri: manualRedirectUri,
+        authUrl: manualAuthUrl,
+        note: 'Adobe requires static redirect URIs - dynamic Replit URLs must be manually configured'
+      });
     } catch (error) {
       console.error("OAuth URL generation failed:", error);
       res.status(500).json({ 
