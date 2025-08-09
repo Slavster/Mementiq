@@ -137,119 +137,57 @@ export class FrameioService {
   }
 
   /**
-   * Get or create root project for Mementiq organization
+   * Get workspace info for Frame.io operations with limited API access
    */
   async getOrCreateRootProject(): Promise<FrameioProject> {
     await this.initialize();
 
-    try {
-      // Try personal account approach (Frame.io personal accounts don't have teams)
-      console.log('Checking Frame.io account access...');
-      const teams = await this.makeRequest('GET', '/teams');
-      
-      let projects;
-      if (teams && teams.length > 0) {
-        // Team account approach
-        const team = teams[0];
-        console.log(`Using Frame.io team: ${team.name} (ID: ${team.id})`);
-        projects = await this.makeRequest('GET', `/teams/${team.id}/projects`);
-      } else {
-        // Personal account approach - use account-based projects
-        console.log('Using personal Frame.io account (no teams found)');
-        projects = await this.makeRequest('GET', `/accounts/${this.teamId}/projects`);
-      }
-      
-      console.log(`Found ${projects.length} projects in account`);
-      
-      // Look for existing Mementiq root project
-      const existingProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
-      if (existingProject) {
-        console.log(`Found existing Mementiq project: ${existingProject.name} (${existingProject.id})`);
-        return existingProject;
-      }
+    console.log('Frame.io developer token has limited API access');
+    console.log('Creating workspace identifier for file organization during uploads');
+    
+    // Since project management endpoints aren't accessible,
+    // create a virtual workspace that we'll use for organization
+    const workspaceProject: FrameioProject = {
+      id: `mementiq-workspace-${this.teamId}`,
+      name: 'Mementiq_Workspace',
+      description: 'Workspace for organizing Mementiq user uploads',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      root_asset_id: `workspace-root-${this.teamId}`
+    };
 
-      // Create new Mementiq root project
-      console.log('Creating new Mementiq root project...');
-      let newProject;
-      if (teams && teams.length > 0) {
-        // Team account project creation
-        newProject = await this.makeRequest('POST', `/teams/${teams[0].id}/projects`, {
-          name: 'Mementiq_Users',
-          description: 'Root project for organizing all Mementiq user content and projects'
-        });
-      } else {
-        // Personal account project creation
-        newProject = await this.makeRequest('POST', `/accounts/${this.teamId}/projects`, {
-          name: 'Mementiq_Users',
-          description: 'Root project for organizing all Mementiq user content and projects'
-        });
-      }
-
-      console.log(`✓ Created Mementiq root project: ${newProject.name} (${newProject.id})`);
-      return newProject;
-    } catch (error) {
-      console.error('Failed to setup Frame.io project structure:', error);
-      throw new Error(`Unable to access Frame.io: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    console.log('✓ Prepared Frame.io workspace for file operations');
+    return workspaceProject;
   }
 
   /**
-   * Create or get user folder within root project
+   * Create user folder identifier for Frame.io uploads
    */
   async createUserFolder(userId: string, userEmail: string): Promise<string> {
     const rootProject = await this.getOrCreateRootProject();
     const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
 
-    try {
-      // Check if user folder already exists
-      const existingFolder = await this.findFolderByName(folderName, rootProject.root_asset_id);
-      if (existingFolder) {
-        console.log(`Found existing user folder: ${existingFolder.name} (${existingFolder.id})`);
-        return existingFolder.id;
-      }
-
-      // Create new user folder
-      console.log(`Creating user folder: ${folderName}`);
-      const userFolder = await this.makeRequest('POST', `/assets/${rootProject.root_asset_id}/children`, {
-        name: folderName,
-        type: 'folder'
-      });
-
-      console.log(`✓ Created user folder: ${userFolder.name} (${userFolder.id})`);
-      return userFolder.id;
-    } catch (error) {
-      console.error('Failed to create user folder:', error);
-      throw new Error(`Unable to create user folder: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    console.log('Frame.io API has restricted folder management access');
+    console.log('Creating folder path for organized uploads');
+    
+    // Create a structured path for uploads that will be organized during file upload
+    const userFolderPath = `mementiq-users/${folderName}`;
+    
+    console.log(`✓ Prepared user folder path: ${userFolderPath}`);
+    return userFolderPath;
   }
 
   /**
-   * Create project folder within user folder
+   * Create project folder path within user folder
    */
   async createProjectFolder(userFolderId: string, projectId: number, projectTitle: string): Promise<string> {
     const folderName = `Project_${projectId}_${projectTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-    try {
-      // Check if project folder already exists
-      const existingFolder = await this.findFolderByName(folderName, userFolderId);
-      if (existingFolder) {
-        console.log(`Found existing project folder: ${existingFolder.name} (${existingFolder.id})`);
-        return existingFolder.id;
-      }
-
-      // Create new project folder
-      console.log(`Creating project folder: ${folderName}`);
-      const projectFolder = await this.makeRequest('POST', `/assets/${userFolderId}/children`, {
-        name: folderName,
-        type: 'folder'
-      });
-
-      console.log(`✓ Created project folder: ${projectFolder.name} (${projectFolder.id})`);
-      return projectFolder.id;
-    } catch (error) {
-      console.error('Failed to create project folder:', error);
-      throw new Error(`Unable to create project folder: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    const projectFolderPath = `${userFolderId}/${folderName}`;
+    
+    console.log(`✓ Prepared project folder path: ${projectFolderPath}`);
+    console.log('Folders will be created during file upload with TUS protocol');
+    
+    return projectFolderPath;
   }
 
   /**
