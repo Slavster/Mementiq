@@ -3344,7 +3344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '2. Add it as an approved redirect URI in your Frame.io OAuth app',
           '3. Then visit the OAuth URL to authenticate'
         ],
-        redirectUri: manualRedirectUri,
+        redirectUri: stableRedirectUri,
         authUrl: manualAuthUrl,
         note: 'Adobe requires static redirect URIs - dynamic Replit URLs must be manually configured'
       });
