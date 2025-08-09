@@ -1310,35 +1310,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Increment user usage count for successful project creation
         await storage.incrementUserUsage(req.user!.id);
 
-        // Configure Frame.io virtual organization structure
+        // Configure Frame.io V4 organization structure
         try {
           console.log(
-            `Configuring Frame.io integration for user ${req.user!.id} (${req.user!.email})`,
+            `Configuring Frame.io V4 integration for user ${req.user!.id} (${req.user!.email})`,
           );
           
-          // Create virtual folder structure for future use
-          const userFolderId = await frameioService.createUserFolder(
-            req.user!.id,
-            req.user!.email,
-          );
+          // Initialize Frame.io V4 service
+          await frameioV4Service.initialize();
           
-          const projectFolderId = await frameioService.createProjectFolder(
-            userFolderId,
-            project.id,
-            project.title,
-          );
+          // Create virtual folder structure using V4 API
+          const userFolderName = `User-${req.user!.email.split('@')[0]}-${req.user!.id.slice(0, 8)}`;
+          const userFolder = await frameioV4Service.createFolder(userFolderName);
+          
+          const projectFolderName = `${project.title}-${project.id.slice(0, 8)}`;
+          const projectFolder = await frameioV4Service.createFolder(projectFolderName, userFolder.id);
 
           // Store organization structure in database
           await storage.updateProjectMediaInfo(
             project.id,
-            projectFolderId,
-            userFolderId,
+            projectFolder.id,
+            userFolder.id,
           );
 
           const updatedProject = await storage.getProject(project.id);
 
           console.log(
-            `✓ Frame.io organization structure configured: ${userFolderId} -> ${projectFolderId}`,
+            `✓ Frame.io V4 organization structure configured: ${userFolder.id} -> ${projectFolder.id}`,
           );
 
           res.status(201).json({
@@ -1347,18 +1345,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             project: updatedProject,
             frameio: {
               status: 'configured',
-              note: 'Ready for upload organization when Frame.io Pro permissions are available',
-              userPath: userFolderId,
-              projectPath: projectFolderId,
+              note: 'Frame.io V4 folders created and ready for uploads',
+              userPath: userFolder.id,
+              projectPath: projectFolder.id,
             },
           });
         } catch (frameioError) {
-          console.error("Frame.io configuration failed:", frameioError);
+          console.error("Frame.io V4 configuration failed:", frameioError);
+          
+          // If Frame.io V4 fails, still create the project without folder structure
           res.status(201).json({
             success: true,
             message: "Project created successfully",
             project,
-            warning: "Frame.io configuration unavailable",
+            warning: `Frame.io V4 configuration unavailable: ${frameioError.message}`,
           });
         }
       } catch (error) {
