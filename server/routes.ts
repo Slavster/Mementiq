@@ -3311,10 +3311,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Frame.io V4 OAuth endpoints
   app.get("/api/auth/frameio", async (req: Request, res: Response) => {
     try {
-      // Build callback URI with proper host detection
+      // Use stable Replit URL for production OAuth
       const host = req.get('host');
-      const protocol = req.protocol;
-      const redirectUri = `${protocol}://${host}/api/auth/frameio/callback`;
+      const protocol = 'https'; // Always use HTTPS for OAuth
+      
+      // Determine the correct redirect URI based on environment
+      let redirectUri: string;
+      if (host && host.includes('.replit.dev')) {
+        // Development environment - use stable .repl.co URL
+        redirectUri = 'https://workspace.slavsinitsyn.repl.co/api/auth/frameio/callback';
+      } else {
+        // Production or stable environment
+        redirectUri = `${protocol}://${host}/api/auth/frameio/callback`;
+      }
+      
       const state = Math.random().toString(36).substring(7);
       
       console.log(`OAuth callback URI: ${redirectUri}`);
@@ -3326,10 +3336,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const authUrl = frameioV4Service.getAuthorizationUrl(redirectUri, state);
       
       console.log(`Generated Frame.io V4 OAuth URL: ${authUrl}`);
-      res.json({ 
-        authUrl,
-        redirectUri // Include for debugging
-      });
+      
+      // Redirect directly to OAuth instead of returning JSON
+      res.redirect(authUrl);
     } catch (error) {
       console.error("OAuth URL generation failed:", error);
       res.status(500).json({ 
