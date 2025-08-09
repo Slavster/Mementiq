@@ -3322,9 +3322,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const state = Math.random().toString(36).substring(7);
       const host = req.get('host');
       
-      // Store state and callback info in session
+      // Store state and callback info in session with debugging
       req.session.frameioOAuthState = state;
       req.session.frameioCallbackHost = host;
+      
+      // Force session save to ensure persistence
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            reject(err);
+          } else {
+            console.log(`Session saved with state: ${state}`);
+            resolve(void 0);
+          }
+        });
+      });
       
       console.log(`Current host: ${host}`);
       console.log(`Generated state: ${state}`);
@@ -3385,6 +3398,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify state parameter (CSRF protection)
       console.log(`Received state: ${state}`);
       console.log(`Session state: ${req.session.frameioOAuthState}`);
+      console.log(`Session ID: ${req.sessionID}`);
+      console.log(`All session data:`, req.session);
+      
+      if (!req.session.frameioOAuthState) {
+        console.error("No OAuth state found in session - session may have expired or been cleared");
+        return res.status(400).json({ 
+          success: false, 
+          message: "Session expired - please generate a new OAuth URL" 
+        });
+      }
       
       if (state !== req.session.frameioOAuthState) {
         console.error("OAuth state mismatch - this can happen if you used an old OAuth URL");
