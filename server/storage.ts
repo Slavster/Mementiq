@@ -1,23 +1,23 @@
-import { 
-  users, 
-  projects, 
-  projectFiles, 
-  projectStatusLog, 
+import {
+  users,
+  projects,
+  projectFiles,
+  projectStatusLog,
   emailSignups,
   tallyFormSubmissions,
   photoAlbums,
   photoFiles,
   revisionPayments,
   oauthStates,
-  type User, 
-  type InsertUser, 
+  type User,
+  type InsertUser,
   type Project,
   type InsertProject,
   type UpdateProject,
   type ProjectFile,
   type InsertProjectFile,
   type ProjectStatusLog,
-  type EmailSignup, 
+  type EmailSignup,
   type InsertEmailSignup,
   type TallyFormSubmission,
   type InsertTallyFormSubmission,
@@ -41,8 +41,8 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   verifyUser(token: string): Promise<User | undefined>;
   updateUserVerification(userId: string, verifiedAt: Date): Promise<void>;
-  updateFrameioV4Token(userId: string, accessToken: string): Promise<void>;
-  
+  updateFrameioV4Token(userId: string, accessToken: string, refreshToken?: string, expiresAt?: Date): Promise<void>;
+
   // Project methods
   getProject(id: number): Promise<Project | undefined>;
   getProjectsByUser(userId: string): Promise<Project[]>;
@@ -51,20 +51,20 @@ export interface IStorage {
   updateProject(id: number, updates: UpdateProject): Promise<Project | undefined>;
   updateProjectMediaInfo(id: number, mediaFolderId: string, userFolderUri?: string): Promise<void>;
   deleteProject(id: number): Promise<void>;
-  
+
   // Project file methods
   getProjectFiles(projectId: number): Promise<ProjectFile[]>;
   createProjectFile(file: InsertProjectFile): Promise<ProjectFile>;
   deleteProjectFile(id: number): Promise<void>;
-  
+
   // Project status methods
   logStatusChange(projectId: number, oldStatus: string | null, newStatus: string): Promise<ProjectStatusLog>;
   getProjectStatusHistory(projectId: number): Promise<ProjectStatusLog[]>;
-  
+
   // Email signup methods
   createEmailSignup(emailSignup: InsertEmailSignup): Promise<EmailSignup>;
   getEmailSignups(): Promise<EmailSignup[]>;
-  
+
   // Tally form submission methods
   createTallyFormSubmission(submission: InsertTallyFormSubmission): Promise<TallyFormSubmission>;
   getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined>;
@@ -110,25 +110,25 @@ export interface IStorage {
   // OAuth state methods
   createOAuthState(state: string, provider: string, expiresInMinutes: number): Promise<void>;
   validateAndConsumeOAuthState(state: string, provider: string): Promise<boolean>;
-  
-  // User management methods
-  getAllUsers(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
+  // Reference to the db instance within the class
+  private db = db;
+
   // User methods
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await this.db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async getUserById(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await this.db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await this.db.select().from(users).where(eq(users.email, email));
     return user || undefined;
   }
 
@@ -138,8 +138,8 @@ export class DatabaseStorage implements IStorage {
       ...insertUser,
       id: insertUser.id || crypto.randomUUID(),
     };
-    
-    const [user] = await db
+
+    const [user] = await this.db
       .insert(users)
       .values(userToInsert)
       .returning();
@@ -160,12 +160,12 @@ export class DatabaseStorage implements IStorage {
 
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    const [project] = await this.db.select().from(projects).where(eq(projects.id, id));
     return project || undefined;
   }
 
   async getProjectsByUser(userId: string): Promise<Project[]> {
-    return await db
+    return await this.db
       .select()
       .from(projects)
       .where(eq(projects.userId, userId))
@@ -173,7 +173,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectsByStatus(statuses: string[]): Promise<Project[]> {
-    return await db
+    return await this.db
       .select()
       .from(projects)
       .where(inArray(projects.status, statuses))
@@ -181,17 +181,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(userId: string, project: InsertProject): Promise<Project> {
-    const [newProject] = await db
+    const [newProject] = await this.db
       .insert(projects)
       .values({
         ...project,
         userId,
       })
       .returning();
-    
+
     // Log initial status
     await this.logStatusChange(newProject.id, null, newProject.status);
-    
+
     return newProject;
   }
 
@@ -201,30 +201,30 @@ export class DatabaseStorage implements IStorage {
       updateData.mediaUserFolderId = mediaUserFolderId;
     }
 
-    await db
+    await this.db
       .update(projects)
       .set(updateData)
       .where(eq(projects.id, projectId));
   }
 
   async updateProjectMediaReviewLink(projectId: number, mediaReviewLink: string): Promise<Project | null> {
-    const [result] = await db
+    const [result] = await this.db
       .update(projects)
-      .set({ 
+      .set({
         mediaReviewLink: mediaReviewLink,
         updatedAt: new Date()
       })
       .where(eq(projects.id, projectId))
       .returning();
-    
+
     return result || null;
   }
 
   async updateProject(id: number, updates: UpdateProject): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    const [project] = await this.db.select().from(projects).where(eq(projects.id, id));
     if (!project) return undefined;
 
-    const [updatedProject] = await db
+    const [updatedProject] = await this.db
       .update(projects)
       .set({
         ...updates,
@@ -243,12 +243,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: number): Promise<void> {
-    await db.delete(projects).where(eq(projects.id, id));
+    await this.db.delete(projects).where(eq(projects.id, id));
   }
 
   // Project file methods
   async getProjectFiles(projectId: number): Promise<ProjectFile[]> {
-    return await db
+    return await this.db
       .select()
       .from(projectFiles)
       .where(eq(projectFiles.projectId, projectId))
@@ -256,7 +256,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProjectFile(file: InsertProjectFile): Promise<ProjectFile> {
-    const [newFile] = await db
+    const [newFile] = await this.db
       .insert(projectFiles)
       .values(file)
       .returning();
@@ -264,12 +264,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProjectFile(id: number): Promise<void> {
-    await db.delete(projectFiles).where(eq(projectFiles.id, id));
+    await this.db.delete(projectFiles).where(eq(projectFiles.id, id));
   }
 
   // Project status methods
   async logStatusChange(projectId: number, oldStatus: string | null, newStatus: string): Promise<ProjectStatusLog> {
-    const [log] = await db
+    const [log] = await this.db
       .insert(projectStatusLog)
       .values({
         projectId,
@@ -281,7 +281,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectStatusHistory(projectId: number): Promise<ProjectStatusLog[]> {
-    return await db
+    return await this.db
       .select()
       .from(projectStatusLog)
       .where(eq(projectStatusLog.projectId, projectId))
@@ -291,7 +291,7 @@ export class DatabaseStorage implements IStorage {
   // Email signup methods
   async createEmailSignup(insertEmailSignup: InsertEmailSignup): Promise<EmailSignup> {
     try {
-      const [emailSignup] = await db
+      const [emailSignup] = await this.db
         .insert(emailSignups)
         .values(insertEmailSignup)
         .returning();
@@ -306,13 +306,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEmailSignups(): Promise<EmailSignup[]> {
-    return await db.select().from(emailSignups).orderBy(emailSignups.createdAt);
+    return await this.db.select().from(emailSignups).orderBy(emailSignups.createdAt);
   }
 
   // Tally form submission methods
   async createTallyFormSubmission(submission: InsertTallyFormSubmission): Promise<TallyFormSubmission> {
     try {
-      const [tallySubmission] = await db
+      const [tallySubmission] = await this.db
         .insert(tallyFormSubmissions)
         .values(submission)
         .returning();
@@ -332,7 +332,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined> {
-    const [submission] = await db
+    const [submission] = await this.db
       .select()
       .from(tallyFormSubmissions)
       .where(eq(tallyFormSubmissions.projectId, projectId));
@@ -340,21 +340,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTallyFormSubmission(projectId: number, updates: Partial<Pick<TallyFormSubmission, 'tallySubmissionId' | 'submissionData' | 'submittedAt'>>): Promise<TallyFormSubmission> {
-    const [updatedSubmission] = await db
+    const [updatedSubmission] = await this.db
       .update(tallyFormSubmissions)
       .set(updates)
       .where(eq(tallyFormSubmissions.projectId, projectId))
       .returning();
-    
+
     if (!updatedSubmission) {
       throw new Error("Tally form submission not found for update");
     }
-    
+
     return updatedSubmission;
   }
 
   async updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void> {
-    await db
+    await this.db
       .update(tallyFormSubmissions)
       .set({ verifiedAt })
       .where(eq(tallyFormSubmissions.tallySubmissionId, submissionId));
@@ -366,7 +366,7 @@ export class DatabaseStorage implements IStorage {
     if (stripeCustomerId !== undefined) updateData.stripeCustomerId = stripeCustomerId;
     if (stripeSubscriptionId !== undefined) updateData.stripeSubscriptionId = stripeSubscriptionId;
 
-    const [user] = await db
+    const [user] = await this.db
       .update(users)
       .set(updateData)
       .where(eq(users.id, userId))
@@ -393,7 +393,7 @@ export class DatabaseStorage implements IStorage {
     if (subscriptionData.subscriptionPeriodStart !== undefined) updateData.subscriptionPeriodStart = subscriptionData.subscriptionPeriodStart;
     if (subscriptionData.subscriptionPeriodEnd !== undefined) updateData.subscriptionPeriodEnd = subscriptionData.subscriptionPeriodEnd;
 
-    const [user] = await db
+    const [user] = await this.db
       .update(users)
       .set(updateData)
       .where(eq(users.id, userId))
@@ -402,7 +402,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
-    const [user] = await db
+    const [user] = await this.db
       .select()
       .from(users)
       .where(eq(users.stripeCustomerId, stripeCustomerId));
@@ -413,7 +413,7 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) return undefined;
 
-    const [updatedUser] = await db
+    const [updatedUser] = await this.db
       .update(users)
       .set({ subscriptionUsage: (user.subscriptionUsage || 0) + 1 })
       .where(eq(users.id, userId))
@@ -422,7 +422,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resetUserUsage(userId: string): Promise<User | undefined> {
-    const [user] = await db
+    const [user] = await this.db
       .update(users)
       .set({ subscriptionUsage: 0 })
       .where(eq(users.id, userId))
@@ -432,7 +432,7 @@ export class DatabaseStorage implements IStorage {
 
   // Photo album methods
   async getPhotoAlbum(projectId: number): Promise<PhotoAlbum | undefined> {
-    const [album] = await db
+    const [album] = await this.db
       .select()
       .from(photoAlbums)
       .where(eq(photoAlbums.projectId, projectId));
@@ -440,7 +440,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPhotoAlbumsByUser(userId: string): Promise<PhotoAlbum[]> {
-    return await db
+    return await this.db
       .select()
       .from(photoAlbums)
       .where(eq(photoAlbums.userId, userId))
@@ -448,7 +448,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPhotoAlbum(userId: string, album: InsertPhotoAlbum): Promise<PhotoAlbum> {
-    const [createdAlbum] = await db
+    const [createdAlbum] = await this.db
       .insert(photoAlbums)
       .values({
         ...album,
@@ -459,9 +459,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePhotoAlbum(id: number, updates: UpdatePhotoAlbum): Promise<PhotoAlbum | undefined> {
-    const [updatedAlbum] = await db
+    const [updatedAlbum] = await this.db
       .update(photoAlbums)
-      .set({ 
+      .set({
         ...updates,
         updatedAt: new Date(),
       })
@@ -471,14 +471,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePhotoAlbum(id: number): Promise<void> {
-    await db
+    await this.db
       .delete(photoAlbums)
       .where(eq(photoAlbums.id, id));
   }
 
   // Photo file methods
   async getPhotoFiles(albumId: number): Promise<PhotoFile[]> {
-    return await db
+    return await this.db
       .select()
       .from(photoFiles)
       .where(eq(photoFiles.albumId, albumId))
@@ -486,7 +486,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPhotoFilesByProject(projectId: number): Promise<PhotoFile[]> {
-    return await db
+    return await this.db
       .select()
       .from(photoFiles)
       .where(eq(photoFiles.projectId, projectId))
@@ -494,7 +494,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPhotoFileByMediaId(mediaFileId: string): Promise<PhotoFile | undefined> {
-    const [file] = await db
+    const [file] = await this.db
       .select()
       .from(photoFiles)
       .where(eq(photoFiles.mediaFileId, mediaFileId));
@@ -502,7 +502,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPhotoFile(userId: string, file: InsertPhotoFile): Promise<PhotoFile> {
-    const [createdFile] = await db
+    const [createdFile] = await this.db
       .insert(photoFiles)
       .values({
         ...file,
@@ -513,7 +513,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePhotoFile(id: number, updates: Partial<PhotoFile>): Promise<PhotoFile | undefined> {
-    const [updatedFile] = await db
+    const [updatedFile] = await this.db
       .update(photoFiles)
       .set(updates)
       .where(eq(photoFiles.id, id))
@@ -522,14 +522,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePhotoFile(id: number): Promise<void> {
-    await db
+    await this.db
       .delete(photoFiles)
       .where(eq(photoFiles.id, id));
   }
 
   // Revision payment methods
   async createRevisionPayment(userId: string, payment: InsertRevisionPayment): Promise<RevisionPayment> {
-    const [createdPayment] = await db
+    const [createdPayment] = await this.db
       .insert(revisionPayments)
       .values({
         ...payment,
@@ -540,7 +540,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRevisionPayment(sessionId: string): Promise<RevisionPayment | undefined> {
-    const [payment] = await db
+    const [payment] = await this.db
       .select()
       .from(revisionPayments)
       .where(eq(revisionPayments.stripeCheckoutSessionId, sessionId));
@@ -548,7 +548,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRevisionPaymentsByProject(projectId: number): Promise<RevisionPayment[]> {
-    return db
+    return this.db
       .select()
       .from(revisionPayments)
       .where(eq(revisionPayments.projectId, projectId))
@@ -556,12 +556,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateRevisionPaymentStatus(
-    sessionId: string, 
-    status: string, 
-    paymentIntentId?: string, 
+    sessionId: string,
+    status: string,
+    paymentIntentId?: string,
     paidAt?: Date
   ): Promise<RevisionPayment | undefined> {
-    const [updatedPayment] = await db
+    const [updatedPayment] = await this.db
       .update(revisionPayments)
       .set({
         paymentStatus: status,
@@ -576,7 +576,7 @@ export class DatabaseStorage implements IStorage {
   // OAuth state methods
   async createOAuthState(state: string, provider: string, expiresInMinutes: number): Promise<void> {
     const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
-    await db.insert(oauthStates).values({
+    await this.db.insert(oauthStates).values({
       state,
       provider,
       expiresAt,
@@ -585,9 +585,9 @@ export class DatabaseStorage implements IStorage {
 
   async validateAndConsumeOAuthState(state: string, provider: string): Promise<boolean> {
     const now = new Date();
-    
+
     // Find the state record that matches and hasn't expired
-    const [stateRecord] = await db
+    const [stateRecord] = await this.db
       .select()
       .from(oauthStates)
       .where(
@@ -596,36 +596,49 @@ export class DatabaseStorage implements IStorage {
           eq(oauthStates.provider, provider)
         )
       );
-    
+
     if (!stateRecord) {
       console.log(`OAuth state not found: ${state} for provider: ${provider}`);
       return false;
     }
-    
+
     if (stateRecord.expiresAt < now) {
       console.log(`OAuth state expired: ${state} (expired at ${stateRecord.expiresAt})`);
       // Clean up expired state
-      await db.delete(oauthStates).where(eq(oauthStates.id, stateRecord.id));
+      await this.db.delete(oauthStates).where(eq(oauthStates.id, stateRecord.id));
       return false;
     }
-    
+
     // State is valid - consume it (delete) to prevent reuse
-    await db.delete(oauthStates).where(eq(oauthStates.id, stateRecord.id));
+    await this.db.delete(oauthStates).where(eq(oauthStates.id, stateRecord.id));
     console.log(`OAuth state validated and consumed: ${state} for provider: ${provider}`);
     return true;
   }
 
   // Frame.io V4 token methods
-  async updateFrameioV4Token(userId: string, accessToken: string): Promise<void> {
-    await db
+  async updateFrameioV4Token(userId: string, accessToken: string, refreshToken?: string, expiresAt?: Date): Promise<void> {
+    const updateData: any = {
+      frameioV4AccessToken: accessToken,
+      updatedAt: new Date()
+    };
+
+    if (refreshToken) {
+      updateData.frameioV4RefreshToken = refreshToken;
+    }
+
+    if (expiresAt) {
+      updateData.frameioV4TokenExpiresAt = expiresAt;
+    }
+
+    await this.db
       .update(users)
-      .set({ frameioV4AccessToken: accessToken })
+      .set(updateData)
       .where(eq(users.id, userId));
     console.log(`Frame.io V4 access token stored for user: ${userId}`);
   }
 
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    return await this.db.select().from(users);
   }
 }
 

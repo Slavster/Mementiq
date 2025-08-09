@@ -3422,9 +3422,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (serviceAccountUser && frameioV4Service.accessToken) {
-        await storage.updateFrameioV4Token(serviceAccountUser.id, frameioV4Service.accessToken);
+        // Store both access token and refresh token for automatic renewal
+        await storage.updateFrameioV4Token(
+          serviceAccountUser.id, 
+          frameioV4Service.accessToken,
+          (frameioV4Service as any).refreshTokenValue,
+          (frameioV4Service as any).tokenExpiresAt
+        );
         console.log(`✅ PRODUCTION PERSISTENCE: Service account token stored permanently for user: ${serviceAccountUser.email}`);
-        console.log("This token will be automatically loaded on app startup - no manual OAuth required in production");
+        console.log("Token will be automatically refreshed before expiration - zero downtime guaranteed");
       } else {
         console.warn("Warning: Could not find user to store service account token - token will not persist across restarts");
       }

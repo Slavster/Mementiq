@@ -18,7 +18,9 @@ export const users = pgTable("users", {
   subscriptionAllowance: integer("subscription_allowance"), // Projects allowed per billing period
   subscriptionPeriodStart: timestamp("subscription_period_start"),
   subscriptionPeriodEnd: timestamp("subscription_period_end"),
-  frameioV4AccessToken: text("frameio_v4_access_token"), // Frame.io V4 OAuth access token
+  frameioV4AccessToken: text("frameio_v4_access_token"),
+  frameioV4RefreshToken: text("frameio_v4_refresh_token"),
+  frameioV4TokenExpiresAt: timestamp("frameio_v4_token_expires_at"), // Frame.io V4 OAuth access token
 });
 
 export const projects = pgTable("projects", {
