@@ -204,7 +204,7 @@ export default function DashboardPage() {
       tallyFormUrl?: string;
     }) => {
       const response = await apiRequest("POST", "/api/projects", projectData);
-      return response.json();
+      return response; // apiRequest already returns parsed JSON data
     },
     onSuccess: (data) => {
       if (data.success) {
