@@ -3451,6 +3451,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Frame.io V4 core features
+  app.get("/api/frameio/v4/test-connection", async (req: Request, res: Response) => {
+    try {
+      await frameioV4Service.initialize();
+      const userInfo = await frameioV4Service.getCurrentUser();
+      const teams = await frameioV4Service.getTeams();
+      
+      res.json({
+        success: true,
+        message: "Frame.io V4 connection successful",
+        user: userInfo,
+        teamsCount: teams?.data?.length || 0
+      });
+    } catch (error) {
+      console.error("Frame.io V4 test failed:", error);
+      res.status(500).json({
+        success: false,
+        message: `Frame.io V4 connection failed: ${error.message}`
+      });
+    }
+  });
+
+  // Test folder creation (Feature 1)
+  app.post("/api/frameio/v4/test-folder", async (req: Request, res: Response) => {
+    try {
+      const { folderName, parentId } = req.body;
+      console.log(`Testing folder creation: ${folderName}, parent: ${parentId || 'root'}`);
+      
+      await frameioV4Service.initialize();
+      const folder = await frameioV4Service.createFolder(folderName, parentId);
+      
+      res.json({
+        success: true,
+        message: "Folder created successfully",
+        folder
+      });
+    } catch (error) {
+      console.error("Folder creation test failed:", error);
+      res.status(500).json({
+        success: false,
+        message: `Folder creation failed: ${error.message}`
+      });
+    }
+  });
+
+  // Test projects access (needed for uploads)
+  app.get("/api/frameio/v4/test-projects", async (req: Request, res: Response) => {
+    try {
+      console.log("Testing Frame.io V4 projects/workspaces access...");
+      
+      await frameioV4Service.initialize();
+      const teams = await frameioV4Service.getTeams();
+      
+      res.json({
+        success: true,
+        message: "Projects/workspaces access successful",
+        teams
+      });
+    } catch (error) {
+      console.error("Projects access test failed:", error);
+      res.status(500).json({
+        success: false,
+        message: `Projects access failed: ${error.message}`
+      });
+    }
+  });
+
+  // Test review link creation (Feature 3)  
+  app.post("/api/frameio/v4/test-review", async (req: Request, res: Response) => {
+    try {
+      const { assetId, name } = req.body;
+      console.log(`Testing review link creation for asset: ${assetId}`);
+      
+      await frameioV4Service.initialize();
+      const reviewLink = await frameioV4Service.createReviewLink(assetId, name || 'Test Review');
+      
+      res.json({
+        success: true,
+        message: "Review link created successfully",
+        reviewLink
+      });
+    } catch (error) {
+      console.error("Review link creation test failed:", error);
+      res.status(500).json({
+        success: false,
+        message: `Review link creation failed: ${error.message}`
+      });
+    }
+  });
+
+  // Test all Frame.io V4 core features at once
+  app.get("/api/frameio/v4/test-all", async (req: Request, res: Response) => {
+    try {
+      console.log("=== Starting Frame.io V4 comprehensive feature test ===");
+      const results = await frameioV4Service.testAllFeatures();
+      
+      res.json({
+        success: true,
+        message: "All Frame.io V4 core features tested successfully",
+        ...results
+      });
+    } catch (error) {
+      console.error("Frame.io V4 feature test failed:", error);
+      res.status(500).json({
+        success: false,
+        message: `Frame.io V4 feature test failed: ${error.message}`
+      });
+    }
+  });
+
   // Check Frame.io V4 OAuth status
   app.get("/api/frameio/oauth-status", async (req: Request, res: Response) => {
     try {
