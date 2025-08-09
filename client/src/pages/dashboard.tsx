@@ -22,7 +22,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "@/lib/supabase";
 import {
@@ -392,15 +392,6 @@ export default function DashboardPage() {
               <span className="text-white">
                 Welcome, {mappedUser.firstName}
               </span>
-              <Link href="/settings">
-                <Button
-                  variant="outline"
-                  className="border-2 border-accent text-accent px-6 py-2 font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Button>
-              </Link>
               {subscription && (
                 <Button
                   onClick={() =>
@@ -412,8 +403,8 @@ export default function DashboardPage() {
                   variant="outline"
                   className="border-2 border-accent text-accent px-6 py-2 font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200"
                 >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Billing
+                  <Settings className="h-4 w-4 mr-2" />
+                  Manage Subscription
                 </Button>
               )}
               <Button

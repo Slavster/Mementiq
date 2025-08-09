@@ -326,10 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Automatically generate review link after successful payment
                 try {
                   const project = await storage.getProject(projectId);
-                  if (!project) {
-                    throw new Error(`Project ${projectId} not found`);
-                  }
-                  const projectFolderId = project.mediaFolderId?.split('/').pop();
+                  const projectFolderId = project?.mediaFolderId?.split('/').pop();
                   
                   if (projectFolderId) {
                     const reviewLink = await createFrameioReviewLink(projectFolderId);
@@ -691,12 +688,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // User Logout - Note: This endpoint is not used with Supabase auth
+  // User Logout
   app.post("/api/auth/logout", (req, res) => {
-    // Session-based logout not needed with Supabase JWT auth
-    res.json({
-      success: true,
-      message: "Logged out successfully",
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Logout failed",
+        });
+      }
+      res.json({
+        success: true,
+        message: "Logged out successfully",
+      });
     });
   });
 
@@ -1305,20 +1309,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Increment user usage count for successful project creation
         await storage.incrementUserUsage(req.user!.id);
 
-        // Create real Frame.io folder structure with OAuth credentials
+        // Set up Frame.io integration with available permissions
         try {
-          // Step 1: Create real user folder in Frame.io
+          // Step 1: Prepare user folder path for Frame.io uploads
           console.log(
-            `Creating Frame.io user folder for user ${req.user!.id} (${req.user!.email})`,
+            `Preparing Frame.io integration for user ${req.user!.id} (${req.user!.email})`,
           );
           const userFolderId = await frameioService.createUserFolder(
             req.user!.id,
             req.user!.email,
           );
 
-          // Step 2: Create real project subfolder in Frame.io
+          // Step 2: Prepare project folder path for organized uploads
           console.log(
-            `Creating Frame.io project folder for project ${project.id}: "${project.title}"`,
+            `Setting up project organization for project ${project.id}: "${project.title}"`,
           );
           const projectFolderId = await frameioService.createProjectFolder(
             userFolderId,
@@ -1326,23 +1330,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             project.title,
           );
 
-          // Step 3: Update project with real Frame.io folder information
+          // Step 3: Update project with Frame.io organization paths
           await storage.updateProjectMediaInfo(
             project.id,
             projectFolderId,
             userFolderId,
           );
 
-          // Get updated project with folder info
+          // Get updated project with organization info
           const updatedProject = await storage.getProject(project.id);
 
           console.log(
-            `Successfully created real Frame.io folders with OAuth: User(${userFolderId}) -> Project(${projectFolderId})`,
+            `Successfully configured Frame.io integration: ${userFolderId} -> ${projectFolderId}`,
           );
 
           res.status(201).json({
             success: true,
-            message: "Project created successfully with hierarchical Frame.io folder structure",
+            message: "Project created successfully with Frame.io integration configured",
             project: updatedProject,
             folders: {
               userFolder: userFolderId,
@@ -1350,14 +1354,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
           });
         } catch (frameioError) {
-          console.error("Frame.io OAuth folder creation failed:", frameioError);
+          console.error("Frame.io setup failed:", frameioError);
           // Project is still created, just without Frame.io integration
           res.status(201).json({
             success: true,
             message: "Project created successfully",
             project,
             warning:
-              "Frame.io OAuth setup failed - contact support for assistance.",
+              "Frame.io setup failed - files will be uploaded without organization.",
           });
         }
       } catch (error) {
@@ -1482,7 +1486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const frameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
           if (frameioVideos && frameioVideos.length > 0) {
             const latestVideo = frameioVideos[0];
-            const videoId = latestVideo.id;
+            const videoId = latestVideo.id || latestVideo.uri?.split('/').pop();
             
             // Generate download link for the latest video
             const downloadLink = await frameioService.generateAssetDownloadLink(videoId);
@@ -1939,11 +1943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `,
         };
         
-        await emailService.sendEmail({
-          to: 'support@example.com',
-          subject: emailTemplate.subject,
-          html: emailTemplate.html
-        });
+        await emailService.sendEmail(emailTemplate);
         console.log(`Revision request email sent for project ${projectId}`);
       }
       
@@ -2311,474 +2311,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: error.message || "Frame.io photo test failed"
       });
-    }
-  });
-
-  // Test Frame.io OAuth authentication and team access
-  app.post("/api/test-frameio-connection", async (req, res) => {
-    try {
-      console.log("Testing Frame.io OAuth connection and team access...");
-      
-      if (!frameioService.isConfigured()) {
-        return res.status(500).json({
-          success: false,
-          message: "Frame.io OAuth credentials (Client ID/Secret) are not configured."
-        });
-      }
-
-      // Test basic OAuth authentication
-      const userInfo = await frameioService.initialize();
-      console.log('OAuth user authenticated:', userInfo.name, userInfo.email);
-
-      // Test team access with upgraded account
-      let teams = [];
-      let teamAccess = "Not tested";
-      let teamDetails = null;
-      
-      try {
-        teams = await frameioService.makeRequest('GET', '/teams');
-        teamAccess = `✅ Found ${teams.length} teams`;
-        console.log(`Team access test: Found ${teams.length} teams`);
-        if (teams.length > 0) {
-          teamDetails = teams[0];
-          console.log("First team details:", teamDetails);
-        }
-      } catch (teamError) {
-        teamAccess = `❌ Team access failed: ${teamError.message}`;
-        console.log("Team access error:", teamError.message);
-      }
-
-      // Test account details  
-      let accountInfo = "Not available";
-      let accountDetails = null;
-      
-      try {
-        const account = await frameioService.makeRequest('GET', `/accounts/${userInfo.account_id}`);
-        accountInfo = `✅ Account: ${account.name || 'Unknown'} (${account.account_type || 'Unknown type'})`;
-        accountDetails = account;
-        console.log("Account info:", account);
-      } catch (accountError) {
-        accountInfo = `❌ Account access failed: ${accountError.message}`;
-        console.log("Account access error:", accountError.message);
-      }
-
-      res.json({
-        success: true,
-        message: "Frame.io connection and team access verified",
-        user: {
-          id: userInfo.id,
-          name: userInfo.name,
-          email: userInfo.email,
-          account_id: userInfo.account_id,
-          profile_image: userInfo.profile_image
-        },
-        authentication: "✅ OAuth token valid and user authenticated",
-        teamAccess,
-        accountInfo,
-        teamsFound: teams.length,
-        teamDetails,
-        accountDetails,
-        upgradeStatus: teams.length > 0 ? "✅ Team account detected" : "⚠️ Personal account"
-      });
-    } catch (error) {
-      console.error("Frame.io connection test error:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Frame.io connection test failed",
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  // Get Frame.io user profile directly
-  app.get("/api/frameio/me", async (req, res) => {
-    try {
-      const userInfo = await frameioService.initialize();
-      res.json(userInfo);
-    } catch (error) {
-      console.error("Frame.io /me endpoint error:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to get user profile"
-      });
-    }
-  });
-
-  // Test specific Frame.io endpoints
-  app.get("/api/frameio/teams", async (req, res) => {
-    try {
-      await frameioService.initialize();
-      const teams = await frameioService.makeRequest('GET', '/teams');
-      res.json(teams);
-    } catch (error) {
-      console.error("Frame.io /teams endpoint error:", error);
-      res.status(error.message.includes('401') ? 401 : 500).json({
-        success: false,
-        message: error.message || "Failed to get teams",
-        endpoint: "GET /teams"
-      });
-    }
-  });
-
-  app.get("/api/frameio/workspaces/:accountId", async (req, res) => {
-    try {
-      await frameioService.initialize();
-      const { accountId } = req.params;
-      const workspaces = await frameioService.makeRequest('GET', `/accounts/${accountId}/workspaces`);
-      res.json(workspaces);
-    } catch (error) {
-      console.error(`Frame.io /accounts/${req.params.accountId}/workspaces endpoint error:`, error);
-      res.status(error.message.includes('401') ? 401 : error.message.includes('404') ? 404 : 500).json({
-        success: false,
-        message: error.message || "Failed to get workspaces",
-        endpoint: `GET /accounts/${req.params.accountId}/workspaces`
-      });
-    }
-  });
-
-  // List accessible Frame.io projects
-  app.get("/api/frameio/projects", async (req, res) => {
-    try {
-      await frameioService.initialize();
-      
-      // Try different endpoints to find accessible projects
-      let projects = [];
-      try {
-        projects = await frameioService.makeRequest('GET', '/projects');
-      } catch (error) {
-        console.log('Direct /projects failed, trying other approaches...');
-        res.status(200).json([]); // Return empty array if no access
-        return;
-      }
-      
-      res.json(projects);
-    } catch (error) {
-      console.error("Frame.io projects endpoint error:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to get projects"
-      });
-    }
-  });
-
-  // Test Frame.io project creation capabilities
-  app.post("/api/test-frameio-project-creation", async (req, res) => {
-    try {
-      console.log("Testing Frame.io project creation...");
-      
-      await frameioService.initialize();
-      
-      const testProjectName = `Mementiq_Test_${Date.now()}`;
-      const testResults = {
-        authentication: "✅ OAuth authenticated",
-        attempts: [],
-        success: false,
-        finalProject: null
-      };
-
-      // Get team information for project creation
-      let teams = [];
-      try {
-        teams = await frameioService.makeRequest('GET', '/teams');
-        console.log(`Found ${teams.length} teams for project creation`);
-      } catch (teamError) {
-        console.log("Could not get teams:", teamError.message);
-      }
-
-      // Try different project creation approaches
-      const approaches = [
-        {
-          name: "Direct Projects Endpoint",
-          method: "POST",
-          url: "/projects",
-          body: {
-            name: testProjectName,
-            description: "Test project created via OAuth API"
-          }
-        },
-        {
-          name: "Account-based Projects",
-          method: "POST", 
-          url: `/accounts/${frameioService.teamId}/projects`,
-          body: {
-            name: testProjectName,
-            description: "Test project created via account endpoint"
-          }
-        }
-      ];
-
-      // If we have team access, try team-based project creation
-      if (teams.length > 0) {
-        const team = teams[0];
-        approaches.push({
-          name: "Team-based Projects",
-          method: "POST",
-          url: `/teams/${team.id}/projects`,
-          body: {
-            name: testProjectName,
-            description: "Test project created via team endpoint"
-          }
-        });
-        console.log(`Added team-based approach using team ${team.id} (${team.name})`);
-      }
-
-      for (const approach of approaches) {
-        try {
-          console.log(`Trying ${approach.name}...`);
-          const result = await frameioService.makeRequest(approach.method, approach.url, approach.body);
-          
-          testResults.attempts.push({
-            approach: approach.name,
-            status: "✅ Success",
-            projectId: result.id,
-            projectName: result.name
-          });
-          
-          testResults.success = true;
-          testResults.finalProject = result;
-          console.log(`${approach.name} successful:`, result.id);
-          break;
-        } catch (error) {
-          console.log(`${approach.name} failed:`, error.message);
-          testResults.attempts.push({
-            approach: approach.name,
-            status: "❌ Failed",
-            error: error.message
-          });
-        }
-      }
-
-      res.json({
-        success: testResults.success,
-        message: testResults.success ? 
-          `Project creation successful using ${testResults.attempts.find(a => a.status.includes('Success'))?.approach}` :
-          "All project creation approaches failed (expected for personal accounts)",
-        testResults,
-        capabilities: {
-          projectCreation: testResults.success ? "✅ Available" : "❌ Limited (personal account)",
-          authentication: "✅ Working",
-          apiAccess: "✅ Confirmed"
-        }
-      });
-
-    } catch (error) {
-      console.error("Frame.io project creation test error:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Project creation test failed",
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  // Test Frame.io asset upload capabilities  
-  app.post("/api/test-frameio-asset-upload", async (req, res) => {
-    try {
-      console.log("Testing Frame.io asset upload capabilities...");
-      
-      await frameioService.initialize();
-      
-      const testResults = {
-        authentication: "✅ OAuth authenticated",
-        uploadCapabilities: [],
-        success: false
-      };
-
-      // Test 1: Check available projects for upload
-      let targetProject = null;
-      try {
-        const projects = await frameioService.makeRequest('GET', '/projects');
-        console.log(`Found ${projects.length} accessible projects`);
-        
-        if (projects.length > 0) {
-          targetProject = projects[0];
-          testResults.uploadCapabilities.push({
-            test: "Project Access",
-            status: "✅ Available",
-            details: `Found ${projects.length} projects, using: ${targetProject.name}`
-          });
-        } else {
-          testResults.uploadCapabilities.push({
-            test: "Project Access", 
-            status: "⚠️ No existing projects",
-            details: "Would need to create project first"
-          });
-        }
-      } catch (error) {
-        testResults.uploadCapabilities.push({
-          test: "Project Access",
-          status: "❌ Limited",
-          details: error.message
-        });
-      }
-
-      // Test 2: Check upload URL generation capability
-      if (targetProject) {
-        try {
-          // Test getting upload URL for the root asset
-          const uploadInfo = await frameioService.makeRequest('POST', `/assets/${targetProject.root_asset_id}/children`, {
-            name: `test_upload_${Date.now()}.txt`,
-            type: 'file',
-            filetype: 'text/plain',
-            filesize: 100
-          });
-          
-          testResults.uploadCapabilities.push({
-            test: "Upload URL Generation",
-            status: "✅ Available", 
-            details: `Upload URL generated for asset: ${uploadInfo.id}`
-          });
-          
-          testResults.success = true;
-
-        } catch (error) {
-          testResults.uploadCapabilities.push({
-            test: "Upload URL Generation",
-            status: "❌ Failed",
-            details: error.message
-          });
-        }
-      }
-
-      // Test 3: Check folder creation capability
-      if (targetProject) {
-        try {
-          const testFolderName = `Test_Folder_${Date.now()}`;
-          const folder = await frameioService.makeRequest('POST', `/assets/${targetProject.root_asset_id}/children`, {
-            name: testFolderName,
-            type: 'folder'
-          });
-          
-          testResults.uploadCapabilities.push({
-            test: "Folder Creation",
-            status: "✅ Available",
-            details: `Created folder: ${folder.name} (${folder.id})`
-          });
-          
-          testResults.success = true;
-
-        } catch (error) {
-          testResults.uploadCapabilities.push({
-            test: "Folder Creation", 
-            status: "❌ Failed",
-            details: error.message
-          });
-        }
-      }
-
-      res.json({
-        success: testResults.success,
-        message: testResults.success ? 
-          "Frame.io upload capabilities confirmed" :
-          "Upload capabilities limited (may need existing projects)",
-        testResults,
-        capabilities: {
-          authentication: "✅ Working",
-          projectAccess: targetProject ? "✅ Available" : "❌ Limited", 
-          assetUpload: testResults.success ? "✅ Available" : "❌ Limited",
-          folderCreation: testResults.success ? "✅ Available" : "❌ Limited"
-        }
-      });
-
-    } catch (error) {
-      console.error("Frame.io asset upload test error:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Asset upload test failed",
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  // Frame.io OAuth endpoints with multiple redirect URI options
-  app.get('/api/frameio/oauth/url', (req, res) => {
-    try {
-      const host = req.get('host');
-      const protocol = req.protocol;
-      
-      // Generate multiple potential redirect URIs for Frame.io OAuth app registration
-      const redirectUris = [
-        `${protocol}://${host}/api/frameio/oauth/callback`,
-        `https://${host}/api/frameio/oauth/callback`,
-        'http://localhost:5000/api/frameio/oauth/callback',
-        'https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/frameio/oauth/callback'
-      ];
-      
-      // Always use the Replit production URL that matches Frame.io OAuth app settings
-      const redirectUri = 'https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/frameio/oauth/callback';
-      const authUrl = frameioService.generateOAuthUrl(redirectUri);
-      
-      res.json({
-        success: true,
-        authUrl: authUrl,
-        redirectUri: redirectUri,
-        allRedirectUris: redirectUris,
-        message: 'Use this URL to authorize Frame.io access',
-        troubleshooting: {
-          error: 'If you get "invalid_request" error about redirect_uri',
-          solution: 'Add these redirect URIs to your Frame.io OAuth app settings',
-          urls: redirectUris
-        }
-      });
-    } catch (error) {
-      console.error('Frame.io OAuth URL generation failed:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to generate Frame.io OAuth URL'
-      });
-    }
-  });
-
-  app.get('/api/frameio/oauth/callback', async (req, res) => {
-    try {
-      console.log('OAuth callback received with query:', req.query);
-      const { code, state } = req.query;
-      
-      if (!code) {
-        console.log('No authorization code provided');
-        return res.status(400).json({
-          success: false,
-          error: 'Authorization code not provided'
-        });
-      }
-
-      // Use the same redirect URI that was used in the authorization request
-      const redirectUri = 'https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/frameio/oauth/callback';
-      console.log('About to call exchangeOAuthCode with redirect URI:', redirectUri);
-      const tokenData = await frameioService.exchangeOAuthCode(code as string, redirectUri);
-      
-      // Display success page with token instructions
-      res.send(`
-        <html>
-          <head><title>Frame.io OAuth Success</title></head>
-          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
-            <h2 style="color: green;">✅ Frame.io OAuth Authorization Successful!</h2>
-            <p>Your access token has been generated. To use it:</p>
-            <ol>
-              <li>Copy the access token below</li>
-              <li>Replace your current FRAMEIO_API_TOKEN in Replit Secrets</li>
-              <li>The token expires in ${tokenData.expires_in} seconds (1 hour)</li>
-            </ol>
-            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <strong>Access Token:</strong><br>
-              <textarea readonly style="width: 100%; height: 100px; font-family: monospace;">${tokenData.access_token}</textarea>
-            </div>
-            <p><a href="/">← Back to Mementiq</a></p>
-          </body>
-        </html>
-      `);
-    } catch (error) {
-      console.error('Frame.io OAuth callback failed:', error);
-      res.send(`
-        <html>
-          <head><title>Frame.io OAuth Error</title></head>
-          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
-            <h2 style="color: red;">❌ Frame.io OAuth Authorization Failed</h2>
-            <p>Error: ${error instanceof Error ? error.message : String(error)}</p>
-            <p><a href="/">← Back to Mementiq</a></p>
-          </body>
-        </html>
-      `);
     }
   });
 
@@ -3947,12 +3479,6 @@ async function downloadAsset(
   const contentType = getContentType(extension);
 
   return { content, contentType };
-}
-
-// Function required for compatibility - all routes are registered in registerRoutes
-export function setupRoutes(app: Express): void {
-  // This function is a placeholder - actual routes are registered in registerRoutes
-  console.log('setupRoutes called - routes are already registered via registerRoutes');
 }
 
 
