@@ -137,112 +137,174 @@ export class FrameioService {
   }
 
   /**
-   * Get or create root project using available Frame.io endpoints
+   * Get or create root project for Mementiq organization
    */
   async getOrCreateRootProject(): Promise<FrameioProject> {
     await this.initialize();
 
     try {
-      // Try user projects endpoint first (often available with developer tokens)
-      console.log('Checking available Frame.io projects...');
-      const projects = await this.makeRequest('GET', '/me/projects');
-      console.log('User projects found:', projects.length);
+      // Try personal account approach (Frame.io personal accounts don't have teams)
+      console.log('Checking Frame.io account access...');
+      const teams = await this.makeRequest('GET', '/teams');
+      
+      let projects;
+      if (teams && teams.length > 0) {
+        // Team account approach
+        const team = teams[0];
+        console.log(`Using Frame.io team: ${team.name} (ID: ${team.id})`);
+        projects = await this.makeRequest('GET', `/teams/${team.id}/projects`);
+      } else {
+        // Personal account approach - use account-based projects
+        console.log('Using personal Frame.io account (no teams found)');
+        projects = await this.makeRequest('GET', `/accounts/${this.teamId}/projects`);
+      }
+      
+      console.log(`Found ${projects.length} projects in account`);
       
       // Look for existing Mementiq root project
       const existingProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
       if (existingProject) {
-        console.log('Found existing Mementiq root project:', existingProject.id);
+        console.log(`Found existing Mementiq project: ${existingProject.name} (${existingProject.id})`);
         return existingProject;
       }
 
-      // If no projects or no Mementiq project, we need to work with what's available
-      if (projects.length > 0) {
-        const firstProject = projects[0];
-        console.log('Using existing project as root:', firstProject.name, '(ID:', firstProject.id, ')');
-        return firstProject;
+      // Create new Mementiq root project
+      console.log('Creating new Mementiq root project...');
+      let newProject;
+      if (teams && teams.length > 0) {
+        // Team account project creation
+        newProject = await this.makeRequest('POST', `/teams/${teams[0].id}/projects`, {
+          name: 'Mementiq_Users',
+          description: 'Root project for organizing all Mementiq user content and projects'
+        });
+      } else {
+        // Personal account project creation
+        newProject = await this.makeRequest('POST', `/accounts/${this.teamId}/projects`, {
+          name: 'Mementiq_Users',
+          description: 'Root project for organizing all Mementiq user content and projects'
+        });
       }
 
-      // Fallback to workspace approach if no projects available
-      console.log('No projects available - using workspace approach');
-      const rootProject: FrameioProject = {
-        id: `workspace-${this.teamId}`,
-        name: 'Mementiq_Workspace',
-        description: 'Workspace for Mementiq integration',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        root_asset_id: `root-${this.teamId}`
-      };
-
-      return rootProject;
+      console.log(`✓ Created Mementiq root project: ${newProject.name} (${newProject.id})`);
+      return newProject;
     } catch (error) {
-      console.error('Failed to access Frame.io projects:', error);
-      throw new Error(`Unable to setup Frame.io project structure: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Failed to setup Frame.io project structure:', error);
+      throw new Error(`Unable to access Frame.io: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   /**
-   * Create user folder using direct Frame.io asset operations
+   * Create or get user folder within root project
    */
   async createUserFolder(userId: string, userEmail: string): Promise<string> {
-    await this.getOrCreateRootProject();
-    
-    console.log('Frame.io API has limited project access - using direct upload approach');
-    console.log('Folders will be created during file upload operations');
-    
-    // Generate a folder path identifier for upload operations
+    const rootProject = await this.getOrCreateRootProject();
     const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
-    const userFolderPath = `mementiq-users/${folderName}`;
-    
-    console.log(`Prepared user folder path: ${userFolderPath}`);
-    return userFolderPath;
+
+    try {
+      // Check if user folder already exists
+      const existingFolder = await this.findFolderByName(folderName, rootProject.root_asset_id);
+      if (existingFolder) {
+        console.log(`Found existing user folder: ${existingFolder.name} (${existingFolder.id})`);
+        return existingFolder.id;
+      }
+
+      // Create new user folder
+      console.log(`Creating user folder: ${folderName}`);
+      const userFolder = await this.makeRequest('POST', `/assets/${rootProject.root_asset_id}/children`, {
+        name: folderName,
+        type: 'folder'
+      });
+
+      console.log(`✓ Created user folder: ${userFolder.name} (${userFolder.id})`);
+      return userFolder.id;
+    } catch (error) {
+      console.error('Failed to create user folder:', error);
+      throw new Error(`Unable to create user folder: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
-   * Create project folder path for direct Frame.io uploads
+   * Create project folder within user folder
    */
   async createProjectFolder(userFolderId: string, projectId: number, projectTitle: string): Promise<string> {
     const folderName = `Project_${projectId}_${projectTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
-    const projectFolderPath = `${userFolderId}/${folderName}`;
-    
-    console.log(`Prepared project folder path: ${projectFolderPath}`);
-    console.log('Actual folders will be created during file upload with proper organization');
-    
-    return projectFolderPath;
+
+    try {
+      // Check if project folder already exists
+      const existingFolder = await this.findFolderByName(folderName, userFolderId);
+      if (existingFolder) {
+        console.log(`Found existing project folder: ${existingFolder.name} (${existingFolder.id})`);
+        return existingFolder.id;
+      }
+
+      // Create new project folder
+      console.log(`Creating project folder: ${folderName}`);
+      const projectFolder = await this.makeRequest('POST', `/assets/${userFolderId}/children`, {
+        name: folderName,
+        type: 'folder'
+      });
+
+      console.log(`✓ Created project folder: ${projectFolder.name} (${projectFolder.id})`);
+      return projectFolder.id;
+    } catch (error) {
+      console.error('Failed to create project folder:', error);
+      throw new Error(`Unable to create project folder: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
-   * Create subfolder within a parent folder
+   * Create review link for a project with uploaded assets
    */
-  async createSubfolder(parentFolderId: string, folderName: string): Promise<string> {
-    // Check if subfolder already exists
-    const existingFolder = await this.findFolderByName(folderName, parentFolderId);
-    if (existingFolder) {
-      console.log('Found existing subfolder:', existingFolder.id);
-      return existingFolder.id;
+  async createProjectReviewLink(projectId: string, assetIds: string[], reviewName?: string): Promise<string> {
+    try {
+      // Create review link for the project
+      const reviewLink = await this.makeRequest('POST', `/projects/${projectId}/review_links`, {
+        name: reviewName || `Review - ${new Date().toLocaleDateString()}`,
+        allow_approvals: true,
+        enable_downloaded: true,
+        expires_at: null // No expiration
+      });
+
+      console.log(`✓ Created review link: ${reviewLink.name} (${reviewLink.id})`);
+
+      // Add assets to the review link
+      if (assetIds.length > 0) {
+        for (const assetId of assetIds) {
+          await this.makeRequest('POST', `/review_links/${reviewLink.id}/assets`, {
+            asset_id: assetId
+          });
+        }
+        console.log(`✓ Added ${assetIds.length} assets to review link`);
+      }
+
+      return reviewLink.short_url || reviewLink.url;
+    } catch (error) {
+      console.error('Failed to create review link:', error);
+      throw new Error(`Unable to create review link: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    // Create new subfolder
-    const subfolder = await this.makeRequest('POST', `/assets/${parentFolderId}/children`, {
-      name: folderName,
-      type: 'folder'
-    });
-
-    console.log('Created subfolder:', subfolder.id);
-    return subfolder.id;
   }
 
   /**
    * Find folder by name within parent folder
    */
-  private async findFolderByName(name: string, parentId: string): Promise<FrameioAsset | null> {
+  async findFolderByName(folderName: string, parentId: string): Promise<FrameioFolder | null> {
     try {
+      console.log(`Searching for folder "${folderName}" in parent ${parentId}`);
       const children = await this.makeRequest('GET', `/assets/${parentId}/children`);
-      const folder = children.find((child: FrameioAsset) => 
-        child.type === 'folder' && child.name === name
+      
+      const folder = children.find((child: any) => 
+        child.type === 'folder' && child.name === folderName
       );
+      
+      if (folder) {
+        console.log(`Found folder: ${folder.name} (${folder.id})`);
+      } else {
+        console.log(`Folder "${folderName}" not found in parent ${parentId}`);
+      }
+      
       return folder || null;
     } catch (error) {
-      console.error('Error finding folder by name:', error);
+      console.log(`Could not search for folder "${folderName}" in parent ${parentId}:`, error);
       return null;
     }
   }
