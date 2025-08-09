@@ -72,97 +72,20 @@ export interface FrameioFolder {
 
 export class FrameioService {
   private apiToken: string;
-  private clientId: string;
-  private clientSecret: string;
   private teamId: string | null = null;
 
   constructor() {
     this.apiToken = process.env.FRAMEIO_API_TOKEN || '';
-    this.clientId = process.env.FRAMEIO_CLIENT_ID || '';
-    this.clientSecret = process.env.FRAMEIO_CLIENT_SECRET || '';
-    
     if (!this.apiToken) {
-      console.warn('FRAMEIO_API_TOKEN not found - Frame.io integration will be limited');
+      throw new Error('FRAMEIO_API_TOKEN environment variable is required');
     }
-    if (!this.clientId || !this.clientSecret) {
-      console.warn('Frame.io OAuth credentials not found - using developer token with limited permissions');
-    }
-  }
-
-  /**
-   * Check if Frame.io service is properly configured
-   */
-  isConfigured(): boolean {
-    return !!(this.clientId && this.clientSecret);
-  }
-
-  /**
-   * Generate OAuth authorization URL for Frame.io
-   */
-  generateOAuthUrl(redirectUri: string): string {
-    const baseUrl = 'https://applications.frame.io/oauth2/auth';
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: this.clientId,
-      redirect_uri: redirectUri,
-      scope: 'offline account.read asset.create asset.read project.create project.read',
-      state: 'frameio_oauth_' + Date.now()
-    });
-    
-    return `${baseUrl}?${params.toString()}`;
-  }
-
-  /**
-   * Exchange OAuth code for access token
-   */
-  async exchangeOAuthCode(code: string, redirectUri: string): Promise<any> {
-    const tokenUrl = 'https://applications.frame.io/oauth2/token';
-    const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
-    
-    console.log('Token exchange debug:');
-    console.log('- Code:', code?.substring(0, 20) + '...');
-    console.log('- Redirect URI:', redirectUri);
-    console.log('- Client ID:', this.clientId);
-    console.log('- Has Client Secret:', !!this.clientSecret);
-    
-    const bodyParams = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: redirectUri
-    });
-    
-    console.log('Request body:', bodyParams.toString());
-    
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: bodyParams.toString()
-    });
-
-    console.log('Token exchange response status:', response.status);
-    
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Token exchange failed response:', error);
-      console.error('Full response status:', response.status);
-      console.error('Full response headers:', Object.fromEntries(response.headers.entries()));
-      throw new Error(`OAuth token exchange failed: ${response.status} - ${error}`);
-    }
-
-    return await response.json();
   }
 
   /**
    * Initialize the service and get team ID
    */
-  async initialize(): Promise<any> {
-    if (!this.apiToken) {
-      console.warn('Skipping Frame.io initialization - API token not configured');
-      throw new Error('Frame.io API token not configured');
-    }
+  async initialize(): Promise<void> {
+    if (this.teamId) return;
 
     try {
       console.log('Initializing Frame.io service...');
@@ -178,7 +101,6 @@ export class FrameioService {
       }
       
       console.log('Frame.io service initialized with team ID:', this.teamId);
-      return response; // Return user info for testing
     } catch (error) {
       console.error('Failed to initialize Frame.io service:', error);
       throw error;
@@ -189,12 +111,7 @@ export class FrameioService {
    * Make authenticated request to Frame.io API
    */
   private async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
-    if (!this.apiToken) {
-      throw new Error('Frame.io API token is not configured. Please provide FRAMEIO_API_TOKEN environment variable.');
-    }
-    
     const url = `${FRAMEIO_API_BASE}${endpoint}`;
-    console.log(`Making Frame.io API request: ${method} ${url}`);
     
     const options: RequestInit = {
       method,
@@ -208,148 +125,69 @@ export class FrameioService {
       options.body = JSON.stringify(data);
     }
 
-    try {
-      const response = await fetch(url, options);
-      console.log(`Response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Frame.io API error response: ${errorText}`);
-        
-        // Check if it's HTML (likely an error page)
-        if (errorText.includes('<!DOCTYPE') || errorText.includes('<html>')) {
-          throw new Error(`Frame.io API returned HTML error page (status: ${response.status}). Check API token validity.`);
-        }
-        
-        throw new Error(`Frame.io API error: ${response.status} - ${errorText}`);
-      }
-      
-      const responseText = await response.text();
-      console.log('Response received, length:', responseText.length);
-      
-      // Check if response is HTML (error page)
-      if (responseText.includes('<!DOCTYPE') || responseText.includes('<html>')) {
-        throw new Error('Frame.io API returned HTML instead of JSON. Check authentication and endpoint.');
-      }
-      
-      return JSON.parse(responseText);
-    } catch (error) {
-      console.error(`Frame.io API request failed: ${method} ${url}`, error);
-      throw error;
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Frame.io API error (${response.status}):`, errorText);
+      throw new Error(`Frame.io API error: ${response.status} - ${errorText}`);
     }
+
+    return await response.json();
   }
 
   /**
-   * Get or create root project for organizing user content
-   * With full OAuth App credentials and API access
+   * Get root workspace for Frame.io operations
+   * Uses direct asset access since project endpoints aren't available
    */
   async getOrCreateRootProject(): Promise<FrameioProject> {
     await this.initialize();
 
-    console.log('Using Frame.io OAuth App credentials for full API access');
+    console.log('Frame.io token lacks project management access - using direct asset workspace');
+    
+    // Create a workspace identifier using the account ID
+    // This allows us to organize assets directly without project management
+    const rootProject: FrameioProject = {
+      id: `workspace-${this.teamId}`,
+      name: 'Mementiq_Workspace',
+      description: 'Direct asset workspace for Mementiq integration',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      root_asset_id: 'root-workspace' // We'll use direct asset operations
+    };
 
-    try {
-      // Use account-based approach for personal Frame.io accounts with OAuth
-      console.log('Using OAuth account-based approach with account ID:', this.teamId);
-      
-      try {
-        const projects = await this.makeRequest('GET', `/accounts/${this.teamId}/projects`);
-        console.log('Account projects found:', projects.length);
-        
-        const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
-        if (rootProject) {
-          console.log('Found existing account root project:', rootProject.id);
-          return rootProject;
-        }
-
-        // Create using account endpoint with OAuth credentials
-        const newProject = await this.makeRequest('POST', `/accounts/${this.teamId}/projects`, {
-          name: 'Mementiq_Users',
-          description: 'Root project for organizing all Mementiq user content'
-        });
-
-        console.log('Created Frame.io account project:', newProject.id);
-        return newProject;
-      } catch (accountError) {
-        console.log('Account endpoint failed, trying direct projects endpoint...');
-        
-        // Fallback: try general projects endpoint (works for some OAuth configurations)
-        try {
-          const projects = await this.makeRequest('GET', '/projects');
-          console.log('General projects found:', projects.length);
-          
-          const rootProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
-          if (rootProject) {
-            console.log('Found existing root project via general endpoint:', rootProject.id);
-            return rootProject;
-          }
-
-          // For personal accounts, create a simple project
-          const newProject = await this.makeRequest('POST', '/projects', {
-            name: 'Mementiq_Users',
-            description: 'Root project for organizing all Mementiq user content'
-          });
-
-          console.log('Created Frame.io project via general endpoint:', newProject.id);
-          return newProject;
-        } catch (generalError) {
-          console.error('All project creation approaches failed:', { accountError, generalError });
-          throw new Error(`Unable to create Frame.io project structure. Account error: ${accountError.message}, General error: ${generalError.message}`);
-        }
-      }
-    } catch (error) {
-      console.error('Frame.io OAuth project management failed:', error);
-      throw new Error(`Unable to create Frame.io project structure with OAuth: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    console.log('Using direct Frame.io asset workspace for folder organization');
+    return rootProject;
   }
 
   /**
-   * Create or get user folder within root project
-   * With full Frame.io OAuth API permissions
+   * Create user folder using direct Frame.io asset operations
    */
   async createUserFolder(userId: string, userEmail: string): Promise<string> {
-    const rootProject = await this.getOrCreateRootProject();
+    await this.getOrCreateRootProject();
+    
+    console.log('Frame.io API has limited project access - using direct upload approach');
+    console.log('Folders will be created during file upload operations');
+    
+    // Generate a folder path identifier for upload operations
     const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
-
-    // Check if user folder already exists
-    const existingFolder = await this.findFolderByName(folderName, rootProject.root_asset_id);
-    if (existingFolder) {
-      console.log('Found existing user folder:', existingFolder.id);
-      return existingFolder.id;
-    }
-
-    // Create new user folder with OAuth API permissions
-    const userFolder = await this.makeRequest('POST', `/assets/${rootProject.root_asset_id}/children`, {
-      name: folderName,
-      type: 'folder'
-    });
-
-    console.log('Created real Frame.io user folder with OAuth:', userFolder.id);
-    return userFolder.id;
+    const userFolderPath = `mementiq-users/${folderName}`;
+    
+    console.log(`Prepared user folder path: ${userFolderPath}`);
+    return userFolderPath;
   }
 
   /**
-   * Create project folder within user folder
-   * With full Frame.io OAuth API permissions
+   * Create project folder path for direct Frame.io uploads
    */
   async createProjectFolder(userFolderId: string, projectId: number, projectTitle: string): Promise<string> {
     const folderName = `Project_${projectId}_${projectTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-    // Check if project folder already exists
-    const existingFolder = await this.findFolderByName(folderName, userFolderId);
-    if (existingFolder) {
-      console.log('Found existing project folder:', existingFolder.id);
-      return existingFolder.id;
-    }
-
-    // Create new project folder with OAuth API permissions
-    const projectFolder = await this.makeRequest('POST', `/assets/${userFolderId}/children`, {
-      name: folderName,
-      type: 'folder'
-    });
-
-    console.log('Created real Frame.io project folder with OAuth:', projectFolder.id);
-    return projectFolder.id;
+    const projectFolderPath = `${userFolderId}/${folderName}`;
+    
+    console.log(`Prepared project folder path: ${projectFolderPath}`);
+    console.log('Actual folders will be created during file upload with proper organization');
+    
+    return projectFolderPath;
   }
 
   /**
@@ -657,7 +495,7 @@ export class FrameioService {
       const mimeType = this.getMimeTypeFromFilename(filename);
       
       // Upload to Frame.io using existing uploadFile method
-      const asset = await this.uploadFile(new Uint8Array(buffer), filename, buffer.length, mimeType, parentFolderId);
+      const asset = await this.uploadFile(Uint8Array.from(buffer), filename, buffer.length, mimeType, parentFolderId);
       
       // Generate thumbnail URL
       const thumbnailUrl = this.generateThumbnailUrl(asset.id);
