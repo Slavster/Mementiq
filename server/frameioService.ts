@@ -71,14 +71,20 @@ export interface FrameioFolder {
 }
 
 export class FrameioService {
-  private token: string;
-  private teamId: string | null = null;
+  private clientId: string;
+  private clientSecret: string;
+  private accessToken: string | null = null;
+  private workspaceId: string | null = null;
   private initialized: boolean = false;
+  private baseUrl = 'https://api.frame.io/v4';
 
   constructor() {
-    this.token = process.env.FRAMEIO_DEV_TOKEN || '';
-    if (!this.token) {
-      throw new Error('FRAMEIO_DEV_TOKEN environment variable is required');
+    // V4 OAuth credentials from Adobe Developer Console
+    this.clientId = process.env.FRAMEIO_CLIENT_ID || '';
+    this.clientSecret = process.env.FRAMEIO_CLIENT_SECRET || '';
+    
+    if (!this.clientId || !this.clientSecret) {
+      throw new Error('FRAMEIO_CLIENT_ID and FRAMEIO_CLIENT_SECRET environment variables are required for V4 OAuth');
     }
   }
 
