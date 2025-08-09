@@ -35,12 +35,24 @@ export class FrameioV4Service {
     console.log('Frame.io V4 Service initialization:');
     console.log(`Client ID configured: ${!!this.clientId}`);
     console.log(`Client Secret configured: ${!!this.clientSecret}`);
-    console.log(`Service Account Token configured: ${!!this.accessTokenValue}`);
     
     if (!this.clientId || !this.clientSecret) {
       console.log('Frame.io V4 OAuth credentials not configured. Service available but operations will require authentication.');
     } else {
       console.log('Frame.io V4 OAuth credentials configured successfully');
+      // Auto-load service account token on startup for production persistence
+      console.log('Attempting to load service account token from database...');
+      this.loadServiceAccountToken()
+        .then(() => {
+          if (this.accessTokenValue) {
+            console.log('✅ Production service account token loaded successfully - Frame.io ready');
+          } else {
+            console.log('ℹ️  No service account token found - OAuth required for Frame.io integration');
+          }
+        })
+        .catch(error => {
+          console.error('Failed to auto-load service account token:', error);
+        });
     }
   }
 
