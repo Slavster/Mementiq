@@ -10,11 +10,11 @@ Mementiq is a professional video editing services website designed as a modern f
 - **Generic Database Schema Migration (August 2025)**: Successfully completed migration from platform-specific field names (vimeoFolderId, vimeoVideoId, etc.) to generic equivalents (mediaFolderId, mediaAssetId, etc.) across entire codebase. This enables seamless future migrations between media platforms without code changes. Updated all database tables, API endpoints, service methods, client components, and documentation to use generic terminology.
 - **Final Vimeo Cleanup (August 2025)**: Removed all remaining legacy Vimeo compatibility exports from frameioUpload.ts, completing the full migration to Frame.io platform.
 - **Complete ImageKit Migration (August 2025)**: Successfully migrated all photo upload functionality from ImageKit to Frame.io. Added photo upload capabilities to Frame.io service, updated all API endpoints to use Frame.io for photos, removed imagekitService.ts, and updated client components. Frame.io now serves as the unified platform for both video and photo management with consistent folder structure and thumbnail generation.
-- **Frame.io V4 Account Migration Issue Identified (August 9, 2025)**: Root cause discovered - user has Frame.io V4 account trying to use legacy v2 API with developer token. V4 accounts cannot access resources via legacy v2 endpoints (/accounts returns empty, /projects returns 404). V4 accounts require OAuth via Adobe Developer Console instead of developer tokens. Classic symptom: /me works (authentication compatible) but resource endpoints fail. Migration to V4 OAuth API or account downgrade to V2 required.
+- **Frame.io V4 OAuth Authentication Successful (August 9, 2025)**: Successfully implemented Frame.io V4 OAuth authentication using Adobe IMS endpoints with database-backed state management. Resolved invalid_scope error by using `openid` scope, fixed state parameter issues with Adobe's redirect chain by implementing database-backed OAuth state storage, and successfully completed full OAuth flow with token exchange. V4 authentication now working with access token obtained.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
-Frame.io Account: V4 account requiring OAuth via Adobe Developer Console (no v2 legacy API compatibility).
+Frame.io Account: V4 account with OAuth authentication successfully configured via Adobe Developer Console.
 
 ## System Architecture
 
