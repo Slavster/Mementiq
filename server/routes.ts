@@ -3407,10 +3407,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Exchange code for access token
       await frameioV4Service.exchangeCodeForToken(code as string, redirectUri);
       
-      // Store the token globally for now - in production this would need user context
-      // The token is valid for the current Replit session and can be used for project creation
+      // CRITICAL: Store token permanently in database for service account approach
+      // This ensures persistent authentication across restarts and production deployments
+      const users = await storage.getAllUsers();
+      let serviceAccountUser = users.find(user => 
+        user.email.includes('admin') || 
+        user.email === process.env.ADMIN_EMAIL ||
+        user.email.includes('russian316') // Your email for service account
+      );
       
-      console.log("Frame.io V4 OAuth flow completed successfully");
+      // If no specific admin found, use the first user
+      if (!serviceAccountUser && users.length > 0) {
+        serviceAccountUser = users[0];
+      }
+      
+      if (serviceAccountUser && frameioV4Service.accessToken) {
+        await storage.updateFrameioV4Token(serviceAccountUser.id, frameioV4Service.accessToken);
+        console.log(`✅ PRODUCTION PERSISTENCE: Service account token stored permanently for user: ${serviceAccountUser.email}`);
+        console.log("This token will be automatically loaded on app startup - no manual OAuth required in production");
+      } else {
+        console.warn("Warning: Could not find user to store service account token - token will not persist across restarts");
+      }
+      
+      console.log("Frame.io V4 OAuth flow completed successfully with production persistence");
       
       // Redirect to success page
       res.redirect(`${req.protocol}://${req.get('host')}/dashboard?frameio_connected=true`);
