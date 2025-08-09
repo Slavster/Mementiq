@@ -73,6 +73,14 @@ export const tallyFormSubmissions = pgTable("tally_form_submissions", {
   verifiedAt: timestamp("verified_at"), // When we confirmed it exists in Tally
 });
 
+export const oauthStates = pgTable("oauth_states", {
+  id: serial("id").primaryKey(),
+  state: text("state").notNull().unique(),
+  provider: text("provider").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 export const photoAlbums = pgTable("photo_albums", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id).notNull().unique(), // One album per project
