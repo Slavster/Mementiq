@@ -28,6 +28,11 @@ export class FrameioV4Service {
    * Generate OAuth authorization URL for Frame.io V4
    */
   getAuthorizationUrl(redirectUri: string, state?: string): string {
+    console.log('=== Frame.io V4 OAuth URL Generation ===');
+    console.log(`Client ID: ${this.clientId}`);
+    console.log(`Redirect URI: ${redirectUri}`);
+    console.log(`State: ${state}`);
+
     const params = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: redirectUri,
@@ -41,6 +46,13 @@ export class FrameioV4Service {
 
     const authUrl = `https://auth.frame.io/oauth2/authorize?${params.toString()}`;
     console.log(`Generated V4 OAuth URL: ${authUrl}`);
+    console.log('OAuth URL Parameters:');
+    console.log(`  client_id: ${this.clientId}`);
+    console.log(`  redirect_uri: ${redirectUri}`);
+    console.log(`  response_type: code`);
+    console.log(`  scope: offline_access frameio.read frameio.write`);
+    console.log(`  state: ${state}`);
+    
     return authUrl;
   }
 

@@ -3311,8 +3311,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Frame.io V4 OAuth endpoints
   app.get("/api/auth/frameio", async (req: Request, res: Response) => {
     try {
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/frameio/callback`;
+      // Build callback URI with proper host detection
+      const host = req.get('host');
+      const protocol = req.protocol;
+      const redirectUri = `${protocol}://${host}/api/auth/frameio/callback`;
       const state = Math.random().toString(36).substring(7);
+      
+      console.log(`OAuth callback URI: ${redirectUri}`);
+      console.log(`Host: ${host}, Protocol: ${protocol}`);
       
       // Store state in session for verification
       req.session.frameioOAuthState = state;
@@ -3320,7 +3326,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const authUrl = frameioV4Service.getAuthorizationUrl(redirectUri, state);
       
       console.log(`Generated Frame.io V4 OAuth URL: ${authUrl}`);
-      res.json({ authUrl });
+      res.json({ 
+        authUrl,
+        redirectUri // Include for debugging
+      });
     } catch (error) {
       console.error("OAuth URL generation failed:", error);
       res.status(500).json({ 
