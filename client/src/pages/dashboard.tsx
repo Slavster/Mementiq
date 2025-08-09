@@ -511,12 +511,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <p className="text-sm text-gray-400">Frame.io Integration</p>
-                  <div className="mt-2">
-                    <FrameioOAuthButton />
-                  </div>
-                </div>
+
               </div>
             </CardContent>
           </Card>
