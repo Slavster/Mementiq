@@ -71,12 +71,13 @@ export interface FrameioFolder {
 }
 
 export class FrameioService {
-  private apiToken: string;
+  private token: string;
   private teamId: string | null = null;
+  private initialized: boolean = false;
 
   constructor() {
-    this.apiToken = process.env.FRAMEIO_DEV_TOKEN || '';
-    if (!this.apiToken) {
+    this.token = process.env.FRAMEIO_DEV_TOKEN || '';
+    if (!this.token) {
       throw new Error('FRAMEIO_DEV_TOKEN environment variable is required');
     }
   }
@@ -85,34 +86,55 @@ export class FrameioService {
    * Initialize the service and get team ID
    */
   async initialize(): Promise<void> {
-    if (this.teamId) return;
+    if (this.initialized) return;
+    this.initialized = true;
 
     try {
-      console.log('Initializing Frame.io service...');
+      console.log('=== Initializing Frame.io Service ===');
+      console.log(`Using token: ${this.token ? this.token.substring(0, 6) + '...' + this.token.substring(this.token.length - 6) : 'MISSING'}`);
+      console.log('Calling Frame.io /me endpoint...');
+      
       const response = await this.makeRequest('GET', '/me');
-      console.log('Frame.io /me response:', response);
       
       // Frame.io API returns account_id in the /me response
       this.teamId = response.account_id;
       
       if (!this.teamId) {
-        console.error('No team/account ID found in Frame.io response:', response);
-        throw new Error('Unable to retrieve Frame.io team ID from API response');
+        console.error('No account_id found in Frame.io /me response');
+        console.error('Full response:', JSON.stringify(response, null, 2));
+        throw new Error('Unable to retrieve Frame.io account ID from API response');
       }
       
-      console.log('Frame.io service initialized with team ID:', this.teamId);
+      console.log('=== Frame.io Service Initialized ===');
+      console.log(`Account ID: ${this.teamId}`);
+      console.log(`User: ${response.name} (${response.email})`);
+      console.log(`Account type: ${response.highest_account_role || 'Personal'}`);
+      
     } catch (error) {
-      console.error('Failed to initialize Frame.io service:', error);
+      console.error('=== Frame.io Service Initialization Failed ===');
+      console.error('Error details:', error);
       throw error;
     }
   }
 
   /**
-   * Make authenticated request to Frame.io API
+   * Make authenticated request to Frame.io API with comprehensive logging
    */
   private async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
-    const url = `https://api.frame.io/v2${endpoint}`;
-    console.log(`Frame.io API Request: ${method} ${url}`);
+    // Force legacy v2 API base URL
+    const baseUrl = 'https://api.frame.io/v2';
+    const url = `${baseUrl}${endpoint}`;
+    
+    // Log token fingerprint (first 6 + last 6 chars)
+    const tokenFingerprint = this.token ? 
+      `${this.token.substring(0, 6)}...${this.token.substring(this.token.length - 6)}` : 
+      'NO_TOKEN';
+    
+    console.log('=== Frame.io API Request ===');
+    console.log(`Method: ${method}`);
+    console.log(`URL: ${url}`);
+    console.log(`Token fingerprint: ${tokenFingerprint}`);
+    console.log(`Request body: ${data ? JSON.stringify(data, null, 2) : 'None'}`);
     
     const options: RequestInit = {
       method,
@@ -126,16 +148,32 @@ export class FrameioService {
       options.body = JSON.stringify(data);
     }
 
+    const startTime = Date.now();
     const response = await fetch(url, options);
-    console.log(`Frame.io API Response: ${response.status}`);
+    const duration = Date.now() - startTime;
+    
+    // Log comprehensive response details
+    console.log('=== Frame.io API Response ===');
+    console.log(`Status: ${response.status} ${response.statusText}`);
+    console.log(`Duration: ${duration}ms`);
+    console.log(`Request ID: ${response.headers.get('x-request-id') || 'Not provided'}`);
+    console.log(`Content-Type: ${response.headers.get('content-type') || 'Not provided'}`);
+    
+    // Get response body
+    const responseText = await response.text();
+    console.log(`Response body: ${responseText}`);
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Frame.io API error (${response.status}):`, errorText);
-      throw new Error(`Frame.io API error: ${response.status} - ${errorText}`);
+      console.error(`Frame.io API ERROR (${response.status}): ${responseText}`);
+      throw new Error(`Frame.io API error: ${response.status} - ${responseText}`);
     }
 
-    return await response.json();
+    try {
+      return JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse response as JSON:', parseError);
+      throw new Error(`Invalid JSON response: ${responseText}`);
+    }
   }
 
   /**
