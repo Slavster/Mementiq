@@ -75,9 +75,9 @@ export class FrameioService {
   private teamId: string | null = null;
 
   constructor() {
-    this.apiToken = process.env.FRAMEIO_API_TOKEN || '';
+    this.apiToken = process.env.FRAMEIO_DEV_TOKEN || '';
     if (!this.apiToken) {
-      throw new Error('FRAMEIO_API_TOKEN environment variable is required');
+      throw new Error('FRAMEIO_DEV_TOKEN environment variable is required');
     }
   }
 
@@ -137,27 +137,47 @@ export class FrameioService {
   }
 
   /**
-   * Get root workspace for Frame.io operations
-   * Uses direct asset access since project endpoints aren't available
+   * Get or create root project using available Frame.io endpoints
    */
   async getOrCreateRootProject(): Promise<FrameioProject> {
     await this.initialize();
 
-    console.log('Frame.io token lacks project management access - using direct asset workspace');
-    
-    // Create a workspace identifier using the account ID
-    // This allows us to organize assets directly without project management
-    const rootProject: FrameioProject = {
-      id: `workspace-${this.teamId}`,
-      name: 'Mementiq_Workspace',
-      description: 'Direct asset workspace for Mementiq integration',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      root_asset_id: 'root-workspace' // We'll use direct asset operations
-    };
+    try {
+      // Try user projects endpoint first (often available with developer tokens)
+      console.log('Checking available Frame.io projects...');
+      const projects = await this.makeRequest('GET', '/me/projects');
+      console.log('User projects found:', projects.length);
+      
+      // Look for existing Mementiq root project
+      const existingProject = projects.find((p: FrameioProject) => p.name === 'Mementiq_Users');
+      if (existingProject) {
+        console.log('Found existing Mementiq root project:', existingProject.id);
+        return existingProject;
+      }
 
-    console.log('Using direct Frame.io asset workspace for folder organization');
-    return rootProject;
+      // If no projects or no Mementiq project, we need to work with what's available
+      if (projects.length > 0) {
+        const firstProject = projects[0];
+        console.log('Using existing project as root:', firstProject.name, '(ID:', firstProject.id, ')');
+        return firstProject;
+      }
+
+      // Fallback to workspace approach if no projects available
+      console.log('No projects available - using workspace approach');
+      const rootProject: FrameioProject = {
+        id: `workspace-${this.teamId}`,
+        name: 'Mementiq_Workspace',
+        description: 'Workspace for Mementiq integration',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        root_asset_id: `root-${this.teamId}`
+      };
+
+      return rootProject;
+    } catch (error) {
+      console.error('Failed to access Frame.io projects:', error);
+      throw new Error(`Unable to setup Frame.io project structure: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
