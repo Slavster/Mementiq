@@ -53,14 +53,15 @@ export class FrameioV4Service {
       client_id: this.clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'offline_access frameio.read frameio.write', // V4 scopes
+      scope: 'openid,creative_sdk', // Adobe IMS scopes for Frame.io V4
     });
 
     if (state) {
       params.append('state', state);
     }
 
-    const authUrl = `https://auth.frame.io/oauth2/authorize?${params.toString()}`;
+    // Frame.io V4 uses Adobe IMS OAuth endpoints
+    const authUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?${params.toString()}`;
     console.log(`Generated V4 OAuth URL: ${authUrl}`);
     console.log('OAuth URL Parameters:');
     console.log(`  client_id: ${this.clientId}`);
@@ -80,7 +81,7 @@ export class FrameioV4Service {
     console.log(`Code: ${code.substring(0, 10)}...`);
     console.log(`Redirect URI: ${redirectUri}`);
 
-    const tokenUrl = 'https://auth.frame.io/oauth2/token';
+    const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
@@ -176,6 +177,7 @@ export class FrameioV4Service {
       method,
       headers: {
         'Authorization': `Bearer ${this.accessToken}`,
+        'X-Api-Key': this.clientId, // Frame.io V4 requires both Bearer token and API key
         'Content-Type': 'application/json',
       },
     };
