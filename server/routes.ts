@@ -3329,12 +3329,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Current host: ${host}`);
       console.log(`Generated state: ${state}`);
       
-      // Create manual OAuth URL - user will need to configure this URI in Adobe Console
-      const manualRedirectUri = `https://${host}/api/auth/frameio/callback`;
-      const manualAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(manualRedirectUri)}&response_type=code&scope=openid%2Ccreative_sdk&state=${state}`;
+      // Use REPLIT_DEV_DOMAIN for more stable OAuth redirect URI
+      const replitDevDomain = process.env.REPLIT_DEV_DOMAIN;
+      const stableRedirectUri = replitDevDomain 
+        ? `https://${replitDevDomain}/api/auth/frameio/callback`
+        : `https://${host}/api/auth/frameio/callback`;
       
+      const manualAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(stableRedirectUri)}&response_type=code&scope=openid&state=${state}`;
+      
+      console.log(`Using REPLIT_DEV_DOMAIN: ${replitDevDomain || 'not available'}`);
+      console.log(`Current host: ${host}`);
+      console.log(`Stable redirect URI: ${stableRedirectUri}`);
       console.log(`Manual OAuth URL: ${manualAuthUrl}`);
-      console.log(`Required redirect URI for Adobe Console: ${manualRedirectUri}`);
       
       res.json({
         success: true,

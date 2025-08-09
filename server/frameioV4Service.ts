@@ -53,7 +53,7 @@ export class FrameioV4Service {
       client_id: this.clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'openid,creative_sdk', // Adobe IMS scopes for Frame.io V4
+      scope: 'openid', // Start with basic Adobe IMS scope
     });
 
     if (state) {
