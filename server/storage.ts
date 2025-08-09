@@ -110,6 +110,9 @@ export interface IStorage {
   // OAuth state methods
   createOAuthState(state: string, provider: string, expiresInMinutes: number): Promise<void>;
   validateAndConsumeOAuthState(state: string, provider: string): Promise<boolean>;
+  
+  // User management methods
+  getAllUsers(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -619,6 +622,10 @@ export class DatabaseStorage implements IStorage {
       .set({ frameioV4AccessToken: accessToken })
       .where(eq(users.id, userId));
     console.log(`Frame.io V4 access token stored for user: ${userId}`);
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 }
 

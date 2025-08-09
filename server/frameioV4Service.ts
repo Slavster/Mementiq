@@ -29,9 +29,13 @@ export class FrameioV4Service {
     this.clientId = process.env.ADOBE_CLIENT_ID || process.env.FRAMEIO_CLIENT_ID || '';
     this.clientSecret = process.env.ADOBE_CLIENT_SECRET || process.env.FRAMEIO_CLIENT_SECRET || '';
     
+    // Service account token will be loaded from database during initialization
+    // (OAuth token was stored in database during successful authentication)
+    
     console.log('Frame.io V4 Service initialization:');
     console.log(`Client ID configured: ${!!this.clientId}`);
     console.log(`Client Secret configured: ${!!this.clientSecret}`);
+    console.log(`Service Account Token configured: ${!!this.accessTokenValue}`);
     
     if (!this.clientId || !this.clientSecret) {
       console.log('Frame.io V4 OAuth credentials not configured. Service available but operations will require authentication.');
@@ -117,6 +121,33 @@ export class FrameioV4Service {
   setAccessToken(token: string): void {
     this.accessTokenValue = token;
     console.log(`V4 Access token set: ${token.substring(0, 6)}...${token.substring(token.length - 6)}`);
+  }
+
+  /**
+   * Load service account token from database (from successful OAuth completion)
+   */
+  async loadServiceAccountToken(): Promise<void> {
+    if (this.accessTokenValue) return; // Already loaded
+
+    try {
+      // Import storage here to avoid circular dependency
+      const { DatabaseStorage } = await import('./storage.js');
+      const storage = new DatabaseStorage();
+      
+      // Find any user with a Frame.io V4 access token (service account approach)
+      const users = await storage.getAllUsers();
+      const serviceAccountUser = users.find(user => user.frameioV4AccessToken);
+      
+      if (serviceAccountUser?.frameioV4AccessToken) {
+        this.accessTokenValue = serviceAccountUser.frameioV4AccessToken;
+        console.log('✓ Service account token loaded from database');
+        console.log(`Using token from user: ${serviceAccountUser.email}`);
+      } else {
+        console.log('No service account token found in database');
+      }
+    } catch (error) {
+      console.error('Failed to load service account token:', error);
+    }
   }
 
   /**

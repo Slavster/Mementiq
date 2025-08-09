@@ -1314,6 +1314,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let frameioConfigured = false;
         
         try {
+          // Load service account token from database first
+          await frameioV4Service.loadServiceAccountToken();
+          
           // Use service account for all Frame.io V4 operations (all projects in your Frame.io account)
           if (frameioV4Service.accessToken) {
             console.log(
