@@ -79,12 +79,14 @@ export class FrameioService {
   private baseUrl = 'https://api.frame.io/v4';
 
   constructor() {
-    // V4 OAuth credentials from Adobe Developer Console
+    // Legacy Frame.io service - keeping for backward compatibility
+    // V4 functionality moved to frameioV4Service.ts
     this.clientId = process.env.FRAMEIO_CLIENT_ID || '';
     this.clientSecret = process.env.FRAMEIO_CLIENT_SECRET || '';
     
+    // Don't throw error here - allow server to start without V4 credentials
     if (!this.clientId || !this.clientSecret) {
-      throw new Error('FRAMEIO_CLIENT_ID and FRAMEIO_CLIENT_SECRET environment variables are required for V4 OAuth');
+      console.log('V4 OAuth credentials not configured - use frameioV4Service when available');
     }
   }
 
