@@ -3383,11 +3383,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify state parameter (CSRF protection)
+      console.log(`Received state: ${state}`);
+      console.log(`Session state: ${req.session.frameioOAuthState}`);
+      
       if (state !== req.session.frameioOAuthState) {
-        console.error("OAuth state mismatch");
+        console.error("OAuth state mismatch - this can happen if you used an old OAuth URL");
+        console.error("Please generate a new OAuth URL from /api/auth/frameio for the current session");
         return res.status(400).json({ 
           success: false, 
-          message: "Invalid state parameter" 
+          message: "Invalid state parameter - please generate a new OAuth URL for this session" 
         });
       }
 
