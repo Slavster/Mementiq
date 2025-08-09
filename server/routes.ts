@@ -1314,16 +1314,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let frameioConfigured = false;
         
         try {
-          // Load user's Frame.io V4 access token from database
-          const user = await storage.getUser(req.user!.id);
-          
-          if (user?.frameioV4AccessToken) {
+          // Use service account for all Frame.io V4 operations (all projects in your Frame.io account)
+          if (frameioV4Service.accessToken || frameioV4Service.isConfigured()) {
             console.log(
-              `Configuring Frame.io V4 integration for user ${req.user!.id} (${req.user!.email})`,
+              `Configuring Frame.io V4 integration for user ${req.user!.id} (${req.user!.email}) using service account`,
             );
             
-            // Set the token and initialize
-            frameioV4Service.setAccessToken(user.frameioV4AccessToken);
             await frameioV4Service.initialize();
             
             // Create virtual folder structure using V4 API
