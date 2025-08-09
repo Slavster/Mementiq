@@ -46,6 +46,7 @@ import DirectPhotoUpload from "@/components/DirectPhotoUpload";
 import TallyFormStep from "@/components/TallyFormStep";
 import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
 import { RevisionModal } from "@/components/RevisionModal";
+import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
 
 interface User {
   id: number;
@@ -509,6 +510,12 @@ export default function DashboardPage() {
                       </Button>
                     </div>
                   )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Frame.io Integration</p>
+                  <div className="mt-2">
+                    <FrameioOAuthButton />
+                  </div>
                 </div>
               </div>
             </CardContent>

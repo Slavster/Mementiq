@@ -3393,6 +3393,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Testing Frame.io V4 connection...");
       
+      // Check if we have an access token
+      if (!frameioV4Service.accessToken) {
+        return res.status(400).json({
+          success: false,
+          message: "OAuth authentication required. Please complete OAuth flow first.",
+          authUrl: `${req.protocol}://${req.get('host')}/api/auth/frameio`
+        });
+      }
+      
       await frameioV4Service.initialize();
       const rootProject = await frameioV4Service.getOrCreateRootProject();
       
@@ -3410,6 +3419,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Frame.io V4 connection failed"
+      });
+    }
+  });
+
+  // Check Frame.io V4 OAuth status
+  app.get("/api/frameio/oauth-status", async (req: Request, res: Response) => {
+    try {
+      const hasCredentials = !!(process.env.ADOBE_CLIENT_ID || process.env.FRAMEIO_CLIENT_ID) && 
+                            !!(process.env.ADOBE_CLIENT_SECRET || process.env.FRAMEIO_CLIENT_SECRET);
+      const hasAccessToken = !!frameioV4Service.accessToken;
+      
+      res.json({
+        success: true,
+        oauthConfigured: hasCredentials,
+        authenticated: hasAccessToken,
+        authUrl: hasCredentials ? `${req.protocol}://${req.get('host')}/api/auth/frameio` : null
+      });
+    } catch (error) {
+      console.error("OAuth status check failed:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to check OAuth status"
       });
     }
   });
