@@ -10,18 +10,33 @@ export class FrameioV4Service {
   private clientId: string;
   private clientSecret: string;
   private accessToken: string | null = null;
+
+  // Expose getter for access token status (without revealing the token)
+  get hasAccessToken(): boolean {
+    return !!this.accessToken;
+  }
+
+  // Allow access to accessToken for route handlers (read-only)
+  get accessToken(): string | null {
+    return this.accessToken;
+  }
   private workspaceId: string | null = null;
   private initialized: boolean = false;
   private baseUrl = 'https://api.frame.io/v4';
 
   constructor() {
     // V4 OAuth credentials from Adobe Developer Console
-    this.clientId = process.env.FRAMEIO_CLIENT_ID || '';
-    this.clientSecret = process.env.FRAMEIO_CLIENT_SECRET || '';
+    this.clientId = process.env.ADOBE_CLIENT_ID || process.env.FRAMEIO_CLIENT_ID || '';
+    this.clientSecret = process.env.ADOBE_CLIENT_SECRET || process.env.FRAMEIO_CLIENT_SECRET || '';
     
-    // Allow service to be created without credentials - they'll be required for actual operations
+    console.log('Frame.io V4 Service initialization:');
+    console.log(`Client ID configured: ${!!this.clientId}`);
+    console.log(`Client Secret configured: ${!!this.clientSecret}`);
+    
     if (!this.clientId || !this.clientSecret) {
       console.log('Frame.io V4 OAuth credentials not configured. Service available but operations will require authentication.');
+    } else {
+      console.log('Frame.io V4 OAuth credentials configured successfully');
     }
   }
 
