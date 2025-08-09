@@ -3322,22 +3322,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const state = Math.random().toString(36).substring(7);
       const host = req.get('host');
       
-      // Store state and callback info in session with debugging
-      req.session.frameioOAuthState = state;
-      req.session.frameioCallbackHost = host;
-      
-      // Force session save to ensure persistence
-      await new Promise((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) {
-            console.error('Session save error:', err);
-            reject(err);
-          } else {
-            console.log(`Session saved with state: ${state}`);
-            resolve(void 0);
-          }
-        });
-      });
+      // Store state in database to survive Adobe's redirect chain
+      await storage.createOAuthState(state, 'frameio', 10); // 10 minutes expiry
+      console.log(`Database-backed OAuth state created: ${state}`);
       
       console.log(`Current host: ${host}`);
       console.log(`Generated state: ${state}`);
@@ -3395,26 +3382,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Verify state parameter (CSRF protection)
-      console.log(`Received state: ${state}`);
-      console.log(`Session state: ${req.session.frameioOAuthState}`);
-      console.log(`Session ID: ${req.sessionID}`);
-      console.log(`All session data:`, req.session);
+      // Verify state parameter using database-backed storage
+      console.log(`Received OAuth callback state: ${state}`);
       
-      if (!req.session.frameioOAuthState) {
-        console.error("No OAuth state found in session - session may have expired or been cleared");
+      const isValidState = await storage.validateAndConsumeOAuthState(state as string, 'frameio');
+      
+      if (!isValidState) {
+        console.error("OAuth state validation failed - state not found, expired, or already used");
+        console.error("Please generate a new OAuth URL from /api/auth/frameio");
         return res.status(400).json({ 
           success: false, 
-          message: "Session expired - please generate a new OAuth URL" 
-        });
-      }
-      
-      if (state !== req.session.frameioOAuthState) {
-        console.error("OAuth state mismatch - this can happen if you used an old OAuth URL");
-        console.error("Please generate a new OAuth URL from /api/auth/frameio for the current session");
-        return res.status(400).json({ 
-          success: false, 
-          message: "Invalid state parameter - please generate a new OAuth URL for this session" 
+          message: "Invalid or expired OAuth state - please generate a new OAuth URL" 
         });
       }
 
@@ -3423,8 +3401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Exchange code for access token
       await frameioV4Service.exchangeCodeForToken(code as string, redirectUri);
       
-      // Clear OAuth state
-      delete req.session.frameioOAuthState;
+      // State already consumed during validation
       
       console.log("Frame.io V4 OAuth flow completed successfully");
       

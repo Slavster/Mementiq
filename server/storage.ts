@@ -8,6 +8,7 @@ import {
   photoAlbums,
   photoFiles,
   revisionPayments,
+  oauthStates,
   type User, 
   type InsertUser, 
   type Project,
@@ -29,7 +30,7 @@ import {
   type InsertRevisionPayment
 } from "../shared/schema";
 import { db } from "./db";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, lt } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 export interface IStorage {
@@ -104,6 +105,10 @@ export interface IStorage {
   getRevisionPayment(sessionId: string): Promise<RevisionPayment | undefined>;
   getRevisionPaymentsByProject(projectId: number): Promise<RevisionPayment[]>;
   updateRevisionPaymentStatus(sessionId: string, status: string, paymentIntentId?: string, paidAt?: Date): Promise<RevisionPayment | undefined>;
+
+  // OAuth state methods
+  createOAuthState(state: string, provider: string, expiresInMinutes: number): Promise<void>;
+  validateAndConsumeOAuthState(state: string, provider: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -562,6 +567,48 @@ export class DatabaseStorage implements IStorage {
       .where(eq(revisionPayments.stripeCheckoutSessionId, sessionId))
       .returning();
     return updatedPayment || undefined;
+  }
+
+  // OAuth state methods
+  async createOAuthState(state: string, provider: string, expiresInMinutes: number): Promise<void> {
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+    await db.insert(oauthStates).values({
+      state,
+      provider,
+      expiresAt,
+    });
+  }
+
+  async validateAndConsumeOAuthState(state: string, provider: string): Promise<boolean> {
+    const now = new Date();
+    
+    // Find the state record that matches and hasn't expired
+    const [stateRecord] = await db
+      .select()
+      .from(oauthStates)
+      .where(
+        and(
+          eq(oauthStates.state, state),
+          eq(oauthStates.provider, provider)
+        )
+      );
+    
+    if (!stateRecord) {
+      console.log(`OAuth state not found: ${state} for provider: ${provider}`);
+      return false;
+    }
+    
+    if (stateRecord.expiresAt < now) {
+      console.log(`OAuth state expired: ${state} (expired at ${stateRecord.expiresAt})`);
+      // Clean up expired state
+      await db.delete(oauthStates).where(eq(oauthStates.id, stateRecord.id));
+      return false;
+    }
+    
+    // State is valid - consume it (delete) to prevent reuse
+    await db.delete(oauthStates).where(eq(oauthStates.id, stateRecord.id));
+    console.log(`OAuth state validated and consumed: ${state} for provider: ${provider}`);
+    return true;
   }
 }
 
