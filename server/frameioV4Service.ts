@@ -10,15 +10,31 @@ export class FrameioV4Service {
   private clientId: string;
   private clientSecret: string;
   private accessTokenValue: string | null = null;
+  private refreshTokenValue: string | null = null;
+  private tokenExpiresAt: Date | null = null;
+  private refreshPromise: Promise<void> | null = null;
 
   // Expose getter for access token status (without revealing the token)
   get hasAccessToken(): boolean {
-    return !!this.accessTokenValue;
+    return !!this.accessTokenValue && this.isTokenValid();
   }
 
   // Allow access to accessToken for route handlers (read-only)
   get accessToken(): string | null {
     return this.accessTokenValue;
+  }
+
+  // Check if current token is still valid
+  private isTokenValid(): boolean {
+    if (!this.tokenExpiresAt) return true; // No expiration info, assume valid
+    return new Date() < this.tokenExpiresAt;
+  }
+
+  // Check if token needs refresh (refresh 5 minutes before expiry)
+  private needsRefresh(): boolean {
+    if (!this.tokenExpiresAt) return false;
+    const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
+    return fiveMinutesFromNow >= this.tokenExpiresAt;
   }
   private workspaceId: string | null = null;
   private initialized: boolean = false;
@@ -120,11 +136,19 @@ export class FrameioV4Service {
 
     const tokenData = await response.json();
     this.accessTokenValue = tokenData.access_token;
+    this.refreshTokenValue = tokenData.refresh_token || null;
+    
+    // Calculate expiration time
+    if (tokenData.expires_in) {
+      this.tokenExpiresAt = new Date(Date.now() + (tokenData.expires_in * 1000));
+    }
     
     console.log('=== V4 Token Exchange Successful ===');
     console.log(`Access token obtained: ${this.accessTokenValue?.substring(0, 6)}...${this.accessTokenValue?.substring(this.accessTokenValue.length - 6)}`);
     console.log(`Token type: ${tokenData.token_type}`);
     console.log(`Expires in: ${tokenData.expires_in} seconds`);
+    console.log(`Expires at: ${this.tokenExpiresAt?.toISOString()}`);
+    console.log(`Has refresh token: ${!!this.refreshTokenValue}`);
   }
 
   /**
@@ -133,6 +157,94 @@ export class FrameioV4Service {
   setAccessToken(token: string): void {
     this.accessTokenValue = token;
     console.log(`V4 Access token set: ${token.substring(0, 6)}...${token.substring(token.length - 6)}`);
+  }
+
+  /**
+   * Refresh the access token using the refresh token
+   */
+  private async refreshAccessToken(): Promise<void> {
+    if (!this.refreshTokenValue) {
+      throw new Error('No refresh token available. Re-authentication required.');
+    }
+
+    console.log('=== Refreshing V4 Access Token ===');
+    
+    const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        refresh_token: this.refreshTokenValue,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`V4 Token refresh failed: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to refresh V4 token: ${response.status} ${errorText}`);
+    }
+
+    const tokenData = await response.json();
+    this.accessTokenValue = tokenData.access_token;
+    
+    // Update refresh token if provided
+    if (tokenData.refresh_token) {
+      this.refreshTokenValue = tokenData.refresh_token;
+    }
+    
+    // Calculate new expiration time
+    if (tokenData.expires_in) {
+      this.tokenExpiresAt = new Date(Date.now() + (tokenData.expires_in * 1000));
+    }
+    
+    console.log('=== V4 Token Refresh Successful ===');
+    console.log(`New access token obtained: ${this.accessTokenValue?.substring(0, 6)}...${this.accessTokenValue?.substring(this.accessTokenValue.length - 6)}`);
+    console.log(`Expires in: ${tokenData.expires_in} seconds`);
+    console.log(`New expires at: ${this.tokenExpiresAt?.toISOString()}`);
+
+    // Update the token in database for service account persistence
+    try {
+      const { DatabaseStorage } = await import('./storage.js');
+      const storage = new DatabaseStorage();
+      const users = await storage.getAllUsers();
+      const serviceAccountUser = users.find(user => user.frameioV4AccessToken);
+      
+      if (serviceAccountUser) {
+        await storage.updateFrameioV4Token(serviceAccountUser.id, this.accessTokenValue);
+        console.log('✓ Refreshed token stored in database for persistence');
+      }
+    } catch (error) {
+      console.warn('Failed to update refreshed token in database:', error);
+    }
+  }
+
+  /**
+   * Ensure we have a valid access token, refreshing if necessary
+   */
+  private async ensureValidToken(): Promise<void> {
+    // If we already have a refresh in progress, wait for it
+    if (this.refreshPromise) {
+      await this.refreshPromise;
+      return;
+    }
+
+    // Check if token is expired or needs refresh
+    if (!this.isTokenValid()) {
+      console.log('Access token is expired, refreshing...');
+      this.refreshPromise = this.refreshAccessToken();
+      await this.refreshPromise;
+      this.refreshPromise = null;
+    } else if (this.needsRefresh()) {
+      console.log('Access token expires soon, proactively refreshing...');
+      this.refreshPromise = this.refreshAccessToken();
+      await this.refreshPromise;
+      this.refreshPromise = null;
+    }
   }
 
   /**
@@ -152,8 +264,23 @@ export class FrameioV4Service {
       
       if (serviceAccountUser?.frameioV4AccessToken) {
         this.accessTokenValue = serviceAccountUser.frameioV4AccessToken;
+        this.refreshTokenValue = serviceAccountUser.frameioV4RefreshToken || null;
+        this.tokenExpiresAt = serviceAccountUser.frameioV4TokenExpiresAt || null;
+        
         console.log('✓ Service account token loaded from database');
         console.log(`Using token from user: ${serviceAccountUser.email}`);
+        console.log(`Token expires at: ${this.tokenExpiresAt?.toISOString() || 'unknown'}`);
+        console.log(`Has refresh token: ${!!this.refreshTokenValue}`);
+        
+        // Check if token needs immediate refresh
+        if (!this.isTokenValid() && this.refreshTokenValue) {
+          console.log('Stored token is expired, refreshing automatically...');
+          try {
+            await this.refreshAccessToken();
+          } catch (error) {
+            console.error('Failed to refresh expired token on startup:', error);
+          }
+        }
       } else {
         console.log('No service account token found in database');
       }
@@ -208,6 +335,9 @@ export class FrameioV4Service {
     if (!this.accessTokenValue) {
       throw new Error('Access token required. Please complete OAuth flow first.');
     }
+
+    // Ensure we have a valid token before making the request
+    await this.ensureValidToken();
 
     const url = `${this.baseUrl}${endpoint}`;
     
