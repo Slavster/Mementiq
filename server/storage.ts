@@ -41,6 +41,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   verifyUser(token: string): Promise<User | undefined>;
   updateUserVerification(userId: string, verifiedAt: Date): Promise<void>;
+  updateFrameioV4Token(userId: string, accessToken: string): Promise<void>;
   
   // Project methods
   getProject(id: number): Promise<Project | undefined>;
@@ -609,6 +610,15 @@ export class DatabaseStorage implements IStorage {
     await db.delete(oauthStates).where(eq(oauthStates.id, stateRecord.id));
     console.log(`OAuth state validated and consumed: ${state} for provider: ${provider}`);
     return true;
+  }
+
+  // Frame.io V4 token methods
+  async updateFrameioV4Token(userId: string, accessToken: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ frameioV4AccessToken: accessToken })
+      .where(eq(users.id, userId));
+    console.log(`Frame.io V4 access token stored for user: ${userId}`);
   }
 }
 

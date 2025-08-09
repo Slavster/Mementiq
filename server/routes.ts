@@ -1314,12 +1314,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let frameioConfigured = false;
         
         try {
-          // Check if Frame.io V4 OAuth is available
-          if (frameioV4Service.accessToken) {
+          // Load user's Frame.io V4 access token from database
+          const user = await storage.getUser(req.user!.id);
+          
+          if (user?.frameioV4AccessToken) {
             console.log(
               `Configuring Frame.io V4 integration for user ${req.user!.id} (${req.user!.email})`,
             );
             
+            // Set the token and initialize
+            frameioV4Service.setAccessToken(user.frameioV4AccessToken);
             await frameioV4Service.initialize();
             
             // Create virtual folder structure using V4 API
@@ -3404,7 +3408,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Exchange code for access token
       await frameioV4Service.exchangeCodeForToken(code as string, redirectUri);
       
-      // State already consumed during validation
+      // Store the token globally for now - in production this would need user context
+      // The token is valid for the current Replit session and can be used for project creation
       
       console.log("Frame.io V4 OAuth flow completed successfully");
       
