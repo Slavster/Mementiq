@@ -3315,15 +3315,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const host = req.get('host');
       const protocol = 'https'; // Always use HTTPS for OAuth
       
-      // Determine the correct redirect URI based on environment
-      let redirectUri: string;
-      if (host && host.includes('.replit.dev')) {
-        // Development environment - use stable .repl.co URL
-        redirectUri = 'https://workspace.slavsinitsyn.repl.co/api/auth/frameio/callback';
-      } else {
-        // Production or stable environment
-        redirectUri = `${protocol}://${host}/api/auth/frameio/callback`;
-      }
+      // Use the current host for redirect URI (works with dynamic .replit.dev URLs)
+      const redirectUri = `${protocol}://${host}/api/auth/frameio/callback`;
       
       const state = Math.random().toString(36).substring(7);
       
