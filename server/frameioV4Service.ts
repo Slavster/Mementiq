@@ -9,16 +9,16 @@ import { FrameioAsset, FrameioFolder, FrameioProject } from '../shared/types.js'
 export class FrameioV4Service {
   private clientId: string;
   private clientSecret: string;
-  private accessToken: string | null = null;
+  private accessTokenValue: string | null = null;
 
   // Expose getter for access token status (without revealing the token)
   get hasAccessToken(): boolean {
-    return !!this.accessToken;
+    return !!this.accessTokenValue;
   }
 
   // Allow access to accessToken for route handlers (read-only)
   get accessToken(): string | null {
-    return this.accessToken;
+    return this.accessTokenValue;
   }
   private workspaceId: string | null = null;
   private initialized: boolean = false;
@@ -103,10 +103,10 @@ export class FrameioV4Service {
     }
 
     const tokenData = await response.json();
-    this.accessToken = tokenData.access_token;
+    this.accessTokenValue = tokenData.access_token;
     
     console.log('=== V4 Token Exchange Successful ===');
-    console.log(`Access token obtained: ${this.accessToken?.substring(0, 6)}...${this.accessToken?.substring(this.accessToken.length - 6)}`);
+    console.log(`Access token obtained: ${this.accessTokenValue?.substring(0, 6)}...${this.accessTokenValue?.substring(this.accessTokenValue.length - 6)}`);
     console.log(`Token type: ${tokenData.token_type}`);
     console.log(`Expires in: ${tokenData.expires_in} seconds`);
   }
@@ -115,7 +115,7 @@ export class FrameioV4Service {
    * Set access token directly (for testing or stored tokens)
    */
   setAccessToken(token: string): void {
-    this.accessToken = token;
+    this.accessTokenValue = token;
     console.log(`V4 Access token set: ${token.substring(0, 6)}...${token.substring(token.length - 6)}`);
   }
 
@@ -126,13 +126,13 @@ export class FrameioV4Service {
     if (this.initialized) return;
     this.initialized = true;
 
-    if (!this.accessToken) {
+    if (!this.accessTokenValue) {
       throw new Error('Access token required. Please complete OAuth flow first.');
     }
 
     try {
       console.log('=== Initializing Frame.io V4 Service ===');
-      console.log(`Using access token: ${this.accessToken.substring(0, 6)}...${this.accessToken.substring(this.accessToken.length - 6)}`);
+      console.log(`Using access token: ${this.accessTokenValue.substring(0, 6)}...${this.accessTokenValue.substring(this.accessTokenValue.length - 6)}`);
       
       // Get user information
       const userResponse = await this.makeRequest('GET', '/me');
@@ -162,7 +162,7 @@ export class FrameioV4Service {
    * Make authenticated requests to Frame.io V4 API
    */
   async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
-    if (!this.accessToken) {
+    if (!this.accessTokenValue) {
       throw new Error('Access token required. Please complete OAuth flow first.');
     }
 
@@ -171,12 +171,12 @@ export class FrameioV4Service {
     console.log(`=== Frame.io V4 API Request ===`);
     console.log(`Method: ${method}`);
     console.log(`URL: ${url}`);
-    console.log(`Access token fingerprint: ${this.accessToken.substring(0, 6)}...${this.accessToken.substring(this.accessToken.length - 6)}`);
+    console.log(`Access token fingerprint: ${this.accessTokenValue.substring(0, 6)}...${this.accessTokenValue.substring(this.accessTokenValue.length - 6)}`);
     
     const options: any = {
       method,
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
+        'Authorization': `Bearer ${this.accessTokenValue}`,
         'X-Api-Key': this.clientId, // Frame.io V4 requires both Bearer token and API key
         'Content-Type': 'application/json',
       },
