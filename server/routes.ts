@@ -1315,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Use service account for all Frame.io V4 operations (all projects in your Frame.io account)
-          if (frameioV4Service.accessToken || frameioV4Service.isConfigured()) {
+          if (frameioV4Service.accessToken) {
             console.log(
               `Configuring Frame.io V4 integration for user ${req.user!.id} (${req.user!.email}) using service account`,
             );
