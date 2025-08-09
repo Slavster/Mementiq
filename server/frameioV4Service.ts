@@ -161,7 +161,7 @@ export class FrameioV4Service {
   /**
    * Make authenticated requests to Frame.io V4 API
    */
-  private async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
+  async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
     if (!this.accessToken) {
       throw new Error('Access token required. Please complete OAuth flow first.');
     }
