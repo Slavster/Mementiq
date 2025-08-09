@@ -14,6 +14,7 @@ Mementiq is a professional video editing services website designed as a modern f
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
+Frame.io Account: V4 account requiring OAuth via Adobe Developer Console (no v2 legacy API compatibility).
 
 ## System Architecture
 
