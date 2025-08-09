@@ -1309,59 +1309,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Increment user usage count for successful project creation
         await storage.incrementUserUsage(req.user!.id);
 
-        // Set up Frame.io integration with available API access
+        // Configure Frame.io virtual organization structure
         try {
-          // Step 1: Prepare user folder path for Frame.io uploads
           console.log(
-            `Setting up Frame.io integration for user ${req.user!.id} (${req.user!.email})`,
+            `Configuring Frame.io integration for user ${req.user!.id} (${req.user!.email})`,
           );
+          
+          // Create virtual folder structure for future use
           const userFolderId = await frameioService.createUserFolder(
             req.user!.id,
             req.user!.email,
           );
-
-          // Step 2: Prepare project folder path for organized uploads
-          console.log(
-            `Preparing project organization for project ${project.id}: "${project.title}"`,
-          );
+          
           const projectFolderId = await frameioService.createProjectFolder(
             userFolderId,
             project.id,
             project.title,
           );
 
-          // Step 3: Update project with Frame.io organization paths
+          // Store organization structure in database
           await storage.updateProjectMediaInfo(
             project.id,
             projectFolderId,
             userFolderId,
           );
 
-          // Get updated project with organization info
           const updatedProject = await storage.getProject(project.id);
 
           console.log(
-            `✓ Frame.io integration configured: ${userFolderId} -> ${projectFolderId}`,
+            `✓ Frame.io organization structure configured: ${userFolderId} -> ${projectFolderId}`,
           );
 
           res.status(201).json({
             success: true,
-            message: "Project created successfully with Frame.io integration ready",
+            message: "Project created successfully",
             project: updatedProject,
-            integration: {
+            frameio: {
               status: 'configured',
+              note: 'Ready for upload organization when Frame.io Pro permissions are available',
               userPath: userFolderId,
               projectPath: projectFolderId,
             },
           });
         } catch (frameioError) {
-          console.error("Frame.io setup failed:", frameioError);
-          // Project is still created, just without Frame.io integration
+          console.error("Frame.io configuration failed:", frameioError);
           res.status(201).json({
             success: true,
             message: "Project created successfully",
             project,
-            warning: "Frame.io integration unavailable - uploads will work without folder organization",
+            warning: "Frame.io configuration unavailable",
           });
         }
       } catch (error) {

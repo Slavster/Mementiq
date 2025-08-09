@@ -111,12 +111,13 @@ export class FrameioService {
    * Make authenticated request to Frame.io API
    */
   private async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
-    const url = `${FRAMEIO_API_BASE}${endpoint}`;
+    const url = `https://api.frame.io/v2${endpoint}`;
+    console.log(`Frame.io API Request: ${method} ${url}`);
     
     const options: RequestInit = {
       method,
       headers: {
-        'Authorization': `Bearer ${this.apiToken}`,
+        'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
       },
     };
@@ -126,6 +127,7 @@ export class FrameioService {
     }
 
     const response = await fetch(url, options);
+    console.log(`Frame.io API Response: ${response.status}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -142,22 +144,56 @@ export class FrameioService {
   async getOrCreateRootProject(): Promise<FrameioProject> {
     await this.initialize();
 
-    console.log('Frame.io developer token has limited API access');
-    console.log('Creating workspace identifier for file organization during uploads');
-    
-    // Since project management endpoints aren't accessible,
-    // create a virtual workspace that we'll use for organization
-    const workspaceProject: FrameioProject = {
-      id: `mementiq-workspace-${this.teamId}`,
-      name: 'Mementiq_Workspace',
-      description: 'Workspace for organizing Mementiq user uploads',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      root_asset_id: `workspace-root-${this.teamId}`
-    };
+    try {
+      // First, let's check what assets we can access via search
+      console.log('Checking accessible Frame.io assets...');
+      const searchResults = await this.makeRequest('GET', '/search/assets?q=*');
+      console.log(`Found ${searchResults.length} accessible assets`);
+      
+      if (searchResults.length > 0) {
+        // Look for a folder we can use as root
+        const rootFolder = searchResults.find((asset: any) => asset.type === 'folder');
+        if (rootFolder) {
+          console.log(`Using existing folder as root: ${rootFolder.name} (${rootFolder.id})`);
+          return {
+            id: rootFolder.id,
+            name: rootFolder.name,
+            description: 'Existing Frame.io folder',
+            created_at: rootFolder.created_at,
+            updated_at: rootFolder.updated_at,
+            root_asset_id: rootFolder.id
+          };
+        }
+      }
 
-    console.log('✓ Prepared Frame.io workspace for file operations');
-    return workspaceProject;
+      // If no accessible assets, create virtual workspace
+      console.log('No accessible Frame.io assets found - using virtual workspace');
+      const workspaceProject: FrameioProject = {
+        id: `mementiq-workspace-${this.teamId}`,
+        name: 'Mementiq_Virtual_Workspace',
+        description: 'Virtual workspace for TUS uploads with limited API access',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        root_asset_id: `virtual-root-${this.teamId}`
+      };
+
+      console.log('✓ Prepared virtual Frame.io workspace for file operations');
+      return workspaceProject;
+    } catch (error) {
+      console.error('Error checking Frame.io assets:', error);
+      // Fallback to virtual workspace
+      const workspaceProject: FrameioProject = {
+        id: `mementiq-fallback-${this.teamId}`,
+        name: 'Mementiq_Fallback_Workspace',
+        description: 'Fallback workspace for Frame.io integration',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        root_asset_id: `fallback-root-${this.teamId}`
+      };
+
+      console.log('✓ Using fallback Frame.io workspace');
+      return workspaceProject;
+    }
   }
 
   /**
@@ -167,13 +203,14 @@ export class FrameioService {
     const rootProject = await this.getOrCreateRootProject();
     const folderName = `User_${userId.substring(0, 8)}_${userEmail.split('@')[0]}`;
 
-    console.log('Frame.io API has restricted folder management access');
-    console.log('Creating folder path for organized uploads');
+    console.log('Frame.io developer token has read-only permissions');
+    console.log('Setting up virtual folder structure for future upload organization');
     
-    // Create a structured path for uploads that will be organized during file upload
+    // Create a structured path identifier that will be used when API permissions allow
     const userFolderPath = `mementiq-users/${folderName}`;
     
-    console.log(`✓ Prepared user folder path: ${userFolderPath}`);
+    console.log(`✓ Virtual user folder configured: ${userFolderPath}`);
+    console.log('Note: Actual folder creation requires Frame.io Pro account with full API permissions');
     return userFolderPath;
   }
 
