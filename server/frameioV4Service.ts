@@ -19,8 +19,9 @@ export class FrameioV4Service {
     this.clientId = process.env.FRAMEIO_CLIENT_ID || '';
     this.clientSecret = process.env.FRAMEIO_CLIENT_SECRET || '';
     
+    // Allow service to be created without credentials - they'll be required for actual operations
     if (!this.clientId || !this.clientSecret) {
-      throw new Error('FRAMEIO_CLIENT_ID and FRAMEIO_CLIENT_SECRET environment variables are required for V4 OAuth');
+      console.log('Frame.io V4 OAuth credentials not configured. Service available but operations will require authentication.');
     }
   }
 
