@@ -31,7 +31,6 @@ import {
   Clock,
 } from "lucide-react";
 import DirectVideoUpload from "@/components/DirectVideoUpload";
-import DirectPhotoUpload from "@/components/DirectPhotoUpload";
 
 interface Project {
   id: number;
@@ -324,24 +323,7 @@ export function RevisionModal({
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Upload New Photos</CardTitle>
-                  <CardDescription>
-                    Upload any new images or graphics for your revisions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DirectPhotoUpload
-                    projectId={project.id}
-                    onUploadComplete={() => {
-                      queryClient.invalidateQueries({
-                        queryKey: ["/api/projects"],
-                      });
-                    }}
-                  />
-                </CardContent>
-              </Card>
+              {/* DirectPhotoUpload component removed */}
             </div>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
