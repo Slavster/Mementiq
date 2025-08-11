@@ -3407,21 +3407,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Exchange code for access token
       await frameioV4Service.exchangeCodeForToken(code as string, redirectUri);
       
-      // CRITICAL: Store token permanently in database for service account approach
-      // This ensures persistent authentication across restarts and production deployments
-      const users = await storage.getAllUsers();
-      let serviceAccountUser = users.find(user => 
-        user.email.includes('admin') || 
-        user.email === process.env.ADMIN_EMAIL ||
-        user.email.includes('russian316') // Your email for service account
-      );
-      
-      // If no specific admin found, use the first user
-      if (!serviceAccountUser && users.length > 0) {
-        serviceAccountUser = users[0];
-      }
-      
-      if (serviceAccountUser && frameioV4Service.accessToken) {
+      // Store token in centralized service storage (no user-level dependency)
+      if (frameioV4Service.accessToken) {
         // Store in centralized service token storage for all users
         await storage.updateServiceToken(
           'frameio-v4',
