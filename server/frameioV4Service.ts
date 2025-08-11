@@ -1,4 +1,4 @@
-import { FrameioAsset, FrameioFolder, FrameioProject } from '../shared/types.js';
+// Frame.io V4 types defined inline
 
 /**
  * Frame.io V4 API Service with OAuth Authentication
@@ -467,19 +467,67 @@ export class FrameioV4Service {
   /**
    * Create a folder in Frame.io V4
    */
-  async createFolder(folderName: string, parentAssetId: string): Promise<FrameioFolder> {
+  async createFolder(folderName: string, parentAssetId: string): Promise<any> {
     await this.initialize();
 
     try {
       console.log(`Creating V4 folder "${folderName}" under parent ${parentAssetId}`);
       
-      // Based on Frame.io V4 API documentation, folders are created via POST /folders
-      // But since we're getting 404s, let's temporarily disable folder creation
-      // and focus on getting the basic structure working
-      console.log(`Frame.io V4 folder creation not yet implemented`);
-      throw new Error('Frame.io V4 folder creation endpoints not available yet');
+      // Get account ID for the correct V4 endpoint structure
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+      
+      // Use the correct V4 folder creation endpoint
+      const endpoint = `/accounts/${accountId}/folders/${parentAssetId}/folders`;
+      console.log(`Creating folder via: POST ${endpoint}`);
+      
+      const folderData = await this.makeRequest('POST', endpoint, {
+        data: { 
+          name: folderName 
+        }
+      });
+
+      console.log(`V4 Folder created successfully: ${folderData.data.name} (${folderData.data.id})`);
+
+      return {
+        id: folderData.data.id,
+        name: folderData.data.name,
+        parent_id: parentAssetId,
+        type: 'folder',
+        created_at: folderData.data.created_at || new Date().toISOString(),
+        updated_at: folderData.data.updated_at || new Date().toISOString(),
+      };
     } catch (error) {
       console.error(`Failed to create V4 folder "${folderName}":`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get folder children for verification (V4)
+   */
+  async getFolderChildren(folderId: string): Promise<any[]> {
+    await this.initialize();
+
+    try {
+      // Get account ID for the correct V4 endpoint structure
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+      
+      const endpoint = `/accounts/${accountId}/folders/${folderId}/children`;
+      console.log(`Getting folder children via: GET ${endpoint}`);
+      
+      const response = await this.makeRequest('GET', endpoint);
+      
+      return response.data || [];
+    } catch (error) {
+      console.error(`Failed to get folder children for ${folderId}:`, error);
       throw error;
     }
   }
@@ -743,27 +791,24 @@ export class FrameioV4Service {
       }
       
       console.log(`Using Mementiq project: ${mementiqProject.name} (${mementiqProject.id})`);
+      console.log(`Project root_folder_id: ${mementiqProject.root_folder_id}`);
       
-      // Look for existing user folder - let's just create one if it doesn't exist
-      // Skip the folder lookup for now and always create
+      // Look for existing user folder using V4 children endpoint
       const userFolderName = `User-${userId.slice(0, 8)}`;
-      console.log(`Looking for user folder: ${userFolderName}`);
+      console.log(`Looking for existing user folder: ${userFolderName}`);
       
-      // For now, we'll try to create the folder directly
-      let userFolder = null;
+      const rootChildren = await this.getFolderChildren(mementiqProject.root_folder_id);
+      let userFolder = rootChildren.find((child: any) => 
+        child.type === 'folder' && child.name === userFolderName
+      );
       
-      // Always try to create user folder (Frame.io will handle duplicates)
-      console.log(`Creating user folder: ${userFolderName}`);
-      try {
+      if (userFolder) {
+        console.log(`Found existing user folder: ${userFolder.name} (${userFolder.id})`);
+      } else {
+        // Create user folder under project root
+        console.log(`Creating user folder: ${userFolderName} under root ${mementiqProject.root_folder_id}`);
         userFolder = await this.createFolder(userFolderName, mementiqProject.root_folder_id);
-      } catch (error) {
-        console.log(`Error creating user folder, might already exist:`, error);
-        // If creation fails, assume it exists and return a mock object for now
-        userFolder = {
-          id: mementiqProject.root_folder_id, // Use root folder as fallback
-          name: userFolderName,
-          type: 'folder'
-        };
+        console.log(`User folder created: ${userFolder.name} (${userFolder.id})`);
       }
       
       console.log(`User folder created: ${userFolder.name} (${userFolder.id})`);
@@ -786,12 +831,12 @@ export class FrameioV4Service {
       const userFolder = await this.getUserFolder(userId);
       
       // Get all folders from user's folder using correct V4 endpoint
-      const folderChildren = await this.makeRequest('GET', `/folders/${userFolder.id}/children`);
+      const folderChildren = await this.getFolderChildren(userFolder.id);
       
       // Filter for video request folders (subfolders in user's folder)
-      const videoRequestFolders = folderChildren.data?.filter((folder: any) => 
+      const videoRequestFolders = folderChildren.filter((folder: any) => 
         folder.type === 'folder'
-      ) || [];
+      );
       
       console.log(`Found ${videoRequestFolders.length} video request folders for user ${userId}`);
       return videoRequestFolders;
@@ -821,28 +866,6 @@ export class FrameioV4Service {
   }
 
   /**
-   * Create project folder within user's Frame.io project (V4 compatible)
-   */
-  async createProjectFolder(userFolderId: string, projectTitle: string, projectId: number): Promise<any> {
-    await this.initialize();
-    
-    try {
-      console.log(`=== Creating Video Request Folder: ${projectTitle} (ID: ${projectId}) ===`);
-      
-      const videoRequestFolderName = `${projectTitle}`;
-      
-      // Create video request folder within user's Frame.io project
-      const videoRequestFolder = await this.createFolder(videoRequestFolderName, userFolderId);
-      
-      console.log(`Video request folder created: ${videoRequestFolder.name} (${videoRequestFolder.id})`);
-      return videoRequestFolder;
-    } catch (error) {
-      console.error(`Failed to create video request folder for ${projectTitle}:`, error);
-      throw error;
-    }
-  }
-
-  /**
    * Create project folder within user folder (V4 compatible)
    */
   async createProjectFolder(userFolderId: string, projectTitle: string, projectId: number): Promise<any> {
@@ -851,7 +874,7 @@ export class FrameioV4Service {
     try {
       console.log(`=== Creating V4 Project Folder: ${projectTitle} (ID: ${projectId}) ===`);
       
-      const projectFolderName = `${projectTitle} (Project-${projectId})`;
+      const projectFolderName = `${projectTitle}`;
       
       // Create project folder within user folder
       const projectFolder = await this.createFolder(projectFolderName, userFolderId);
