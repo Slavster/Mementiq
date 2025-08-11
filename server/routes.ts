@@ -3404,12 +3404,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const frameioId = `frameio-${Date.now()}`;
         
         // Store file record in database
+        const parsedProjectId = parseInt(projectId, 10);
+        if (isNaN(parsedProjectId)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid project ID"
+          });
+        }
+
         const projectFile = await storage.createProjectFile(req.user!.id, {
-          projectId: parseInt(projectId),
+          projectId: parsedProjectId,
           mediaAssetId: frameioId,
           mediaAssetUrl: `https://frame.io/assets/${frameioId}`,
-          filename: req.file.originalname || 'uploaded_video.mp4',
-          fileType: req.file.mimetype || 'video/mp4',
+          filename: req.file.originalname || 'uploaded_file',
+          fileType: req.file.mimetype || 'application/octet-stream',
           fileSize: req.file.size,
           uploadDate: new Date()
         });

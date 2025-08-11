@@ -52,7 +52,16 @@ const ALLOWED_TYPES = [
   'image/gif',
   'image/bmp',
   'image/webp',
-  'image/tiff'
+  'image/tiff',
+  // Audio formats
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/wav',
+  'audio/aac',
+  'audio/ogg',
+  'audio/flac',
+  'audio/m4a',
+  'audio/x-wav'
 ];
 
 export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: FrameioUploadInterfaceProps) {
@@ -109,7 +118,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
     }
     
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return 'Invalid file type. Please upload video or image files only.';
+      return 'Invalid file type. Please upload video, image, or audio files only.';
     }
     
     return null;
@@ -188,6 +197,15 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
       formData.append('filename', uploadFile.file.name);
       formData.append('projectId', project.id.toString());
 
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setFiles(prev => prev.map(f => 
+          f.id === uploadFile.id && f.status === 'uploading'
+            ? { ...f, progress: Math.min(f.progress + 10, 90) }
+            : f
+        ));
+      }, 200);
+
       // Upload to Frame.io via our backend
       const response = await fetch('/api/upload/frameio', {
         method: 'POST',
@@ -196,6 +214,8 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
         },
         body: formData,
       });
+
+      clearInterval(progressInterval);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -249,24 +269,43 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
     
     try {
       const pendingFiles = files.filter(f => f.status === 'pending');
+      let successCount = 0;
+      let errorCount = 0;
       
       // Upload files sequentially to avoid overwhelming the server
       for (const file of pendingFiles) {
-        await uploadFile(file);
+        try {
+          await uploadFile(file);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          console.error(`Failed to upload ${file.file.name}:`, error);
+          // Continue with next file even if one fails
+        }
       }
       
-      toast({
-        title: "Upload complete",
-        description: `Successfully uploaded ${pendingFiles.length} file(s)`,
-      });
-      
-      // After successful upload, proceed to next step
-      setTimeout(onUploadComplete, 1000);
+      if (successCount > 0) {
+        toast({
+          title: "Upload complete",
+          description: `Successfully uploaded ${successCount} file(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+        });
+        
+        // If at least some files uploaded successfully, proceed
+        if (successCount === pendingFiles.length) {
+          setTimeout(onUploadComplete, 1000);
+        }
+      } else {
+        toast({
+          title: "Upload failed",
+          description: "All files failed to upload. Please check your files and try again.",
+          variant: "destructive",
+        });
+      }
       
     } catch (error) {
       toast({
         title: "Upload error",
-        description: "Some files failed to upload. Please try again.",
+        description: "An unexpected error occurred during upload.",
         variant: "destructive",
       });
     } finally {
@@ -345,7 +384,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
               type="file"
               id="file-upload"
               multiple
-              accept="video/*,image/*"
+              accept="video/*,image/*,audio/*"
               onChange={handleFileSelect}
               className="hidden"
               disabled={isUploading}
@@ -356,10 +395,10 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
             >
               <Upload className="h-8 w-8 text-gray-400" />
               <span className="text-white font-medium">
-                Choose video or image files and drag them here
+                Choose video, image, or audio files and drag them here
               </span>
               <span className="text-sm text-gray-400">
-                Supports MP4, AVI, MOV, JPG, PNG and other formats (max {formatFileSize(MAX_FILE_SIZE)})
+                Supports MP4, AVI, MOV, JPG, PNG, MP3, WAV and other formats (max {formatFileSize(MAX_FILE_SIZE)})
               </span>
             </label>
           </div>
