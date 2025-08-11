@@ -30,7 +30,7 @@ import {
   AlertTriangle,
   Clock,
 } from "lucide-react";
-import DirectVideoUpload from "@/components/DirectVideoUpload";
+import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 
 interface Project {
   id: number;
@@ -312,12 +312,19 @@ export function RevisionModal({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <DirectVideoUpload
-                    projectId={project.id}
+                  <FrameioUploadInterface
+                    project={{
+                      id: project.id,
+                      title: project.title,
+                      status: project.status,
+                    }}
                     onUploadComplete={() => {
                       queryClient.invalidateQueries({
                         queryKey: ["/api/projects"],
                       });
+                    }}
+                    onCancel={() => {
+                      // Handle cancel if needed
                     }}
                   />
                 </CardContent>
