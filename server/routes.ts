@@ -3259,8 +3259,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Check if project already has a folder ID stored
           if (project.mediaFolderId) {
             try {
-              // Verify the folder still exists in Frame.io
-              await frameioV4Service.verifyAssetInProjectFolder(project.mediaFolderId, project.id);
+              // Check if the folder exists by trying to get its assets
+              await frameioV4Service.getFolderAssets(project.mediaFolderId);
               projectFolderId = project.mediaFolderId;
               console.log(`✅ Verified existing project folder: ${projectFolderId}`);
               frameioConfigured = true;
