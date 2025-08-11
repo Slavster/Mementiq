@@ -47,6 +47,7 @@ import TallyFormStep from "@/components/TallyFormStep";
 import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
 import { RevisionModal } from "@/components/RevisionModal";
 import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
+import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 
 interface User {
   id: number;
@@ -893,18 +894,17 @@ export default function DashboardPage() {
                   />
                 </div>
               ) : currentStep === "upload" ? (
-                <Card className="bg-yellow-500/10 border-yellow-500/30">
-                  <CardContent className="p-6 text-center">
-                    <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-yellow-500 mb-2">
-                      Setting up video project
-                    </h3>
-                    <p className="text-gray-400">
-                      Your project folder is being created. This may take a few
-                      moments. Please refresh or try again shortly.
-                    </p>
-                  </CardContent>
-                </Card>
+                <FrameioUploadInterface 
+                  project={selectedProject}
+                  onUploadComplete={() => {
+                    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                    setCurrentStep("form");
+                  }}
+                  onCancel={() => {
+                    setSelectedProject(null);
+                    setCurrentStep("upload");
+                  }}
+                />
               ) : currentStep === "form" ? (
                 <div className="space-y-4">
                   <div className="flex gap-2 mb-4">

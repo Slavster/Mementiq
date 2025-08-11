@@ -691,9 +691,7 @@ export class FrameioV4Service {
     try {
       console.log(`=== Getting V4 Folder Assets: ${folderId} ===`);
       
-      const assets = await this.makeRequest('GET', `/assets/${folderId}/children`, {
-        include: 'children'
-      });
+      const assets = await this.makeRequest('GET', `/assets/${folderId}/children?include=children`);
 
       console.log(`Found ${assets.length || 0} assets in V4 folder ${folderId}`);
       return Array.isArray(assets) ? assets : [];
