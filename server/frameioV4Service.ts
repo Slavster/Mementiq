@@ -726,44 +726,55 @@ export class FrameioV4Service {
   }
 
   /**
-   * Get or create user project in Frame.io (each user gets their own Frame.io project)
+   * Get or create user folder in the main Mementiq project
    */
-  async getUserProject(userId: string): Promise<any> {
+  async getUserFolder(userId: string): Promise<any> {
     await this.initialize();
     
     try {
-      console.log(`=== Getting/Creating User Project for: ${userId} ===`);
+      console.log(`=== Getting/Creating User Folder for: ${userId} ===`);
       
-      // Get accounts and workspace
+      // Get the main Mementiq project
       const accounts = await this.getAccounts();
       const accountId = accounts.data[0].id;
       const workspaces = await this.getWorkspaces(accountId);
       const workspaceId = workspaces.data[0].id;
-      
-      // Get all projects and look for user's project
       const projects = await this.getProjects(accountId, workspaceId);
-      const userProjectName = `User-${userId.slice(0, 8)}`;
       
-      let userProject = projects.data.find((project: any) => 
-        project.name === userProjectName
+      let mementiqProject = projects.data.find((project: any) => 
+        project.name === "Mementiq"
       );
       
-      if (userProject) {
-        console.log(`Found existing user project: ${userProject.name} (${userProject.id})`);
-        return userProject;
+      if (!mementiqProject) {
+        console.log(`Creating Mementiq project...`);
+        mementiqProject = await this.makeRequest('POST', `/accounts/${accountId}/workspaces/${workspaceId}/projects`, {
+          name: "Mementiq"
+        });
       }
       
-      // Create new Frame.io project for this user
-      console.log(`Creating new Frame.io project for user: ${userProjectName}`);
-      const newProject = await this.makeRequest('POST', `/accounts/${accountId}/workspaces/${workspaceId}/projects`, {
-        name: userProjectName,
-        description: `Project for user ${userId.slice(0, 8)}`
-      });
+      console.log(`Using Mementiq project: ${mementiqProject.name} (${mementiqProject.id})`);
       
-      console.log(`User project created: ${newProject.name} (${newProject.id})`);
-      return newProject;
+      // Look for existing user folder
+      const userFolderName = `User-${userId.slice(0, 8)}`;
+      const allFolders = await this.makeRequest('GET', `/assets/${mementiqProject.root_folder_id}/children`);
+      
+      let userFolder = allFolders.find((folder: any) => 
+        folder.type === 'folder' && folder.name === userFolderName
+      );
+      
+      if (userFolder) {
+        console.log(`Found existing user folder: ${userFolder.name} (${userFolder.id})`);
+        return userFolder;
+      }
+      
+      // Create user folder
+      console.log(`Creating user folder: ${userFolderName}`);
+      userFolder = await this.createFolder(userFolderName, mementiqProject.root_folder_id);
+      
+      console.log(`User folder created: ${userFolder.name} (${userFolder.id})`);
+      return userFolder;
     } catch (error) {
-      console.error(`Failed to get/create user project for ${userId}:`, error);
+      console.error(`Failed to get/create user folder for ${userId}:`, error);
       throw error;
     }
   }
@@ -777,12 +788,12 @@ export class FrameioV4Service {
     try {
       console.log(`=== Getting V4 User Video Request Folders for: ${userId} ===`);
       
-      const userProject = await this.getUserProject(userId);
+      const userFolder = await this.getUserFolder(userId);
       
-      // Get all folders from user's Frame.io project
-      const allFolders = await this.makeRequest('GET', `/assets/${userProject.root_folder_id}/children`);
+      // Get all folders from user's folder
+      const allFolders = await this.makeRequest('GET', `/assets/${userFolder.id}/children`);
       
-      // Filter for video request folders (subfolders in user's project)
+      // Filter for video request folders (subfolders in user's folder)
       const videoRequestFolders = allFolders.filter((folder: any) => 
         folder.type === 'folder'
       );
@@ -796,25 +807,20 @@ export class FrameioV4Service {
   }
 
   /**
-   * Create user folder (V4 compatible) - Creates a Frame.io project for the user
+   * Create user folder (V4 compatible) - Creates a folder in Mementiq project for the user
    */
   async createUserFolder(userId: string): Promise<any> {
     await this.initialize();
     
     try {
-      console.log(`=== Creating Frame.io Project for User: ${userId} ===`);
+      console.log(`=== Creating User Folder for: ${userId} ===`);
       
-      const userProject = await this.getUserProject(userId);
+      const userFolder = await this.getUserFolder(userId);
       
-      console.log(`User Frame.io project ready: ${userProject.name} (${userProject.id})`);
-      return {
-        id: userProject.root_folder_id,
-        name: userProject.name,
-        project_id: userProject.id,
-        type: 'folder'
-      };
+      console.log(`User folder ready: ${userFolder.name} (${userFolder.id})`);
+      return userFolder;
     } catch (error) {
-      console.error(`Failed to create user Frame.io project for ${userId}:`, error);
+      console.error(`Failed to create user folder for ${userId}:`, error);
       throw error;
     }
   }
@@ -874,9 +880,8 @@ export class FrameioV4Service {
       
       const rootProject = await this.getOrCreateRootProject();
       
-      // Get user's Frame.io project (not a folder within root project)
-      const userProject = await this.getUserProject(userId);
-      let userFolder = { id: userProject.root_folder_id };
+      // Get user's folder in Mementiq project
+      const userFolder = await this.getUserFolder(userId);
       
       // Create/get project folder within user folder
       const projectFolderName = `Project-${projectId}`;
