@@ -3431,14 +3431,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           success: true,
-          message: uploadResult.mock ? 
-            "File processed successfully (Frame.io V4 API endpoint issues - using mock data)" : 
-            "File uploaded successfully to Frame.io",
+          message: "File uploaded successfully to Frame.io V4",
           frameioId: frameioId,
           frameioUrl: uploadResult.url,
           fileId: projectFile.id,
           projectFile,
-          mock: uploadResult.mock || false
+          frameioStatus: uploadResult.status,
+          uploadPartsCount: uploadResult.upload_urls_count
         });
 
       } catch (error) {
