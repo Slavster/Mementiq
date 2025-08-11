@@ -3341,7 +3341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${replitDevDomain}/api/auth/frameio/callback`
         : `https://${host}/api/auth/frameio/callback`;
       
-      const manualAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(stableRedirectUri)}&response_type=code&scope=openid&state=${state}`;
+      const manualAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(stableRedirectUri)}&response_type=code&scope=openid profile offline_access email additional_info.roles&state=${state}`;
       
       console.log(`Using REPLIT_DEV_DOMAIN: ${replitDevDomain || 'not available'}`);
       console.log(`Current host: ${host}`);
