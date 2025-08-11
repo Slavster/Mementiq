@@ -958,33 +958,33 @@ export class FrameioV4Service {
       }
       const accountId = accounts.data[0].id;
       
-      // Create the asset first (this registers the file with Frame.io)
-      const createAssetEndpoint = `/accounts/${accountId}/folders/${folderId}/assets`;
-      console.log(`Creating asset via: POST ${createAssetEndpoint}`);
+      // Use the correct V4 file creation endpoint
+      const createFileEndpoint = `/files`;
+      console.log(`Creating file via: POST ${createFileEndpoint}`);
       
-      const assetData = await this.makeRequest('POST', createAssetEndpoint, {
+      const fileData = await this.makeRequest('POST', createFileEndpoint, {
         data: {
           name: filename,
-          type: 'file',
-          filesize: fileBuffer.length,
-          filetype: mimeType
+          parent_folder_id: folderId,
+          upload_type: 'local'
         }
       });
       
-      console.log(`V4 Asset created: ${assetData.data.name} (${assetData.data.id})`);
+      console.log(`V4 File created: ${fileData.data.name} (${fileData.data.id})`);
       
-      // For now, we'll return the asset info
-      // In a full implementation, you would upload the actual file data using the upload_urls
-      // provided in the response, but that requires implementing the TUS protocol
+      // The V4 API returns upload URLs for actual file upload
+      // For a complete implementation, you would upload the file using the provided upload URLs
+      console.log(`Upload URLs provided:`, fileData.data.upload_urls ? 'Yes' : 'No');
       
       return {
-        id: assetData.data.id,
-        name: assetData.data.name,
-        url: assetData.data.download_url || `https://frame.io/assets/${assetData.data.id}`,
-        type: assetData.data.type,
-        filesize: assetData.data.filesize,
-        created_at: assetData.data.created_at || new Date().toISOString(),
-        updated_at: assetData.data.updated_at || new Date().toISOString(),
+        id: fileData.data.id,
+        name: fileData.data.name,
+        url: fileData.data.download_url || `https://frame.io/files/${fileData.data.id}`,
+        type: fileData.data.type || 'file',
+        filesize: fileData.data.filesize || fileBuffer.length,
+        created_at: fileData.data.created_at || new Date().toISOString(),
+        updated_at: fileData.data.updated_at || new Date().toISOString(),
+        upload_urls: fileData.data.upload_urls
       };
     } catch (error) {
       console.error(`Failed to upload V4 file "${filename}":`, error);
