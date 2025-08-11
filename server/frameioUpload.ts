@@ -3,7 +3,7 @@
  * Handles video upload sessions, TUS-like upload protocol, and upload completion
  */
 
-import { frameioService } from './frameioService.js';
+import { frameioV4Service } from './frameioV4Service.js';
 
 export interface FrameioUploadSession {
   uploadUrl: string;
@@ -32,7 +32,7 @@ export interface FrameioUploadResponse {
 }
 
 /**
- * Create upload session for Frame.io (TUS-like session creation)
+ * Create upload session for Frame.io V4 (TUS-like session creation)
  */
 export async function createFrameioUploadSession(
   fileName: string,
@@ -41,39 +41,38 @@ export async function createFrameioUploadSession(
   parentFolderId: string
 ): Promise<FrameioUploadSession> {
   try {
-    console.log(`Creating Frame.io upload session for: ${fileName} (${fileSize} bytes)`);
+    console.log(`Creating Frame.io V4 upload session for: ${fileName} (${fileSize} bytes)`);
 
-    // Create asset placeholder in Frame.io
-    const asset = await frameioService.uploadFile('', fileName, fileSize, mimeType, parentFolderId);
+    // Create asset placeholder in Frame.io V4
+    await frameioV4Service.loadServiceAccountToken();
+    const asset = await frameioV4Service.createUploadSession(parentFolderId, fileName, fileSize, mimeType);
 
-    // Generate upload URL for the asset
-    // Note: Frame.io uses its own upload mechanism
-    // We'll create a session structure compatible with our existing frontend
+    // Generate upload URL for the asset using V4 session data
     const uploadSession: FrameioUploadSession = {
-      uploadUrl: `https://api.frame.io/v2/assets/${asset.id}/upload`,
-      completeUri: `/assets/${asset.id}/complete`,
-      assetId: asset.id,
+      uploadUrl: asset.uploadUrl,
+      completeUri: asset.completeUri,
+      assetId: asset.assetId,
       parentFolderId,
       fileName,
       fileSize,
       mimeType
     };
 
-    console.log('Frame.io upload session created:', {
-      assetId: asset.id,
+    console.log('Frame.io V4 upload session created:', {
+      assetId: asset.assetId,
       fileName,
       fileSize
     });
 
     return uploadSession;
   } catch (error) {
-    console.error('Error creating Frame.io upload session:', error);
+    console.error('Error creating Frame.io V4 upload session:', error);
     throw new Error(`Failed to create upload session: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
- * Complete Frame.io upload
+ * Complete Frame.io V4 upload
  */
 export async function completeFrameioUpload(
   assetId: string,
@@ -81,10 +80,11 @@ export async function completeFrameioUpload(
   fileSize: number
 ): Promise<FrameioUploadResponse> {
   try {
-    console.log(`Completing Frame.io upload for asset: ${assetId}`);
+    console.log(`Completing Frame.io V4 upload for asset: ${assetId}`);
 
-    // Get the uploaded asset details
-    const asset = await frameioService.getAsset(assetId);
+    // Get the uploaded asset details from V4
+    await frameioV4Service.loadServiceAccountToken();
+    const asset = await frameioV4Service.getAsset(assetId);
     if (!asset) {
       throw new Error(`Asset not found: ${assetId}`);
     }
@@ -106,7 +106,7 @@ export async function completeFrameioUpload(
       modified_time: asset.updated_at
     };
 
-    console.log('Frame.io upload completed:', {
+    console.log('Frame.io V4 upload completed:', {
       assetId: response.id,
       name: response.name,
       ready: !!response.upload_completed_at
@@ -114,17 +114,18 @@ export async function completeFrameioUpload(
 
     return response;
   } catch (error) {
-    console.error('Error completing Frame.io upload:', error);
+    console.error('Error completing Frame.io V4 upload:', error);
     throw new Error(`Failed to complete upload: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
- * Get folder videos
+ * Get folder videos using Frame.io V4
  */
 export async function getFolderVideos(folderId: string): Promise<FrameioUploadResponse[]> {
   try {
-    const assets = await frameioService.getFolderAssets(folderId);
+    await frameioV4Service.loadServiceAccountToken();
+    const assets = await frameioV4Service.getFolderAssets(folderId);
     
     // Filter for video files only
     const videoAssets = assets.filter(asset => 
@@ -150,17 +151,17 @@ export async function getFolderVideos(folderId: string): Promise<FrameioUploadRe
       modified_time: asset.updated_at
     }));
   } catch (error) {
-    console.error('Error getting folder videos:', error);
+    console.error('Error getting folder videos from Frame.io V4:', error);
     return [];
   }
 }
 
 /**
- * Create Frame.io review link
+ * Create Frame.io V4 review link
  */
 export async function createFrameioReviewLink(projectFolderId: string): Promise<string | null> {
   try {
-    console.log(`Creating Frame.io review link for project folder: ${projectFolderId}`);
+    console.log(`Creating Frame.io V4 review link for project folder: ${projectFolderId}`);
 
     // Get the latest video from the project folder
     const videos = await getFolderVideos(projectFolderId);
@@ -176,33 +177,34 @@ export async function createFrameioReviewLink(projectFolderId: string): Promise<
       return bTime - aTime;
     })[0];
 
-    console.log(`Creating review link for video: ${latestVideo.id}`, {
+    console.log(`Creating V4 review link for video: ${latestVideo.id}`, {
       name: latestVideo.name,
       created: latestVideo.created_time,
       modified: latestVideo.modified_time
     });
 
-    // Create review link using Frame.io API
-    const reviewLink = await frameioService.createReviewLink(latestVideo.id, {
-      allow_comments: true,
-      allow_download: false
-    });
+    // Create review link using Frame.io V4 API
+    await frameioV4Service.loadServiceAccountToken();
+    const reviewLinkData = await frameioV4Service.createAssetReviewLink(
+      latestVideo.id,
+      `Project Video Review - ${latestVideo.name}`
+    );
 
-    if (reviewLink) {
-      console.log(`✅ Frame.io review link created: ${reviewLink}`);
-      return reviewLink;
+    if (reviewLinkData && reviewLinkData.url) {
+      console.log(`✅ Frame.io V4 review link created: ${reviewLinkData.url}`);
+      return reviewLinkData.url;
     } else {
-      console.log(`⚠️ Could not create review link for video ${latestVideo.id}`);
+      console.log(`⚠️ Could not create V4 review link for video ${latestVideo.id}`);
       return null;
     }
   } catch (error) {
-    console.error('Error creating Frame.io review link:', error);
+    console.error('Error creating Frame.io V4 review link:', error);
     return null;
   }
 }
 
 /**
- * Verify Frame.io video upload status
+ * Verify Frame.io V4 video upload status
  */
 export async function verifyFrameioUpload(assetId: string): Promise<{
   isUploaded: boolean;
@@ -212,19 +214,24 @@ export async function verifyFrameioUpload(assetId: string): Promise<{
   progress?: number;
 }> {
   try {
-    const result = await frameioService.verifyUploadStatus(assetId);
+    await frameioV4Service.loadServiceAccountToken();
+    const asset = await frameioV4Service.getAsset(assetId);
     
-    console.log(`Frame.io asset ${assetId} verification:`, result);
+    console.log(`Frame.io V4 asset ${assetId} verification:`, asset);
+    
+    const isReady = !!asset.upload_completed_at;
+    const isUploaded = !!asset.id;
+    const isProcessing = isUploaded && !isReady;
     
     return {
-      isUploaded: result.isUploaded,
-      isProcessing: result.isProcessing,
-      isReady: result.isReady,
-      status: result.status,
-      progress: result.isReady ? 100 : result.isProcessing ? 50 : 0
+      isUploaded,
+      isProcessing,
+      isReady,
+      status: isReady ? 'ready' : isProcessing ? 'processing' : 'pending',
+      progress: isReady ? 100 : isProcessing ? 50 : 0
     };
   } catch (error) {
-    console.error('Error verifying Frame.io upload:', error);
+    console.error('Error verifying Frame.io V4 upload:', error);
     return {
       isUploaded: false,
       isProcessing: false,
@@ -235,14 +242,14 @@ export async function verifyFrameioUpload(assetId: string): Promise<{
 }
 
 /**
- * Delete Frame.io asset (new functionality)
+ * Delete Frame.io V4 asset (new functionality)
  */
 export async function deleteFrameioAsset(assetId: string): Promise<boolean> {
   try {
-    return await frameioService.deleteAsset(assetId);
+    await frameioV4Service.loadServiceAccountToken();
+    return await frameioV4Service.deleteAsset(assetId);
   } catch (error) {
-    console.error('Error deleting Frame.io asset:', error);
+    console.error('Error deleting Frame.io V4 asset:', error);
     return false;
   }
 }
-

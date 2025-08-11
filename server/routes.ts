@@ -16,7 +16,6 @@ import {
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
-import { frameioService } from "./frameioService";
 import { frameioV4Service } from "./frameioV4Service";
 import { getProjectUploadSize } from "./upload";
 import {
@@ -569,15 +568,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (project.mediaFolderId) {
             try {
-              // Check if asset belongs to this project's folder
-              const belongsToProject = await frameioService.verifyAssetInProjectFolder(assetId, project.mediaFolderId);
+              // Check if asset belongs to this project's folder (V4)
+              await frameioV4Service.loadServiceAccountToken();
+              const belongsToProject = await frameioV4Service.verifyAssetInProjectFolder(assetId, project.mediaFolderId);
               console.log(`Does asset ${assetId} belong to project ${project.id}? ${belongsToProject}`);
               
               if (belongsToProject) {
                 console.log(`Asset ${assetId} belongs to project ${project.id} (${project.title})`);
                 
-                // Generate download link from Frame.io
-                const downloadLink = await frameioService.generateAssetDownloadLink(assetId);
+                // Generate download link from Frame.io V4
+                const downloadLink = await frameioV4Service.generateAssetDownloadLink(assetId);
                 
                 if (downloadLink) {
                   // Update project status to "delivered"
@@ -1187,7 +1187,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Use the project's mediaFolderId which already contains the full path
                   console.log(`Checking videos for project ${project.id} in folder: ${project.mediaFolderId}`);
                   
-                  const frameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
+                  await frameioV4Service.loadServiceAccountToken();
+                  const frameioVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
                   if (frameioVideos.length > 0) {
                     const videoDates = frameioVideos
                       .map((v: any) => v.created_time ? new Date(v.created_time) : null)
@@ -1488,13 +1489,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no stored download link, try to generate one from Frame.io videos
       if (project.mediaFolderId) {
         try {
-          const frameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
+          await frameioV4Service.loadServiceAccountToken();
+          const frameioVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
           if (frameioVideos && frameioVideos.length > 0) {
             const latestVideo = frameioVideos[0];
             const videoId = latestVideo.id || latestVideo.uri?.split('/').pop();
             
-            // Generate download link for the latest video
-            const downloadLink = await frameioService.generateAssetDownloadLink(videoId);
+            // Generate download link for the latest video (V4)
+            const downloadLink = await frameioV4Service.generateAssetDownloadLink(videoId);
             
             if (downloadLink) {
               return res.json({
@@ -1555,7 +1557,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const frameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
+      await frameioV4Service.loadServiceAccountToken();
+      const frameioVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
       if (!frameioVideos || frameioVideos.length === 0) {
         return res.status(404).json({
           success: false,
@@ -1573,9 +1576,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get the direct download link
-      // Use Frame.io download functionality instead
-      const downloadLink = await frameioService.generateAssetDownloadLink(videoId);
+      // Get the direct download link from Frame.io V4
+      const downloadLink = await frameioV4Service.generateAssetDownloadLink(videoId);
 
       if (!downloadLink) {
         return res.status(404).json({
@@ -2226,7 +2228,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`No video in DB for project ${projectId}, checking Frame.io folder`);
         try {
           if (project.mediaFolderId) {
-            const frameioAssets = await frameioService.getFolderAssets(project.mediaFolderId);
+            await frameioV4Service.loadServiceAccountToken();
+            const frameioAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
             if (frameioAssets && frameioAssets.length > 0) {
               // Get the most recent asset
               const latestAsset = frameioAssets[0]; // Already sorted by date
@@ -2803,7 +2806,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let frameioVideos: any[] = [];
         if (project.mediaFolderId) {
           try {
-            const rawFrameioVideos = await frameioService.getFolderAssets(project.mediaFolderId);
+            await frameioV4Service.loadServiceAccountToken();
+        const rawFrameioVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
             console.log(
               "Frame.io videos fetched:",
               rawFrameioVideos.length,
@@ -2974,7 +2978,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const folders = await frameioService.getUserFolders(req.user!.id);
+        await frameioV4Service.loadServiceAccountToken();
+        const folders = await frameioV4Service.getUserFolders(req.user!.id);
         res.json({ success: true, data: folders });
       } catch (error) {
         console.error("Error fetching Frame.io folders:", error);
@@ -3257,11 +3262,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Create Frame.io folder structure: /users/{userId}/projects/{projectId}/Photos
-        const folderPath = await frameioService.createUserProjectPhotoFolder(req.user!.id, projectId);
+        // Create Frame.io V4 folder structure for photos
+        await frameioV4Service.loadServiceAccountToken();
+        const folderPath = await frameioV4Service.createUserProjectPhotoFolder(req.user!.id, projectId);
         
-        // Upload to Frame.io
-        const uploadResult = await frameioService.uploadPhoto(
+        // Upload to Frame.io V4
+        const uploadResult = await frameioV4Service.uploadPhoto(
           base64Data,
           filename,
           folderPath,
@@ -3342,7 +3348,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const project = await storage.getProject(projectId);
           if (project?.mediaFolderId) {
             console.log(`Fetching photos from Frame.io folder: ${project.mediaFolderId}`);
-            const frameioAssets = await frameioService.getFolderAssets(project.mediaFolderId);
+            await frameioV4Service.loadServiceAccountToken();
+            const frameioAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
             const frameioPhotos = frameioAssets.filter(asset => 
               asset.type === 'file' && 
               asset.filetype && 
