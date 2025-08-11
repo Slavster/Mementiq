@@ -23,6 +23,7 @@ interface FrameioUploadInterfaceProps {
   };
   onUploadComplete: () => void;
   onCancel: () => void;
+  onProjectStatusChange?: () => void;
 }
 
 interface ExistingFile {
@@ -74,7 +75,7 @@ const ALLOWED_TYPES = [
   'audio/x-wav'
 ];
 
-export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: FrameioUploadInterfaceProps) {
+export function FrameioUploadInterface({ project, onUploadComplete, onCancel, onProjectStatusChange }: FrameioUploadInterfaceProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [folderSetupStatus, setFolderSetupStatus] = useState<'checking' | 'ready' | 'error'>('checking');
@@ -120,6 +121,11 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
         setExistingFiles(result.existingFiles || []);
         setExistingFileCount(result.fileCount || 0);
         setExistingStorageUsed(result.totalStorageUsed || 0);
+        
+        // Notify parent component that project status may have changed
+        if (onProjectStatusChange) {
+          onProjectStatusChange();
+        }
       } else {
         setFolderSetupStatus('error');
       }

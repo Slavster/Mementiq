@@ -884,6 +884,10 @@ export default function DashboardPage() {
                     setSelectedProject(null);
                     setCurrentStep("upload");
                   }}
+                  onProjectStatusChange={() => {
+                    // Refresh projects data when status changes from draft to awaiting instructions
+                    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                  }}
                 />
               ) : currentStep === "form" ? (
                 <div className="space-y-4">
