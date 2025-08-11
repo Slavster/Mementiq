@@ -467,7 +467,7 @@ export class FrameioV4Service {
   /**
    * Create a folder in Frame.io V4
    */
-  async createFolder(parentAssetId: string, folderName: string): Promise<FrameioFolder> {
+  async createFolder(folderName: string, parentAssetId: string): Promise<FrameioFolder> {
     await this.initialize();
 
     try {
@@ -726,73 +726,117 @@ export class FrameioV4Service {
   }
 
   /**
-   * Get user folders (V4 compatible - get user's project folders)
+   * Get or create user project in Frame.io (each user gets their own Frame.io project)
    */
-  async getUserFolders(userId: string): Promise<any[]> {
+  async getUserProject(userId: string): Promise<any> {
     await this.initialize();
     
     try {
-      console.log(`=== Getting V4 User Folders for: ${userId} ===`);
+      console.log(`=== Getting/Creating User Project for: ${userId} ===`);
       
-      const rootProject = await this.getOrCreateRootProject();
-      const userFolderName = `User-${userId.slice(0, 8)}`;
+      // Get accounts and workspace
+      const accounts = await this.getAccounts();
+      const accountId = accounts.data[0].id;
+      const workspaces = await this.getWorkspaces(accountId);
+      const workspaceId = workspaces.data[0].id;
       
-      // Get all folders from root project and filter for this user
-      const allFolders = await this.makeRequest('GET', `/assets/${rootProject.root_folder_id}/children`);
+      // Get all projects and look for user's project
+      const projects = await this.getProjects(accountId, workspaceId);
+      const userProjectName = `User-${userId.slice(0, 8)}`;
       
-      const userFolders = allFolders.filter((folder: any) => 
-        folder.type === 'folder' && folder.name.includes(userFolderName)
+      let userProject = projects.data.find((project: any) => 
+        project.name === userProjectName
       );
       
-      console.log(`Found ${userFolders.length} V4 folders for user ${userId}`);
-      return userFolders;
+      if (userProject) {
+        console.log(`Found existing user project: ${userProject.name} (${userProject.id})`);
+        return userProject;
+      }
+      
+      // Create new Frame.io project for this user
+      console.log(`Creating new Frame.io project for user: ${userProjectName}`);
+      const newProject = await this.makeRequest('POST', `/accounts/${accountId}/workspaces/${workspaceId}/projects`, {
+        name: userProjectName,
+        description: `Project for user ${userId.slice(0, 8)}`
+      });
+      
+      console.log(`User project created: ${newProject.name} (${newProject.id})`);
+      return newProject;
     } catch (error) {
-      console.error(`Failed to get V4 user folders for ${userId}:`, error);
-      return [];
-    }
-  }
-
-  /**
-   * Create user folder (V4 compatible)
-   */
-  async createUserFolder(userId: string): Promise<any> {
-    await this.initialize();
-    
-    try {
-      console.log(`=== Creating V4 User Folder for: ${userId} ===`);
-      
-      const rootProject = await this.getOrCreateRootProject();
-      const userFolderName = `User-${userId.slice(0, 8)}`;
-      
-      // Create user folder in root project
-      const userFolder = await this.createFolder(userFolderName, rootProject.root_folder_id);
-      
-      console.log(`V4 User folder created: ${userFolder.name} (${userFolder.id})`);
-      return userFolder;
-    } catch (error) {
-      console.error(`Failed to create V4 user folder for ${userId}:`, error);
+      console.error(`Failed to get/create user project for ${userId}:`, error);
       throw error;
     }
   }
 
   /**
-   * Create project folder within user folder (V4 compatible)
+   * Get user folders (V4 compatible - get user's video request folders)
+   */
+  async getUserFolders(userId: string): Promise<any[]> {
+    await this.initialize();
+    
+    try {
+      console.log(`=== Getting V4 User Video Request Folders for: ${userId} ===`);
+      
+      const userProject = await this.getUserProject(userId);
+      
+      // Get all folders from user's Frame.io project
+      const allFolders = await this.makeRequest('GET', `/assets/${userProject.root_folder_id}/children`);
+      
+      // Filter for video request folders (subfolders in user's project)
+      const videoRequestFolders = allFolders.filter((folder: any) => 
+        folder.type === 'folder'
+      );
+      
+      console.log(`Found ${videoRequestFolders.length} video request folders for user ${userId}`);
+      return videoRequestFolders;
+    } catch (error) {
+      console.error(`Failed to get user video request folders for ${userId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Create user folder (V4 compatible) - Creates a Frame.io project for the user
+   */
+  async createUserFolder(userId: string): Promise<any> {
+    await this.initialize();
+    
+    try {
+      console.log(`=== Creating Frame.io Project for User: ${userId} ===`);
+      
+      const userProject = await this.getUserProject(userId);
+      
+      console.log(`User Frame.io project ready: ${userProject.name} (${userProject.id})`);
+      return {
+        id: userProject.root_folder_id,
+        name: userProject.name,
+        project_id: userProject.id,
+        type: 'folder'
+      };
+    } catch (error) {
+      console.error(`Failed to create user Frame.io project for ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create project folder within user's Frame.io project (V4 compatible)
    */
   async createProjectFolder(userFolderId: string, projectTitle: string, projectId: number): Promise<any> {
     await this.initialize();
     
     try {
-      console.log(`=== Creating V4 Project Folder: ${projectTitle} (ID: ${projectId}) ===`);
+      console.log(`=== Creating Video Request Folder: ${projectTitle} (ID: ${projectId}) ===`);
       
-      const projectFolderName = `${projectTitle} (Project-${projectId})`;
+      const videoRequestFolderName = `${projectTitle}`;
       
-      // Create project folder within user folder
-      const projectFolder = await this.createFolder(projectFolderName, userFolderId);
+      // Create video request folder within user's Frame.io project
+      const videoRequestFolder = await this.createFolder(videoRequestFolderName, userFolderId);
       
-      console.log(`V4 Project folder created: ${projectFolder.name} (${projectFolder.id})`);
-      return projectFolder;
+      console.log(`Video request folder created: ${videoRequestFolder.name} (${videoRequestFolder.id})`);
+      return videoRequestFolder;
     } catch (error) {
-      console.error(`Failed to create V4 project folder for ${projectTitle}:`, error);
+      console.error(`Failed to create video request folder for ${projectTitle}:`, error);
       throw error;
     }
   }
@@ -830,9 +874,9 @@ export class FrameioV4Service {
       
       const rootProject = await this.getOrCreateRootProject();
       
-      // Create/get user folder
-      const userFolderName = `User-${userId.slice(0, 8)}`;
-      let userFolder = await this.createFolder(userFolderName, rootProject.root_folder_id);
+      // Get user's Frame.io project (not a folder within root project)
+      const userProject = await this.getUserProject(userId);
+      let userFolder = { id: userProject.root_folder_id };
       
       // Create/get project folder within user folder
       const projectFolderName = `Project-${projectId}`;
