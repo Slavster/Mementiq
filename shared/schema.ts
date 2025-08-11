@@ -113,6 +113,19 @@ export const photoFiles = pgTable("photo_files", {
   uploadDate: timestamp("upload_date").defaultNow().notNull(),
 });
 
+// Centralized service tokens (Frame.io, etc.) - single source of truth for all users
+export const serviceTokens = pgTable("service_tokens", {
+  id: serial("id").primaryKey(),
+  service: text("service").notNull().unique(), // 'frameio-v4', 'vimeo', etc.
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  tokenType: text("token_type").default("Bearer"),
+  expiresAt: timestamp("expires_at"),
+  scope: text("scope"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const revisionPayments = pgTable("revision_payments", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id).notNull(),

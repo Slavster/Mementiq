@@ -207,19 +207,21 @@ export class FrameioV4Service {
     console.log(`Expires in: ${tokenData.expires_in} seconds`);
     console.log(`New expires at: ${this.tokenExpiresAt?.toISOString()}`);
 
-    // Update the token in database for service account persistence
+    // Update the centralized service token in database
     try {
       const { DatabaseStorage } = await import('./storage.js');
       const storage = new DatabaseStorage();
-      const users = await storage.getAllUsers();
-      const serviceAccountUser = users.find(user => user.frameioV4AccessToken);
       
-      if (serviceAccountUser) {
-        await storage.updateFrameioV4Token(serviceAccountUser.id, this.accessTokenValue);
-        console.log('✓ Refreshed token stored in database for persistence');
-      }
+      await storage.updateServiceToken(
+        'frameio-v4',
+        this.accessTokenValue,
+        this.refreshTokenValue,
+        this.tokenExpiresAt,
+        'openid'
+      );
+      console.log('✅ Refreshed token stored in centralized service storage');
     } catch (error) {
-      console.warn('Failed to update refreshed token in database:', error);
+      console.warn('Failed to update refreshed token in centralized storage:', error);
     }
   }
 
@@ -254,42 +256,46 @@ export class FrameioV4Service {
     if (this.accessTokenValue) return; // Already loaded
 
     try {
-      // Use raw SQL to avoid Drizzle schema issues with missing columns
-      const { db } = await import('./db.js');
+      // Load centralized service token
+      const { DatabaseStorage } = await import('./storage.js');
+      const storage = new DatabaseStorage();
       
-      // Find any user with a Frame.io V4 access token (service account approach)
-      const result = await db.execute(`
-        SELECT id, email, frameio_v4_access_token as "frameioV4AccessToken"
-        FROM users 
-        WHERE frameio_v4_access_token IS NOT NULL 
-        LIMIT 1
-      `);
+      const serviceToken = await storage.getServiceToken('frameio-v4');
       
-      const serviceAccountUser = result.rows[0];
-      
-      if (serviceAccountUser?.frameioV4AccessToken) {
-        this.accessTokenValue = serviceAccountUser.frameioV4AccessToken;
-        // Note: refresh token and expiry columns don't exist yet - these are future enhancements
-        this.refreshTokenValue = null; // serviceAccountUser.frameioV4RefreshToken || null;
-        this.tokenExpiresAt = null; // serviceAccountUser.frameioV4TokenExpiresAt || null;
-        
-        console.log('✓ Service account token loaded from database');
-        console.log(`Using token from user: ${serviceAccountUser.email}`);
-        console.log(`Token expires at: ${this.tokenExpiresAt?.toISOString() || 'unknown'}`);
-        console.log(`Has refresh token: ${!!this.refreshTokenValue}`);
-        
-        // Check if token needs immediate refresh
-        if (!this.isTokenValid() && this.refreshTokenValue) {
-          console.log('Stored token is expired, refreshing automatically...');
-          try {
-            await this.refreshAccessToken();
-          } catch (error) {
-            console.error('Failed to refresh expired token on startup:', error);
-          }
-        }
-      } else {
-        console.log('No service account token found in database');
+      if (!serviceToken) {
+        console.log('No centralized Frame.io V4 service token found - OAuth required');
+        return;
       }
+
+      // Check if token is expired
+      if (serviceToken.expiresAt && new Date() >= new Date(serviceToken.expiresAt)) {
+        console.log('🔄 Service token expired, attempting automatic refresh...');
+        
+        if (serviceToken.refreshToken) {
+          await this.refreshAccessToken(serviceToken.refreshToken, storage);
+          // Reload the fresh token
+          const refreshedToken = await storage.getServiceToken('frameio-v4');
+          if (refreshedToken) {
+            this.accessTokenValue = refreshedToken.accessToken;
+            console.log('✅ Service token refreshed automatically - Frame.io ready');
+            return;
+          }
+        } else {
+          console.log('❌ No refresh token available - manual OAuth required');
+          return;
+        }
+      }
+
+      // Store token and refresh info
+      this.accessTokenValue = serviceToken.accessToken;
+      (this as any).refreshTokenValue = serviceToken.refreshToken;
+      (this as any).tokenExpiresAt = serviceToken.expiresAt ? new Date(serviceToken.expiresAt) : null;
+      
+      console.log('✅ Centralized service token loaded from database');
+      console.log(`Service: ${serviceToken.service}`);
+      console.log(`Token expires at: ${serviceToken.expiresAt || 'unknown'}`);
+      console.log(`Has refresh token: ${!!serviceToken.refreshToken}`);
+      console.log('✅ Production centralized token loaded successfully - Frame.io ready');
     } catch (error) {
       console.error('Failed to load service account token:', error);
     }

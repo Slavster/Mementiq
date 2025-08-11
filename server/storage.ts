@@ -9,6 +9,7 @@ import {
   photoFiles,
   revisionPayments,
   oauthStates,
+  serviceTokens,
   type User,
   type InsertUser,
   type Project,
@@ -615,26 +616,49 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
-  // Frame.io V4 token methods
-  async updateFrameioV4Token(userId: string, accessToken: string, refreshToken?: string, expiresAt?: Date): Promise<void> {
-    const updateData: any = {
-      frameioV4AccessToken: accessToken,
+  // Centralized service token methods
+  async updateServiceToken(service: string, accessToken: string, refreshToken?: string, expiresAt?: Date, scope?: string): Promise<void> {
+    const tokenData = {
+      service,
+      accessToken,
+      refreshToken,
+      expiresAt,
+      scope,
       updatedAt: new Date()
     };
 
-    if (refreshToken) {
-      updateData.frameioV4RefreshToken = refreshToken;
-    }
-
-    if (expiresAt) {
-      updateData.frameioV4TokenExpiresAt = expiresAt;
-    }
-
+    // Upsert: update if exists, insert if not
     await this.db
-      .update(users)
-      .set(updateData)
-      .where(eq(users.id, userId));
-    console.log(`Frame.io V4 access token stored for user: ${userId}`);
+      .insert(serviceTokens)
+      .values(tokenData)
+      .onConflictDoUpdate({
+        target: serviceTokens.service,
+        set: {
+          accessToken: tokenData.accessToken,
+          refreshToken: tokenData.refreshToken,
+          expiresAt: tokenData.expiresAt,
+          scope: tokenData.scope,
+          updatedAt: tokenData.updatedAt
+        }
+      });
+    
+    console.log(`✓ Service token updated for ${service} (expires: ${expiresAt?.toISOString() || 'unknown'})`);
+  }
+
+  async getServiceToken(service: string): Promise<any> {
+    const result = await this.db
+      .select()
+      .from(serviceTokens)
+      .where(eq(serviceTokens.service, service))
+      .limit(1);
+    
+    return result[0] || null;
+  }
+
+  // Legacy method for backward compatibility - now redirects to centralized storage
+  async updateFrameioV4Token(userId: string, accessToken: string, refreshToken?: string, expiresAt?: Date): Promise<void> {
+    console.log(`Migrating Frame.io token from user-level to centralized storage`);
+    await this.updateServiceToken('frameio-v4', accessToken, refreshToken, expiresAt, 'openid');
   }
 
   async getAllUsers(): Promise<User[]> {
