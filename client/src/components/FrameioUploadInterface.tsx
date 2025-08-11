@@ -523,10 +523,23 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
 
           {/* Action buttons */}
           <div className="flex gap-3 pt-4">
+            {/* Show "Continue to Next Step" if existing files are present */}
+            {existingFiles.length > 0 && (
+              <Button
+                onClick={onUploadComplete}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+                disabled={isUploading}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Continue to Next Step
+              </Button>
+            )}
+            
+            {/* Upload button for new files */}
             <Button
               onClick={startUpload}
               disabled={files.length === 0 || isUploading || files.every(f => f.status === 'complete')}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className={`${existingFiles.length > 0 ? 'flex-none' : 'flex-1'} bg-blue-600 hover:bg-blue-700`}
             >
               {isUploading ? (
                 <>
@@ -536,20 +549,31 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload Files
+                  {existingFiles.length > 0 ? 'Upload More Files' : 'Upload Files'}
                 </>
               )}
             </Button>
+            
             <Button variant="outline" onClick={onCancel} disabled={isUploading}>
               Cancel
             </Button>
           </div>
 
+          {/* Success messages */}
+          {existingFiles.length > 0 && files.length === 0 && (
+            <Alert className="bg-blue-500/10 border-blue-500/30">
+              <CheckCircle className="h-4 w-4 text-blue-400" />
+              <AlertDescription className="text-blue-400">
+                Your project already has {existingFiles.length} uploaded file{existingFiles.length > 1 ? 's' : ''}. You can continue to the next step or upload additional files.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {files.some(f => f.status === 'complete') && (
             <Alert className="bg-green-500/10 border-green-500/30">
               <CheckCircle className="h-4 w-4 text-green-400" />
               <AlertDescription className="text-green-400">
-                Files uploaded successfully! Click "Continue" to proceed to the next step.
+                New files uploaded successfully! Click "Continue to Next Step" to proceed.
               </AlertDescription>
             </Alert>
           )}
