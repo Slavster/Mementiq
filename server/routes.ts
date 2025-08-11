@@ -3182,8 +3182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Check folder contents using Frame.io API
-        const folderVideos = await frameioService.getFolderAssets(project.mediaFolderId);
+        // Check folder contents using Frame.io V4 API
+        await frameioV4Service.loadServiceAccountToken();
+        const folderVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
 
         res.json({
           success: true,
@@ -3198,6 +3199,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Failed to check folder status",
           hasVideos: false,
           videoCount: 0,
+        });
+      }
+    },
+  );
+
+  // Ensure Frame.io folder structure exists for project
+  app.post(
+    "/api/projects/:id/ensure-folder-structure",
+    requireAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const projectId = parseInt(req.params.id);
+        const userId = req.user!.id;
+
+        console.log(`🔧 Ensuring Frame.io folder structure for project ${projectId}, user ${userId}`);
+
+        // Verify project exists and user owns it
+        const project = await storage.getProject(projectId);
+        if (!project) {
+          return res.status(404).json({ 
+            success: false, 
+            message: "Project not found" 
+          });
+        }
+
+        if (project.userId !== userId) {
+          return res.status(403).json({ 
+            success: false, 
+            message: "Access denied" 
+          });
+        }
+
+        // Initialize Frame.io V4 service
+        await frameioV4Service.loadServiceAccountToken();
+
+        let frameioConfigured = false;
+        let userFolderId = null;
+        let projectFolderId = null;
+        
+        try {
+          // Step 1: Get or create user folder
+          console.log(`📁 Step 1: Getting/creating user folder for user ${userId}`);
+          const userFolders = await frameioV4Service.getUserFolders(userId);
+          
+          if (userFolders && userFolders.length > 0) {
+            userFolderId = userFolders[0].id;
+            console.log(`✅ Found existing user folder: ${userFolderId}`);
+          } else {
+            console.log(`🆕 No user folder found, creating new one...`);
+            const userFolder = await frameioV4Service.createUserFolder(userId);
+            userFolderId = userFolder.id;
+            console.log(`✅ Created new user folder: ${userFolderId}`);
+          }
+
+          // Step 2: Get or create project subfolder within user folder
+          console.log(`📁 Step 2: Getting/creating project folder for project ${projectId}`);
+          
+          // Check if project already has a folder ID stored
+          if (project.mediaFolderId) {
+            try {
+              // Verify the folder still exists in Frame.io
+              await frameioV4Service.verifyAssetInProjectFolder(project.mediaFolderId, project.id);
+              projectFolderId = project.mediaFolderId;
+              console.log(`✅ Verified existing project folder: ${projectFolderId}`);
+              frameioConfigured = true;
+            } catch (verifyError) {
+              console.log(`⚠️ Stored project folder ${project.mediaFolderId} not found, creating new one...`);
+              projectFolderId = null;
+            }
+          }
+
+          // Create project folder if not found or verified
+          if (!projectFolderId) {
+            console.log(`🆕 Creating new project folder for: ${project.title}`);
+            const projectFolder = await frameioV4Service.createProjectFolder(
+              userFolderId,
+              project.title,
+              project.id
+            );
+            projectFolderId = projectFolder.id;
+            
+            // Update project in database with new folder ID
+            await storage.updateProject(projectId, {
+              mediaFolderId: projectFolderId,
+              mediaUserFolderId: userFolderId,
+              updatedAt: new Date()
+            });
+            
+            console.log(`✅ Created new project folder: ${projectFolderId}`);
+            frameioConfigured = true;
+          }
+
+          // Step 3: Verify folder structure is complete
+          if (userFolderId && projectFolderId) {
+            console.log(`🎯 Frame.io folder structure verified:`, {
+              userFolder: userFolderId,
+              projectFolder: projectFolderId,
+              configured: frameioConfigured
+            });
+
+            res.json({
+              success: true,
+              message: "Frame.io folder structure verified and ready",
+              frameioConfigured: true,
+              userFolderId,
+              projectFolderId,
+              folderStructure: {
+                userFolder: userFolderId,
+                projectFolder: projectFolderId
+              }
+            });
+          } else {
+            throw new Error("Failed to establish complete folder structure");
+          }
+
+        } catch (frameioError) {
+          console.error("Frame.io folder structure setup failed:", frameioError);
+          
+          res.json({
+            success: true, // Still success, just not configured
+            message: "Project created but Frame.io setup needs attention",
+            frameioConfigured: false,
+            error: frameioError instanceof Error ? frameioError.message : String(frameioError),
+            userFolderId: null,
+            projectFolderId: project.mediaFolderId || null
+          });
+        }
+
+      } catch (error) {
+        console.error("Error ensuring folder structure:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to ensure folder structure",
+          frameioConfigured: false
         });
       }
     },
