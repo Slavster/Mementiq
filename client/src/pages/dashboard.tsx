@@ -797,8 +797,8 @@ export default function DashboardPage() {
             <div className="space-y-6">
               {/* Project Info */}
               <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <p className="text-sm text-gray-400">Status</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Status</span>
                   <Badge
                     variant="secondary"
                     className={`${getStatusColor(selectedProject.status)} text-white`}
