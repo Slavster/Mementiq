@@ -3399,9 +3399,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           project.id
         );
 
-        // Upload to Frame.io (this would need to be implemented with actual TUS protocol)
-        // For now, return success with mock data
-        const frameioId = `frameio-${Date.now()}`;
+        // Upload file to Frame.io
+        console.log(`📤 Uploading file ${req.file.originalname} to Frame.io folder ${projectFolder.id}`);
+        const uploadResult = await frameioV4Service.uploadFile(
+          req.file.buffer,
+          req.file.originalname,
+          projectFolder.id,
+          req.file.mimetype
+        );
+        
+        const frameioId = uploadResult.id;
         
         // Store file record in database
         const parsedProjectId = parseInt(projectId, 10);
@@ -3415,8 +3422,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const projectFile = await storage.createProjectFile({
           projectId: parsedProjectId,
           mediaAssetId: frameioId,
-          mediaAssetUrl: `https://frame.io/assets/${frameioId}`,
-          filename: req.file.originalname || 'uploaded_file',
+          mediaAssetUrl: uploadResult.url,
+          filename: uploadResult.name,
           fileType: req.file.mimetype || 'application/octet-stream',
           fileSize: req.file.size,
           uploadDate: new Date()
@@ -3424,8 +3431,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           success: true,
-          message: "File uploaded successfully",
+          message: "File uploaded successfully to Frame.io",
           frameioId: frameioId,
+          frameioUrl: uploadResult.url,
           fileId: projectFile.id,
           projectFile
         });

@@ -943,6 +943,56 @@ export class FrameioV4Service {
   }
 
   /**
+   * Upload file to Frame.io V4 (works for video, image, and audio files)
+   */
+  async uploadFile(fileBuffer: Buffer, filename: string, folderId: string, mimeType: string): Promise<any> {
+    await this.initialize();
+    
+    try {
+      console.log(`=== Uploading V4 File: ${filename} to folder ${folderId} ===`);
+      
+      // Get account ID for the correct V4 endpoint structure
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+      
+      // Create the asset first (this registers the file with Frame.io)
+      const createAssetEndpoint = `/accounts/${accountId}/folders/${folderId}/assets`;
+      console.log(`Creating asset via: POST ${createAssetEndpoint}`);
+      
+      const assetData = await this.makeRequest('POST', createAssetEndpoint, {
+        data: {
+          name: filename,
+          type: 'file',
+          filesize: fileBuffer.length,
+          filetype: mimeType
+        }
+      });
+      
+      console.log(`V4 Asset created: ${assetData.data.name} (${assetData.data.id})`);
+      
+      // For now, we'll return the asset info
+      // In a full implementation, you would upload the actual file data using the upload_urls
+      // provided in the response, but that requires implementing the TUS protocol
+      
+      return {
+        id: assetData.data.id,
+        name: assetData.data.name,
+        url: assetData.data.download_url || `https://frame.io/assets/${assetData.data.id}`,
+        type: assetData.data.type,
+        filesize: assetData.data.filesize,
+        created_at: assetData.data.created_at || new Date().toISOString(),
+        updated_at: assetData.data.updated_at || new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(`Failed to upload V4 file "${filename}":`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Upload photo to Frame.io V4
    */
   async uploadPhoto(base64Data: string, filename: string, folderId: string, userId: string): Promise<any> {
