@@ -568,7 +568,31 @@ export class FrameioV4Service {
   }
 
   /**
-   * Get user's teams/workspaces
+   * Get accounts (V4 proper endpoint)
+   */
+  async getAccounts(): Promise<any> {
+    await this.ensureValidToken();
+    return this.makeRequest('GET', '/accounts');
+  }
+
+  /**
+   * Get workspaces for account (V4 proper endpoint)
+   */
+  async getWorkspaces(accountId: string): Promise<any> {
+    await this.ensureValidToken();
+    return this.makeRequest('GET', `/accounts/${accountId}/workspaces`);
+  }
+
+  /**
+   * Get projects for workspace (V4 proper endpoint)
+   */
+  async getProjects(accountId: string, workspaceId: string): Promise<any> {
+    await this.ensureValidToken();
+    return this.makeRequest('GET', `/accounts/${accountId}/workspaces/${workspaceId}/projects`);
+  }
+
+  /**
+   * Get user's teams/workspaces (legacy method)
    */
   async getTeams(): Promise<any> {
     await this.initialize();
@@ -592,7 +616,71 @@ export class FrameioV4Service {
   }
 
   /**
-   * Test all three core features
+   * Test V4 API proper hierarchy: accounts → workspaces → projects
+   */
+  async testV4Hierarchy(): Promise<any> {
+    const results = {
+      connection: false,
+      accountAccess: false,
+      workspaceAccess: false,
+      projectAccess: false,
+      details: {}
+    };
+
+    try {
+      console.log(`=== FRAME.IO V4 API HIERARCHY TEST ===`);
+      
+      // Step 1: Get accounts
+      console.log('1. Testing /v4/accounts...');
+      const accounts = await this.getAccounts();
+      results.connection = true;
+      results.accountAccess = true;
+      results.details.accounts = accounts.data?.length || 0;
+      console.log(`✓ Found ${accounts.data?.length || 0} accounts`);
+      
+      if (accounts.data && accounts.data.length > 0) {
+        const accountId = accounts.data[0].id;
+        results.details.selectedAccount = { id: accountId, name: accounts.data[0].name };
+        
+        // Step 2: Get workspaces for first account
+        console.log(`2. Testing /v4/accounts/${accountId}/workspaces...`);
+        const workspaces = await this.getWorkspaces(accountId);
+        results.workspaceAccess = true;
+        results.details.workspaces = workspaces.data?.length || 0;
+        console.log(`✓ Found ${workspaces.data?.length || 0} workspaces`);
+        
+        if (workspaces.data && workspaces.data.length > 0) {
+          const workspaceId = workspaces.data[0].id;
+          results.details.selectedWorkspace = { id: workspaceId, name: workspaces.data[0].name };
+          
+          // Step 3: Get projects for first workspace
+          console.log(`3. Testing /v4/accounts/${accountId}/workspaces/${workspaceId}/projects...`);
+          const projects = await this.getProjects(accountId, workspaceId);
+          results.projectAccess = true;
+          results.details.projects = projects.data?.length || 0;
+          console.log(`✓ Found ${projects.data?.length || 0} projects`);
+          
+          if (projects.data && projects.data.length > 0) {
+            results.details.selectedProject = { 
+              id: projects.data[0].id, 
+              name: projects.data[0].name 
+            };
+          }
+        }
+      }
+      
+      console.log(`=== V4 API HIERARCHY TEST COMPLETE ✓ ===`);
+      return results;
+      
+    } catch (error) {
+      console.error(`✗ V4 hierarchy test failed:`, error.message);
+      results.details.error = error.message;
+      throw error;
+    }
+  }
+
+  /**
+   * Test all three core features (legacy method)
    */
   async testAllFeatures(): Promise<any> {
     const results = {
