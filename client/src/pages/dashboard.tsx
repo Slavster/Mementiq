@@ -51,7 +51,7 @@ import {
   Play,
   Eye,
 } from "lucide-react";
-import DirectVideoUpload from "@/components/DirectVideoUpload";
+
 import TallyFormStep from "@/components/TallyFormStep";
 import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
 import { RevisionModal } from "@/components/RevisionModal";
@@ -906,19 +906,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Step Content */}
-              {currentStep === "upload" && selectedProject.frameioFolderId ? (
-                <div className="space-y-6">
-                  <DirectVideoUpload
-                    projectId={selectedProject.id}
-                    onUploadComplete={() => {
-                      // Move to next step
-                      setCurrentStep("form");
-                      // Refresh project data
-                      queryClient.invalidateQueries({ queryKey: ["projects"] });
-                    }}
-                  />
-                </div>
-              ) : currentStep === "upload" ? (
+              {currentStep === "upload" ? (
                 <FrameioUploadInterface 
                   project={selectedProject}
                   onUploadComplete={() => {
