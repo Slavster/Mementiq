@@ -42,7 +42,6 @@ import {
   Eye,
 } from "lucide-react";
 import DirectVideoUpload from "@/components/DirectVideoUpload";
-import DirectPhotoUpload from "@/components/DirectPhotoUpload";
 import TallyFormStep from "@/components/TallyFormStep";
 import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
 import { RevisionModal } from "@/components/RevisionModal";
@@ -698,7 +697,7 @@ export default function DashboardPage() {
                           className="w-full bg-accent text-secondary hover:bg-yellow-500"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            
+
                             // Ensure Frame.io folder structure exists before opening project
                             try {
                               const token = await supabase.auth.getSession();
@@ -721,7 +720,7 @@ export default function DashboardPage() {
                               });
 
                               const result = await response.json();
-                              
+
                               if (result.success) {
                                 if (result.frameioConfigured) {
                                   console.log("✅ Frame.io folder structure verified:", result.folderStructure);
@@ -860,14 +859,6 @@ export default function DashboardPage() {
                     onUploadComplete={() => {
                       // Move to next step
                       setCurrentStep("form");
-                      // Refresh project data
-                      queryClient.invalidateQueries({ queryKey: ["projects"] });
-                    }}
-                  />
-
-                  <DirectPhotoUpload
-                    projectId={selectedProject.id}
-                    onUploadComplete={() => {
                       // Refresh project data
                       queryClient.invalidateQueries({ queryKey: ["projects"] });
                     }}
