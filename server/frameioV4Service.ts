@@ -943,37 +943,103 @@ export class FrameioV4Service {
   }
 
   /**
-   * Upload file to Frame.io V4 (works for video, image, and audio files)
-   * Note: Frame.io V4 API endpoints are currently not working as expected.
-   * This method creates a mock file entry for testing purposes.
+   * Upload file to Frame.io V4 using correct Adobe Developer API flow
+   * 1. Create file placeholder in folder to get pre-signed upload URLs
+   * 2. Upload file data to the pre-signed URLs
    */
   async uploadFile(fileBuffer: Buffer, filename: string, folderId: string, mimeType: string): Promise<any> {
     await this.initialize();
     
     try {
-      console.log(`=== Mock V4 File Upload: ${filename} to folder ${folderId} ===`);
+      console.log(`=== V4 File Upload: ${filename} to folder ${folderId} ===`);
       console.log(`File size: ${fileBuffer.length} bytes, MIME type: ${mimeType}`);
       
-      // Since Frame.io V4 API endpoints are not working, create a mock response
-      // that simulates successful file creation
-      const mockFileId = `frameio-v4-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Get account ID for the correct V4 endpoint structure
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
       
-      console.log(`Mock V4 File created: ${filename} (${mockFileId})`);
-      console.log(`Note: This is a mock upload - actual Frame.io V4 API endpoints are not responding correctly`);
+      // Step 1: Create file placeholder using correct V4 endpoint
+      const createFileEndpoint = `/accounts/${accountId}/folders/${folderId}/files`;
+      console.log(`Creating file placeholder via: POST ${createFileEndpoint}`);
+      
+      const fileData = await this.makeRequest('POST', createFileEndpoint, {
+        data: {
+          name: filename,
+          media_type: mimeType,
+          file_size: fileBuffer.length
+        }
+      });
+      
+      console.log(`V4 File placeholder created: ${fileData.data.name} (${fileData.data.id})`);
+      
+      // Step 2: Check for upload URLs and upload file data if provided
+      if (fileData.data.upload_urls && fileData.data.upload_urls.length > 0) {
+        console.log(`Upload URLs provided: ${fileData.data.upload_urls.length} parts`);
+        
+        // Upload file data to each pre-signed URL
+        await this.uploadFileParts(fileBuffer, fileData.data.upload_urls, mimeType);
+        
+        console.log(`File upload completed: ${filename}`);
+      } else {
+        console.log(`No upload URLs provided - file placeholder created only`);
+      }
       
       return {
-        id: mockFileId,
-        name: filename,
-        url: `https://frame.io/files/${mockFileId}`,
-        type: 'file',
-        filesize: fileBuffer.length,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        mock: true
+        id: fileData.data.id,
+        name: fileData.data.name,
+        url: fileData.data.download_url || `https://frame.io/files/${fileData.data.id}`,
+        type: fileData.data.type || 'file',
+        filesize: fileData.data.file_size || fileBuffer.length,
+        created_at: fileData.data.created_at || new Date().toISOString(),
+        updated_at: fileData.data.updated_at || new Date().toISOString(),
+        status: fileData.data.status || 'created',
+        upload_urls_count: fileData.data.upload_urls ? fileData.data.upload_urls.length : 0
       };
     } catch (error) {
       console.error(`Failed to upload V4 file "${filename}":`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Upload file parts to Frame.io pre-signed URLs
+   */
+  private async uploadFileParts(fileBuffer: Buffer, uploadUrls: string[], mimeType: string): Promise<void> {
+    console.log(`Uploading ${uploadUrls.length} file parts`);
+    
+    // Calculate chunk size based on number of URLs
+    const chunkSize = Math.ceil(fileBuffer.length / uploadUrls.length);
+    
+    for (let i = 0; i < uploadUrls.length; i++) {
+      const start = i * chunkSize;
+      const end = Math.min(start + chunkSize, fileBuffer.length);
+      const chunk = fileBuffer.slice(start, end);
+      
+      console.log(`Uploading part ${i + 1}/${uploadUrls.length}: ${chunk.length} bytes`);
+      
+      try {
+        // Upload chunk to pre-signed URL using PUT request without auth headers
+        const response = await fetch(uploadUrls[i], {
+          method: 'PUT',
+          headers: {
+            'x-amz-acl': 'private',
+            'Content-Type': mimeType
+          },
+          body: chunk
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Upload part ${i + 1} failed: ${response.status} ${response.statusText}`);
+        }
+        
+        console.log(`Part ${i + 1} uploaded successfully`);
+      } catch (error) {
+        console.error(`Failed to upload part ${i + 1}:`, error);
+        throw error;
+      }
     }
   }
 
