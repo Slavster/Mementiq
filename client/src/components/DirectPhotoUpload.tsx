@@ -263,7 +263,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
       case "failed":
         return <XCircle className="h-4 w-4 text-red-500" />;
       case "uploading":
-        return <Cloud className="h-4 w-4 text-blue-500 animate-pulse" />;
+        return <Cloud className="h-4 w-4 text-cyan-500 animate-pulse" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
@@ -311,7 +311,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
       {/* Current Storage Usage - matching video upload style exactly */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-blue-400">Current Storage Usage</span>
+          <span className="text-cyan-400">Current Storage Usage</span>
           <span className="text-gray-300">
             {formatFileSize(actualPhotoSizes)} / 500 MB
           </span>
@@ -330,7 +330,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
         onDragLeave={handleDragLeave}
         className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
           isDragOver
-            ? "border-blue-500 bg-blue-950/20"
+            ? "border-cyan-500 bg-cyan-950/20"
             : "border-gray-600 hover:border-gray-500"
         }`}
         onClick={() => fileInputRef.current?.click()}
@@ -379,8 +379,8 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
 
           {/* Upload Progress Summary */}
           {uploadingPhotos > 0 && (
-            <div className="bg-blue-950/20 border border-blue-800 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-blue-400">
+            <div className="bg-cyan-950/20 border border-cyan-800 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-cyan-400">
                 <AlertCircle className="h-4 w-4" />
                 <span className="text-sm">
                   Uploading {uploadingPhotos} photos... Please don't close this page.
@@ -428,7 +428,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                       href={photo.mediaUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-blue-400 hover:text-blue-300 mt-1 block"
+                      className="text-xs text-cyan-400 hover:text-cyan-300 mt-1 block"
                     >
                       View uploaded photo
                     </a>
@@ -487,7 +487,7 @@ const DirectPhotoUpload: React.FC<DirectPhotoUploadProps> = ({
                         href={photo.mediaUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs"
+                        className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 text-xs"
                       >
                         <Image className="h-3 w-3" />
                         View

@@ -60,7 +60,7 @@ export function FrameioOAuthButton() {
       onClick={handleConnect} 
       disabled={isConnecting}
       variant="default"
-      className="bg-blue-600 hover:bg-blue-700"
+      className="bg-cyan-600 hover:bg-cyan-700"
     >
       {isConnecting ? 'Connecting to Frame.io...' : 'Connect Frame.io V4'}
     </Button>

@@ -482,7 +482,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
                     key={file.id}
                     className="bg-black/20 rounded-lg p-3 flex items-center gap-3"
                   >
-                    <FileVideo className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                    <FileVideo className="h-5 w-5 text-cyan-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm truncate">
                         {file.file.name}
@@ -539,7 +539,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
             <Button
               onClick={startUpload}
               disabled={files.length === 0 || isUploading || files.every(f => f.status === 'complete')}
-              className={`${existingFiles.length > 0 ? 'flex-none' : 'flex-1'} bg-blue-600 hover:bg-blue-700`}
+              className={`${existingFiles.length > 0 ? 'flex-none' : 'flex-1'} bg-cyan-600 hover:bg-cyan-700`}
             >
               {isUploading ? (
                 <>
@@ -561,9 +561,9 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
 
           {/* Success messages */}
           {existingFiles.length > 0 && files.length === 0 && (
-            <Alert className="bg-blue-500/10 border-blue-500/30">
-              <CheckCircle className="h-4 w-4 text-blue-400" />
-              <AlertDescription className="text-blue-400">
+            <Alert className="bg-cyan-500/10 border-cyan-500/30">
+              <CheckCircle className="h-4 w-4 text-cyan-400" />
+              <AlertDescription className="text-cyan-400">
                 Your project already has {existingFiles.length} uploaded file{existingFiles.length > 1 ? 's' : ''}. You can continue to the next step or upload additional files.
               </AlertDescription>
             </Alert>

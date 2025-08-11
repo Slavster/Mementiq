@@ -205,7 +205,7 @@ export function RevisionModal({
                           "_blank",
                         )
                       }
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-cyan-600 hover:bg-cyan-700"
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Open Video in Review Mode
@@ -213,11 +213,11 @@ export function RevisionModal({
                   </CardContent>
                 </Card>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">
+                <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-cyan-800 mb-2">
                     💡 How to Leave Effective Feedback:
                   </h4>
-                  <ul className="text-blue-700 text-sm space-y-1">
+                  <ul className="text-cyan-700 text-sm space-y-1">
                     <li>
                       • Click anywhere on the video timeline to leave
                       timestamp-specific comments
@@ -374,9 +374,9 @@ export function RevisionModal({
               </p>
             </div>
 
-            <Card className="border-blue-200 bg-blue-50">
+            <Card className="border-cyan-200 bg-cyan-50">
               <CardHeader>
-                <CardTitle className="text-blue-800">
+                <CardTitle className="text-cyan-800">
                   Revision Summary
                 </CardTitle>
               </CardHeader>
@@ -386,7 +386,7 @@ export function RevisionModal({
                 </div>
                 <div>
                   <span className="font-medium">Media Platform Comments:</span>
-                  <span className="ml-2 text-blue-600">
+                  <span className="ml-2 text-cyan-600">
                     Left directly on the video timeline
                   </span>
                 </div>
@@ -459,10 +459,10 @@ export function RevisionModal({
         <div className="flex items-center justify-center mb-6">
           <div className="flex items-center space-x-4">
             <div
-              className={`flex items-center ${step === "instructions" ? "text-blue-600" : step === "uploads" || step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
+              className={`flex items-center ${step === "instructions" ? "text-cyan-600" : step === "uploads" || step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "instructions" ? "bg-blue-600 text-white" : step === "uploads" || step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "instructions" ? "bg-cyan-600 text-white" : step === "uploads" || step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
               >
                 1
               </div>
@@ -470,10 +470,10 @@ export function RevisionModal({
             </div>
             <div className="w-8 h-px bg-gray-300"></div>
             <div
-              className={`flex items-center ${step === "uploads" ? "text-blue-600" : step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
+              className={`flex items-center ${step === "uploads" ? "text-cyan-600" : step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "uploads" ? "bg-blue-600 text-white" : step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "uploads" ? "bg-cyan-600 text-white" : step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
               >
                 2
               </div>
@@ -481,10 +481,10 @@ export function RevisionModal({
             </div>
             <div className="w-8 h-px bg-gray-300"></div>
             <div
-              className={`flex items-center ${step === "confirmation" ? "text-blue-600" : "text-gray-400"}`}
+              className={`flex items-center ${step === "confirmation" ? "text-cyan-600" : "text-gray-400"}`}
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "confirmation" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "confirmation" ? "bg-cyan-600 text-white" : "bg-gray-200"}`}
               >
                 3
               </div>
