@@ -25,6 +25,15 @@ interface FrameioUploadInterfaceProps {
   onCancel: () => void;
 }
 
+interface ExistingFile {
+  id: string;
+  name: string;
+  type: string;
+  filesize?: number;
+  file_size?: number;
+  created_at: string;
+}
+
 interface UploadFile {
   file: File;
   id: string;
@@ -35,6 +44,7 @@ interface UploadFile {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
+const MAX_FILE_COUNT = 100; // Maximum 100 files per project
 const ALLOWED_TYPES = [
   // Video formats
   'video/mp4',
@@ -69,7 +79,19 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
   const [isUploading, setIsUploading] = useState(false);
   const [folderSetupStatus, setFolderSetupStatus] = useState<'checking' | 'ready' | 'error'>('checking');
   const [totalSize, setTotalSize] = useState(0);
+  const [existingFiles, setExistingFiles] = useState<ExistingFile[]>([]);
+  const [existingFileCount, setExistingFileCount] = useState(0);
+  const [existingStorageUsed, setExistingStorageUsed] = useState(0);
   const { toast } = useToast();
+
+  // Format file size for display
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   // Check folder structure on component mount
   React.useEffect(() => {
@@ -95,6 +117,9 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
       const result = await response.json();
       if (result.success && result.frameioConfigured) {
         setFolderSetupStatus('ready');
+        setExistingFiles(result.existingFiles || []);
+        setExistingFileCount(result.fileCount || 0);
+        setExistingStorageUsed(result.totalStorageUsed || 0);
       } else {
         setFolderSetupStatus('error');
       }
@@ -102,14 +127,6 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
       console.error('Folder structure check failed:', error);
       setFolderSetupStatus('error');
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const validateFile = (file: File): string | null => {
@@ -126,6 +143,17 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
+    
+    // Check file count limit
+    const totalFileCount = existingFileCount + files.length + selectedFiles.length;
+    if (totalFileCount > MAX_FILE_COUNT) {
+      toast({
+        title: "File limit exceeded",
+        description: `Cannot upload ${selectedFiles.length} files. Project already has ${existingFileCount} files. Maximum allowed: ${MAX_FILE_COUNT} files total.`,
+        variant: "destructive",
+      });
+      return;
+    }
     
     const newFiles: UploadFile[] = [];
     let newTotalSize = totalSize;
@@ -364,19 +392,51 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Storage usage */}
+          {/* Project file info */}
           <div className="bg-black/20 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-gray-400">Project Files</span>
+              <span className="text-sm text-white">
+                {existingFileCount + files.length} / {MAX_FILE_COUNT} files
+              </span>
+            </div>
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm text-gray-400">Storage Used</span>
               <span className="text-sm text-white">
-                {formatFileSize(totalSize)} / {formatFileSize(MAX_FILE_SIZE)}
+                {formatFileSize(existingStorageUsed + totalSize)} total
               </span>
             </div>
             <Progress 
-              value={(totalSize / MAX_FILE_SIZE) * 100} 
+              value={((existingFileCount + files.length) / MAX_FILE_COUNT) * 100} 
               className="h-2"
             />
           </div>
+
+          {/* Existing files */}
+          {existingFiles.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-white font-medium">Existing Files ({existingFiles.length})</h4>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {existingFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    className="bg-gray-800/30 rounded-lg p-3 flex items-center gap-3"
+                  >
+                    <FileVideo className="h-5 w-5 text-green-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm truncate">
+                        {file.name}
+                      </p>
+                      <p className="text-gray-400 text-xs">
+                        {formatFileSize(file.filesize || file.file_size || 0)} • Uploaded
+                      </p>
+                    </div>
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* File upload area */}
           <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
@@ -398,15 +458,18 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
                 Choose video, image, or audio files and drag them here
               </span>
               <span className="text-sm text-gray-400">
-                Supports MP4, AVI, MOV, JPG, PNG, MP3, WAV and other formats (max {formatFileSize(MAX_FILE_SIZE)})
+                Supports MP4, AVI, MOV, JPG, PNG, MP3, WAV and other formats (max {formatFileSize(MAX_FILE_SIZE)} per file)
+              </span>
+              <span className="text-xs text-yellow-400">
+                {existingFileCount + files.length} / {MAX_FILE_COUNT} files used
               </span>
             </label>
           </div>
 
-          {/* File list */}
+          {/* New files to upload */}
           {files.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-white font-medium">Selected Files</h4>
+              <h4 className="text-white font-medium">New Files to Upload ({files.length})</h4>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {files.map((file) => (
                   <div

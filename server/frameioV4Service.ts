@@ -683,7 +683,7 @@ export class FrameioV4Service {
   }
 
   /**
-   * Get folder assets (V4 compatible method)
+   * Get folder assets using correct V4 API endpoint
    */
   async getFolderAssets(folderId: string): Promise<any[]> {
     await this.initialize();
@@ -691,9 +691,21 @@ export class FrameioV4Service {
     try {
       console.log(`=== Getting V4 Folder Assets: ${folderId} ===`);
       
-      const assets = await this.makeRequest('GET', `/assets/${folderId}/children?include=children`);
+      // Get account ID for the correct V4 endpoint structure
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+      
+      // Use the correct V4 endpoint for folder children
+      const endpoint = `/accounts/${accountId}/folders/${folderId}/children`;
+      console.log(`Getting folder children via: GET ${endpoint}`);
+      
+      const response = await this.makeRequest('GET', endpoint);
+      const assets = response.data || [];
 
-      console.log(`Found ${assets.length || 0} assets in V4 folder ${folderId}`);
+      console.log(`Found ${assets.length} assets in V4 folder ${folderId}`);
       return Array.isArray(assets) ? assets : [];
     } catch (error) {
       console.error(`Failed to get V4 folder assets for ${folderId}:`, error);
