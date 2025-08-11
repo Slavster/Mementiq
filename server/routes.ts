@@ -3422,14 +3422,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (serviceAccountUser && frameioV4Service.accessToken) {
-        // Store both access token and refresh token for automatic renewal
-        await storage.updateFrameioV4Token(
-          serviceAccountUser.id, 
+        // Store in centralized service token storage for all users
+        await storage.updateServiceToken(
+          'frameio-v4',
           frameioV4Service.accessToken,
           (frameioV4Service as any).refreshTokenValue,
-          (frameioV4Service as any).tokenExpiresAt
+          (frameioV4Service as any).tokenExpiresAt,
+          'openid'
         );
-        console.log(`✅ PRODUCTION PERSISTENCE: Service account token stored permanently for user: ${serviceAccountUser.email}`);
+        console.log(`✅ CENTRALIZED SERVICE TOKEN: Frame.io token stored for all users`);
         console.log("Token will be automatically refreshed before expiration - zero downtime guaranteed");
       } else {
         console.warn("Warning: Could not find user to store service account token - token will not persist across restarts");
@@ -3483,28 +3484,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test Frame.io V4 core features with direct token access
+  // Test Frame.io V4 core features with centralized token access
   app.get("/api/frameio/v4/test-connection", async (req: Request, res: Response) => {
     try {
-      // Direct database query to get token
-      const result = await db.execute(`
-        SELECT id, email, frameio_v4_access_token
-        FROM users 
-        WHERE frameio_v4_access_token IS NOT NULL 
-        LIMIT 1
-      `);
+      // Get centralized service token
+      const serviceToken = await storage.getServiceToken('frameio-v4');
       
-      if (!result.rows || result.rows.length === 0) {
+      if (!serviceToken) {
         return res.json({
           success: false,
-          message: "No Frame.io V4 access token found in database - OAuth required",
+          message: "No centralized Frame.io V4 service token found - OAuth required",
           authUrl: "/api/auth/frameio",
           tokenStatus: "missing"
         });
       }
 
-      const user = result.rows[0];
-      const accessToken = user.frameio_v4_access_token;
+      const accessToken = serviceToken.accessToken;
 
       // Test direct API call to verify token works
       const response = await fetch('https://api.frame.io/v2/me', {
@@ -3524,7 +3519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         success: true,
-        message: "Frame.io V4 connection and OAuth token verified successfully!",
+        message: "Frame.io V4 connection and centralized service token verified successfully!",
         user: {
           id: userData.id,
           name: userData.name,
@@ -3532,7 +3527,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         tokenStatus: "active",
         apiVersion: "v2",
-        serviceAccount: user.email,
+        service: serviceToken.service,
+        tokenExpires: serviceToken.expiresAt,
         tokenVerified: true
       });
     } catch (error) {
