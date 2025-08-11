@@ -473,8 +473,9 @@ export class FrameioV4Service {
     try {
       console.log(`Creating V4 folder "${folderName}" under parent ${parentAssetId}`);
       
-      const folderData = await this.makeRequest('POST', `/assets/${parentAssetId}/children`, {
+      const folderData = await this.makeRequest('POST', `/folders`, {
         name: folderName,
+        parent_id: parentAssetId,
         type: 'folder'
       });
 
@@ -754,11 +755,11 @@ export class FrameioV4Service {
       
       console.log(`Using Mementiq project: ${mementiqProject.name} (${mementiqProject.id})`);
       
-      // Look for existing user folder
+      // Look for existing user folder using correct V4 endpoint
       const userFolderName = `User-${userId.slice(0, 8)}`;
-      const allFolders = await this.makeRequest('GET', `/assets/${mementiqProject.root_folder_id}/children`);
+      const folderChildren = await this.makeRequest('GET', `/folders/${mementiqProject.root_folder_id}/children`);
       
-      let userFolder = allFolders.find((folder: any) => 
+      let userFolder = folderChildren.data?.find((folder: any) => 
         folder.type === 'folder' && folder.name === userFolderName
       );
       
@@ -790,13 +791,13 @@ export class FrameioV4Service {
       
       const userFolder = await this.getUserFolder(userId);
       
-      // Get all folders from user's folder
-      const allFolders = await this.makeRequest('GET', `/assets/${userFolder.id}/children`);
+      // Get all folders from user's folder using correct V4 endpoint
+      const folderChildren = await this.makeRequest('GET', `/folders/${userFolder.id}/children`);
       
       // Filter for video request folders (subfolders in user's folder)
-      const videoRequestFolders = allFolders.filter((folder: any) => 
+      const videoRequestFolders = folderChildren.data?.filter((folder: any) => 
         folder.type === 'folder'
-      );
+      ) || [];
       
       console.log(`Found ${videoRequestFolders.length} video request folders for user ${userId}`);
       return videoRequestFolders;
