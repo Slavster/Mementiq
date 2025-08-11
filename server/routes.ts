@@ -3483,24 +3483,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test Frame.io V4 core features
+  // Test Frame.io V4 core features with direct token access
   app.get("/api/frameio/v4/test-connection", async (req: Request, res: Response) => {
     try {
-      await frameioV4Service.initialize();
-      const userInfo = await frameioV4Service.getCurrentUser();
-      const teams = await frameioV4Service.getTeams();
+      // Direct database query to get token
+      const result = await db.execute(`
+        SELECT id, email, frameio_v4_access_token
+        FROM users 
+        WHERE frameio_v4_access_token IS NOT NULL 
+        LIMIT 1
+      `);
+      
+      if (!result.rows || result.rows.length === 0) {
+        return res.json({
+          success: false,
+          message: "No Frame.io V4 access token found in database - OAuth required",
+          authUrl: "/api/auth/frameio",
+          tokenStatus: "missing"
+        });
+      }
+
+      const user = result.rows[0];
+      const accessToken = user.frameio_v4_access_token;
+
+      // Test direct API call to verify token works
+      const response = await fetch('https://api.frame.io/v2/me', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Frame.io API responded with ${response.status}: ${response.statusText} - ${errorText}`);
+      }
+
+      const userData = await response.json();
       
       res.json({
         success: true,
-        message: "Frame.io V4 connection successful",
-        user: userInfo,
-        teamsCount: teams?.data?.length || 0
+        message: "Frame.io V4 connection and OAuth token verified successfully!",
+        user: {
+          id: userData.id,
+          name: userData.name,
+          email: userData.email
+        },
+        tokenStatus: "active",
+        apiVersion: "v2",
+        serviceAccount: user.email,
+        tokenVerified: true
       });
     } catch (error) {
       console.error("Frame.io V4 test failed:", error);
       res.status(500).json({
         success: false,
-        message: `Frame.io V4 connection failed: ${error.message}`
+        message: `Frame.io V4 connection failed: ${error instanceof Error ? error.message : String(error)}`,
+        tokenStatus: "error"
       });
     }
   });

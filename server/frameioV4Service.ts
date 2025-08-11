@@ -254,18 +254,24 @@ export class FrameioV4Service {
     if (this.accessTokenValue) return; // Already loaded
 
     try {
-      // Import storage here to avoid circular dependency
-      const { DatabaseStorage } = await import('./storage.js');
-      const storage = new DatabaseStorage();
+      // Use raw SQL to avoid Drizzle schema issues with missing columns
+      const { db } = await import('./db.js');
       
       // Find any user with a Frame.io V4 access token (service account approach)
-      const users = await storage.getAllUsers();
-      const serviceAccountUser = users.find(user => user.frameioV4AccessToken);
+      const result = await db.execute(`
+        SELECT id, email, frameio_v4_access_token as "frameioV4AccessToken"
+        FROM users 
+        WHERE frameio_v4_access_token IS NOT NULL 
+        LIMIT 1
+      `);
+      
+      const serviceAccountUser = result.rows[0];
       
       if (serviceAccountUser?.frameioV4AccessToken) {
         this.accessTokenValue = serviceAccountUser.frameioV4AccessToken;
-        this.refreshTokenValue = serviceAccountUser.frameioV4RefreshToken || null;
-        this.tokenExpiresAt = serviceAccountUser.frameioV4TokenExpiresAt || null;
+        // Note: refresh token and expiry columns don't exist yet - these are future enhancements
+        this.refreshTokenValue = null; // serviceAccountUser.frameioV4RefreshToken || null;
+        this.tokenExpiresAt = null; // serviceAccountUser.frameioV4TokenExpiresAt || null;
         
         console.log('✓ Service account token loaded from database');
         console.log(`Using token from user: ${serviceAccountUser.email}`);

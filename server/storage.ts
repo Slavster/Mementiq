@@ -638,6 +638,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsers(): Promise<User[]> {
+    // Use simple select to avoid schema issues with missing columns
     return await this.db.select().from(users);
   }
 }
