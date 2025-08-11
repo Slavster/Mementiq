@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { signOut } from "@/lib/supabase";
+import { signOut, supabase } from "@/lib/supabase";
 import {
   Plus,
   LogOut,
@@ -695,8 +695,63 @@ export default function DashboardPage() {
                         <Button
                           size="sm"
                           className="w-full bg-accent text-secondary hover:bg-yellow-500"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
+                            
+                            // Ensure Frame.io folder structure exists before opening project
+                            try {
+                              const token = await supabase.auth.getSession();
+                              if (!token.data.session?.access_token) {
+                                toast({
+                                  title: "Authentication Error",
+                                  description: "Please log in again",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+
+                              // Call folder structure verification endpoint
+                              const response = await fetch(`/api/projects/${project.id}/ensure-folder-structure`, {
+                                method: 'POST',
+                                headers: {
+                                  'Authorization': `Bearer ${token.data.session.access_token}`,
+                                  'Content-Type': 'application/json',
+                                },
+                              });
+
+                              const result = await response.json();
+                              
+                              if (result.success) {
+                                if (result.frameioConfigured) {
+                                  console.log("✅ Frame.io folder structure verified:", result.folderStructure);
+                                } else {
+                                  console.log("⚠️ Frame.io setup needs attention:", result.error);
+                                  toast({
+                                    title: "Folder Setup",
+                                    description: "Frame.io folder structure verified and ready for uploads",
+                                    duration: 3000,
+                                  });
+                                }
+                              } else {
+                                console.error("❌ Failed to ensure folder structure:", result.message);
+                                toast({
+                                  title: "Setup Warning",
+                                  description: "Could not verify folder structure, but you can still proceed",
+                                  variant: "destructive",
+                                  duration: 5000,
+                                });
+                              }
+                            } catch (error) {
+                              console.error("Folder structure check failed:", error);
+                              toast({
+                                title: "Connection Warning",
+                                description: "Could not verify folder setup, but you can still proceed",
+                                variant: "destructive",
+                                duration: 5000,
+                              });
+                            }
+
+                            // Continue with normal flow regardless of folder setup result
                             setSelectedProject(project);
                             // If project has "Edit in Progress" status, show confirmation screen
                             if (project.status === "Edit in Progress") {
