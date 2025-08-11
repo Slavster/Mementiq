@@ -3405,7 +3405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Store file record in database
         const projectFile = await storage.createProjectFile(req.user!.id, {
-          projectId: project.id,
+          projectId: parseInt(projectId),
           mediaAssetId: frameioId,
           mediaAssetUrl: `https://frame.io/assets/${frameioId}`,
           filename: req.file.originalname || 'uploaded_video.mp4',
