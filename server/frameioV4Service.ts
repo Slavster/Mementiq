@@ -874,10 +874,22 @@ export class FrameioV4Service {
       
       const projectFolderName = `${projectTitle}`;
       
-      // Create project folder within user folder
-      const projectFolder = await this.createFolder(projectFolderName, userFolderId);
+      // Check if project folder already exists
+      console.log(`📁 Checking for existing project folder: ${projectFolderName}`);
+      const userFolderChildren = await this.getFolderChildren(userFolderId);
+      let projectFolder = userFolderChildren.find((child: any) => 
+        child.type === 'folder' && child.name === projectFolderName
+      );
       
-      console.log(`V4 Project folder created: ${projectFolder.name} (${projectFolder.id})`);
+      if (projectFolder) {
+        console.log(`✅ Found existing project folder: ${projectFolder.name} (${projectFolder.id})`);
+      } else {
+        // Create project folder within user folder
+        console.log(`📁 Creating new project folder: ${projectFolderName}`);
+        projectFolder = await this.createFolder(projectFolderName, userFolderId);
+        console.log(`V4 Project folder created: ${projectFolder.name} (${projectFolder.id})`);
+      }
+      
       return projectFolder;
     } catch (error) {
       console.error(`Failed to create V4 project folder for ${projectTitle}:`, error);
@@ -901,10 +913,26 @@ export class FrameioV4Service {
       
       // Create/get project folder within user folder
       const projectFolderName = `Project-${projectId}`;
-      let projectFolder = await this.createFolder(projectFolderName, userFolder.id);
       
-      // Create/get Photos subfolder
-      let photoFolder = await this.createFolder('Photos', projectFolder.id);
+      // Check if project folder already exists
+      const userFolderChildren = await this.getFolderChildren(userFolder.id);
+      let projectFolder = userFolderChildren.find((child: any) => 
+        child.type === 'folder' && child.name === projectFolderName
+      );
+      
+      if (!projectFolder) {
+        projectFolder = await this.createFolder(projectFolderName, userFolder.id);
+      }
+      
+      // Check if Photos subfolder already exists
+      const projectFolderChildren = await this.getFolderChildren(projectFolder.id);
+      let photoFolder = projectFolderChildren.find((child: any) => 
+        child.type === 'folder' && child.name === 'Photos'
+      );
+      
+      if (!photoFolder) {
+        photoFolder = await this.createFolder('Photos', projectFolder.id);
+      }
       
       console.log(`V4 Photo folder path created: ${photoFolder.id}`);
       return photoFolder.id;
