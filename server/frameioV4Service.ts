@@ -958,23 +958,25 @@ export class FrameioV4Service {
       }
       const accountId = accounts.data[0].id;
       
-      // Use the correct V4 file creation endpoint
-      const createFileEndpoint = `/files`;
+      // Use the correct V4 file creation endpoint - files are created under folders
+      const createFileEndpoint = `/folders/${folderId}/files`;
       console.log(`Creating file via: POST ${createFileEndpoint}`);
       
       const fileData = await this.makeRequest('POST', createFileEndpoint, {
         data: {
           name: filename,
-          parent_folder_id: folderId,
-          upload_type: 'local'
+          upload_type: 'local',
+          filesize: fileBuffer.length
         }
       });
       
       console.log(`V4 File created: ${fileData.data.name} (${fileData.data.id})`);
       
-      // The V4 API returns upload URLs for actual file upload
-      // For a complete implementation, you would upload the file using the provided upload URLs
-      console.log(`Upload URLs provided:`, fileData.data.upload_urls ? 'Yes' : 'No');
+      // Check if upload URLs are provided for actual file upload
+      if (fileData.data.upload_urls) {
+        console.log(`Upload URLs provided - file placeholder created successfully`);
+        console.log(`Next step would be to upload actual file data to these URLs`);
+      }
       
       return {
         id: fileData.data.id,
