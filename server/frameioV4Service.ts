@@ -978,9 +978,26 @@ export class FrameioV4Service {
       // Step 2: Check for upload URLs and upload file data if provided
       if (fileData.data.upload_urls && fileData.data.upload_urls.length > 0) {
         console.log(`Upload URLs provided: ${fileData.data.upload_urls.length} parts`);
+        console.log(`Upload URLs structure:`, JSON.stringify(fileData.data.upload_urls, null, 2));
+        
+        // Extract actual URLs from the upload_urls objects
+        const actualUrls = fileData.data.upload_urls.map((urlObj: any) => {
+          if (typeof urlObj === 'string') {
+            return urlObj;
+          } else if (urlObj.url) {
+            return urlObj.url;
+          } else if (urlObj.upload_url) {
+            return urlObj.upload_url;
+          } else {
+            console.log(`Unexpected URL object structure:`, urlObj);
+            return Object.values(urlObj)[0]; // Try first property value
+          }
+        });
+        
+        console.log(`Extracted URLs:`, actualUrls);
         
         // Upload file data to each pre-signed URL
-        await this.uploadFileParts(fileBuffer, fileData.data.upload_urls, mimeType);
+        await this.uploadFileParts(fileBuffer, actualUrls, mimeType);
         
         console.log(`File upload completed: ${filename}`);
       } else {
@@ -1021,8 +1038,15 @@ export class FrameioV4Service {
       console.log(`Uploading part ${i + 1}/${uploadUrls.length}: ${chunk.length} bytes`);
       
       try {
+        const uploadUrl = uploadUrls[i];
+        console.log(`Uploading to URL: ${uploadUrl}`);
+        
+        if (!uploadUrl || typeof uploadUrl !== 'string') {
+          throw new Error(`Invalid upload URL at index ${i}: ${uploadUrl}`);
+        }
+        
         // Upload chunk to pre-signed URL using PUT request without auth headers
-        const response = await fetch(uploadUrls[i], {
+        const response = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
             'x-amz-acl': 'private',
@@ -1032,10 +1056,11 @@ export class FrameioV4Service {
         });
         
         if (!response.ok) {
-          throw new Error(`Upload part ${i + 1} failed: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          throw new Error(`Upload part ${i + 1} failed: ${response.status} ${response.statusText} - ${errorText}`);
         }
         
-        console.log(`Part ${i + 1} uploaded successfully`);
+        console.log(`Part ${i + 1} uploaded successfully to ${uploadUrl.substring(0, 50)}...`);
       } catch (error) {
         console.error(`Failed to upload part ${i + 1}:`, error);
         throw error;
