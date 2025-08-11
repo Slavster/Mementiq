@@ -789,14 +789,14 @@ export default function DashboardPage() {
               {selectedProject?.title}
             </DialogTitle>
             <DialogDescription className="text-gray-400">
-              Upload and manage video files for this project
+              Upload and manage media files for this project
             </DialogDescription>
           </DialogHeader>
 
           {selectedProject && (
             <div className="space-y-6">
               {/* Project Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Status</p>
                   <Badge
@@ -810,26 +810,6 @@ export default function DashboardPage() {
                         .replace(/\b\w/g, (l) => l.toUpperCase())}
                     </span>
                   </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400">Video Integration</p>
-                  <div className="flex items-center gap-2">
-                    {selectedProject.frameioFolderId ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 text-green-400" />
-                        <span className="text-sm text-green-400">
-                          Connected
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="h-4 w-4 text-yellow-400" />
-                        <span className="text-sm text-yellow-400">
-                          Setting up...
-                        </span>
-                      </>
-                    )}
-                  </div>
                 </div>
               </div>
 
