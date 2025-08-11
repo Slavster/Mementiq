@@ -2075,6 +2075,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update project status only
+  app.patch("/api/projects/:id/status", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({
+          success: false,
+          message: "Status is required",
+        });
+      }
+
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found",
+        });
+      }
+
+      // Check if user owns this project
+      if (project.userId !== req.user!.id) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        });
+      }
+
+      // Update project status
+      const updatedProject = await storage.updateProject(projectId, {
+        status,
+        updatedAt: new Date(),
+      });
+
+      res.json({
+        success: true,
+        message: "Project status updated successfully",
+        project: updatedProject,
+      });
+    } catch (error) {
+      console.error("Update project status error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update project status",
+      });
+    }
+  });
+
   // Sync project to Frame.io V4
   app.post("/api/projects/:id/sync-frameio", async (req, res) => {
     try {

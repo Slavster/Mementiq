@@ -66,6 +66,15 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fetch project details to check status
+  const { data: projectData } = useQuery({
+    queryKey: ["projects", projectId],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/projects/${projectId}`);
+      return await response.json();
+    },
+  });
+
   // Fetch existing project files and storage info
   const { data: projectFilesData, isLoading: filesLoading, refetch } = useQuery({
     queryKey: ["projects", projectId, "files"],
@@ -78,6 +87,7 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
   });
 
   const existingFiles = projectFilesData?.success ? projectFilesData.data : null;
+  const project = projectData?.success ? projectData.project : null;
 
   const createSessionMutation = useMutation({
     mutationFn: async ({
@@ -672,6 +682,23 @@ const DirectVideoUpload: React.FC<DirectVideoUploadProps> = ({
       (f) => f.status === "completed" || f.status === "verified",
     ) &&
     !isUploading;
+
+  // If project is already sent to editor, show blocking message
+  if (project?.status === "Edit in Progress") {
+    return (
+      <div className="w-full space-y-6 bg-gray-800/30 border border-gray-700/50 rounded-lg p-6">
+        <div className="text-center">
+          <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">
+            Project Sent to Editor
+          </h3>
+          <p className="text-gray-400">
+            This project has already been sent to the editor and no additional footage can be uploaded. You can only edit the project instructions at this point.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6 bg-gray-800/30 border border-gray-700/50 rounded-lg p-6">
