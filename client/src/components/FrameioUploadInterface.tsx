@@ -388,6 +388,26 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
     );
   }
 
+  // If project is already sent to editor, show blocking message
+  if (project.status === "Edit in Progress") {
+    return (
+      <Card className="bg-yellow-500/10 border-yellow-500/30">
+        <CardContent className="p-6 text-center">
+          <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-yellow-500 mb-2">
+            Project Sent to Editor
+          </h3>
+          <p className="text-gray-400 mb-4">
+            This project has already been sent to the editor and no additional footage can be uploaded. You can only edit the project instructions at this point.
+          </p>
+          <Button variant="ghost" onClick={onCancel}>
+            Close
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">

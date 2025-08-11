@@ -18,6 +18,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -151,6 +161,9 @@ export default function DashboardPage() {
   const [revisionStep, setRevisionStep] = useState<
     "instructions" | "uploads" | "confirmation"
   >("instructions");
+  const [showSendToEditorDialog, setShowSendToEditorDialog] = useState(false);
+  const [pendingProject, setPendingProject] = useState<Project | null>(null);
+  const [sendToEditorConfirmationStep, setSendToEditorConfirmationStep] = useState<1 | 2>(1);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Handle revision payment success/failure from URL parameters
@@ -196,6 +209,44 @@ export default function DashboardPage() {
 
   const subscription: SubscriptionStatus | undefined = (subscriptionData as any)
     ?.subscription;
+
+  // Send to editor mutation
+  const sendToEditorMutation = useMutation({
+    mutationFn: async (projectId: number) => {
+      const response = await apiRequest("PATCH", `/api/projects/${projectId}/status`, {
+        status: "edit in progress"
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+        toast({
+          title: "Project Sent to Editor!",
+          description: "Your project is now being worked on. Keep an eye on your email for updates.",
+          duration: 5000,
+        });
+        setSelectedProject(null);
+        setCurrentStep("upload");
+        setShowSendToEditorDialog(false);
+        setPendingProject(null);
+        setSendToEditorConfirmationStep(1);
+      } else {
+        toast({
+          title: "Failed to send project",
+          description: data.message || "Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to send project",
+        description: `An error occurred: ${error.message || "Please try again."}`,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Create project mutation with subscription validation
   const createProjectMutation = useMutation({
@@ -753,9 +804,12 @@ export default function DashboardPage() {
 
                             // Continue with normal flow regardless of folder setup result
                             setSelectedProject(project);
-                            // If project has "Edit in Progress" status, show confirmation screen
-                            if (project.status === "Edit in Progress") {
-                              setCurrentStep("confirmation");
+                            // If project has been sent to editor, only allow form editing
+                            if (project.status.toLowerCase() === "edit in progress" || 
+                                project.status.toLowerCase() === "video is ready" ||
+                                project.status.toLowerCase() === "delivered" ||
+                                project.status.toLowerCase() === "complete") {
+                              setCurrentStep("form");
                             } else {
                               setCurrentStep("upload");
                             }
@@ -882,15 +936,17 @@ export default function DashboardPage() {
                 />
               ) : currentStep === "form" ? (
                 <div className="space-y-4">
-                  <div className="flex gap-2 mb-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentStep("upload")}
-                      className="text-white border-gray-600 hover:bg-gray-700"
-                    >
-                      ← Back to Upload
-                    </Button>
-                  </div>
+                  {selectedProject.status !== "Edit in Progress" && (
+                    <div className="flex gap-2 mb-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep("upload")}
+                        className="text-white border-gray-600 hover:bg-gray-700"
+                      >
+                        ← Back to Upload
+                      </Button>
+                    </div>
+                  )}
                   <TallyFormStep
                     projectId={selectedProject.id}
                     userId={user?.id || ""}
@@ -910,36 +966,32 @@ export default function DashboardPage() {
                         Form Submitted Successfully!
                       </h3>
                       <p className="text-gray-300 mb-6">
-                        Your request has been received, nice! You can send it
-                        off to an editor now or go back to upload additional
-                        footage.
+                        {selectedProject.status === "Edit in Progress" 
+                          ? "Your project has been sent to the editor and is currently being worked on."
+                          : "Your request has been received, nice! You can send it off to an editor now or go back to upload additional footage."
+                        }
                       </p>
                       <div className="flex gap-4 justify-center">
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentStep("upload")}
-                          className="text-white border-gray-600 hover:bg-gray-700"
-                        >
-                          ← Back to Upload
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            // Show thank you message and close dialog
-                            toast({
-                              title: "Request Confirmed!",
-                              description:
-                                "Keep an eye on your email your video will be ready in a couple days.",
-                              duration: 5000,
-                            });
-                            setTimeout(() => {
-                              setSelectedProject(null);
-                              setCurrentStep("upload");
-                            }, 1000);
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          Send to Editor
-                        </Button>
+                        {selectedProject.status !== "Edit in Progress" && (
+                          <Button
+                            variant="outline"
+                            onClick={() => setCurrentStep("upload")}
+                            className="text-white border-gray-600 hover:bg-gray-700"
+                          >
+                            ← Back to Upload
+                          </Button>
+                        )}
+                        {selectedProject.status !== "Edit in Progress" && (
+                          <Button
+                            onClick={() => {
+                              setPendingProject(selectedProject);
+                              setShowSendToEditorDialog(true);
+                            }}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            Send to Editor
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -1026,6 +1078,78 @@ export default function DashboardPage() {
         step={revisionStep}
         onStepChange={setRevisionStep}
       />
+
+      {/* Send to Editor Confirmation Dialog */}
+      <AlertDialog open={showSendToEditorDialog} onOpenChange={setShowSendToEditorDialog}>
+        <AlertDialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-400">
+              ⚠️ {sendToEditorConfirmationStep === 1 ? "Send Project to Editor?" : "Final Confirmation Required"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300">
+              <div className="space-y-3">
+                {sendToEditorConfirmationStep === 1 ? (
+                  <>
+                    <p>
+                      <strong>Important:</strong> Once you send this project to the editor, you will <strong>no longer be able to upload additional footage</strong>.
+                    </p>
+                    <p>
+                      You'll only be able to edit your project instructions through the form. Make sure you've uploaded all the footage you need before proceeding.
+                    </p>
+                    <p className="text-amber-400 font-medium">
+                      Are you absolutely sure you want to send "{pendingProject?.title}" to the editor?
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-red-400 font-semibold">
+                      ⚠️ FINAL WARNING ⚠️
+                    </p>
+                    <p>
+                      This action is <strong>irreversible</strong>. You will <strong>NOT</strong> be able to upload any more footage to "{pendingProject?.title}" after this point.
+                    </p>
+                    <p className="text-amber-400 font-medium">
+                      Click "CONFIRM - Send to Editor" to proceed, or cancel to go back.
+                    </p>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              onClick={() => {
+                setShowSendToEditorDialog(false);
+                setPendingProject(null);
+                setSendToEditorConfirmationStep(1);
+              }}
+            >
+              {sendToEditorConfirmationStep === 1 ? "Cancel - Let me upload more footage" : "Cancel"}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className={sendToEditorConfirmationStep === 1 ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"}
+              onClick={() => {
+                if (sendToEditorConfirmationStep === 1) {
+                  setSendToEditorConfirmationStep(2);
+                } else {
+                  if (pendingProject) {
+                    sendToEditorMutation.mutate(pendingProject.id);
+                  }
+                }
+              }}
+              disabled={sendToEditorMutation.isPending}
+            >
+              {sendToEditorMutation.isPending 
+                ? "Sending..." 
+                : sendToEditorConfirmationStep === 1 
+                  ? "Yes, Continue" 
+                  : "CONFIRM - Send to Editor"
+              }
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
