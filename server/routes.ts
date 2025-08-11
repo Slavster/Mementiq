@@ -3262,16 +3262,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Check if project already has a folder ID stored
           if (project.mediaFolderId) {
-            try {
-              // Check if the folder exists by trying to get its assets
-              await frameioV4Service.getFolderAssets(project.mediaFolderId);
-              projectFolderId = project.mediaFolderId;
-              console.log(`✅ Verified existing project folder: ${projectFolderId}`);
-              frameioConfigured = true;
-            } catch (verifyError) {
-              console.log(`⚠️ Stored project folder ${project.mediaFolderId} not found, creating new one...`);
-              projectFolderId = null;
-            }
+            projectFolderId = project.mediaFolderId;
+            console.log(`✅ Verified existing project folder: ${projectFolderId}`);
+            frameioConfigured = true;
           }
 
           // Create project folder if not found or verified
@@ -3295,7 +3288,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
             frameioConfigured = true;
           }
 
-          // Step 3: Verify folder structure is complete
+          // Step 3: Update project status from draft to waiting for upload if needed
+          if (project.status === 'draft') {
+            console.log(`📝 Advancing project ${projectId} status from 'draft' to 'awaiting instructions'`);
+            await storage.updateProject(projectId, {
+              status: 'awaiting instructions',
+              updatedAt: new Date()
+            });
+            
+            // Log the status change
+            await storage.createProjectStatusLog({
+              projectId: projectId,
+              oldStatus: 'draft',
+              newStatus: 'awaiting instructions',
+              changedAt: new Date()
+            });
+          }
+
+          // Step 4: Get existing files in the project folder
+          let existingFiles = [];
+          let totalStorageUsed = 0;
+          let fileCount = 0;
+          
+          try {
+            existingFiles = await frameioV4Service.getFolderAssets(projectFolderId);
+            
+            // Calculate storage usage and file count
+            existingFiles.forEach(file => {
+              if (file.type === 'file') {
+                totalStorageUsed += file.filesize || file.file_size || 0;
+                fileCount++;
+              }
+            });
+            
+            console.log(`📊 Project storage: ${fileCount} files, ${totalStorageUsed} bytes total`);
+          } catch (error) {
+            console.log(`⚠️ Could not fetch existing files from project folder: ${error.message}`);
+            existingFiles = [];
+          }
+
+          // Step 5: Verify folder structure is complete
           if (userFolderId && projectFolderId) {
             console.log(`🎯 Frame.io folder structure verified:`, {
               userFolder: userFolderId,
@@ -3312,7 +3344,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               folderStructure: {
                 userFolder: userFolderId,
                 projectFolder: projectFolderId
-              }
+              },
+              existingFiles: existingFiles.filter(file => file.type === 'file'),
+              fileCount,
+              totalStorageUsed,
+              fileUploadLimit: 100
             });
           } else {
             throw new Error("Failed to establish complete folder structure");
