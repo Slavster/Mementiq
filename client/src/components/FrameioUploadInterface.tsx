@@ -36,6 +36,7 @@ interface UploadFile {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
 const ALLOWED_TYPES = [
+  // Video formats
   'video/mp4',
   'video/avi',
   'video/mov',
@@ -43,7 +44,15 @@ const ALLOWED_TYPES = [
   'video/x-msvideo',
   'video/webm',
   'video/mkv',
-  'video/x-matroska'
+  'video/x-matroska',
+  // Image formats
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/bmp',
+  'image/webp',
+  'image/tiff'
 ];
 
 export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: FrameioUploadInterfaceProps) {
@@ -100,7 +109,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
     }
     
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return 'Invalid file type. Please upload video files only.';
+      return 'Invalid file type. Please upload video or image files only.';
     }
     
     return null;
@@ -312,7 +321,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Upload Video Footage
+            Upload Media Files
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -336,7 +345,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
               type="file"
               id="file-upload"
               multiple
-              accept="video/*"
+              accept="video/*,image/*"
               onChange={handleFileSelect}
               className="hidden"
               disabled={isUploading}
@@ -347,10 +356,10 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel }: 
             >
               <Upload className="h-8 w-8 text-gray-400" />
               <span className="text-white font-medium">
-                Choose video files or drag them here
+                Choose video or image files and drag them here
               </span>
               <span className="text-sm text-gray-400">
-                Supports MP4, AVI, MOV, and other video formats (max {formatFileSize(MAX_FILE_SIZE)})
+                Supports MP4, AVI, MOV, JPG, PNG and other formats (max {formatFileSize(MAX_FILE_SIZE)})
               </span>
             </label>
           </div>
