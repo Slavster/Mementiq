@@ -3488,30 +3488,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const accessToken = serviceToken.accessToken;
 
-      // Test direct API call to verify token works
-      const response = await fetch('https://api.frame.io/v2/me', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Frame.io API responded with ${response.status}: ${response.statusText} - ${errorText}`);
-      }
-
-      const userData = await response.json();
+      // Test V4 API hierarchy with proper endpoints
+      const hierarchyResult = await frameioV4Service.testV4Hierarchy();
       
       res.json({
         success: true,
         message: "Frame.io V4 connection and centralized service token verified successfully!",
-        user: {
-          id: userData.id,
-          name: userData.name,
-          email: userData.email
-        },
+        hierarchy: hierarchyResult,
         tokenStatus: "active",
         apiVersion: "v2",
         service: serviceToken.service,
