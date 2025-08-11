@@ -21,7 +21,7 @@ html, body {
   --primary-foreground: hsl(210, 40%, 98%);
   --secondary: hsl(220, 13%, 6%);
   --secondary-foreground: hsl(210, 40%, 98%);
-  --accent: hsl(195, 85%, 55%);
+  --accent: hsl(180, 85%, 55%);
   --accent-foreground: hsl(220, 13%, 9%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(210, 40%, 98%);
@@ -81,7 +81,7 @@ html, body {
   }
   
   .text-accent {
-    color: hsl(195, 85%, 55%);
+    color: hsl(180, 85%, 55%);
   }
   
   .text-charcoal {
@@ -101,7 +101,7 @@ html, body {
   }
   
   .bg-accent {
-    background-color: hsl(195, 85%, 55%);
+    background-color: hsl(180, 85%, 55%);
   }
   
   .bg-dark {

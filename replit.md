@@ -23,6 +23,7 @@ Mementiq is a professional video editing services website designed as a modern f
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Frame.io Account: V4 account with OAuth authentication successfully configured via Adobe Developer Console.
+Design Standard: NEVER use blue colors anywhere in the app - all blue instances must be cyan (hsl(180, 85%, 55%)). This is a permanent design requirement.
 
 ## System Architecture
 
