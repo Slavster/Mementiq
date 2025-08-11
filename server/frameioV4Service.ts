@@ -316,12 +316,23 @@ export class FrameioV4Service {
       console.log('=== Initializing Frame.io V4 Service ===');
       console.log(`Using access token: ${this.accessTokenValue.substring(0, 6)}...${this.accessTokenValue.substring(this.accessTokenValue.length - 6)}`);
       
-      // Get user information
+      // Get user information (V4 proper endpoint)
       const userResponse = await this.makeRequest('GET', '/me');
-      console.log(`User: ${userResponse.display_name} (${userResponse.email})`);
+      console.log(`User: ${userResponse.data?.name} (${userResponse.data?.email})`);
       
-      // Get workspaces (V4 equivalent of teams)
-      const workspacesResponse = await this.makeRequest('GET', '/workspaces');
+      // Get accounts first (V4 proper hierarchy)
+      const accountsResponse = await this.makeRequest('GET', '/accounts');
+      console.log(`Found ${accountsResponse.data?.length || 0} accounts`);
+      
+      if (!accountsResponse.data?.length) {
+        throw new Error('No accessible accounts found for V4');
+      }
+      
+      const accountId = accountsResponse.data[0].id;
+      console.log(`Using account: ${accountsResponse.data[0].display_name} (${accountId})`);
+      
+      // Get workspaces for this account (V4 proper hierarchy)
+      const workspacesResponse = await this.makeRequest('GET', `/accounts/${accountId}/workspaces`);
       console.log(`Found ${workspacesResponse.data?.length || 0} workspaces`);
       
       if (workspacesResponse.data && workspacesResponse.data.length > 0) {
@@ -410,7 +421,10 @@ export class FrameioV4Service {
 
     try {
       console.log('Getting V4 workspace projects...');
-      const projectsResponse = await this.makeRequest('GET', `/workspaces/${this.workspaceId}/projects`);
+      // Get accounts first for proper V4 hierarchy
+      const accountsResponse = await this.makeRequest('GET', '/accounts');
+      const accountId = accountsResponse.data[0].id;
+      const projectsResponse = await this.makeRequest('GET', `/accounts/${accountId}/workspaces/${this.workspaceId}/projects`);
       
       if (projectsResponse.data && projectsResponse.data.length > 0) {
         const existingProject = projectsResponse.data[0];
@@ -427,7 +441,10 @@ export class FrameioV4Service {
       } else {
         // Create new project in workspace
         console.log('Creating new V4 project...');
-        const newProject = await this.makeRequest('POST', `/workspaces/${this.workspaceId}/projects`, {
+        // Get accounts first for proper V4 hierarchy
+        const accountsResponse = await this.makeRequest('GET', '/accounts');
+        const accountId = accountsResponse.data[0].id;
+        const newProject = await this.makeRequest('POST', `/accounts/${accountId}/workspaces/${this.workspaceId}/projects`, {
           name: 'Mementiq Projects',
           description: 'Video editing project workspace'
         });

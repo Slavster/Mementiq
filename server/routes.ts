@@ -1326,11 +1326,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await frameioV4Service.initialize();
             
             // Create virtual folder structure using V4 API
+            const rootProject = await frameioV4Service.getOrCreateRootProject();
+            
             const userFolderName = `User-${req.user!.email.split('@')[0]}-${req.user!.id.slice(0, 8)}`;
-            const userFolder = await frameioV4Service.createFolder(userFolderName);
+            const userFolder = await frameioV4Service.createFolder(rootProject.root_asset_id, userFolderName);
             
             const projectFolderName = `${project.title}-${project.id.slice(0, 8)}`;
-            const projectFolder = await frameioV4Service.createFolder(projectFolderName, userFolder.id);
+            const projectFolder = await frameioV4Service.createFolder(userFolder.id, projectFolderName);
 
             // Store organization structure in database
             await storage.updateProjectMediaInfo(
@@ -2064,6 +2066,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Failed to update project",
         });
       }
+    }
+  });
+
+  // Sync project to Frame.io V4
+  app.post("/api/projects/:id/sync-frameio", async (req, res) => {
+    try {
+      const authResult = await authenticateToken(req, res);
+      if (!authResult.success || !authResult.user) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required",
+        });
+      }
+
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProject(projectId);
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found",
+        });
+      }
+
+      // Check if user owns this project
+      if (project.userId !== authResult.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        });
+      }
+
+      // Skip if already synced
+      if (project.mediaFolderId && project.mediaUserFolderId) {
+        return res.json({
+          success: true,
+          message: "Project already synced to Frame.io",
+          project: project,
+        });
+      }
+
+      // Try to configure Frame.io V4 organization structure
+      let frameioConfigured = false;
+      
+      try {
+        await frameioV4Service.loadServiceAccountToken();
+        
+        if (frameioV4Service.accessToken) {
+          console.log(`Syncing project ${projectId} to Frame.io V4 for user ${authResult.user.id}`);
+          
+          await frameioV4Service.initialize();
+          
+          // Create virtual folder structure using V4 API
+          const rootProject = await frameioV4Service.getOrCreateRootProject();
+          
+          const userFolderName = `User-${authResult.user.email.split('@')[0]}-${authResult.user.id.slice(0, 8)}`;
+          const userFolder = await frameioV4Service.createFolder(rootProject.root_asset_id, userFolderName);
+          
+          const projectFolderName = `${project.title}-${project.id.toString().slice(0, 8)}`;
+          const projectFolder = await frameioV4Service.createFolder(userFolder.id, projectFolderName);
+
+          // Store organization structure in database
+          await storage.updateProjectMediaInfo(
+            project.id,
+            projectFolder.id,
+            userFolder.id,
+          );
+
+          console.log(
+            `✓ Frame.io V4 sync complete: ${userFolder.id} -> ${projectFolder.id}`,
+          );
+          
+          frameioConfigured = true;
+        } else {
+          throw new Error("Frame.io V4 OAuth not completed");
+        }
+      } catch (frameioError) {
+        console.error("Frame.io V4 sync failed:", frameioError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to sync with Frame.io",
+          error: frameioError.message,
+        });
+      }
+
+      // Get updated project
+      const updatedProject = await storage.getProject(project.id);
+      
+      res.json({
+        success: true,
+        message: "Project synced to Frame.io successfully",
+        project: updatedProject,
+      });
+    } catch (error) {
+      console.error("Sync project error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to sync project",
+      });
     }
   });
 
