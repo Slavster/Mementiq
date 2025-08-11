@@ -3412,7 +3412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        const projectFile = await storage.createProjectFile(req.user!.id, {
+        const projectFile = await storage.createProjectFile({
           projectId: parsedProjectId,
           mediaAssetId: frameioId,
           mediaAssetUrl: `https://frame.io/assets/${frameioId}`,
