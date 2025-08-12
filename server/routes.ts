@@ -705,14 +705,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await frameioV4Service.loadServiceAccountToken();
       const mediaLinks = await frameioV4Service.getAssetMediaLinks(assetId);
       
-      if (mediaLinks) {
-        res.json(mediaLinks);
+      if (mediaLinks && Object.keys(mediaLinks).length > 0) {
+        res.json({
+          available: true,
+          ...mediaLinks
+        });
       } else {
-        res.status(404).json({ error: "Could not get video streaming URLs" });
+        res.status(200).json({ 
+          available: false,
+          error: "Frame.io V4 API does not support direct video streaming",
+          reason: "Early Access Program limitations - direct media URLs not exposed",
+          recommendation: "Use Frame.io web interface for video playback and review",
+          alternatives: {
+            webInterface: "Click 'View & Review in Frame.io' button",
+            download: "Download videos through Frame.io web interface",
+            sharing: "Create Frame.io shares for external access"
+          }
+        });
       }
     } catch (error) {
       console.error("Failed to get video streaming URLs:", error);
-      res.status(500).json({ error: "Failed to get video streaming URLs" });
+      res.status(200).json({ 
+        available: false,
+        error: "Frame.io V4 API access failed",
+        details: error.message,
+        recommendation: "Video accessible only through Frame.io web interface"
+      });
     }
   });
 
