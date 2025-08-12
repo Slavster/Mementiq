@@ -46,11 +46,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
 
   // Check if form has already been submitted
   const { data: submissionData, isLoading } = useQuery({
-    queryKey: ["projects", projectId, "tally-submission"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/projects/${projectId}/tally-submission`);
-      return await response.json();
-    },
+    queryKey: [`/api/projects/${projectId}/tally-submission`],
   });
 
   const hasExistingSubmission = submissionData?.success && submissionData.submission;
@@ -81,9 +77,9 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
           "Your project request has been submitted and is now being reviewed.",
       });
       
-      queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({
-        queryKey: ["projects", projectId, "tally-submission"],
+        queryKey: [`/api/projects/${projectId}/tally-submission`],
       });
       
       // Call onFormComplete to automatically close dialog and move to next step
