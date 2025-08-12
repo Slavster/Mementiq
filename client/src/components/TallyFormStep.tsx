@@ -50,9 +50,11 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   const queryClient = useQueryClient();
 
   // Check if form has already been submitted
-  const { data: submissionData, isLoading } = useQuery<TallySubmissionResponse>({
-    queryKey: [`/api/projects/${projectId}/tally-submission`],
-  });
+  const { data: submissionData, isLoading } = useQuery<TallySubmissionResponse>(
+    {
+      queryKey: [`/api/projects/${projectId}/tally-submission`],
+    },
+  );
 
   const hasExistingSubmission =
     submissionData?.success && submissionData.submission;
@@ -200,7 +202,6 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
         </CardHeader>
         <CardContent className="space-y-4 text-center">
           <Alert>
-            <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
               Your instructions were submitted on{" "}
               {new Date(existingSubmission?.submittedAt).toLocaleDateString()}.{" "}

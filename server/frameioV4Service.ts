@@ -755,18 +755,18 @@ export class FrameioV4Service {
     try {
       console.log(`=== Verifying V4 Asset ${assetId} in Folder ${folderId} ===`);
       
-      // Get asset details to check its parent
-      const asset = await this.makeRequest('GET', `/assets/${assetId}`);
+      // Get folder assets and check if our asset ID is in the list
+      const folderAssets = await this.getFolderAssets(folderId);
+      const foundAsset = folderAssets.find(asset => asset.id === assetId);
       
-      // Check if asset's parent matches or is within the folder hierarchy
-      if (asset.parent_id === folderId) {
-        console.log(`V4 Asset ${assetId} directly belongs to folder ${folderId}`);
+      if (foundAsset) {
+        console.log(`✅ Asset ${assetId} found in folder ${folderId}: ${foundAsset.name}`);
         return true;
+      } else {
+        console.log(`❌ Asset ${assetId} not found in folder ${folderId}`);
+        console.log(`Available assets in folder: ${folderAssets.map(a => `${a.id}:${a.name}`).join(', ')}`);
+        return false;
       }
-      
-      // Could implement recursive parent checking here if needed
-      console.log(`V4 Asset ${assetId} does not belong to folder ${folderId}`);
-      return false;
     } catch (error) {
       console.error(`Failed to verify V4 asset ${assetId} in folder ${folderId}:`, error);
       return false;
