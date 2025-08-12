@@ -802,6 +802,7 @@ export class FrameioV4Service {
       console.log('Step 1: Creating share skeleton...');
       const shareResponse = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
         data: {
+          type: 'share',
           name: name
         }
       }, {
