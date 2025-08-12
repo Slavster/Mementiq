@@ -8,7 +8,7 @@ interface FrameVideoProps {
 }
 
 export function FrameVideo({ fileId, prefer = "proxy", className = "" }: FrameVideoProps) {
-  const { url, kind, loading, error } = useFrameStreamUrl(fileId, prefer);
+  const { url, kind, loading, error, available, reason } = useFrameStreamUrl(fileId, prefer);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -74,7 +74,26 @@ export function FrameVideo({ fileId, prefer = "proxy", className = "" }: FrameVi
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8 bg-gray-100 dark:bg-gray-800 rounded-2xl">
-        <div className="text-gray-500 dark:text-gray-400">Loading video…</div>
+        <div className="text-center space-y-2">
+          <div className="animate-spin w-6 h-6 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto"></div>
+          <div className="text-gray-500 dark:text-gray-400 text-sm">Loading Frame.io video…</div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Handle Frame.io V4 streaming limitations gracefully
+  if (available === false || (!url && !error)) {
+    return (
+      <div className="flex items-center justify-center p-8 bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl">
+        <div className="text-center space-y-3">
+          <div className="text-yellow-600 dark:text-yellow-400 font-medium">
+            Direct streaming not available
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            {reason || "Frame.io V4 requires web interface for video playback"}
+          </div>
+        </div>
       </div>
     );
   }
@@ -82,15 +101,10 @@ export function FrameVideo({ fileId, prefer = "proxy", className = "" }: FrameVi
   if (error) {
     return (
       <div className="flex items-center justify-center p-8 bg-red-50 dark:bg-red-900/20 rounded-2xl">
-        <div className="text-red-600 dark:text-red-400">Error: {error}</div>
-      </div>
-    );
-  }
-
-  if (!url) {
-    return (
-      <div className="flex items-center justify-center p-8 bg-gray-100 dark:bg-gray-800 rounded-2xl">
-        <div className="text-gray-500 dark:text-gray-400">No video URL available</div>
+        <div className="text-center space-y-2">
+          <div className="text-red-600 dark:text-red-400 font-medium">Streaming Error</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{error}</div>
+        </div>
       </div>
     );
   }
