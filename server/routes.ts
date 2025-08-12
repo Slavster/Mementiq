@@ -550,6 +550,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
   // Frame.io webhook endpoint for video upload notifications
+  // Frame.io proxy endpoint for authenticated file access
+  app.get("/api/frameio/proxy/file/:assetId", async (req, res) => {
+    try {
+      const { assetId } = req.params;
+      console.log(`Proxying Frame.io file access for asset: ${assetId}`);
+      
+      // Load service account token and get file details
+      await frameioV4Service.loadServiceAccountToken();
+      const accountId = await frameioV4Service.getAccountId();
+      
+      // Get file details to find actual file content
+      const fileResponse = await frameioV4Service.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
+      const fileData = fileResponse.data;
+      
+      if (!fileData) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      // Frame.io V4 doesn't provide direct download URLs - return explanation
+      console.log('File data fields:', Object.keys(fileData));
+      console.log('Frame.io V4 limitation: No direct streaming URLs available');
+      
+      // Fallback: Return Frame.io web URL with explanation
+      res.json({
+        message: 'Frame.io V4 requires web authentication',
+        webUrl: fileData.view_url,
+        filename: fileData.name,
+        instructions: 'This video requires opening in Frame.io web interface'
+      });
+      
+    } catch (error) {
+      console.error('Frame.io proxy error:', error);
+      res.status(500).json({ error: 'Failed to proxy Frame.io file' });
+    }
+  });
+
   app.post("/api/webhooks/frameio", async (req, res) => {
     try {
       console.log("Frame.io webhook received:", req.body);
