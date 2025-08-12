@@ -809,12 +809,10 @@ export class FrameioV4Service {
         throw new Error(`Project ${projectId} is not accessible or doesn't exist`);
       }
       
-      // Step 1: Create the Share (skeleton with name only) - exact format from reference
+      // Step 1: Create the Share (skeleton with name only) - try different format
       console.log('Step 1: Creating share skeleton...');
       const shareResponse = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
-        data: {
-          name: name
-        }
+        name: name
       }, {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
