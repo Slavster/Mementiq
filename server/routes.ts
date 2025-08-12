@@ -572,11 +572,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Creating public share link for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
       
-      // Generate public share link using Frame.io V4 API
+      // Check if we already have a share URL
+      if (videoFile.mediaAssetUrl && videoFile.mediaAssetUrl.includes('share.frame.io')) {
+        console.log(`Using existing share link: ${videoFile.mediaAssetUrl}`);
+        return res.json({
+          shareUrl: videoFile.mediaAssetUrl,
+          shareId: 'existing',
+          filename: videoFile.filename,
+          expiresInDays: 30
+        });
+      }
+      
+      // Generate public share link using Frame.io V4 API (project-level)
       await frameioV4Service.loadServiceAccountToken();
-      const shareLink = await frameioV4Service.createAssetShareLink(
-        videoFile.mediaAssetId,
-        `${project.title} - ${videoFile.filename}`
+      
+      // Use project-level share since that's what's available
+      if (!project.mediaFolderId) {
+        return res.status(400).json({ error: 'Project has no Frame.io folder configured' });
+      }
+      
+      const shareLink = await frameioV4Service.createReviewLink(
+        project.mediaFolderId, // This is the Frame.io project ID
+        `${project.title} - Video Share`
       );
       
       // Store the share URL in the database for future reference
