@@ -32,20 +32,12 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
   React.useEffect(() => {
     const fetchVideoFiles = async () => {
       try {
-        const response = await fetch(`/api/projects/${project.id}/files`, {
-          headers: {
-            'Authorization': `Bearer ${(window as any).supabaseSession?.access_token}`,
-          },
-        });
-        
-        if (response.ok) {
-          const files = await response.json();
-          // Filter for video files only
-          const videos = files.filter((file: any) => 
-            file.fileType && file.fileType.startsWith('video/')
-          );
-          setVideoFiles(videos);
-        }
+        const files = await apiRequest(`/api/projects/${project.id}/files`);
+        // Filter for video files only
+        const videos = files.filter((file: any) => 
+          file.fileType && file.fileType.startsWith('video/')
+        );
+        setVideoFiles(videos);
       } catch (error) {
         console.error('Failed to fetch video files:', error);
         toast({
@@ -114,21 +106,14 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
   const handleDownload = async (videoFile: VideoFile) => {
     try {
       // Generate download link via Frame.io
-      const response = await fetch(`/api/projects/${project.id}/download/${videoFile.mediaAssetId}`, {
-        headers: {
-          'Authorization': `Bearer ${(window as any).supabaseSession?.access_token}`,
-        },
-      });
+      const data = await apiRequest(`/api/projects/${project.id}/download/${videoFile.mediaAssetId}`);
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data.downloadUrl) {
-          window.open(data.downloadUrl, '_blank');
-          toast({
-            title: "Download Started",
-            description: "Your video download has started.",
-          });
-        }
+      if (data.downloadUrl) {
+        window.open(data.downloadUrl, '_blank');
+        toast({
+          title: "Download Started",
+          description: "Your video download has started.",
+        });
       } else {
         throw new Error('Failed to generate download link');
       }
@@ -165,9 +150,6 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
         <Play className="w-16 h-16 text-gray-600 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-white mb-2">No Video Files Found</h3>
         <p className="text-gray-400 mb-6">The video might still be processing or there was an issue loading it.</p>
-        <Button variant="outline" onClick={onBack} className="border-gray-600 hover:border-cyan-500">
-          Back to Project
-        </Button>
       </div>
     );
   }
