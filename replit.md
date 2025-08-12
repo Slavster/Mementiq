@@ -4,6 +4,7 @@
 Mementiq is a professional video editing services website designed as a modern full-stack web application. Its primary purpose is to serve as a landing page and lead generation platform for video editing services, incorporating a subscription-based pricing model with email capture functionality. The project aims to provide a comprehensive platform for users to manage video projects, track subscription usage, and interact with video editing services seamlessly.
 
 ## Recent Changes (August 2025)
+- **Frame.io V4 API Streaming Limitation Discovered (August 12, 2025)**: After extensive investigation and testing, confirmed that Frame.io V4 API does not provide direct streaming or download URLs for video files. The API only returns `view_url` which requires using Frame.io's web interface for playback. Implemented user-friendly interface that acknowledges this limitation and provides direct links to Frame.io's web player for video viewing. This is a fundamental API limitation, not an implementation issue.
 - **Complete Migration to Frame.io**: Replaced Vimeo API with Frame.io API for all video operations including uploads, review links, folder management, and asset downloads. This migration removes the Pro/Business account restrictions that limited Vimeo review functionality.
 - **Unified Media Management**: Frame.io now handles both video and photo management, providing a single API for all media operations.
 - **Enhanced Webhook System**: Updated webhook handling from Vimeo events to Frame.io asset completion events for real-time project status updates.

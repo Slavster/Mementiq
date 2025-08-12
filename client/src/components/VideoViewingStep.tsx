@@ -176,35 +176,34 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Frame.io Video Player - supports HLS, MP4, MOV */}
-          <div className="relative bg-black rounded-lg overflow-hidden border border-gray-700" style={{ aspectRatio: '16/9' }}>
-            <FrameVideo 
-              fileId={primaryVideo.mediaAssetId}
-              prefer="proxy"
-              className="w-full h-full object-contain"
-            />
-            
-            {/* Frame.io Branding */}
-            <div className="absolute top-4 left-4 z-10">
-              <div className="bg-black/50 backdrop-blur-sm rounded px-2 py-1 text-xs text-gray-300">
-                Frame.io V4 Video Player
+          {/* Frame.io V4 Notice and Viewer */}
+          <div className="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700" style={{ aspectRatio: '16/9' }}>
+            <div className="flex flex-col items-center justify-center h-full p-8">
+              <div className="text-center space-y-4">
+                <Play className="w-16 h-16 text-cyan-500 mx-auto opacity-70" />
+                <h3 className="text-xl font-semibold text-white">
+                  Video Ready for Review
+                </h3>
+                <p className="text-gray-400 max-w-md">
+                  Your video "{primaryVideo.filename}" has been delivered and is ready for viewing.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Frame.io V4 requires using their web interface for video playback.
+                </p>
+                <Button
+                  onClick={() => {
+                    const viewUrl = primaryVideo.mediaAssetUrl || `https://next.frame.io/project/${project.mediaFolderId}/view/${primaryVideo.mediaAssetId}`;
+                    window.open(viewUrl, '_blank');
+                  }}
+                  className="bg-cyan-500 hover:bg-cyan-400 text-black font-medium px-6 py-3"
+                >
+                  <ExternalLink className="w-5 h-5 mr-2" />
+                  Watch Video in Frame.io
+                </Button>
+                <p className="text-xs text-gray-600 mt-2">
+                  Opens in a new tab with full playback controls
+                </p>
               </div>
-            </div>
-
-            {/* Fallback View Button for when streaming fails */}
-            <div className="absolute bottom-4 right-4 z-10">
-              <Button
-                onClick={() => {
-                  const viewUrl = primaryVideo.mediaAssetUrl || `https://next.frame.io/project/${project.mediaFolderId}/view/${primaryVideo.mediaAssetId}`;
-                  window.open(viewUrl, '_blank');
-                }}
-                variant="outline"
-                size="sm"
-                className="bg-black/50 backdrop-blur-sm border-gray-600 hover:border-cyan-500"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open in Frame.io
-              </Button>
             </div>
           </div>
 
