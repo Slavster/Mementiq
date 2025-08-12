@@ -704,9 +704,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied to this file" });
       }
       
-      // Get playable media links using centralized OAuth token
+      // Get playable media links using prefer parameter
       await frameioV4Service.loadServiceAccountToken();
-      const mediaLink = await frameioV4Service.getPlayableMediaLinks(fileId);
+      const prefer = (req.query.prefer as string) || "proxy";
+      const mediaLink = await frameioV4Service.getPlayableMediaLinks(fileId, prefer);
       
       if (mediaLink) {
         // Set Cache-Control: no-store as media links are short-lived
@@ -742,9 +743,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Legacy endpoint: forwarding ${assetId} to new streaming endpoint`);
       
-      // Get playable media links directly (same logic as new endpoint)
+      // Get playable media links using prefer parameter  
       await frameioV4Service.loadServiceAccountToken();
-      const mediaLink = await frameioV4Service.getPlayableMediaLinks(assetId);
+      const prefer = (req.query.prefer as string) || "proxy";
+      const mediaLink = await frameioV4Service.getPlayableMediaLinks(assetId, prefer);
       
       if (mediaLink) {
         res.setHeader('Cache-Control', 'no-store');

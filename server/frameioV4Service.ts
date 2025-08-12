@@ -354,7 +354,7 @@ export class FrameioV4Service {
   /**
    * Make authenticated requests to Frame.io V4 API
    */
-  async makeRequest(method: string, endpoint: string, data?: any): Promise<any> {
+  async makeRequest(method: string, endpoint: string, data?: any, params?: any): Promise<any> {
     if (!this.accessTokenValue) {
       throw new Error('Access token required. Please complete OAuth flow first.');
     }
@@ -362,7 +362,13 @@ export class FrameioV4Service {
     // Ensure we have a valid token before making the request
     await this.ensureValidToken();
 
-    const url = `${this.baseUrl}${endpoint}`;
+    let url = `${this.baseUrl}${endpoint}`;
+    
+    // Add query parameters if provided
+    if (params) {
+      const searchParams = new URLSearchParams(params);
+      url = `${url}${url.includes('?') ? '&' : '?'}${searchParams.toString()}`;
+    }
     
     console.log(`=== Frame.io V4 API Request ===`);
     console.log(`Method: ${method}`);
@@ -761,97 +767,100 @@ export class FrameioV4Service {
   }
 
   /**
-   * Get playable media links for streaming - Frame.io V4 approach
+   * Get playable media links for streaming - Frame.io V4 correct approach
    */
-  async getPlayableMediaLinks(fileId: string) {
+  async getPlayableMediaLinks(fileId: string, prefer: string = "proxy") {
     await this.initialize();
     
     try {
       const accountId = await this.getAccountId();
-      console.log(`=== Investigating Frame.io V4 streaming options for ${fileId} ===`);
+      console.log(`=== Getting Frame.io V4 media links for ${fileId} (prefer: ${prefer}) ===`);
       
-      // First, let's get the basic asset information to see what fields are available
-      console.log(`Getting asset info: GET /accounts/${accountId}/files/${fileId}`);
-      const assetResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}`);
+      // Get file with media links included - this is the correct Frame.io V4 approach
+      const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}`, null, {
+        include: 'media_links.proxy,media_links.original'
+      });
       
-      console.log('=== Frame.io V4 Asset Response ===');
-      console.log(JSON.stringify(assetResponse, null, 2));
+      console.log('=== Frame.io V4 File with Media Links Response ===');
+      console.log(JSON.stringify(response, null, 2));
       
-      const asset = assetResponse.data;
-      if (!asset) {
-        console.log('No asset data found');
+      const data = response.data;
+      if (!data) {
+        console.log('No file data found');
         return null;
       }
       
-      // Check for any streaming-related fields in the asset
-      const streamingFields = ['stream_url', 'streaming_url', 'playback_url', 'media_url', 'download_url', 'transcoded_url', 'hls_url', 'mp4_url'];
-      console.log('=== Checking for streaming fields ===');
+      const proxyLinks = data?.media_links?.proxy ?? [];
+      const originalLinks = data?.media_links?.original ?? [];
       
-      for (const field of streamingFields) {
-        if (asset[field]) {
-          console.log(`Found ${field}: ${asset[field]}`);
-        }
-      }
+      console.log(`Found ${proxyLinks.length} proxy links and ${originalLinks.length} original links`);
       
-      // Try the media_links endpoint anyway to see the exact error
-      try {
-        console.log(`Trying media_links: GET /accounts/${accountId}/files/${fileId}/media_links`);
-        const mediaLinksResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}/media_links`);
-        console.log('Unexpected success with media_links:', mediaLinksResponse);
-      } catch (mediaLinksError) {
-        console.log('Media links endpoint confirmed unavailable:', mediaLinksError.message);
-      }
-      
-      // Try other potential endpoints
-      const alternativeEndpoints = [
-        `/files/${fileId}/stream`,
-        `/files/${fileId}/download`,
-        `/accounts/${accountId}/assets/${fileId}`,
-        `/accounts/${accountId}/assets/${fileId}/stream`
-      ];
-      
-      for (const endpoint of alternativeEndpoints) {
-        try {
-          console.log(`Trying alternative endpoint: GET ${endpoint}`);
-          const response = await this.makeRequest('GET', endpoint);
-          console.log(`Success with ${endpoint}:`, JSON.stringify(response, null, 2));
-          
-          // Check if this response has streaming URLs
-          if (response.data?.url || response.url) {
-            const streamUrl = response.data?.url || response.url;
-            console.log(`Found potential stream URL: ${streamUrl}`);
-            
-            return {
-              url: streamUrl,
-              kind: streamUrl.includes('.m3u8') ? 'hls' : (streamUrl.includes('.mp4') ? 'mp4' : 'unknown'),
-              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-              quality: 'auto',
-              format: 'video'
-            };
-          }
-        } catch (endpointError) {
-          console.log(`${endpoint} failed:`, endpointError.message);
-        }
-      }
-      
-      // If no streaming URLs found, return asset info for Frame.io web interface
-      console.log('=== No direct streaming URLs available in Frame.io V4 ===');
-      console.log('Frame.io V4 may require web interface for video playback');
-      
-      return {
-        available: false,
-        reason: 'Frame.io V4 does not support direct streaming URLs',
-        webUrl: asset.view_url,
-        asset: {
-          name: asset.name,
-          size: asset.file_size,
-          type: asset.media_type,
-          status: asset.status
-        }
+      // Helper function to pick best link: HLS first, then MP4, then anything
+      const pickBestLink = (links: any[] = []) => {
+        if (!links.length) return null;
+        
+        // Look for HLS by type
+        const hlsByType = links.find((l) => l?.type?.toLowerCase?.() === 'hls');
+        if (hlsByType) return hlsByType;
+        
+        // Look for HLS by URL extension
+        const hlsByExt = links.find((l) => /\.m3u8(\?|$)/i.test(String(l?.href)));
+        if (hlsByExt) return hlsByExt;
+        
+        // Look for MP4 by type
+        const mp4ByType = links.find((l) => l?.type?.toLowerCase?.() === 'mp4');
+        if (mp4ByType) return mp4ByType;
+        
+        // Look for MP4 by URL extension
+        const mp4ByExt = links.find((l) => /\.mp4(\?|$)/i.test(String(l?.href)));
+        if (mp4ByExt) return mp4ByExt;
+        
+        // Return first available link
+        return links[0];
       };
       
+      let selectedLink: any | undefined;
+      
+      // Select link based on preference
+      if (prefer === "original") {
+        selectedLink = pickBestLink(originalLinks);
+      }
+      
+      // Fallback to proxy if original not available or not requested
+      if (!selectedLink) {
+        selectedLink = pickBestLink(proxyLinks);
+      }
+      
+      if (!selectedLink?.href) {
+        console.log('No playable media links available');
+        return {
+          available: false,
+          reason: 'No playable media links available for this file',
+          webUrl: data.view_url,
+          asset: {
+            name: data.name,
+            size: data.file_size,
+            type: data.media_type,
+            status: data.status
+          }
+        };
+      }
+      
+      // Determine media type
+      const kind = selectedLink.type?.toLowerCase() ||
+        (String(selectedLink.href).includes('.m3u8') ? 'hls' : 'mp4');
+      
+      const result = {
+        url: selectedLink.href,
+        kind,
+        expiresAt: selectedLink.expires_at ?? null
+      };
+      
+      console.log('✓ Selected media link:', result);
+      return result;
+      
     } catch (error) {
-      console.error('Error investigating Frame.io V4 streaming:', error);
+      console.error('Error getting Frame.io V4 media links:', error);
       return null;
     }
   }
