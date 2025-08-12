@@ -647,7 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       // Verify project ownership
-      const project = await storage.getProjectById(projectId);
+      const project = await storage.getProject(projectId);
       if (!project || project.userId !== userId) {
         return res.status(404).json({ error: "Project not found" });
       }
@@ -668,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       // Verify project ownership
-      const project = await storage.getProjectById(projectId);
+      const project = await storage.getProject(projectId);
       if (!project || project.userId !== userId) {
         return res.status(404).json({ error: "Project not found" });
       }
@@ -695,7 +695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       // Verify project ownership
-      const project = await storage.getProjectById(projectId);
+      const project = await storage.getProject(projectId);
       if (!project || project.userId !== userId) {
         return res.status(404).json({ error: "Project not found" });
       }
@@ -723,7 +723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       // Verify project ownership
-      const project = await storage.getProjectById(projectId);
+      const project = await storage.getProject(projectId);
       if (!project || project.userId !== userId) {
         return res.status(404).json({ error: "Project not found" });
       }
