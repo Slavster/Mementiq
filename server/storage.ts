@@ -55,11 +55,13 @@ export interface IStorage {
 
   // Project file methods
   getProjectFiles(projectId: number): Promise<ProjectFile[]>;
+  getProjectFilesByProjectId(projectId: number): Promise<ProjectFile[]>;
   createProjectFile(file: InsertProjectFile): Promise<ProjectFile>;
   deleteProjectFile(id: number): Promise<void>;
 
   // Project status methods
   logStatusChange(projectId: number, oldStatus: string | null, newStatus: string): Promise<ProjectStatusLog>;
+  logProjectStatusChange(projectId: number, oldStatus: string | null, newStatus: string): Promise<ProjectStatusLog>;
   getProjectStatusHistory(projectId: number): Promise<ProjectStatusLog[]>;
 
   // Email signup methods
@@ -256,6 +258,10 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(projectFiles.uploadDate));
   }
 
+  async getProjectFilesByProjectId(projectId: number): Promise<ProjectFile[]> {
+    return await this.getProjectFiles(projectId);
+  }
+
   async createProjectFile(file: InsertProjectFile): Promise<ProjectFile> {
     const [newFile] = await this.db
       .insert(projectFiles)
@@ -279,6 +285,10 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return log;
+  }
+
+  async logProjectStatusChange(projectId: number, oldStatus: string | null, newStatus: string): Promise<ProjectStatusLog> {
+    return await this.logStatusChange(projectId, oldStatus, newStatus);
   }
 
   async getProjectStatusHistory(projectId: number): Promise<ProjectStatusLog[]> {
