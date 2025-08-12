@@ -183,10 +183,10 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                 <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 max-w-md">
                   <div className="flex items-center gap-2 text-green-400 mb-2">
                     <ExternalLink className="w-5 h-5" />
-                    <span className="font-semibold">Public Share Link</span>
+                    <span className="font-semibold">Direct Frame.io Link</span>
                   </div>
                   <p className="text-sm text-gray-300">
-                    Your video is available via a secure public link that requires no login. The link allows downloads and expires automatically in 30 days.
+                    Your video opens directly in Frame.io's interface. This provides the best viewing experience with all Frame.io features available.
                   </p>
                 </div>
                 
@@ -200,40 +200,25 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                 </div>
                 
                 <Button
-                  onClick={async () => {
-                    try {
-                      // Generate or use existing public share link
-                      const response = await fetch(`/api/projects/${project.id}/video-share-link`, {
-                        headers: {
-                          'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
-                      });
-                      
-                      if (response.ok) {
-                        const { shareUrl } = await response.json();
-                        console.log('Opening Frame.io public share:', shareUrl);
-                        window.open(shareUrl, '_blank');
-                      } else {
-                        console.error('Failed to generate share link');
-                        // Fallback to direct Frame.io URL
-                        let viewUrl = primaryVideo.mediaAssetUrl;
-                        if (!viewUrl || viewUrl.includes('frame.io/assets/') || viewUrl.includes('frame.io/files/')) {
-                          viewUrl = `https://next.frame.io/project/${project.mediaFolderId}/view/${primaryVideo.mediaAssetId}`;
-                        }
-                        window.open(viewUrl, '_blank');
-                      }
-                    } catch (error) {
-                      console.error('Error opening video:', error);
-                    }
+                  onClick={() => {
+                    // Create direct Frame.io URL - this is the simplest approach that works
+                    const directUrl = `https://app.frame.io/file/${primaryVideo.mediaAssetId}`;
+                    console.log('Opening Frame.io direct link:', directUrl);
+                    window.open(directUrl, '_blank');
+                    
+                    toast({
+                      title: "Opening Video",
+                      description: "Your video is opening in Frame.io...",
+                    });
                   }}
                   className="bg-cyan-500 hover:bg-cyan-400 text-black font-medium px-6 py-3"
                 >
                   <ExternalLink className="w-5 h-5 mr-2" />
-                  View Video (Public Link)
+                  View Video in Frame.io
                 </Button>
                 
                 <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 max-w-md text-xs text-gray-300">
-                  <p><strong>New:</strong> Public access link - no login required! Downloads enabled, expires in 30 days.</p>
+                  <p><strong>Improved:</strong> Direct Frame.io access for the best video viewing experience with full features.</p>
                 </div>
               </div>
             </div>
