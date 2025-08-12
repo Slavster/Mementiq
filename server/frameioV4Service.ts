@@ -555,16 +555,10 @@ export class FrameioV4Service {
       // V4 uses "shares" instead of review links - create with specific settings
       const shareData = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
         name: name,
-        type: 'public',
-        permissions: ['download'], // Only download, no comments
-        expires_at: expirationDate.toISOString(),
-        settings: {
-          allow_comments: false,
-          allow_approvals: false,
-          allow_uploads: false,
-          allow_downloads: true,
-          require_password: false
-        }
+        share_type: 'public', // Frame.io V4 uses share_type instead of type
+        allow_comments: false,
+        allow_downloads: true,
+        expires_at: expirationDate.toISOString()
       });
 
       console.log(`V4 Public Share created with download-only access: ${shareData.data?.url || shareData.url}`);
@@ -795,19 +789,24 @@ export class FrameioV4Service {
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + 30);
       
-      // Create asset-specific share with download-only access
-      const shareData = await this.makeRequest('POST', `/accounts/${accountId}/files/${assetId}/shares`, {
+      // Frame.io V4 may not support direct asset shares, try project-level share instead
+      // First get the file details to find its project
+      const fileResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
+      const fileData = fileResponse.data;
+      
+      if (!fileData || !fileData.project_id) {
+        throw new Error('Could not find project for asset');
+      }
+      
+      console.log(`Creating project share for asset in project: ${fileData.project_id}`);
+      
+      // Create project-level share with download-only access
+      const shareData = await this.makeRequest('POST', `/accounts/${accountId}/projects/${fileData.project_id}/shares`, {
         name: name,
-        type: 'public',
-        permissions: ['download'],
-        expires_at: expirationDate.toISOString(),
-        settings: {
-          allow_comments: false,
-          allow_approvals: false, 
-          allow_uploads: false,
-          allow_downloads: true,
-          require_password: false
-        }
+        share_type: 'public', // Frame.io V4 uses share_type instead of type
+        allow_comments: false,
+        allow_downloads: true,
+        expires_at: expirationDate.toISOString()
       });
 
       console.log(`Asset share created: ${shareData.data?.url || shareData.url}`);
