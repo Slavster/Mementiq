@@ -73,12 +73,23 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
   const loadVideoStream = async (assetId: string) => {
     setLoadingVideo(true);
     try {
-      const links = await apiRequest(`/api/projects/${project.id}/video-stream/${assetId}`);
-      setMediaLinks(links);
+      const response = await apiRequest(`/api/projects/${project.id}/video-stream/${assetId}`);
       
-      // Setup video player once we have the links
-      if (links && videoRef.current) {
-        setupVideoPlayer(links);
+      if (response.available && (response.hls || response.mp4 || response.proxy)) {
+        setMediaLinks(response);
+        
+        // Setup video player once we have the links
+        if (videoRef.current) {
+          setupVideoPlayer(response);
+        }
+      } else {
+        console.log('Direct streaming not available:', response);
+        toast({
+          title: "Direct Streaming Not Available",
+          description: response.recommendation || "Use Frame.io web interface for video playback.",
+          variant: "default",
+        });
+        setMediaLinks(null);
       }
     } catch (error) {
       console.error('Failed to load video stream:', error);
@@ -87,6 +98,7 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
         description: "Could not load video stream. You can still view it in Frame.io.",
         variant: "destructive",
       });
+      setMediaLinks(null);
     } finally {
       setLoadingVideo(false);
     }
@@ -299,18 +311,27 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                     <p className="text-gray-400">{formatFileSize(primaryVideo.fileSize)} • {primaryVideo.fileType}</p>
                   </div>
                   
-                  <div className="space-y-2">
-                    <p className="text-gray-400 text-sm">Video streaming not available</p>
-                    {/* View Button */}
-                    {primaryVideo.mediaAssetUrl && (
-                      <Button
-                        onClick={() => window.open(primaryVideo.mediaAssetUrl, '_blank')}
-                        className="bg-cyan-600 hover:bg-cyan-700"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View & Review in Frame.io
-                      </Button>
-                    )}
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-yellow-400 text-sm font-medium">Direct streaming not available</p>
+                      <p className="text-gray-400 text-xs">Frame.io V4 requires web interface for video playback</p>
+                    </div>
+                    
+                    {/* View Button - Enhanced with better URL handling */}
+                    <Button
+                      onClick={() => {
+                        const viewUrl = primaryVideo.mediaAssetUrl || `https://next.frame.io/project/${project.mediaFolderId}/view/${primaryVideo.mediaAssetId}`;
+                        window.open(viewUrl, '_blank');
+                      }}
+                      className="bg-cyan-600 hover:bg-cyan-700"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View & Review in Frame.io
+                    </Button>
+                    
+                    <p className="text-gray-500 text-xs">
+                      Use Frame.io's interface to watch, comment, and request revisions
+                    </p>
                   </div>
                 </div>
               </div>
@@ -319,7 +340,7 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
             {/* Frame.io Branding */}
             <div className="absolute top-4 left-4">
               <div className="bg-black/50 backdrop-blur-sm rounded px-2 py-1 text-xs text-gray-300">
-                {mediaLinks ? 'Direct Video Playback' : 'Frame.io Video'}
+                {loadingVideo ? 'Loading...' : mediaLinks ? 'Direct Video Playback' : 'Frame.io V4 - Web Interface Required'}
               </div>
             </div>
           </div>

@@ -767,49 +767,72 @@ export class FrameioV4Service {
       console.log('=== Frame.io V4 Asset Data Structure ===');
       console.log(JSON.stringify(response, null, 2));
       
-      // For Frame.io V4, we need to check what streaming options are available
-      // The asset might have different properties for media access
+      const asset = response.data;
+      if (!asset) {
+        console.log('No asset data in response');
+        return null;
+      }
+      
+      console.log('=== Frame.io V4 Direct Streaming Analysis ===');
+      console.log(`Asset: ${asset.name} (${asset.media_type})`);
+      console.log(`Status: ${asset.status}`);
+      console.log(`File size: ${asset.file_size} bytes`);
+      console.log(`Available properties:`, Object.keys(asset));
+      
+      // Frame.io V4 Early Access Program limitations:
+      // - No direct streaming URLs in file endpoint
+      // - No media_links or download_url fields
+      // - Only view_url for web interface access
+      
+      // Try different approaches to get downloadable content
       let result = {};
       
-      // Check for various possible streaming/media URL properties
-      if (response.download_url) {
-        console.log('Found download URL:', response.download_url);
-        result.mp4 = response.download_url;
-        result.proxy = response.download_url;
+      // Method 1: Try to get download URL through shares endpoint
+      try {
+        console.log('=== Attempting to create temporary share for download access ===');
+        
+        // Create a temporary share to get download access
+        const shareResponse = await this.makeRequest('POST', `/accounts/${accountId}/shares`, {
+          data: {
+            name: `temp-download-${asset.name}`,
+            type: 'project',
+            project_id: asset.project_id,
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+            password: null,
+            allow_download: true
+          }
+        });
+        
+        if (shareResponse.data?.share_url) {
+          console.log('Share created successfully:', shareResponse.data.share_url);
+          // Frame.io shares can provide download access
+          result.shareUrl = shareResponse.data.share_url;
+        }
+      } catch (shareError) {
+        console.log('Share creation failed:', shareError.message);
       }
       
-      if (response.view_url) {
-        console.log('Found view URL:', response.view_url);
-        // Frame.io view URLs are meant for embedding/viewing, not direct streaming
-        // But we can try to extract streaming URLs from the view page
+      // Method 2: Check if there are proxy/preview URLs available through other means
+      if (asset.view_url) {
+        console.log('View URL available:', asset.view_url);
+        result.viewUrl = asset.view_url;
       }
       
-      if (response.playback_url) {
-        console.log('Found playback URL:', response.playback_url);
-        result.hls = response.playback_url;
-      }
+      // Method 3: Frame.io V4 might require different download workflow
+      console.log('=== Frame.io V4 Streaming Conclusion ===');
       
-      if (response.streaming_url) {
-        console.log('Found streaming URL:', response.streaming_url);
-        result.hls = response.streaming_url;
-      }
-      
-      if (response.media_links) {
-        console.log('Found media_links:', response.media_links);
-        result = { ...result, ...response.media_links };
-      }
-      
-      if (Object.keys(result).length > 0) {
-        console.log('=== Extracted media links ===');
-        console.log(JSON.stringify(result, null, 2));
+      if (Object.keys(result).length === 0) {
+        console.log('❌ No direct streaming URLs available in Frame.io V4 Early Access');
+        console.log('📝 Frame.io V4 API limitations:');
+        console.log('   - Direct media streaming not exposed in current API');
+        console.log('   - Download URLs require separate share/export workflow');
+        console.log('   - View URLs only work in Frame.io web interface');
+        console.log('🔄 Recommendation: Use Frame.io web interface for video playback');
+        return null;
+      } else {
+        console.log('✓ Alternative access methods found:', result);
         return result;
       }
-      
-      console.log('=== No streaming URLs found - Frame.io V4 may not support direct streaming ===');
-      console.log('Available asset properties:', Object.keys(response));
-      
-      // If we can't get streaming URLs, we need to inform the user
-      return null;
     } catch (error) {
       console.error('Error getting V4 media links:', error);
       return null;
