@@ -545,23 +545,36 @@ export class FrameioV4Service {
     await this.initialize();
 
     try {
-      console.log(`Creating V4 review link for project ${projectId}`);
+      console.log(`Creating V4 public share link for project ${projectId}`);
+      const accountId = await this.getAccountId();
       
-      // V4 uses "shares" instead of review links
-      const shareData = await this.makeRequest('POST', `/projects/${projectId}/shares`, {
+      // Calculate expiration date (30 days from now)
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 30);
+      
+      // V4 uses "shares" instead of review links - create with specific settings
+      const shareData = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
         name: name,
         type: 'public',
-        permissions: ['comment', 'download']
+        permissions: ['download'], // Only download, no comments
+        expires_at: expirationDate.toISOString(),
+        settings: {
+          allow_comments: false,
+          allow_approvals: false,
+          allow_uploads: false,
+          allow_downloads: true,
+          require_password: false
+        }
       });
 
-      console.log(`V4 Share created: ${shareData.url}`);
+      console.log(`V4 Public Share created with download-only access: ${shareData.data?.url || shareData.url}`);
 
       return {
-        url: shareData.url,
-        id: shareData.id
+        url: shareData.data?.url || shareData.url,
+        id: shareData.data?.id || shareData.id
       };
     } catch (error) {
-      console.error(`Failed to create V4 review link:`, error);
+      console.error(`Failed to create V4 public share link:`, error);
       throw error;
     }
   }
@@ -751,14 +764,61 @@ export class FrameioV4Service {
       console.log('Frame.io V4 API does not provide direct download URLs');
       console.log('Available URL is view-only:', fileData.view_url);
       
-      // Try to get file content through proxy approach
-      // Return a server-proxied URL that will handle authentication
-      const proxyUrl = `/api/frameio/proxy/file/${assetId}`;
-      console.log('Using server proxy URL for authenticated access:', proxyUrl);
-      return proxyUrl;
+      // Generate a public share link for the specific asset instead of direct streaming
+      // This bypasses authentication requirements by creating a public share
+      console.log('Creating public share link for asset access');
+      try {
+        const shareLink = await this.createAssetShareLink(assetId, `Share for ${fileData.name}`);
+        console.log('Generated public share URL:', shareLink.url);
+        return shareLink.url;
+      } catch (shareError) {
+        console.error('Failed to create asset share link:', shareError);
+        return null;
+      }
     } catch (error) {
       console.error(`Failed to generate V4 download link for ${assetId}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Create a public share link for a specific asset
+   */
+  async createAssetShareLink(assetId: string, name: string): Promise<{ url: string; id: string }> {
+    await this.initialize();
+
+    try {
+      console.log(`Creating public share link for asset ${assetId}`);
+      const accountId = await this.getAccountId();
+      
+      // Calculate expiration date (30 days from now)
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 30);
+      
+      // Create asset-specific share with download-only access
+      const shareData = await this.makeRequest('POST', `/accounts/${accountId}/files/${assetId}/shares`, {
+        name: name,
+        type: 'public',
+        permissions: ['download'],
+        expires_at: expirationDate.toISOString(),
+        settings: {
+          allow_comments: false,
+          allow_approvals: false, 
+          allow_uploads: false,
+          allow_downloads: true,
+          require_password: false
+        }
+      });
+
+      console.log(`Asset share created: ${shareData.data?.url || shareData.url}`);
+
+      return {
+        url: shareData.data?.url || shareData.url,
+        id: shareData.data?.id || shareData.id
+      };
+    } catch (error) {
+      console.error(`Failed to create asset share link:`, error);
+      throw error;
     }
   }
 

@@ -180,13 +180,13 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
           <div className="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700" style={{ aspectRatio: '16/9' }}>
             <div className="flex flex-col items-center justify-center h-full p-8">
               <div className="text-center space-y-4">
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 max-w-md">
-                  <div className="flex items-center gap-2 text-yellow-400 mb-2">
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 max-w-md">
+                  <div className="flex items-center gap-2 text-green-400 mb-2">
                     <ExternalLink className="w-5 h-5" />
-                    <span className="font-semibold">Authentication Required</span>
+                    <span className="font-semibold">Public Share Link</span>
                   </div>
                   <p className="text-sm text-gray-300">
-                    Frame.io V4 requires web authentication to view videos. This limitation exists because Frame.io's V4 API doesn't provide direct streaming URLs.
+                    Your video is available via a secure public link that requires no login. The link allows downloads and expires automatically in 30 days.
                   </p>
                 </div>
                 
@@ -200,27 +200,40 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                 </div>
                 
                 <Button
-                  onClick={() => {
-                    // Use the stored view URL from database, or construct one from project data
-                    let viewUrl = primaryVideo.mediaAssetUrl;
-                    
-                    // If no stored URL or it's a legacy URL, construct a proper Frame.io V4 URL
-                    if (!viewUrl || viewUrl.includes('frame.io/assets/') || viewUrl.includes('frame.io/files/')) {
-                      // Use the project's mediaFolderId which now stores the Frame.io project ID
-                      viewUrl = `https://next.frame.io/project/${project.mediaFolderId}/view/${primaryVideo.mediaAssetId}`;
+                  onClick={async () => {
+                    try {
+                      // Generate or use existing public share link
+                      const response = await fetch(`/api/projects/${project.id}/video-share-link`, {
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                      });
+                      
+                      if (response.ok) {
+                        const { shareUrl } = await response.json();
+                        console.log('Opening Frame.io public share:', shareUrl);
+                        window.open(shareUrl, '_blank');
+                      } else {
+                        console.error('Failed to generate share link');
+                        // Fallback to direct Frame.io URL
+                        let viewUrl = primaryVideo.mediaAssetUrl;
+                        if (!viewUrl || viewUrl.includes('frame.io/assets/') || viewUrl.includes('frame.io/files/')) {
+                          viewUrl = `https://next.frame.io/project/${project.mediaFolderId}/view/${primaryVideo.mediaAssetId}`;
+                        }
+                        window.open(viewUrl, '_blank');
+                      }
+                    } catch (error) {
+                      console.error('Error opening video:', error);
                     }
-                    
-                    console.log('Opening Frame.io URL:', viewUrl);
-                    window.open(viewUrl, '_blank');
                   }}
                   className="bg-cyan-500 hover:bg-cyan-400 text-black font-medium px-6 py-3"
                 >
                   <ExternalLink className="w-5 h-5 mr-2" />
-                  View Video in Frame.io
+                  View Video (Public Link)
                 </Button>
                 
-                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 max-w-md text-xs text-gray-400">
-                  <p><strong>Note:</strong> You'll need to log into Frame.io with the account credentials provided by your video editor to access the video.</p>
+                <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 max-w-md text-xs text-gray-300">
+                  <p><strong>New:</strong> Public access link - no login required! Downloads enabled, expires in 30 days.</p>
                 </div>
               </div>
             </div>
