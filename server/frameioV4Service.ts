@@ -760,21 +760,55 @@ export class FrameioV4Service {
       }
       const accountId = accountsResponse.data[0].id;
       
-      console.log(`=== Getting V4 media links for asset ${assetId} ===`);
-      const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}?include=media_links.proxy`);
+      console.log(`=== Getting V4 asset details for ${assetId} ===`);
+      // First get basic asset info
+      const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
 
-      console.log('Asset data with media links:', JSON.stringify(response, null, 2));
+      console.log('=== Frame.io V4 Asset Data Structure ===');
+      console.log(JSON.stringify(response, null, 2));
       
-      const mediaLinks = response.media_links?.proxy || response.media_links;
-      if (mediaLinks) {
-        return {
-          hls: mediaLinks.hls || mediaLinks.m3u8,
-          mp4: mediaLinks.mp4,
-          proxy: mediaLinks.proxy
-        };
+      // For Frame.io V4, we need to check what streaming options are available
+      // The asset might have different properties for media access
+      let result = {};
+      
+      // Check for various possible streaming/media URL properties
+      if (response.download_url) {
+        console.log('Found download URL:', response.download_url);
+        result.mp4 = response.download_url;
+        result.proxy = response.download_url;
       }
       
-      console.warn('No media links found in V4 asset data');
+      if (response.view_url) {
+        console.log('Found view URL:', response.view_url);
+        // Frame.io view URLs are meant for embedding/viewing, not direct streaming
+        // But we can try to extract streaming URLs from the view page
+      }
+      
+      if (response.playback_url) {
+        console.log('Found playback URL:', response.playback_url);
+        result.hls = response.playback_url;
+      }
+      
+      if (response.streaming_url) {
+        console.log('Found streaming URL:', response.streaming_url);
+        result.hls = response.streaming_url;
+      }
+      
+      if (response.media_links) {
+        console.log('Found media_links:', response.media_links);
+        result = { ...result, ...response.media_links };
+      }
+      
+      if (Object.keys(result).length > 0) {
+        console.log('=== Extracted media links ===');
+        console.log(JSON.stringify(result, null, 2));
+        return result;
+      }
+      
+      console.log('=== No streaming URLs found - Frame.io V4 may not support direct streaming ===');
+      console.log('Available asset properties:', Object.keys(response));
+      
+      // If we can't get streaming URLs, we need to inform the user
       return null;
     } catch (error) {
       console.error('Error getting V4 media links:', error);
