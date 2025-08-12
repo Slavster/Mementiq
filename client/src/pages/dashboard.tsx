@@ -163,7 +163,8 @@ export default function DashboardPage() {
   >("instructions");
   const [showSendToEditorDialog, setShowSendToEditorDialog] = useState(false);
   const [pendingProject, setPendingProject] = useState<Project | null>(null);
-  const [sendToEditorConfirmationStep, setSendToEditorConfirmationStep] = useState<1 | 2>(1);
+  const [sendToEditorConfirmationStep, setSendToEditorConfirmationStep] =
+    useState<1 | 2>(1);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Handle revision payment success/failure from URL parameters
@@ -213,9 +214,13 @@ export default function DashboardPage() {
   // Send to editor mutation
   const sendToEditorMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      const response = await apiRequest("PATCH", `/api/projects/${projectId}/status`, {
-        status: "edit in progress"
-      });
+      const response = await apiRequest(
+        "PATCH",
+        `/api/projects/${projectId}/status`,
+        {
+          status: "edit in progress",
+        },
+      );
       return response;
     },
     onSuccess: (data) => {
@@ -223,7 +228,8 @@ export default function DashboardPage() {
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
         toast({
           title: "Project Sent to Editor!",
-          description: "Your project is now being worked on. Keep an eye on your email for updates.",
+          description:
+            "Your project is now being worked on. Keep an eye on your email for updates.",
           duration: 5000,
         });
         setSelectedProject(null);
@@ -562,7 +568,6 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-
               </div>
             </CardContent>
           </Card>
@@ -762,41 +767,59 @@ export default function DashboardPage() {
                               }
 
                               // Call folder structure verification endpoint
-                              const response = await fetch(`/api/projects/${project.id}/ensure-folder-structure`, {
-                                method: 'POST',
-                                headers: {
-                                  'Authorization': `Bearer ${token.data.session.access_token}`,
-                                  'Content-Type': 'application/json',
+                              const response = await fetch(
+                                `/api/projects/${project.id}/ensure-folder-structure`,
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    Authorization: `Bearer ${token.data.session.access_token}`,
+                                    "Content-Type": "application/json",
+                                  },
                                 },
-                              });
+                              );
 
                               const result = await response.json();
 
                               if (result.success) {
                                 if (result.frameioConfigured) {
-                                  console.log("✅ Frame.io folder structure verified:", result.folderStructure);
+                                  console.log(
+                                    "✅ Frame.io folder structure verified:",
+                                    result.folderStructure,
+                                  );
                                 } else {
-                                  console.log("⚠️ Frame.io setup needs attention:", result.error);
+                                  console.log(
+                                    "⚠️ Frame.io setup needs attention:",
+                                    result.error,
+                                  );
                                   toast({
                                     title: "Folder Setup",
-                                    description: "Frame.io folder structure verified and ready for uploads",
+                                    description:
+                                      "Frame.io folder structure verified and ready for uploads",
                                     duration: 3000,
                                   });
                                 }
                               } else {
-                                console.error("❌ Failed to ensure folder structure:", result.message);
+                                console.error(
+                                  "❌ Failed to ensure folder structure:",
+                                  result.message,
+                                );
                                 toast({
                                   title: "Setup Warning",
-                                  description: "Could not verify folder structure, but you can still proceed",
+                                  description:
+                                    "Could not verify folder structure, but you can still proceed",
                                   variant: "destructive",
                                   duration: 5000,
                                 });
                               }
                             } catch (error) {
-                              console.error("Folder structure check failed:", error);
+                              console.error(
+                                "Folder structure check failed:",
+                                error,
+                              );
                               toast({
                                 title: "Connection Warning",
-                                description: "Could not verify folder setup, but you can still proceed",
+                                description:
+                                  "Could not verify folder setup, but you can still proceed",
                                 variant: "destructive",
                                 duration: 5000,
                               });
@@ -805,10 +828,14 @@ export default function DashboardPage() {
                             // Continue with normal flow regardless of folder setup result
                             setSelectedProject(project);
                             // If project has been sent to editor, default to "Editor is On It" step
-                            if (project.status.toLowerCase() === "edit in progress" || 
-                                project.status.toLowerCase() === "video is ready" ||
-                                project.status.toLowerCase() === "delivered" ||
-                                project.status.toLowerCase() === "complete") {
+                            if (
+                              project.status.toLowerCase() ===
+                                "edit in progress" ||
+                              project.status.toLowerCase() ===
+                                "video is ready" ||
+                              project.status.toLowerCase() === "delivered" ||
+                              project.status.toLowerCase() === "complete"
+                            ) {
                               setCurrentStep("confirmation");
                             } else {
                               setCurrentStep("upload");
@@ -907,10 +934,12 @@ export default function DashboardPage() {
 
               {/* Step Content */}
               {currentStep === "upload" ? (
-                <FrameioUploadInterface 
+                <FrameioUploadInterface
                   project={selectedProject}
                   onUploadComplete={() => {
-                    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/projects"],
+                    });
                     setCurrentStep("form");
                   }}
                   onCancel={() => {
@@ -919,7 +948,9 @@ export default function DashboardPage() {
                   }}
                   onProjectStatusChange={() => {
                     // Refresh projects data when status changes from draft to awaiting instructions
-                    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/projects"],
+                    });
                   }}
                 />
               ) : currentStep === "form" ? (
@@ -959,16 +990,14 @@ export default function DashboardPage() {
                     <CardContent className="p-6 text-center">
                       <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-green-400 mb-2">
-                        {selectedProject.status === "Edit in Progress" 
+                        {selectedProject.status === "Edit in Progress"
                           ? "Editor is On It!"
-                          : "Form Submitted Successfully!"
-                        }
+                          : "Form Submitted Successfully!"}
                       </h3>
                       <p className="text-gray-300 mb-6">
-                        {selectedProject.status === "Edit in Progress" 
-                          ? "Your project has been sent to the editor and is currently being worked on."
-                          : "Your request has been received, nice! You can send it off to an editor now or go back to upload additional footage."
-                        }
+                        {selectedProject.status === "Edit in Progress"
+                          ? "Your project is being worked on by an editor 🎉.\n You can't upload more footage now, but you can update your instructions if needed."
+                          : "Your request has been received, nice! You can send it off to an editor now or go back to upload additional footage."}
                       </p>
                       <div className="flex gap-4 justify-center">
                         {selectedProject.status === "Edit in Progress" ? (
@@ -1087,24 +1116,38 @@ export default function DashboardPage() {
       />
 
       {/* Send to Editor Confirmation Dialog */}
-      <AlertDialog open={showSendToEditorDialog} onOpenChange={setShowSendToEditorDialog}>
+      <AlertDialog
+        open={showSendToEditorDialog}
+        onOpenChange={setShowSendToEditorDialog}
+      >
         <AlertDialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-400">
-              ⚠️ {sendToEditorConfirmationStep === 1 ? "Send Project to Editor?" : "Final Confirmation Required"}
+              ⚠️{" "}
+              {sendToEditorConfirmationStep === 1
+                ? "Send Project to Editor?"
+                : "Final Confirmation Required"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-300">
               <div className="space-y-3">
                 {sendToEditorConfirmationStep === 1 ? (
                   <>
                     <p>
-                      <strong>Important:</strong> Once you send this project to the editor, you will <strong>no longer be able to upload additional footage</strong>.
+                      <strong>Important:</strong> Once you send this project to
+                      the editor, you will{" "}
+                      <strong>
+                        no longer be able to upload additional footage
+                      </strong>
+                      .
                     </p>
                     <p>
-                      You'll only be able to edit your project instructions through the form. Make sure you've uploaded all the footage you need before proceeding.
+                      You'll only be able to edit your project instructions
+                      through the form. Make sure you've uploaded all the
+                      footage you need before proceeding.
                     </p>
                     <p className="text-amber-400 font-medium">
-                      Are you absolutely sure you want to send "{pendingProject?.title}" to the editor?
+                      Are you absolutely sure you want to send "
+                      {pendingProject?.title}" to the editor?
                     </p>
                   </>
                 ) : (
@@ -1113,10 +1156,13 @@ export default function DashboardPage() {
                       ⚠️ FINAL WARNING ⚠️
                     </p>
                     <p>
-                      This action is <strong>irreversible</strong>. You will <strong>NOT</strong> be able to upload any more footage to "{pendingProject?.title}" after this point.
+                      This action is <strong>irreversible</strong>. You will{" "}
+                      <strong>NOT</strong> be able to upload any more footage to
+                      "{pendingProject?.title}" after this point.
                     </p>
                     <p className="text-amber-400 font-medium">
-                      Click "CONFIRM - Send to Editor" to proceed, or cancel to go back.
+                      Click "CONFIRM - Send to Editor" to proceed, or cancel to
+                      go back.
                     </p>
                   </>
                 )}
@@ -1124,7 +1170,7 @@ export default function DashboardPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel 
+            <AlertDialogCancel
               className="border-gray-600 text-gray-300 hover:bg-gray-800"
               onClick={() => {
                 setShowSendToEditorDialog(false);
@@ -1132,10 +1178,16 @@ export default function DashboardPage() {
                 setSendToEditorConfirmationStep(1);
               }}
             >
-              {sendToEditorConfirmationStep === 1 ? "Cancel - Let me upload more footage" : "Cancel"}
+              {sendToEditorConfirmationStep === 1
+                ? "Cancel - Let me upload more footage"
+                : "Cancel"}
             </AlertDialogCancel>
             <AlertDialogAction
-              className={sendToEditorConfirmationStep === 1 ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"}
+              className={
+                sendToEditorConfirmationStep === 1
+                  ? "bg-orange-600 hover:bg-orange-700 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              }
               onClick={() => {
                 if (sendToEditorConfirmationStep === 1) {
                   setSendToEditorConfirmationStep(2);
@@ -1147,12 +1199,11 @@ export default function DashboardPage() {
               }}
               disabled={sendToEditorMutation.isPending}
             >
-              {sendToEditorMutation.isPending 
-                ? "Sending..." 
-                : sendToEditorConfirmationStep === 1 
-                  ? "Yes, Continue" 
-                  : "CONFIRM - Send to Editor"
-              }
+              {sendToEditorMutation.isPending
+                ? "Sending..."
+                : sendToEditorConfirmationStep === 1
+                  ? "Yes, Continue"
+                  : "CONFIRM - Send to Editor"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
