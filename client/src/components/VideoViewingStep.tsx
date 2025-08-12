@@ -1,0 +1,308 @@
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Download, Check, RotateCcw, Play, ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+
+interface VideoViewingStepProps {
+  project: any;
+  onBack: () => void;
+  onVideoAccepted: () => void;
+  onRevisionRequested: () => void;
+}
+
+interface VideoFile {
+  id: string;
+  filename: string;
+  mediaAssetId: string;
+  mediaAssetUrl: string;
+  fileType: string;
+  fileSize: number;
+}
+
+export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionRequested }: VideoViewingStepProps) {
+  const { toast } = useToast();
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [isRequestingRevision, setIsRequestingRevision] = useState(false);
+  const [videoFiles, setVideoFiles] = React.useState<VideoFile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch video files for this project
+  React.useEffect(() => {
+    const fetchVideoFiles = async () => {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/files`, {
+          headers: {
+            'Authorization': `Bearer ${(window as any).supabaseSession?.access_token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const files = await response.json();
+          // Filter for video files only
+          const videos = files.filter((file: any) => 
+            file.fileType && file.fileType.startsWith('video/')
+          );
+          setVideoFiles(videos);
+        }
+      } catch (error) {
+        console.error('Failed to fetch video files:', error);
+        toast({
+          title: "Error",
+          description: "Could not load video files",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideoFiles();
+  }, [project.id, toast]);
+
+  const handleAcceptVideo = async () => {
+    setIsAccepting(true);
+    try {
+      await apiRequest(`/api/projects/${project.id}/accept`, {
+        method: 'POST',
+      });
+      
+      toast({
+        title: "Video Accepted!",
+        description: "The video has been marked as complete and accepted.",
+      });
+      
+      onVideoAccepted();
+    } catch (error) {
+      console.error('Failed to accept video:', error);
+      toast({
+        title: "Error",
+        description: "Could not accept the video. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
+  const handleRequestRevision = async () => {
+    setIsRequestingRevision(true);
+    try {
+      await apiRequest(`/api/projects/${project.id}/request-revision`, {
+        method: 'POST',
+      });
+      
+      toast({
+        title: "Revision Requested",
+        description: "The editor has been notified about your revision request.",
+      });
+      
+      onRevisionRequested();
+    } catch (error) {
+      console.error('Failed to request revision:', error);
+      toast({
+        title: "Error",
+        description: "Could not request revision. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRequestingRevision(false);
+    }
+  };
+
+  const handleDownload = async (videoFile: VideoFile) => {
+    try {
+      // Generate download link via Frame.io
+      const response = await fetch(`/api/projects/${project.id}/download/${videoFile.mediaAssetId}`, {
+        headers: {
+          'Authorization': `Bearer ${(window as any).supabaseSession?.access_token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.downloadUrl) {
+          window.open(data.downloadUrl, '_blank');
+          toast({
+            title: "Download Started",
+            description: "Your video download has started.",
+          });
+        }
+      } else {
+        throw new Error('Failed to generate download link');
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast({
+        title: "Download Failed",
+        description: "Could not download the video. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p className="text-gray-400">Loading your video...</p>
+      </div>
+    );
+  }
+
+  if (videoFiles.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Play className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-white mb-2">No Video Files Found</h3>
+        <p className="text-gray-400 mb-6">The video might still be processing or there was an issue loading it.</p>
+        <Button variant="outline" onClick={onBack} className="border-gray-600 hover:border-cyan-500">
+          Back to Project
+        </Button>
+      </div>
+    );
+  }
+
+  const primaryVideo = videoFiles[0]; // Use the first video as primary
+
+  return (
+    <div className="space-y-6">
+      {/* Video Player Section */}
+      <Card className="bg-gray-900/50 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-cyan-500 flex items-center gap-2">
+            <Play className="h-5 w-5" />
+            Your Completed Video
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Frame.io Embedded Player */}
+          <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+            {primaryVideo.mediaAssetUrl ? (
+              <iframe
+                src={primaryVideo.mediaAssetUrl}
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+                title={`Video: ${primaryVideo.filename}`}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                <div className="text-center">
+                  <Play className="w-12 h-12 text-gray-500 mx-auto mb-2" />
+                  <p className="text-gray-400">Video preview not available</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => primaryVideo.mediaAssetUrl && window.open(primaryVideo.mediaAssetUrl, '_blank')}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View in Frame.io
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Video Details */}
+          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+            <span>📁 {primaryVideo.filename}</span>
+            <span>📏 {formatFileSize(primaryVideo.fileSize)}</span>
+            <span>🎬 {primaryVideo.fileType}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Download Button */}
+        <Button
+          variant="outline"
+          className="border-gray-600 hover:border-cyan-500 h-12"
+          onClick={() => handleDownload(primaryVideo)}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Download Video
+        </Button>
+
+        {/* Accept Button */}
+        <Button
+          className="bg-green-600 hover:bg-green-700 h-12"
+          onClick={handleAcceptVideo}
+          disabled={isAccepting}
+        >
+          {isAccepting ? (
+            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+          ) : (
+            <Check className="h-4 w-4 mr-2" />
+          )}
+          {isAccepting ? 'Accepting...' : 'Accept Video'}
+        </Button>
+
+        {/* Request Revision Button */}
+        <Button
+          variant="outline"
+          className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white h-12"
+          onClick={handleRequestRevision}
+          disabled={isRequestingRevision}
+        >
+          {isRequestingRevision ? (
+            <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+          ) : (
+            <RotateCcw className="h-4 w-4 mr-2" />
+          )}
+          {isRequestingRevision ? 'Requesting...' : 'Request Revision'}
+        </Button>
+      </div>
+
+      {/* Additional Video Files (if any) */}
+      {videoFiles.length > 1 && (
+        <Card className="bg-gray-900/50 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white text-lg">Additional Files</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {videoFiles.slice(1).map((video, index) => (
+                <div key={video.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                  <div>
+                    <p className="text-white font-medium">{video.filename}</p>
+                    <p className="text-sm text-gray-400">{formatFileSize(video.fileSize)} • {video.fileType}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(video)}
+                    className="border-gray-600 hover:border-cyan-500"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Back Button */}
+      <div className="text-center">
+        <Button variant="ghost" onClick={onBack} className="text-gray-400 hover:text-white">
+          ← Back to Project Overview
+        </Button>
+      </div>
+    </div>
+  );
+}

@@ -57,6 +57,7 @@ import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
 import { RevisionModal } from "@/components/RevisionModal";
 import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
+import { VideoViewingStep } from "@/components/VideoViewingStep";
 
 interface User {
   id: number;
@@ -149,7 +150,7 @@ export default function DashboardPage() {
   const [newProjectTitle, setNewProjectTitle] = useState("");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [currentStep, setCurrentStep] = useState<
-    "upload" | "form" | "confirmation"
+    "upload" | "form" | "confirmation" | "video-ready"
   >("upload");
   const [acceptanceModalOpen, setAcceptanceModalOpen] = useState(false);
   const [acceptanceProject, setAcceptanceProject] = useState<Project | null>(
@@ -827,12 +828,11 @@ export default function DashboardPage() {
 
                             // Continue with normal flow regardless of folder setup result
                             setSelectedProject(project);
-                            // If project has been sent to editor, default to "Editor is On It" step
-                            if (
-                              project.status.toLowerCase() ===
-                                "edit in progress" ||
-                              project.status.toLowerCase() ===
-                                "video is ready" ||
+                            // Set the appropriate step based on project status
+                            if (project.status.toLowerCase() === "video is ready") {
+                              setCurrentStep("video-ready");
+                            } else if (
+                              project.status.toLowerCase() === "edit in progress" ||
                               project.status.toLowerCase() === "delivered" ||
                               project.status.toLowerCase() === "complete"
                             ) {
@@ -921,14 +921,25 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "confirmation" ? "text-[#2abdee]" : selectedProject.status === "Edit in Progress" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "confirmation" ? "text-[#2abdee]" : selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status === "Edit in Progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {selectedProject.status === "Edit in Progress" ? "✓" : "3"}
+                    {selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "✓" : "3"}
                   </div>
                   <span className="font-medium">Editor is On It!</span>
+                </div>
+                <div className="flex-1 h-px bg-gray-600 mx-2" />
+                <div
+                  className={`flex items-center gap-2 ${currentStep === "video-ready" ? "text-[#2abdee]" : selectedProject.status === "Video is Ready" ? "text-green-400" : "text-gray-400"}`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "video-ready" ? "bg-[#2abdee] text-white" : selectedProject.status === "Video is Ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                  >
+                    {selectedProject.status === "Video is Ready" ? "✓" : "4"}
+                  </div>
+                  <span className="font-medium">Video is Ready!</span>
                 </div>
               </div>
 
@@ -1028,6 +1039,24 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
                 </div>
+              ) : currentStep === "video-ready" ? (
+                <VideoViewingStep
+                  project={selectedProject}
+                  onBack={() => setCurrentStep("confirmation")}
+                  onVideoAccepted={() => {
+                    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                    toast({
+                      title: "Video Accepted!",
+                      description: "Thank you for your feedback. The project is now complete.",
+                    });
+                    setSelectedProject(null);
+                    setCurrentStep("upload");
+                  }}
+                  onRevisionRequested={() => {
+                    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                    setCurrentStep("confirmation");
+                  }}
+                />
               ) : null}
             </div>
           )}

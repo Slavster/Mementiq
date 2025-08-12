@@ -640,6 +640,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get project files endpoint
+  app.get("/api/projects/:id/files", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      // Verify project ownership
+      const project = await storage.getProjectById(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      const projectFiles = await storage.getProjectFilesByProjectId(projectId);
+      res.json(projectFiles);
+    } catch (error) {
+      console.error("Failed to get project files:", error);
+      res.status(500).json({ error: "Failed to get project files" });
+    }
+  });
+
+  // Generate download link for video asset
+  app.get("/api/projects/:id/download/:assetId", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const assetId = req.params.assetId;
+      const userId = req.user.id;
+      
+      // Verify project ownership
+      const project = await storage.getProjectById(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      // Generate download link from Frame.io
+      await frameioV4Service.loadServiceAccountToken();
+      const downloadUrl = await frameioV4Service.generateAssetDownloadLink(assetId);
+      
+      if (downloadUrl) {
+        res.json({ downloadUrl });
+      } else {
+        res.status(404).json({ error: "Could not generate download link" });
+      }
+    } catch (error) {
+      console.error("Failed to generate download link:", error);
+      res.status(500).json({ error: "Failed to generate download link" });
+    }
+  });
+
+  // Accept video endpoint
+  app.post("/api/projects/:id/accept", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      // Verify project ownership
+      const project = await storage.getProjectById(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      // Update project status to complete
+      await storage.updateProject(projectId, {
+        status: 'complete',
+        updatedAt: new Date(),
+      });
+      
+      // Log status change
+      await storage.logProjectStatusChange(projectId, project.status, 'complete');
+      
+      res.json({ success: true, message: "Video accepted successfully" });
+    } catch (error) {
+      console.error("Failed to accept video:", error);
+      res.status(500).json({ error: "Failed to accept video" });
+    }
+  });
+
+  // Request revision endpoint
+  app.post("/api/projects/:id/request-revision", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      // Verify project ownership
+      const project = await storage.getProjectById(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      // Update project status to revision in progress
+      await storage.updateProject(projectId, {
+        status: 'revision in progress',
+        updatedAt: new Date(),
+      });
+      
+      // Log status change
+      await storage.logProjectStatusChange(projectId, project.status, 'revision in progress');
+      
+      res.json({ success: true, message: "Revision requested successfully" });
+    } catch (error) {
+      console.error("Failed to request revision:", error);
+      res.status(500).json({ error: "Failed to request revision" });
+    }
+  });
+
   // Email signup endpoint
   app.post("/api/email-signup", async (req, res) => {
     try {
