@@ -550,6 +550,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
   // Frame.io webhook endpoint for video upload notifications
+  // Generate public share link for project video
+  app.get("/api/projects/:id/video-share-link", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProjectById(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+      
+      // Get the completed video file
+      const projectFiles = await storage.getProjectFiles(projectId);
+      const videoFile = projectFiles.find(file => 
+        file.fileType && file.fileType.startsWith('video/') && file.mediaAssetId
+      );
+      
+      if (!videoFile) {
+        return res.status(404).json({ error: 'No video file found for this project' });
+      }
+      
+      console.log(`Creating public share link for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
+      
+      // Generate public share link using Frame.io V4 API
+      await frameioV4Service.loadServiceAccountToken();
+      const shareLink = await frameioV4Service.createAssetShareLink(
+        videoFile.mediaAssetId,
+        `${project.title} - ${videoFile.filename}`
+      );
+      
+      // Store the share URL in the database for future reference
+      await storage.updateProjectFile(videoFile.id, {
+        mediaAssetUrl: shareLink.url
+      });
+      
+      console.log(`Public share link created: ${shareLink.url}`);
+      
+      res.json({
+        shareUrl: shareLink.url,
+        shareId: shareLink.id,
+        filename: videoFile.filename,
+        expiresInDays: 30
+      });
+      
+    } catch (error) {
+      console.error('Failed to create video share link:', error);
+      res.status(500).json({ error: 'Failed to generate public share link' });
+    }
+  });
+
   // Frame.io proxy endpoint for authenticated file access
   app.get("/api/frameio/proxy/file/:assetId", async (req, res) => {
     try {
