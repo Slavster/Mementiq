@@ -192,7 +192,16 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                 </p>
                 <Button
                   onClick={() => {
-                    const viewUrl = primaryVideo.mediaAssetUrl || `https://next.frame.io/project/${project.mediaFolderId}/view/${primaryVideo.mediaAssetId}`;
+                    // Use the stored view URL from database, or construct one from project data
+                    let viewUrl = primaryVideo.mediaAssetUrl;
+                    
+                    // If no stored URL or it's a legacy URL, construct a proper Frame.io V4 URL
+                    if (!viewUrl || viewUrl.includes('frame.io/assets/') || viewUrl.includes('frame.io/files/')) {
+                      // Use the project's mediaFolderId which now stores the Frame.io project ID
+                      viewUrl = `https://next.frame.io/project/${project.mediaFolderId}/view/${primaryVideo.mediaAssetId}`;
+                    }
+                    
+                    console.log('Opening Frame.io URL:', viewUrl);
                     window.open(viewUrl, '_blank');
                   }}
                   className="bg-cyan-500 hover:bg-cyan-400 text-black font-medium px-6 py-3"
