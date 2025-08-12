@@ -167,35 +167,40 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Frame.io Embedded Player */}
-          <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
-            {primaryVideo.mediaAssetUrl ? (
-              <iframe
-                src={primaryVideo.mediaAssetUrl}
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-                title={`Video: ${primaryVideo.filename}`}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                <div className="text-center">
-                  <Play className="w-12 h-12 text-gray-500 mx-auto mb-2" />
-                  <p className="text-gray-400">Video preview not available</p>
+          {/* Frame.io Video Preview */}
+          <div className="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700" style={{ aspectRatio: '16/9' }}>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center space-y-4">
+                {/* Video Icon */}
+                <div className="w-20 h-20 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto">
+                  <Play className="w-10 h-10 text-cyan-500" />
+                </div>
+                
+                {/* Video Info */}
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-white">{primaryVideo.filename}</h3>
+                  <p className="text-gray-400">{formatFileSize(primaryVideo.fileSize)} • {primaryVideo.fileType}</p>
+                </div>
+                
+                {/* View Button */}
+                {primaryVideo.mediaAssetUrl && (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => primaryVideo.mediaAssetUrl && window.open(primaryVideo.mediaAssetUrl, '_blank')}
+                    onClick={() => window.open(primaryVideo.mediaAssetUrl, '_blank')}
+                    className="bg-cyan-600 hover:bg-cyan-700"
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    View in Frame.io
+                    View & Review in Frame.io
                   </Button>
-                </div>
+                )}
               </div>
-            )}
+            </div>
+            
+            {/* Frame.io Branding */}
+            <div className="absolute top-4 left-4">
+              <div className="bg-black/50 backdrop-blur-sm rounded px-2 py-1 text-xs text-gray-300">
+                Frame.io Video
+              </div>
+            </div>
           </div>
 
           {/* Video Details */}
