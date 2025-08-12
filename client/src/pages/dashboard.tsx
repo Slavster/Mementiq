@@ -804,12 +804,12 @@ export default function DashboardPage() {
 
                             // Continue with normal flow regardless of folder setup result
                             setSelectedProject(project);
-                            // If project has been sent to editor, only allow form editing
+                            // If project has been sent to editor, default to "Editor is On It" step
                             if (project.status.toLowerCase() === "edit in progress" || 
                                 project.status.toLowerCase() === "video is ready" ||
                                 project.status.toLowerCase() === "delivered" ||
                                 project.status.toLowerCase() === "complete") {
-                              setCurrentStep("form");
+                              setCurrentStep("confirmation");
                             } else {
                               setCurrentStep("upload");
                             }
@@ -924,8 +924,16 @@ export default function DashboardPage() {
                 />
               ) : currentStep === "form" ? (
                 <div className="space-y-4">
-                  {selectedProject.status !== "Edit in Progress" && (
-                    <div className="flex gap-2 mb-4">
+                  <div className="flex gap-2 mb-4">
+                    {selectedProject.status === "Edit in Progress" ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep("confirmation")}
+                        className="text-white border-gray-600 hover:bg-gray-700"
+                      >
+                        ← Back to Editor Status
+                      </Button>
+                    ) : (
                       <Button
                         variant="outline"
                         onClick={() => setCurrentStep("upload")}
@@ -933,8 +941,8 @@ export default function DashboardPage() {
                       >
                         ← Back to Upload
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   <TallyFormStep
                     projectId={selectedProject.id}
                     userId={user?.id || ""}
@@ -951,7 +959,10 @@ export default function DashboardPage() {
                     <CardContent className="p-6 text-center">
                       <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-green-400 mb-2">
-                        Form Submitted Successfully!
+                        {selectedProject.status === "Edit in Progress" 
+                          ? "Editor is On It!"
+                          : "Form Submitted Successfully!"
+                        }
                       </h3>
                       <p className="text-gray-300 mb-6">
                         {selectedProject.status === "Edit in Progress" 
@@ -960,25 +971,33 @@ export default function DashboardPage() {
                         }
                       </p>
                       <div className="flex gap-4 justify-center">
-                        {selectedProject.status !== "Edit in Progress" && (
+                        {selectedProject.status === "Edit in Progress" ? (
                           <Button
                             variant="outline"
-                            onClick={() => setCurrentStep("upload")}
+                            onClick={() => setCurrentStep("form")}
                             className="text-white border-gray-600 hover:bg-gray-700"
                           >
-                            ← Back to Upload
+                            Update Instructions
                           </Button>
-                        )}
-                        {selectedProject.status !== "Edit in Progress" && (
-                          <Button
-                            onClick={() => {
-                              setPendingProject(selectedProject);
-                              setShowSendToEditorDialog(true);
-                            }}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            Send to Editor
-                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={() => setCurrentStep("upload")}
+                              className="text-white border-gray-600 hover:bg-gray-700"
+                            >
+                              ← Back to Upload
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setPendingProject(selectedProject);
+                                setShowSendToEditorDialog(true);
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              Send to Editor
+                            </Button>
+                          </>
                         )}
                       </div>
                     </CardContent>
