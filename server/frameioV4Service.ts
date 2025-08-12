@@ -791,18 +791,28 @@ export class FrameioV4Service {
       const fileResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
       const fileData = fileResponse.data;
       
+      console.log('File data from Frame.io:', JSON.stringify(fileData, null, 2));
+      
       if (!fileData || !fileData.project_id) {
         throw new Error('Could not find project for asset');
       }
       
       const projectId = fileData.project_id;
-      console.log(`Project ID found: ${projectId}`);
+      console.log(`Project ID from file: ${projectId}`);
       
-      // Step 1: Create the Share (skeleton with name only)
+      // Verify the project exists by attempting to get its details
+      try {
+        const projectResponse = await this.makeRequest('GET', `/accounts/${accountId}/projects/${projectId}`);
+        console.log(`✅ Project exists: ${projectResponse.data.name}`);
+      } catch (error) {
+        console.log(`❌ Project ${projectId} not accessible:`, error);
+        throw new Error(`Project ${projectId} is not accessible or doesn't exist`);
+      }
+      
+      // Step 1: Create the Share (skeleton with name only) - exact format from reference
       console.log('Step 1: Creating share skeleton...');
       const shareResponse = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
         data: {
-          type: 'share',
           name: name
         }
       }, {
