@@ -782,15 +782,12 @@ export class FrameioV4Service {
     await this.initialize();
 
     try {
-      console.log(`Creating public share link for asset ${assetId}`);
+      console.log(`=== Frame.io V4 Share Creation: 4-Step Process ===`);
+      console.log(`Asset ID: ${assetId}, Name: ${name}`);
+      
       const accountId = await this.getAccountId();
       
-      // Calculate expiration date (30 days from now)
-      const expirationDate = new Date();
-      expirationDate.setDate(expirationDate.getDate() + 30);
-      
-      // Frame.io V4 may not support direct asset shares, try project-level share instead
-      // First get the file details to find its project
+      // Step 0: Get file details to find its project
       const fileResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
       const fileData = fileResponse.data;
       
@@ -798,25 +795,69 @@ export class FrameioV4Service {
         throw new Error('Could not find project for asset');
       }
       
-      console.log(`Creating project share for asset in project: ${fileData.project_id}`);
+      const projectId = fileData.project_id;
+      console.log(`Project ID found: ${projectId}`);
       
-      // Create project-level share with download-only access
-      const shareData = await this.makeRequest('POST', `/accounts/${accountId}/projects/${fileData.project_id}/shares`, {
-        name: name,
-        share_type: 'public', // Frame.io V4 uses share_type instead of type
-        allow_comments: false,
-        allow_downloads: true,
-        expires_at: expirationDate.toISOString()
+      // Step 1: Create the Share (skeleton with name only)
+      console.log('Step 1: Creating share skeleton...');
+      const shareResponse = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
+        data: {
+          name: name
+        }
+      }, {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+        'api-version': '4.0'
       });
 
-      console.log(`Asset share created: ${shareData.data?.url || shareData.url}`);
+      const shareId = shareResponse.data.id;
+      console.log(`✅ Step 1: Share created with ID: ${shareId}`);
+
+      // Step 2: Add asset to the share
+      console.log('Step 2: Adding asset to share...');
+      await this.makeRequest('POST', `/accounts/${accountId}/shares/${shareId}/assets`, {
+        data: {
+          asset_ids: [assetId]
+        }
+      }, {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+        'api-version': '4.0'
+      });
+
+      console.log(`✅ Step 2: Asset ${assetId} added to share`);
+
+      // Step 3: Update settings - public access, downloads ON, comments OFF, 30-day expiry
+      console.log('Step 3: Configuring share settings...');
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 30);
+
+      const updatedShare = await this.makeRequest('PATCH', `/accounts/${accountId}/shares/${shareId}`, {
+        data: {
+          access_level: 'public',
+          allow_comments: false,
+          allow_downloads: true,
+          expires_at: expirationDate.toISOString()
+        }
+      }, {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+        'api-version': '4.0'
+      });
+
+      console.log(`✅ Step 3: Share configured - public access, downloads enabled, comments disabled`);
+      
+      // Step 4: Return the public URL
+      const publicUrl = updatedShare.data.public_url || updatedShare.data.url;
+      console.log(`✅ Step 4: Public URL ready: ${publicUrl}`);
 
       return {
-        url: shareData.data?.url || shareData.url,
-        id: shareData.data?.id || shareData.id
+        url: publicUrl,
+        id: shareId
       };
+
     } catch (error) {
-      console.error(`Failed to create asset share link:`, error);
+      console.error(`❌ Frame.io V4 share creation failed:`, error);
       throw error;
     }
   }

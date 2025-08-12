@@ -550,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
   // Frame.io webhook endpoint for video upload notifications
-  // Generate direct Frame.io view URL for project video
+  // Generate Frame.io V4 public share link for project video
   app.get("/api/projects/:id/video-share-link", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const projectId = parseInt(req.params.id);
@@ -570,30 +570,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'No video file found for this project' });
       }
       
-      console.log(`Creating direct Frame.io view URL for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
+      console.log(`Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
       
-      // Create direct Frame.io view URL - this bypasses the share API limitations
-      // Frame.io allows direct asset viewing through their web interface
-      const directViewUrl = `https://app.frame.io/file/${videoFile.mediaAssetId}`;
+      // Check if we already have a Frame.io share URL
+      if (videoFile.mediaAssetUrl && videoFile.mediaAssetUrl.includes('share.frame.io')) {
+        console.log(`Using existing share URL: ${videoFile.mediaAssetUrl}`);
+        return res.json({
+          shareUrl: videoFile.mediaAssetUrl,
+          shareId: 'existing',
+          filename: videoFile.filename,
+          isPublicShare: true,
+          note: 'Existing Frame.io public share - no login required'
+        });
+      }
       
-      // Store the view URL in the database for future reference  
+      // Create Frame.io V4 public share using the 4-step process
+      await frameioV4Service.loadServiceAccountToken();
+      const shareLink = await frameioV4Service.createAssetShareLink(
+        videoFile.mediaAssetId,
+        `${project.title} - ${videoFile.filename} - ${new Date().toLocaleDateString()}`
+      );
+      
+      // Store the share URL in the database for future reference
       await storage.updateProjectFile(videoFile.id, {
-        mediaAssetUrl: directViewUrl
+        mediaAssetUrl: shareLink.url
       });
       
-      console.log(`Direct Frame.io view URL created: ${directViewUrl}`);
+      console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
       
       res.json({
-        shareUrl: directViewUrl,
-        shareId: videoFile.mediaAssetId,
+        shareUrl: shareLink.url,
+        shareId: shareLink.id,
         filename: videoFile.filename,
-        isDirectView: true,
-        note: 'Direct Frame.io view URL - opens in Frame.io web interface'
+        isPublicShare: true,
+        expiresInDays: 30,
+        features: {
+          publicAccess: true,
+          commentsDisabled: true,
+          downloadsEnabled: true
+        }
       });
       
     } catch (error) {
-      console.error('Failed to create video view URL:', error);
-      res.status(500).json({ error: 'Failed to generate view URL' });
+      console.error('Failed to create Frame.io share link:', error);
+      res.status(500).json({ error: 'Failed to generate Frame.io share link' });
     }
   });
 

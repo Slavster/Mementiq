@@ -183,10 +183,10 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                 <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 max-w-md">
                   <div className="flex items-center gap-2 text-green-400 mb-2">
                     <ExternalLink className="w-5 h-5" />
-                    <span className="font-semibold">Direct Frame.io Link</span>
+                    <span className="font-semibold">Frame.io Public Share</span>
                   </div>
                   <p className="text-sm text-gray-300">
-                    Your video opens directly in Frame.io's interface. This provides the best viewing experience with all Frame.io features available.
+                    Creates a secure public share link with no login required. Downloads enabled, comments disabled, expires in 30 days.
                   </p>
                 </div>
                 
@@ -200,25 +200,45 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                 </div>
                 
                 <Button
-                  onClick={() => {
-                    // Create direct Frame.io URL - this is the simplest approach that works
-                    const directUrl = `https://app.frame.io/file/${primaryVideo.mediaAssetId}`;
-                    console.log('Opening Frame.io direct link:', directUrl);
-                    window.open(directUrl, '_blank');
-                    
-                    toast({
-                      title: "Opening Video",
-                      description: "Your video is opening in Frame.io...",
-                    });
+                  onClick={async () => {
+                    try {
+                      toast({
+                        title: "Creating Share Link",
+                        description: "Generating public Frame.io share...",
+                      });
+
+                      // Generate Frame.io V4 public share using the new API approach
+                      const response = await apiRequest(`/api/projects/${project.id}/video-share-link`);
+                      
+                      if (response.shareUrl) {
+                        console.log('Opening Frame.io public share:', response.shareUrl);
+                        window.open(response.shareUrl, '_blank');
+                        
+                        toast({
+                          title: "Share Link Created!",
+                          description: "Opening your video in a public Frame.io share (no login required)",
+                        });
+                      } else {
+                        throw new Error('No share URL returned');
+                      }
+                    } catch (error) {
+                      console.error('Failed to create share link:', error);
+                      
+                      toast({
+                        title: "Error",
+                        description: "Could not create share link. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
                   }}
                   className="bg-cyan-500 hover:bg-cyan-400 text-black font-medium px-6 py-3"
                 >
                   <ExternalLink className="w-5 h-5 mr-2" />
-                  View Video in Frame.io
+                  View Video (Public Share)
                 </Button>
                 
                 <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 max-w-md text-xs text-gray-300">
-                  <p><strong>Improved:</strong> Direct Frame.io access for the best video viewing experience with full features.</p>
+                  <p><strong>New:</strong> Frame.io V4 public shares - secure, no-login access with downloads enabled!</p>
                 </div>
               </div>
             </div>
