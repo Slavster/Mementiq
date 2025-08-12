@@ -697,11 +697,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Streaming request for file ${fileId} by user ${userId}`);
       
       // Security: verify user has access to this file through their projects
-      const userProjects = await storage.getUserProjects(userId);
-      const hasAccess = userProjects.some(project => {
-        // Check if any project files contain this fileId
-        return true; // For now, allow all authenticated users - you may want to add more checks
-      });
+      const userProjects = await storage.getProjectsByUser(userId);
+      const hasAccess = userProjects.length > 0; // For now, allow all authenticated users who have projects
       
       if (!hasAccess) {
         return res.status(403).json({ error: "Access denied to this file" });

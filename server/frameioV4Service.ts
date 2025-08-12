@@ -757,6 +757,7 @@ export class FrameioV4Service {
       console.log(`=== Getting playable media links for ${fileId} ===`);
       
       // Call Frame.io V4 media_links endpoint with prefer=proxy for best streaming experience
+      console.log(`Attempting media_links API call: GET /accounts/${accountId}/files/${fileId}/media_links?prefer=proxy`);
       const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}/media_links?prefer=proxy`);
       
       console.log('=== Frame.io V4 Media Links Response ===');
