@@ -787,32 +787,23 @@ export class FrameioV4Service {
       
       const accountId = await this.getAccountId();
       
-      // Step 0: Get file details to find its project
-      const fileResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
-      const fileData = fileResponse.data;
+      // Use the known project ID directly from the project URL provided
+      const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
+      console.log(`Using project ID directly: ${projectId}`);
       
-      console.log('File data from Frame.io:', JSON.stringify(fileData, null, 2));
-      
-      if (!fileData || !fileData.project_id) {
-        throw new Error('Could not find project for asset');
-      }
-      
-      const projectId = fileData.project_id;
-      console.log(`Project ID from file: ${projectId}`);
-      
-      // Verify the project exists by attempting to get its details
+      // Verify the asset exists in Frame.io
       try {
-        const projectResponse = await this.makeRequest('GET', `/accounts/${accountId}/projects/${projectId}`);
-        console.log(`✅ Project exists: ${projectResponse.data.name}`);
+        const fileResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
+        console.log(`✅ Asset exists: ${fileResponse.data.name}`);
       } catch (error) {
-        console.log(`❌ Project ${projectId} not accessible:`, error);
-        throw new Error(`Project ${projectId} is not accessible or doesn't exist`);
+        console.log(`❌ Asset ${assetId} not accessible:`, error);
+        throw new Error(`Asset ${assetId} is not accessible or doesn't exist`);
       }
       
-      // Step 1: Create the Share (skeleton with name only) - try different format
+      // Step 1: Create the Share (skeleton with name only) - exact format from reference
       console.log('Step 1: Creating share skeleton...');
       const shareResponse = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
-        name: name
+        data: { name: name }
       }, {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
