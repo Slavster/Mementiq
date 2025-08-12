@@ -34,6 +34,11 @@ interface TallySubmission {
   verifiedAt: string | null;
 }
 
+interface TallySubmissionResponse {
+  success: boolean;
+  submission?: TallySubmission;
+}
+
 const TallyFormStep: React.FC<TallyFormStepProps> = ({
   projectId,
   userId,
@@ -45,17 +50,20 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   const queryClient = useQueryClient();
 
   // Check if form has already been submitted
-  const { data: submissionData, isLoading } = useQuery({
+  const { data: submissionData, isLoading } = useQuery<TallySubmissionResponse>({
     queryKey: [`/api/projects/${projectId}/tally-submission`],
   });
 
-  const hasExistingSubmission = submissionData?.success && submissionData.submission;
-  const existingSubmission = submissionData?.success ? submissionData.submission : null;
-  
+  const hasExistingSubmission =
+    submissionData?.success && submissionData.submission;
+  const existingSubmission = submissionData?.success
+    ? submissionData.submission
+    : null;
+
   // Debug logging
-  console.log('Submission data:', submissionData);
-  console.log('Has existing submission:', hasExistingSubmission);
-  console.log('Existing submission:', existingSubmission);
+  console.log("Submission data:", submissionData);
+  console.log("Has existing submission:", hasExistingSubmission);
+  console.log("Existing submission:", existingSubmission);
 
   // Mutation to record form submission
   const recordSubmissionMutation = useMutation({
@@ -76,12 +84,12 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
         description:
           "Your project request has been submitted and is now being reviewed.",
       });
-      
+
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({
         queryKey: [`/api/projects/${projectId}/tally-submission`],
       });
-      
+
       // Call onFormComplete to automatically close dialog and move to next step
       if (onFormComplete) {
         setTimeout(() => {
@@ -123,13 +131,13 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
         data.type === "tally_form_submission" ||
         data.type === "form_submission" ||
         (data.payload && data.payload.type === "form_submission") ||
-        data.includes?.('Tally.FormSubmitted')
+        data.includes?.("Tally.FormSubmitted")
       ) {
         console.log("Tally form submission detected:", data);
 
         // Parse the data if it's a string
         let parsedData = data;
-        if (typeof data === 'string' && data.includes('Tally.FormSubmitted')) {
+        if (typeof data === "string" && data.includes("Tally.FormSubmitted")) {
           try {
             parsedData = JSON.parse(data).payload;
           } catch (e) {
@@ -138,7 +146,8 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
           }
         }
 
-        const submissionData = parsedData.payload || parsedData.submission || parsedData;
+        const submissionData =
+          parsedData.payload || parsedData.submission || parsedData;
 
         // Record the submission in our database with latest submission ID
         recordSubmissionMutation.mutate({
@@ -183,37 +192,32 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   if (hasExistingSubmission && !isFormVisible) {
     return (
       <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="text-center">
+          <CardTitle className="flex items-center justify-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
             Instructions Already Provided
           </CardTitle>
-          <CardDescription>
-            We already have your editing instructions for this project.
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 text-center">
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
-              Your editing instructions were submitted on{" "}
-              {new Date(existingSubmission?.submittedAt).toLocaleDateString()}.
-              You can submit updated instructions if you want to make changes.
+              Your instructions were submitted on{" "}
+              {new Date(existingSubmission?.submittedAt).toLocaleDateString()}.{" "}
+              <br />
+              You can submit a fresh form if you need to give the editor new
+              directions.
             </AlertDescription>
           </Alert>
-          
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setIsFormVisible(true)}
-              className="flex items-center gap-2 bg-[#2abdee] hover:bg-cyan-600 text-white"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Update Instructions
-            </Button>
-          </div>
-          <p className="text-sm text-gray-400 mt-2">
-            Click "Update Instructions" if you want to modify your editing requirements.
-          </p>
+
+          <Button
+            onClick={() => setIsFormVisible(true)}
+            className="w-full flex items-center justify-center gap-2 bg-[#2abdee] hover:bg-cyan-600 text-white"
+            size="lg"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Update Instructions
+          </Button>
         </CardContent>
       </Card>
     );
@@ -246,26 +250,26 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+      <CardHeader className="text-center">
+        <CardTitle className="flex items-center justify-center gap-2">
           <FileText className="h-5 w-5" />
-          {hasExistingSubmission ? 'Update Your Instructions' : 'Describe your Dream Edit'}
+          {hasExistingSubmission
+            ? "Update Your Instructions"
+            : "Describe your Dream Edit"}
         </CardTitle>
         <CardDescription>
-          {hasExistingSubmission 
-            ? 'You can modify your existing editing instructions if needed.' 
-            : 'Complete a short form and we\'ll make it a reality.'
-          }
+          {hasExistingSubmission
+            ? "You can modify your existing editing instructions if needed."
+            : "Complete a short form and we'll make it a reality."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!isFormVisible ? (
           <div className="text-center space-y-4">
             <p className="text-gray-600">
-              {hasExistingSubmission 
-                ? 'We already have your instructions. Click below if you want to make changes.'
-                : 'Please fill in the details and we\'ll start on your request.'
-              }
+              {hasExistingSubmission
+                ? "We already have your instructions. Click below if you want to make changes."
+                : "Please fill in the details and we'll start on your request."}
             </p>
             <Button
               onClick={() => setIsFormVisible(true)}
@@ -273,7 +277,9 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
               size="lg"
             >
               <FileText className="h-4 w-4 mr-2" />
-              {hasExistingSubmission ? 'Re-submit Instructions' : 'Open Request Form'}
+              {hasExistingSubmission
+                ? "Re-submit Instructions"
+                : "Open Request Form"}
             </Button>
           </div>
         ) : (
@@ -281,18 +287,34 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
             {/* Tally Form Embed */}
             <div className="border rounded-lg overflow-hidden">
               {/* Debug URL generation - only show in development */}
-              {process.env.NODE_ENV === 'development' && (
+              {process.env.NODE_ENV === "development" && (
                 <div className="p-2 bg-yellow-100 text-xs border-b">
-                  <p><strong>Debug Info:</strong></p>
-                  <p><strong>Has Existing:</strong> {hasExistingSubmission ? 'Yes' : 'No'}</p>
-                  <p><strong>Submission ID:</strong> {existingSubmission?.tallySubmissionId || 'None'}</p>
-                  <p><strong>API Response:</strong> {JSON.stringify(submissionData)}</p>
-                  <p><strong>Project Status:</strong> {hasExistingSubmission ? 'Should load existing submission for editing' : 'Fresh form - no submission exists'}</p>
+                  <p>
+                    <strong>Debug Info:</strong>
+                  </p>
+                  <p>
+                    <strong>Has Existing:</strong>{" "}
+                    {hasExistingSubmission ? "Yes" : "No"}
+                  </p>
+                  <p>
+                    <strong>Submission ID:</strong>{" "}
+                    {existingSubmission?.tallySubmissionId || "None"}
+                  </p>
+                  <p>
+                    <strong>API Response:</strong>{" "}
+                    {JSON.stringify(submissionData)}
+                  </p>
+                  <p>
+                    <strong>Project Status:</strong>{" "}
+                    {hasExistingSubmission
+                      ? "Should load existing submission for editing"
+                      : "Fresh form - no submission exists"}
+                  </p>
                 </div>
               )}
               <iframe
-                key={hasExistingSubmission ? 'edit-mode' : 'new-mode'}
-                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&submissionId=${existingSubmission.tallySubmissionId}` : ''}`}
+                key={hasExistingSubmission ? "edit-mode" : "new-mode"}
+                data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&submissionId=${existingSubmission.tallySubmissionId}` : ""}`}
                 loading="lazy"
                 width="100%"
                 height="2072"
