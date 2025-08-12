@@ -190,50 +190,33 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
-            Project Request Submitted
+            Instructions Already Provided
           </CardTitle>
           <CardDescription>
-            Your project request form has been completed and submitted.
+            We already have your editing instructions for this project.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
-              Form submitted on{" "}
-              {new Date(existingSubmission?.submittedAt).toLocaleDateString()}
-              {existingSubmission?.verifiedAt && (
-                <>
-                  {" "}
-                  and verified on{" "}
-                  {new Date(existingSubmission.verifiedAt).toLocaleDateString()}
-                </>
-              )}
+              Your editing instructions were submitted on{" "}
+              {new Date(existingSubmission?.submittedAt).toLocaleDateString()}.
+              You can submit updated instructions if you want to make changes.
             </AlertDescription>
           </Alert>
-
-          <div className="text-sm text-gray-600">
-            <p>
-              <strong>Status:</strong> Submitted
-            </p>
-            <p>
-              <strong>Submission ID:</strong>{" "}
-              {existingSubmission?.tallySubmissionId}
-            </p>
-          </div>
           
           <div className="flex gap-2">
             <Button
               onClick={() => setIsFormVisible(true)}
-              variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-[#2abdee] hover:bg-cyan-600 text-white"
             >
               <ExternalLink className="h-4 w-4" />
-              Edit Form Responses
+              Update Instructions
             </Button>
           </div>
           <p className="text-sm text-gray-400 mt-2">
-            Click "Edit Form Responses" to modify your previous submission.
+            Click "Update Instructions" if you want to modify your editing requirements.
           </p>
         </CardContent>
       </Card>
@@ -270,25 +253,31 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Describe your Dream Edit
+          {hasExistingSubmission ? 'Update Your Instructions' : 'Describe your Dream Edit'}
         </CardTitle>
         <CardDescription>
-          Complete a short form and we'll make it a reality.
+          {hasExistingSubmission 
+            ? 'You can modify your existing editing instructions if needed.' 
+            : 'Complete a short form and we\'ll make it a reality.'
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!isFormVisible ? (
           <div className="text-center space-y-4">
             <p className="text-gray-600">
-              Please fill in the details and we'll start on your request.
+              {hasExistingSubmission 
+                ? 'We already have your instructions. Click below if you want to make changes.'
+                : 'Please fill in the details and we\'ll start on your request.'
+              }
             </p>
             <Button
               onClick={() => setIsFormVisible(true)}
-              className="w-full"
+              className="w-full bg-[#2abdee] hover:bg-cyan-600 text-white"
               size="lg"
             >
               <FileText className="h-4 w-4 mr-2" />
-              {hasExistingSubmission ? 'Edit Form Responses' : 'Open Request Form'}
+              {hasExistingSubmission ? 'Re-submit Instructions' : 'Open Request Form'}
             </Button>
           </div>
         ) : (
