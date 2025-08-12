@@ -767,102 +767,229 @@ export class FrameioV4Service {
   }
 
   /**
-   * Get playable media links for streaming - Frame.io V4 correct approach
+   * Get playable media links for streaming - Frame.io V4 investigation approach
    */
   async getPlayableMediaLinks(fileId: string, prefer: string = "proxy") {
     await this.initialize();
     
     try {
       const accountId = await this.getAccountId();
-      console.log(`=== Getting Frame.io V4 media links for ${fileId} (prefer: ${prefer}) ===`);
+      console.log(`=== Investigating Frame.io V4 streaming for ${fileId} (prefer: ${prefer}) ===`);
       
-      // Get file with media links included - this is the correct Frame.io V4 approach
-      const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}`, null, {
-        include: 'media_links.proxy,media_links.original'
-      });
+      // First, get basic file info to see available fields
+      console.log('Step 1: Getting basic file info...');
+      const basicResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}`);
       
-      console.log('=== Frame.io V4 File with Media Links Response ===');
-      console.log(JSON.stringify(response, null, 2));
+      console.log('=== Frame.io V4 Basic File Response ===');
+      console.log(JSON.stringify(basicResponse, null, 2));
       
-      const data = response.data;
+      const data = basicResponse.data;
       if (!data) {
         console.log('No file data found');
         return null;
       }
       
-      const proxyLinks = data?.media_links?.proxy ?? [];
-      const originalLinks = data?.media_links?.original ?? [];
+      // Check all available fields for streaming-related data
+      console.log('=== Analyzing available fields ===');
+      const allFields = Object.keys(data);
+      console.log('Available fields:', allFields);
       
-      console.log(`Found ${proxyLinks.length} proxy links and ${originalLinks.length} original links`);
+      // Look for any URL-related fields
+      const urlFields = allFields.filter(field => 
+        field.toLowerCase().includes('url') || 
+        field.toLowerCase().includes('link') ||
+        field.toLowerCase().includes('stream') ||
+        field.toLowerCase().includes('media')
+      );
+      console.log('URL/Media fields found:', urlFields);
       
-      // Helper function to pick best link: HLS first, then MP4, then anything
-      const pickBestLink = (links: any[] = []) => {
-        if (!links.length) return null;
-        
-        // Look for HLS by type
-        const hlsByType = links.find((l) => l?.type?.toLowerCase?.() === 'hls');
-        if (hlsByType) return hlsByType;
-        
-        // Look for HLS by URL extension
-        const hlsByExt = links.find((l) => /\.m3u8(\?|$)/i.test(String(l?.href)));
-        if (hlsByExt) return hlsByExt;
-        
-        // Look for MP4 by type
-        const mp4ByType = links.find((l) => l?.type?.toLowerCase?.() === 'mp4');
-        if (mp4ByType) return mp4ByType;
-        
-        // Look for MP4 by URL extension
-        const mp4ByExt = links.find((l) => /\.mp4(\?|$)/i.test(String(l?.href)));
-        if (mp4ByExt) return mp4ByExt;
-        
-        // Return first available link
-        return links[0];
-      };
-      
-      let selectedLink: any | undefined;
-      
-      // Select link based on preference
-      if (prefer === "original") {
-        selectedLink = pickBestLink(originalLinks);
+      for (const field of urlFields) {
+        if (data[field]) {
+          console.log(`${field}:`, data[field]);
+        }
       }
       
-      // Fallback to proxy if original not available or not requested
-      if (!selectedLink) {
-        selectedLink = pickBestLink(proxyLinks);
-      }
+      // Try different include parameter variations
+      const includeAttempts = [
+        'media_links',
+        'streaming_urls', 
+        'playback_urls',
+        'download_url',
+        'transcoded_urls'
+      ];
       
-      if (!selectedLink?.href) {
-        console.log('No playable media links available');
-        return {
-          available: false,
-          reason: 'No playable media links available for this file',
-          webUrl: data.view_url,
-          asset: {
-            name: data.name,
-            size: data.file_size,
-            type: data.media_type,
-            status: data.status
+      for (const includeParam of includeAttempts) {
+        try {
+          console.log(`Step 2: Trying include parameter: ${includeParam}`);
+          const includeResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}`, null, {
+            include: includeParam
+          });
+          
+          console.log(`=== SUCCESS with include=${includeParam} ===`);
+          console.log(JSON.stringify(includeResponse, null, 2));
+          
+          const includeData = includeResponse.data;
+          
+          // Look for streaming URLs in the response
+          if (includeData.media_links || includeData.streaming_urls || includeData.playback_urls) {
+            console.log('Found streaming data in response!');
+            
+            // Process the streaming links
+            const streamingData = includeData.media_links || includeData.streaming_urls || includeData.playback_urls;
+            console.log('Streaming data structure:', streamingData);
+            
+            // If we find valid streaming data, process and return it
+            if (streamingData && typeof streamingData === 'object') {
+              return this.processStreamingData(streamingData, prefer, includeData);
+            }
           }
-        };
+          
+        } catch (includeError) {
+          console.log(`include=${includeParam} failed:`, includeError.message);
+        }
       }
       
-      // Determine media type
-      const kind = selectedLink.type?.toLowerCase() ||
-        (String(selectedLink.href).includes('.m3u8') ? 'hls' : 'mp4');
-      
-      const result = {
-        url: selectedLink.href,
-        kind,
-        expiresAt: selectedLink.expires_at ?? null
+      // If no streaming URLs found, return fallback info
+      console.log('=== No streaming URLs found in Frame.io V4 ===');
+      return {
+        available: false,
+        reason: 'Frame.io V4 does not provide direct streaming URLs for this file',
+        webUrl: data.view_url,
+        asset: {
+          name: data.name,
+          size: data.file_size,
+          type: data.media_type,
+          status: data.status
+        }
       };
-      
-      console.log('✓ Selected media link:', result);
-      return result;
       
     } catch (error) {
-      console.error('Error getting Frame.io V4 media links:', error);
+      console.error('Error investigating Frame.io V4 streaming:', error);
       return null;
     }
+  }
+
+  /**
+   * Process streaming data from Frame.io V4 response
+   */
+  private processStreamingData(streamingData: any, prefer: string, fileData: any) {
+    console.log('=== Processing streaming data ===');
+    
+    // Helper to extract URLs from various formats
+    const extractUrls = (data: any): Array<{url: string, type: string}> => {
+      const urls: Array<{url: string, type: string}> = [];
+      
+      if (Array.isArray(data)) {
+        data.forEach(item => {
+          if (item.href || item.url) {
+            urls.push({
+              url: item.href || item.url,
+              type: item.type || 'unknown'
+            });
+          }
+        });
+      } else if (typeof data === 'object') {
+        // Check for proxy/original structure
+        if (data.proxy && Array.isArray(data.proxy)) {
+          data.proxy.forEach((item: any) => {
+            if (item.href || item.url) {
+              urls.push({
+                url: item.href || item.url,
+                type: (item.type || 'unknown') + '_proxy'
+              });
+            }
+          });
+        }
+        if (data.original && Array.isArray(data.original)) {
+          data.original.forEach((item: any) => {
+            if (item.href || item.url) {
+              urls.push({
+                url: item.href || item.url,
+                type: (item.type || 'unknown') + '_original'
+              });
+            }
+          });
+        }
+        
+        // Check for direct URL fields
+        for (const [key, value] of Object.entries(data)) {
+          if (typeof value === 'string' && value.startsWith('http')) {
+            urls.push({
+              url: value,
+              type: key
+            });
+          }
+        }
+      }
+      
+      return urls;
+    };
+    
+    const availableUrls = extractUrls(streamingData);
+    console.log('Extracted URLs:', availableUrls);
+    
+    if (availableUrls.length === 0) {
+      console.log('No URLs found in streaming data');
+      return null;
+    }
+    
+    // Prioritize URLs: HLS first, then MP4, then MOV, then others
+    const prioritizeUrl = (urls: Array<{url: string, type: string}>) => {
+      // Look for HLS
+      const hls = urls.find(u => 
+        u.type.toLowerCase().includes('hls') || 
+        u.url.includes('.m3u8')
+      );
+      if (hls) return { ...hls, kind: 'hls' };
+      
+      // Look for MP4
+      const mp4 = urls.find(u => 
+        u.type.toLowerCase().includes('mp4') || 
+        u.url.includes('.mp4')
+      );
+      if (mp4) return { ...mp4, kind: 'mp4' };
+      
+      // Look for MOV
+      const mov = urls.find(u => 
+        u.type.toLowerCase().includes('mov') || 
+        u.url.includes('.mov')
+      );
+      if (mov) return { ...mov, kind: 'mov' };
+      
+      // Return first URL
+      const first = urls[0];
+      return { 
+        ...first, 
+        kind: first.url.includes('.m3u8') ? 'hls' : 
+              first.url.includes('.mp4') ? 'mp4' :
+              first.url.includes('.mov') ? 'mov' : 'unknown'
+      };
+    };
+    
+    // Filter by preference if needed
+    let filteredUrls = availableUrls;
+    if (prefer === 'original') {
+      const originalUrls = availableUrls.filter(u => u.type.includes('original'));
+      if (originalUrls.length > 0) {
+        filteredUrls = originalUrls;
+      }
+    } else if (prefer === 'proxy') {
+      const proxyUrls = availableUrls.filter(u => u.type.includes('proxy'));
+      if (proxyUrls.length > 0) {
+        filteredUrls = proxyUrls;
+      }
+    }
+    
+    const selectedUrl = prioritizeUrl(filteredUrls);
+    
+    const result = {
+      url: selectedUrl.url,
+      kind: selectedUrl.kind,
+      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() // 2 hours default
+    };
+    
+    console.log('✓ Selected streaming URL:', result);
+    return result;
   }
 
   /**
