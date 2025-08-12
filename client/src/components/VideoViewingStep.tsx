@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, Check, RotateCcw, Play, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import Hls from 'hls.js';
 
 interface VideoViewingStepProps {
   project: any;
@@ -21,12 +22,22 @@ interface VideoFile {
   fileSize: number;
 }
 
+interface MediaLinks {
+  hls?: string;
+  mp4?: string;
+  proxy?: string;
+}
+
 export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionRequested }: VideoViewingStepProps) {
   const { toast } = useToast();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRequestingRevision, setIsRequestingRevision] = useState(false);
   const [videoFiles, setVideoFiles] = React.useState<VideoFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mediaLinks, setMediaLinks] = useState<MediaLinks | null>(null);
+  const [loadingVideo, setLoadingVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   // Fetch video files for this project
   React.useEffect(() => {
@@ -38,6 +49,11 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
           file.fileType && file.fileType.startsWith('video/')
         );
         setVideoFiles(videos);
+        
+        // Auto-load video streaming URLs for the first video
+        if (videos.length > 0) {
+          loadVideoStream(videos[0].mediaAssetId);
+        }
       } catch (error) {
         console.error('Failed to fetch video files:', error);
         toast({
@@ -52,6 +68,89 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
 
     fetchVideoFiles();
   }, [project.id, toast]);
+
+  // Load video streaming URLs and setup player
+  const loadVideoStream = async (assetId: string) => {
+    setLoadingVideo(true);
+    try {
+      const links = await apiRequest(`/api/projects/${project.id}/video-stream/${assetId}`);
+      setMediaLinks(links);
+      
+      // Setup video player once we have the links
+      if (links && videoRef.current) {
+        setupVideoPlayer(links);
+      }
+    } catch (error) {
+      console.error('Failed to load video stream:', error);
+      toast({
+        title: "Video Loading Error",
+        description: "Could not load video stream. You can still view it in Frame.io.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingVideo(false);
+    }
+  };
+
+  // Setup video player (HLS or direct MP4)
+  const setupVideoPlayer = (links: MediaLinks) => {
+    if (!videoRef.current) return;
+
+    const video = videoRef.current;
+    
+    // Clean up previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (links.hls) {
+      // Use HLS for streaming
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: false,
+          lowLatencyMode: true,
+        });
+        
+        hlsRef.current = hls;
+        hls.loadSource(links.hls);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.log('HLS manifest loaded successfully');
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('HLS error:', data);
+          // Fallback to MP4 if available
+          if (links.mp4 && !data.fatal) {
+            video.src = links.mp4;
+          }
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        video.src = links.hls;
+      } else if (links.mp4) {
+        // Fallback to MP4
+        video.src = links.mp4;
+      }
+    } else if (links.mp4) {
+      // Direct MP4 playback
+      video.src = links.mp4;
+    } else if (links.proxy) {
+      // Use proxy URL as fallback
+      video.src = links.proxy;
+    }
+  };
+
+  // Cleanup HLS on unmount
+  useEffect(() => {
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
+    };
+  }, []);
 
   const handleAcceptVideo = async () => {
     setIsAccepting(true);
@@ -167,38 +266,60 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Frame.io Video Preview */}
-          <div className="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700" style={{ aspectRatio: '16/9' }}>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center space-y-4">
-                {/* Video Icon */}
-                <div className="w-20 h-20 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto">
-                  <Play className="w-10 h-10 text-cyan-500" />
+          {/* Direct Video Player */}
+          <div className="relative bg-black rounded-lg overflow-hidden border border-gray-700" style={{ aspectRatio: '16/9' }}>
+            {loadingVideo ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <div className="animate-spin w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto"></div>
+                  <p className="text-gray-400">Loading video...</p>
                 </div>
-                
-                {/* Video Info */}
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold text-white">{primaryVideo.filename}</h3>
-                  <p className="text-gray-400">{formatFileSize(primaryVideo.fileSize)} • {primaryVideo.fileType}</p>
-                </div>
-                
-                {/* View Button */}
-                {primaryVideo.mediaAssetUrl && (
-                  <Button
-                    onClick={() => window.open(primaryVideo.mediaAssetUrl, '_blank')}
-                    className="bg-cyan-600 hover:bg-cyan-700"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View & Review in Frame.io
-                  </Button>
-                )}
               </div>
-            </div>
+            ) : mediaLinks ? (
+              <video
+                ref={videoRef}
+                className="w-full h-full object-contain"
+                controls
+                preload="metadata"
+                poster="" // You can add a thumbnail URL here if available
+              >
+                Your browser does not support video playback.
+              </video>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  {/* Video Icon */}
+                  <div className="w-20 h-20 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto">
+                    <Play className="w-10 h-10 text-cyan-500" />
+                  </div>
+                  
+                  {/* Video Info */}
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold text-white">{primaryVideo.filename}</h3>
+                    <p className="text-gray-400">{formatFileSize(primaryVideo.fileSize)} • {primaryVideo.fileType}</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p className="text-gray-400 text-sm">Video streaming not available</p>
+                    {/* View Button */}
+                    {primaryVideo.mediaAssetUrl && (
+                      <Button
+                        onClick={() => window.open(primaryVideo.mediaAssetUrl, '_blank')}
+                        className="bg-cyan-600 hover:bg-cyan-700"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        View & Review in Frame.io
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Frame.io Branding */}
             <div className="absolute top-4 left-4">
               <div className="bg-black/50 backdrop-blur-sm rounded px-2 py-1 text-xs text-gray-300">
-                Frame.io Video
+                {mediaLinks ? 'Direct Video Playback' : 'Frame.io Video'}
               </div>
             </div>
           </div>
