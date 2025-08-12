@@ -572,56 +572,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (project.mediaFolderId) {
             try {
-              // Check if asset belongs to this project's folder (V4)
+              // Check if this video asset exists in the project folder
               await frameioV4Service.loadServiceAccountToken();
-              const belongsToProject = await frameioV4Service.verifyAssetInProjectFolder(assetId, project.mediaFolderId);
-              console.log(`Does asset ${assetId} belong to project ${project.id}? ${belongsToProject}`);
+              const folderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
               
-              if (belongsToProject) {
-                console.log(`Asset ${assetId} belongs to project ${project.id} (${project.title})`);
+              // Look for the asset and check if it's a video
+              const foundAsset = folderAssets.find(asset => asset.id === assetId);
+              const isVideoAsset = foundAsset && foundAsset.media_type && foundAsset.media_type.startsWith('video/');
+              
+              console.log(`Asset ${assetId} found in project ${project.id}? ${!!foundAsset}`);
+              console.log(`Is video asset? ${!!isVideoAsset}`);
+              
+              if (foundAsset && isVideoAsset) {
+                console.log(`✅ Video asset ${assetId} delivered to project ${project.id} (${project.title})`);
                 
-                // Generate download link from Frame.io V4
-                const downloadLink = await frameioV4Service.generateAssetDownloadLink(assetId);
+                // Update project status to "video is ready"
+                await storage.updateProject(project.id, {
+                  status: 'video is ready',
+                  updatedAt: new Date(),
+                });
                 
-                if (downloadLink) {
-                  // Update project status to "delivered"
-                  await storage.updateProject(project.id, {
-                    status: 'delivered',
-                    updatedAt: new Date(),
-                  });
+                // Get user details for email
+                const user = await storage.getUserById(project.userId);
+                
+                if (user) {
+                  // Use Frame.io view URL for the video
+                  const videoViewUrl = foundAsset.view_url || `https://next.frame.io/project/${foundAsset.project_id}/view/${foundAsset.id}`;
                   
-                  // Get user details for email
-                  const user = await storage.getUserById(project.userId);
+                  // Send email notification
+                  const emailTemplate = emailService.generateVideoDeliveryEmail(
+                    user.email,
+                    project.title,
+                    videoViewUrl,
+                    project.id
+                  );
                   
-                  if (user) {
-                    // Send email notification
-                    const emailTemplate = emailService.generateVideoDeliveryEmail(
-                      user.email,
-                      project.title,
-                      downloadLink,
-                      project.id
-                    );
-                    
-                    await emailService.sendEmail(emailTemplate);
-                    console.log(`Video delivery email sent to ${user.email} for project ${project.id}`);
-                  }
-                  
-                  // Store the download link in project files
-                  await storage.createProjectFile({
-                    projectId: project.id,
-                    mediaAssetId: assetId,
-                    mediaAssetUrl: downloadLink,
-                    filename: assetName,
-                    originalFilename: assetName,
-                    fileType: data.type || 'video/mp4',
-                    fileSize: data.filesize || 0,
-                    uploadStatus: 'completed',
-                  });
-                  
-                } else {
-                  console.log(`Could not generate download link for asset ${assetId}`);
+                  await emailService.sendEmail(emailTemplate);
+                  console.log(`🎉 Video delivery email sent to ${user.email} for project ${project.id}`);
                 }
                 
+                // Store the video asset info in project files
+                await storage.createProjectFile({
+                  projectId: project.id,
+                  mediaAssetId: assetId,
+                  mediaAssetUrl: foundAsset.view_url || '',
+                  filename: assetName,
+                  originalFilename: assetName,
+                  fileType: foundAsset.media_type || 'video/mp4',
+                  fileSize: foundAsset.file_size || 0,
+                  uploadStatus: 'completed',
+                });
+                
+                console.log(`🎬 Project ${project.id} status updated to 'video is ready'`);
                 break; // Found the project, no need to check others
               }
             } catch (error) {
@@ -1826,8 +1828,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get the latest video for review
       // Get videos from the folder and find latest
-      const folderVideos = await frameioService.getFolderAssets(project.mediaFolderId!);
-      const latestVideo = folderVideos.find(asset => asset.type === 'video');
+      const folderVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId!);
+      const latestVideo = folderVideos.find(asset => asset.type === 'file' && asset.media_type?.startsWith('video/'));
       if (!latestVideo) {
         return res.status(404).json({
           success: false,
