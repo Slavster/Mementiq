@@ -721,30 +721,37 @@ export class FrameioV4Service {
 
   /**
    * Generate download link for asset (V4 compatible)
+   * Frame.io V4 provides download URLs that can be used for streaming
    */
   async generateAssetDownloadLink(assetId: string): Promise<string | null> {
     await this.initialize();
     
     try {
       console.log(`=== Generating V4 Download Link: ${assetId} ===`);
+      const accountId = await this.getAccountId();
       
-      const asset = await this.makeRequest('GET', `/assets/${assetId}`);
+      // Get file details to check status
+      const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
+      const fileData = response.data;
       
-      // V4 assets should have download_url or we can create one
-      if (asset.download_url) {
-        console.log(`V4 Direct download URL found: ${asset.download_url}`);
-        return asset.download_url;
+      if (!fileData) {
+        console.log('File not found');
+        return null;
       }
       
-      // Try to get download URL via download endpoint
-      const downloadData = await this.makeRequest('GET', `/assets/${assetId}/download`);
+      console.log('File details:', {
+        name: fileData.name,
+        status: fileData.status,
+        media_type: fileData.media_type,
+        view_url: fileData.view_url
+      });
       
-      if (downloadData.url) {
-        console.log(`V4 Download URL generated: ${downloadData.url}`);
-        return downloadData.url;
-      }
+      // Frame.io V4 API limitation: No direct download/streaming URLs available
+      // The API only provides view_url which requires web interface
+      console.log('Frame.io V4 API does not provide direct download URLs');
+      console.log('Available URL is view-only:', fileData.view_url);
       
-      console.log(`No V4 download URL available for asset ${assetId}`);
+      // Return null to indicate streaming is not available
       return null;
     } catch (error) {
       console.error(`Failed to generate V4 download link for ${assetId}:`, error);
@@ -767,98 +774,77 @@ export class FrameioV4Service {
   }
 
   /**
-   * Get playable media links for streaming - Frame.io V4 investigation approach
+   * Get playable media links for streaming - Frame.io V4 approach
+   * Based on API research, Frame.io V4 uses a different streaming approach
    */
   async getPlayableMediaLinks(fileId: string, prefer: string = "proxy") {
     await this.initialize();
     
     try {
       const accountId = await this.getAccountId();
-      console.log(`=== Investigating Frame.io V4 streaming for ${fileId} (prefer: ${prefer}) ===`);
+      console.log(`=== Frame.io V4 Streaming Request for ${fileId} ===`);
       
-      // First, get basic file info to see available fields
-      console.log('Step 1: Getting basic file info...');
+      // Get file details
       const basicResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}`);
-      
-      console.log('=== Frame.io V4 Basic File Response ===');
-      console.log(JSON.stringify(basicResponse, null, 2));
-      
       const data = basicResponse.data;
+      
       if (!data) {
-        console.log('No file data found');
-        return null;
+        console.log('File not found');
+        return {
+          available: false,
+          reason: 'File not found in Frame.io'
+        };
       }
       
-      // Check all available fields for streaming-related data
-      console.log('=== Analyzing available fields ===');
-      const allFields = Object.keys(data);
-      console.log('Available fields:', allFields);
+      console.log('File info:', {
+        name: data.name,
+        type: data.media_type,
+        status: data.status,
+        view_url: data.view_url
+      });
       
-      // Look for any URL-related fields
-      const urlFields = allFields.filter(field => 
-        field.toLowerCase().includes('url') || 
-        field.toLowerCase().includes('link') ||
-        field.toLowerCase().includes('stream') ||
-        field.toLowerCase().includes('media')
-      );
-      console.log('URL/Media fields found:', urlFields);
-      
-      for (const field of urlFields) {
-        if (data[field]) {
-          console.log(`${field}:`, data[field]);
-        }
+      // Check if file is ready
+      if (data.status !== 'transcoded' && data.status !== 'complete') {
+        return {
+          available: false,
+          reason: `File is still ${data.status}. Please wait for processing.`,
+          webUrl: data.view_url
+        };
       }
       
-      // Try different include parameter variations based on Frame.io V4 documentation
-      const includeAttempts = [
-        // Standard Frame.io V4 includes 
-        'download_url',
-        'stream_url', 
-        'playback_url',
-        'transcoded_url',
-        // Try media_links without subfields
-        'media_links',
-        // Try other potential fields
-        'streaming_data',
-        'playback_data'
-      ];
-      
-      for (const includeParam of includeAttempts) {
-        try {
-          console.log(`Step 2: Trying include parameter: ${includeParam}`);
-          const includeResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}`, null, {
-            include: includeParam
-          });
+      // Try to get download URL using the generateAssetDownloadLink method
+      try {
+        const downloadUrl = await this.generateAssetDownloadLink(fileId);
+        if (downloadUrl) {
+          console.log('Successfully generated streaming URL via download link');
           
-          console.log(`=== SUCCESS with include=${includeParam} ===`);
-          console.log(JSON.stringify(includeResponse, null, 2));
-          
-          const includeData = includeResponse.data;
-          
-          // Look for streaming URLs in the response
-          if (includeData.media_links || includeData.streaming_urls || includeData.playback_urls) {
-            console.log('Found streaming data in response!');
-            
-            // Process the streaming links
-            const streamingData = includeData.media_links || includeData.streaming_urls || includeData.playback_urls;
-            console.log('Streaming data structure:', streamingData);
-            
-            // If we find valid streaming data, process and return it
-            if (streamingData && typeof streamingData === 'object') {
-              return this.processStreamingData(streamingData, prefer, includeData);
-            }
+          // Determine media type
+          let kind = 'mp4';
+          if (data.media_type?.includes('quicktime')) {
+            kind = 'mov';
           }
           
-        } catch (includeError) {
-          console.log(`include=${includeParam} failed:`, includeError.message);
+          return {
+            available: true,
+            url: downloadUrl,
+            kind: kind,
+            asset: {
+              name: data.name,
+              size: data.file_size,
+              type: data.media_type,
+              status: data.status
+            }
+          };
         }
+      } catch (dlError) {
+        console.log('Could not generate download link:', dlError.message);
       }
       
-      // If no streaming URLs found, return fallback info
-      console.log('=== No streaming URLs found in Frame.io V4 ===');
+      // Frame.io V4 limitation - use web interface
+      console.log('Frame.io V4 direct streaming not available, use web interface');
       return {
         available: false,
-        reason: 'Frame.io V4 does not provide direct streaming URLs for this file',
+        reason: 'Frame.io V4 requires web interface for video playback',
         webUrl: data.view_url,
         asset: {
           name: data.name,
@@ -869,8 +855,12 @@ export class FrameioV4Service {
       };
       
     } catch (error) {
-      console.error('Error investigating Frame.io V4 streaming:', error);
-      return null;
+      console.error('Error getting Frame.io V4 media links:', error);
+      return {
+        available: false,
+        reason: 'Failed to get media links',
+        error: error.message
+      };
     }
   }
 

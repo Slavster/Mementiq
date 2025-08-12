@@ -688,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Step 2: Backend route to fetch playable media link
+  // Stream video from Frame.io V4 - Enhanced with better error handling
   app.get("/api/files/:fileId/stream", requireAuth, async (req, res) => {
     try {
       const { fileId } = req.params;
@@ -709,10 +709,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const prefer = (req.query.prefer as string) || "proxy";
       const mediaLink = await frameioV4Service.getPlayableMediaLinks(fileId, prefer);
       
-      if (mediaLink) {
-        // Set Cache-Control: no-store as media links are short-lived
+      if (mediaLink && mediaLink.available && mediaLink.url) {
+        // Successfully got a streaming URL
+        console.log('Streaming URL obtained:', mediaLink.kind);
         res.setHeader('Cache-Control', 'no-store');
         res.json(mediaLink);
+      } else if (mediaLink && !mediaLink.available) {
+        // Frame.io V4 doesn't provide direct streaming
+        console.log('Frame.io V4 direct streaming not available');
+        res.json({
+          available: false,
+          reason: mediaLink.reason || "Frame.io V4 requires web interface for playback",
+          webUrl: mediaLink.webUrl,
+          asset: mediaLink.asset
+        });
       } else {
         res.status(404).json({ 
           error: "No playable media links available",
