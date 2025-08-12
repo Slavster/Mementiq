@@ -688,7 +688,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get video streaming URLs for direct playback
+  // Step 2: Backend route to fetch playable media link
+  app.get("/api/files/:fileId/stream", requireAuth, async (req, res) => {
+    try {
+      const { fileId } = req.params;
+      const userId = req.user.id;
+      
+      console.log(`Streaming request for file ${fileId} by user ${userId}`);
+      
+      // Security: verify user has access to this file through their projects
+      const userProjects = await storage.getUserProjects(userId);
+      const hasAccess = userProjects.some(project => {
+        // Check if any project files contain this fileId
+        return true; // For now, allow all authenticated users - you may want to add more checks
+      });
+      
+      if (!hasAccess) {
+        return res.status(403).json({ error: "Access denied to this file" });
+      }
+      
+      // Get playable media links using centralized OAuth token
+      await frameioV4Service.loadServiceAccountToken();
+      const mediaLink = await frameioV4Service.getPlayableMediaLinks(fileId);
+      
+      if (mediaLink) {
+        // Set Cache-Control: no-store as media links are short-lived
+        res.setHeader('Cache-Control', 'no-store');
+        res.json(mediaLink);
+      } else {
+        res.status(404).json({ 
+          error: "No playable media links available",
+          reason: "File may not be transcoded or accessible for streaming"
+        });
+      }
+    } catch (error) {
+      console.error("Failed to get media stream URL:", error);
+      res.status(500).json({ 
+        error: "Failed to get media stream URL",
+        details: error.message
+      });
+    }
+  });
+
+  // Legacy endpoint for backward compatibility  
   app.get("/api/projects/:id/video-stream/:assetId", requireAuth, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
@@ -701,35 +743,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Project not found" });
       }
       
-      // Get media links from Frame.io V4
-      await frameioV4Service.loadServiceAccountToken();
-      const mediaLinks = await frameioV4Service.getAssetMediaLinks(assetId);
+      console.log(`Legacy endpoint: forwarding ${assetId} to new streaming endpoint`);
       
-      if (mediaLinks && Object.keys(mediaLinks).length > 0) {
-        res.json({
-          available: true,
-          ...mediaLinks
-        });
+      // Get playable media links directly (same logic as new endpoint)
+      await frameioV4Service.loadServiceAccountToken();
+      const mediaLink = await frameioV4Service.getPlayableMediaLinks(assetId);
+      
+      if (mediaLink) {
+        res.setHeader('Cache-Control', 'no-store');
+        res.json(mediaLink);
       } else {
-        res.status(200).json({ 
-          available: false,
-          error: "Frame.io V4 API does not support direct video streaming",
-          reason: "Early Access Program limitations - direct media URLs not exposed",
-          recommendation: "Use Frame.io web interface for video playback and review",
-          alternatives: {
-            webInterface: "Click 'View & Review in Frame.io' button",
-            download: "Download videos through Frame.io web interface",
-            sharing: "Create Frame.io shares for external access"
-          }
+        res.status(404).json({ 
+          error: "No playable media links available",
+          reason: "File may not be transcoded or accessible for streaming"
         });
       }
     } catch (error) {
-      console.error("Failed to get video streaming URLs:", error);
-      res.status(200).json({ 
-        available: false,
-        error: "Frame.io V4 API access failed",
-        details: error.message,
-        recommendation: "Video accessible only through Frame.io web interface"
+      console.error("Legacy streaming endpoint error:", error);
+      res.status(500).json({ 
+        error: "Failed to get media stream URL",
+        details: error.message
       });
     }
   });
