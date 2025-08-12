@@ -816,9 +816,7 @@ export class FrameioV4Service {
       // Step 2: Add asset to the share
       console.log('Step 2: Adding asset to share...');
       await this.makeRequest('POST', `/accounts/${accountId}/shares/${shareId}/assets`, {
-        data: {
-          asset_ids: [assetId]
-        }
+        data: [{ id: assetId, type: 'file' }]
       }, {
         'Authorization': `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
@@ -834,9 +832,9 @@ export class FrameioV4Service {
 
       const updatedShare = await this.makeRequest('PATCH', `/accounts/${accountId}/shares/${shareId}`, {
         data: {
-          access_level: 'public',
-          allow_comments: false,
-          allow_downloads: true,
+          visibility: 'public',
+          comments_enabled: false,
+          downloads_enabled: true,
           expires_at: expirationDate.toISOString()
         }
       }, {
@@ -847,8 +845,14 @@ export class FrameioV4Service {
 
       console.log(`✅ Step 3: Share configured - public access, downloads enabled, comments disabled`);
       
-      // Step 4: Return the public URL
-      const publicUrl = updatedShare.data.public_url || updatedShare.data.url;
+      // Step 4: Fetch final share to get public URL
+      console.log('Step 4: Fetching final share details...');
+      const finalShare = await this.makeRequest('GET', `/accounts/${accountId}/shares/${shareId}`, {}, {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'api-version': '4.0'
+      });
+
+      const publicUrl = finalShare.data.public_url || finalShare.data.url || finalShare.data.share_url;
       console.log(`✅ Step 4: Public URL ready: ${publicUrl}`);
 
       return {

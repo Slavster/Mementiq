@@ -554,7 +554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/projects/:id/video-share-link", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const project = await storage.getProjectById(projectId);
+      const project = await storage.getProject(projectId);
       
       if (!project) {
         return res.status(404).json({ error: 'Project not found' });
