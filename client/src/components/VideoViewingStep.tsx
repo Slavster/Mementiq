@@ -69,29 +69,45 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
     fetchVideoFiles();
   }, [project.id, toast]);
 
-  // Step 3: React hook to fetch stream URL
+  // Step 3: React hook to fetch stream URL with Frame.io V4 support
   const loadVideoStream = async (assetId: string) => {
     setLoadingVideo(true);
     try {
       // Use new streaming endpoint
-      const mediaLink = await apiRequest(`/api/files/${assetId}/stream`);
+      const result = await apiRequest(`/api/files/${assetId}/stream`);
+      console.log('Received streaming result:', result);
       
-      if (mediaLink && mediaLink.url) {
-        console.log('Received media link:', mediaLink);
-        setMediaLinks(mediaLink);
+      // Handle successful streaming URL
+      if (result && result.url) {
+        console.log('Direct streaming available:', result);
+        setMediaLinks(result);
         
-        // Setup video player with the new media link structure
+        // Setup video player with the streaming URL
         if (videoRef.current) {
-          setupVideoPlayer(mediaLink);
+          setupVideoPlayer(result);
         }
-      } else {
-        console.log('No streaming URL available:', mediaLink);
+      } 
+      // Handle Frame.io V4 limitation (no direct streaming)
+      else if (result && result.available === false) {
+        console.log('Frame.io V4 streaming limitation:', result.reason);
+        setMediaLinks(null);
+        
+        toast({
+          title: "Direct Streaming Not Available",
+          description: "Frame.io V4 requires web interface for video playback",
+          variant: "default",
+        });
+      }
+      // Handle other cases
+      else {
+        console.log('No streaming URL available:', result);
+        setMediaLinks(null);
+        
         toast({
           title: "Streaming Not Available",
           description: "Video transcoding may be in progress. Try Frame.io web interface.",
           variant: "default",
         });
-        setMediaLinks(null);
       }
     } catch (error) {
       console.error('Failed to load video stream:', error);
