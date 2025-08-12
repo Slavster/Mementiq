@@ -955,16 +955,12 @@ export default function DashboardPage() {
                 />
               ) : currentStep === "form" ? (
                 <div className="space-y-4">
-                  <div className="flex gap-2 mb-4">
-                    {selectedProject.status === "Edit in Progress" ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => setCurrentStep("confirmation")}
-                        className="text-white border-gray-600 hover:bg-gray-700"
-                      >
-                        ← Back to Editor Status
-                      </Button>
-                    ) : (
+                  {/* Only show back button for projects that haven't been submitted yet */}
+                  {selectedProject.status.toLowerCase() !== "edit in progress" && 
+                   selectedProject.status.toLowerCase() !== "video is ready" && 
+                   selectedProject.status.toLowerCase() !== "delivered" && 
+                   selectedProject.status.toLowerCase() !== "complete" && (
+                    <div className="flex gap-2 mb-4">
                       <Button
                         variant="outline"
                         onClick={() => setCurrentStep("upload")}
@@ -972,8 +968,8 @@ export default function DashboardPage() {
                       >
                         ← Back to Upload
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <TallyFormStep
                     projectId={selectedProject.id}
                     userId={user?.id || ""}
@@ -994,10 +990,10 @@ export default function DashboardPage() {
                           ? "Editor is On It!"
                           : "Form Submitted Successfully!"}
                       </h3>
-                      <p className="text-gray-300 mb-6">
+                      <p className="text-gray-300 mb-6 whitespace-pre-line">
                         {selectedProject.status === "Edit in Progress"
-                          ? "Your project is being worked on by an editor 🎉.\n You can't upload more footage now, but you can update your instructions if needed."
-                          : "Your request has been received, nice! You can send it off to an editor now or go back to upload additional footage."}
+                          ? "Your project is being worked on by an editor 🎉\n You can't upload more footage now, but you can update your instructions if needed."
+                          : "Your request has been received, nice!\n You can send it off to an editor now or go back to upload additional footage."}
                       </p>
                       <div className="flex gap-4 justify-center">
                         {selectedProject.status === "Edit in Progress" ? (
