@@ -180,6 +180,7 @@
     "has-symbols": "^1.1.0",
     "has-tostringtag": "^1.0.2",
     "hasown": "^2.0.2",
+    "hls.js": "^1.6.9",
     "html-entities": "^2.6.0",
     "html-to-text": "^9.0.5",
     "htmlparser2": "^8.0.2",

@@ -747,6 +747,42 @@ export class FrameioV4Service {
   }
 
   /**
+   * Get media links for a Frame.io asset (for direct video playback)
+   */
+  async getAssetMediaLinks(assetId: string): Promise<{ hls?: string; mp4?: string; proxy?: string } | null> {
+    await this.initialize();
+    
+    try {
+      // Get account ID first
+      const accountsResponse = await this.makeRequest('GET', '/accounts');
+      if (!accountsResponse.data || accountsResponse.data.length === 0) {
+        throw new Error('No accounts found');
+      }
+      const accountId = accountsResponse.data[0].id;
+      
+      console.log(`=== Getting V4 media links for asset ${assetId} ===`);
+      const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}?include=media_links.proxy`);
+
+      console.log('Asset data with media links:', JSON.stringify(response, null, 2));
+      
+      const mediaLinks = response.media_links?.proxy || response.media_links;
+      if (mediaLinks) {
+        return {
+          hls: mediaLinks.hls || mediaLinks.m3u8,
+          mp4: mediaLinks.mp4,
+          proxy: mediaLinks.proxy
+        };
+      }
+      
+      console.warn('No media links found in V4 asset data');
+      return null;
+    } catch (error) {
+      console.error('Error getting V4 media links:', error);
+      return null;
+    }
+  }
+
+  /**
    * Verify if asset belongs to project folder (V4 compatible)
    */
   async verifyAssetInProjectFolder(assetId: string, folderId: string): Promise<boolean> {

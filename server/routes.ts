@@ -688,6 +688,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get video streaming URLs for direct playback
+  app.get("/api/projects/:id/video-stream/:assetId", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const assetId = req.params.assetId;
+      const userId = req.user.id;
+      
+      // Verify project ownership
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== userId) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      // Get media links from Frame.io V4
+      await frameioV4Service.loadServiceAccountToken();
+      const mediaLinks = await frameioV4Service.getAssetMediaLinks(assetId);
+      
+      if (mediaLinks) {
+        res.json(mediaLinks);
+      } else {
+        res.status(404).json({ error: "Could not get video streaming URLs" });
+      }
+    } catch (error) {
+      console.error("Failed to get video streaming URLs:", error);
+      res.status(500).json({ error: "Failed to get video streaming URLs" });
+    }
+  });
+
   // Accept video endpoint
   app.post("/api/projects/:id/accept", requireAuth, async (req, res) => {
     try {
