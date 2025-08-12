@@ -747,6 +747,20 @@ export class FrameioV4Service {
   }
 
   /**
+   * Get account ID for API calls
+   */
+  async getAccountId(): Promise<string> {
+    await this.initialize();
+    
+    const accountsResponse = await this.makeRequest('GET', '/accounts');
+    if (!accountsResponse.data?.length) {
+      throw new Error('No accessible accounts found');
+    }
+    
+    return accountsResponse.data[0].id;
+  }
+
+  /**
    * Get playable media links for streaming (Step 1)
    */
   async getPlayableMediaLinks(fileId: string) {
