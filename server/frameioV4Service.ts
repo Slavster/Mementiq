@@ -747,12 +747,15 @@ export class FrameioV4Service {
       });
       
       // Frame.io V4 API limitation: No direct download/streaming URLs available
-      // The API only provides view_url which requires web interface
+      // However, we can try to extract the actual file content using authenticated requests
       console.log('Frame.io V4 API does not provide direct download URLs');
       console.log('Available URL is view-only:', fileData.view_url);
       
-      // Return null to indicate streaming is not available
-      return null;
+      // Try to get file content through proxy approach
+      // Return a server-proxied URL that will handle authentication
+      const proxyUrl = `/api/frameio/proxy/file/${assetId}`;
+      console.log('Using server proxy URL for authenticated access:', proxyUrl);
+      return proxyUrl;
     } catch (error) {
       console.error(`Failed to generate V4 download link for ${assetId}:`, error);
       return null;

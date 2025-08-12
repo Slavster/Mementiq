@@ -176,20 +176,29 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Frame.io V4 Notice and Viewer */}
+          {/* Frame.io V4 Notice - Authentication Required */}
           <div className="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700" style={{ aspectRatio: '16/9' }}>
             <div className="flex flex-col items-center justify-center h-full p-8">
               <div className="text-center space-y-4">
-                <Play className="w-16 h-16 text-cyan-500 mx-auto opacity-70" />
-                <h3 className="text-xl font-semibold text-white">
-                  Video Ready for Review
-                </h3>
-                <p className="text-gray-400 max-w-md">
-                  Your video "{primaryVideo.filename}" has been delivered and is ready for viewing.
-                </p>
-                <p className="text-sm text-gray-500">
-                  Frame.io V4 requires using their web interface for video playback.
-                </p>
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 max-w-md">
+                  <div className="flex items-center gap-2 text-yellow-400 mb-2">
+                    <ExternalLink className="w-5 h-5" />
+                    <span className="font-semibold">Authentication Required</span>
+                  </div>
+                  <p className="text-sm text-gray-300">
+                    Frame.io V4 requires web authentication to view videos. This limitation exists because Frame.io's V4 API doesn't provide direct streaming URLs.
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-white">
+                    "{primaryVideo.filename}"
+                  </h3>
+                  <p className="text-gray-400">
+                    Your video is ready for review in Frame.io
+                  </p>
+                </div>
+                
                 <Button
                   onClick={() => {
                     // Use the stored view URL from database, or construct one from project data
@@ -207,11 +216,12 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                   className="bg-cyan-500 hover:bg-cyan-400 text-black font-medium px-6 py-3"
                 >
                   <ExternalLink className="w-5 h-5 mr-2" />
-                  Watch Video in Frame.io
+                  View Video in Frame.io
                 </Button>
-                <p className="text-xs text-gray-600 mt-2">
-                  Opens in a new tab with full playback controls
-                </p>
+                
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 max-w-md text-xs text-gray-400">
+                  <p><strong>Note:</strong> You'll need to log into Frame.io with the account credentials provided by your video editor to access the video.</p>
+                </div>
               </div>
             </div>
           </div>
