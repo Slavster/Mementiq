@@ -809,13 +809,18 @@ export class FrameioV4Service {
         }
       }
       
-      // Try different include parameter variations
+      // Try different include parameter variations based on Frame.io V4 documentation
       const includeAttempts = [
-        'media_links',
-        'streaming_urls', 
-        'playback_urls',
+        // Standard Frame.io V4 includes 
         'download_url',
-        'transcoded_urls'
+        'stream_url', 
+        'playback_url',
+        'transcoded_url',
+        // Try media_links without subfields
+        'media_links',
+        // Try other potential fields
+        'streaming_data',
+        'playback_data'
       ];
       
       for (const includeParam of includeAttempts) {
