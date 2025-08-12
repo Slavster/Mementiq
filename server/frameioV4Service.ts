@@ -747,96 +747,70 @@ export class FrameioV4Service {
   }
 
   /**
-   * Get media links for a Frame.io asset (for direct video playback)
+   * Get playable media links for streaming (Step 1)
    */
-  async getAssetMediaLinks(assetId: string): Promise<{ hls?: string; mp4?: string; proxy?: string } | null> {
+  async getPlayableMediaLinks(fileId: string) {
     await this.initialize();
     
     try {
-      // Get account ID first
-      const accountsResponse = await this.makeRequest('GET', '/accounts');
-      if (!accountsResponse.data || accountsResponse.data.length === 0) {
-        throw new Error('No accounts found');
-      }
-      const accountId = accountsResponse.data[0].id;
+      const accountId = await this.getAccountId();
+      console.log(`=== Getting playable media links for ${fileId} ===`);
       
-      console.log(`=== Getting V4 asset details for ${assetId} ===`);
-      // First get basic asset info
-      const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
-
-      console.log('=== Frame.io V4 Asset Data Structure ===');
+      // Call Frame.io V4 media_links endpoint with prefer=proxy for best streaming experience
+      const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}/media_links?prefer=proxy`);
+      
+      console.log('=== Frame.io V4 Media Links Response ===');
       console.log(JSON.stringify(response, null, 2));
       
-      const asset = response.data;
-      if (!asset) {
-        console.log('No asset data in response');
+      const mediaLinks = response.data;
+      if (!mediaLinks || !Array.isArray(mediaLinks) || mediaLinks.length === 0) {
+        console.log('No media links available');
         return null;
       }
       
-      console.log('=== Frame.io V4 Direct Streaming Analysis ===');
-      console.log(`Asset: ${asset.name} (${asset.media_type})`);
-      console.log(`Status: ${asset.status}`);
-      console.log(`File size: ${asset.file_size} bytes`);
-      console.log(`Available properties:`, Object.keys(asset));
+      // Look for HLS (.m3u8) first, then MP4, then MOV, then any other playable format
+      const hlsLink = mediaLinks.find(link => 
+        link.url && (link.url.includes('.m3u8') || link.format === 'hls' || link.type === 'hls')
+      );
       
-      // Frame.io V4 Early Access Program limitations:
-      // - No direct streaming URLs in file endpoint
-      // - No media_links or download_url fields
-      // - Only view_url for web interface access
+      const mp4Link = mediaLinks.find(link => 
+        link.url && (link.url.includes('.mp4') || link.format === 'mp4' || link.type === 'mp4')
+      );
       
-      // Try different approaches to get downloadable content
-      let result = {};
+      const movLink = mediaLinks.find(link => 
+        link.url && (link.url.includes('.mov') || link.format === 'mov' || link.type === 'mov')
+      );
       
-      // Method 1: Try to get download URL through shares endpoint
-      try {
-        console.log('=== Attempting to create temporary share for download access ===');
+      // Prefer HLS for streaming, fallback to MP4, then MOV
+      let selectedLink = hlsLink || mp4Link || movLink || mediaLinks[0];
+      
+      if (selectedLink) {
+        const result = {
+          url: selectedLink.url,
+          kind: hlsLink ? 'hls' : (mp4Link ? 'mp4' : (movLink ? 'mov' : 'unknown')),
+          expiresAt: selectedLink.expires_at || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours default
+          quality: selectedLink.quality || 'auto',
+          format: selectedLink.format || selectedLink.type || 'video'
+        };
         
-        // Create a temporary share to get download access
-        const shareResponse = await this.makeRequest('POST', `/accounts/${accountId}/shares`, {
-          data: {
-            name: `temp-download-${asset.name}`,
-            type: 'project',
-            project_id: asset.project_id,
-            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-            password: null,
-            allow_download: true
-          }
-        });
-        
-        if (shareResponse.data?.share_url) {
-          console.log('Share created successfully:', shareResponse.data.share_url);
-          // Frame.io shares can provide download access
-          result.shareUrl = shareResponse.data.share_url;
-        }
-      } catch (shareError) {
-        console.log('Share creation failed:', shareError.message);
-      }
-      
-      // Method 2: Check if there are proxy/preview URLs available through other means
-      if (asset.view_url) {
-        console.log('View URL available:', asset.view_url);
-        result.viewUrl = asset.view_url;
-      }
-      
-      // Method 3: Frame.io V4 might require different download workflow
-      console.log('=== Frame.io V4 Streaming Conclusion ===');
-      
-      if (Object.keys(result).length === 0) {
-        console.log('❌ No direct streaming URLs available in Frame.io V4 Early Access');
-        console.log('📝 Frame.io V4 API limitations:');
-        console.log('   - Direct media streaming not exposed in current API');
-        console.log('   - Download URLs require separate share/export workflow');
-        console.log('   - View URLs only work in Frame.io web interface');
-        console.log('🔄 Recommendation: Use Frame.io web interface for video playback');
-        return null;
-      } else {
-        console.log('✓ Alternative access methods found:', result);
+        console.log('✓ Selected playable media link:', result);
         return result;
       }
+      
+      console.log('❌ No playable media links found');
+      return null;
+      
     } catch (error) {
-      console.error('Error getting V4 media links:', error);
+      console.error('Error getting playable media links:', error);
       return null;
     }
+  }
+
+  /**
+   * Legacy method for compatibility - now uses proper media_links endpoint
+   */
+  async getAssetMediaLinks(assetId: string) {
+    return this.getPlayableMediaLinks(assetId);
   }
 
   /**

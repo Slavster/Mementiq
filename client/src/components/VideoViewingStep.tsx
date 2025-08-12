@@ -69,30 +69,40 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
     fetchVideoFiles();
   }, [project.id, toast]);
 
-  // Load video streaming URLs and setup player
+  // Step 3: React hook to fetch stream URL
   const loadVideoStream = async (assetId: string) => {
     setLoadingVideo(true);
     try {
-      const response = await apiRequest(`/api/projects/${project.id}/video-stream/${assetId}`);
+      // Use new streaming endpoint
+      const mediaLink = await apiRequest(`/api/files/${assetId}/stream`);
       
-      if (response.available && (response.hls || response.mp4 || response.proxy)) {
-        setMediaLinks(response);
+      if (mediaLink && mediaLink.url) {
+        console.log('Received media link:', mediaLink);
+        setMediaLinks(mediaLink);
         
-        // Setup video player once we have the links
+        // Setup video player with the new media link structure
         if (videoRef.current) {
-          setupVideoPlayer(response);
+          setupVideoPlayer(mediaLink);
         }
       } else {
-        console.log('Direct streaming not available:', response);
+        console.log('No streaming URL available:', mediaLink);
         toast({
-          title: "Direct Streaming Not Available",
-          description: response.recommendation || "Use Frame.io web interface for video playback.",
+          title: "Streaming Not Available",
+          description: "Video transcoding may be in progress. Try Frame.io web interface.",
           variant: "default",
         });
         setMediaLinks(null);
       }
     } catch (error) {
       console.error('Failed to load video stream:', error);
+      
+      // If link expired (common with Frame.io), try to refresh
+      if (error.message?.includes('403') || error.message?.includes('expired')) {
+        console.log('Media link may have expired, retrying...');
+        setTimeout(() => loadVideoStream(assetId), 2000);
+        return;
+      }
+      
       toast({
         title: "Video Loading Error",
         description: "Could not load video stream. You can still view it in Frame.io.",
@@ -104,8 +114,8 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
     }
   };
 
-  // Setup video player (HLS or direct MP4)
-  const setupVideoPlayer = (links: MediaLinks) => {
+  // Step 4 & 5: React player that handles HLS, MP4, and MOV
+  const setupVideoPlayer = (mediaLink: any) => {
     if (!videoRef.current) return;
 
     const video = videoRef.current;
@@ -116,42 +126,77 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
       hlsRef.current = null;
     }
 
-    if (links.hls) {
-      // Use HLS for streaming
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: false,
-          lowLatencyMode: true,
-        });
+    console.log(`Setting up video player for ${mediaLink.kind}: ${mediaLink.url}`);
+
+    // Handle HLS streaming (.m3u8)
+    if (mediaLink.kind === 'hls' && Hls.isSupported()) {
+      console.log('Setting up HLS player');
+      const hls = new Hls({
+        enableWorker: false,
+        lowLatencyMode: true,
+        backBufferLength: 90,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 600
+      });
+      
+      hls.loadSource(mediaLink.url);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('HLS manifest parsed successfully');
+        video.play().catch(console.error);
+      });
+      
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error('HLS error:', data);
         
-        hlsRef.current = hls;
-        hls.loadSource(links.hls);
-        hls.attachMedia(video);
-        
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('HLS manifest loaded successfully');
-        });
-        
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error('HLS error:', data);
-          // Fallback to MP4 if available
-          if (links.mp4 && !data.fatal) {
-            video.src = links.mp4;
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.log('Network error, trying to recover...');
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log('Media error, trying to recover...');
+              hls.recoverMediaError();
+              break;
+            default:
+              console.log('Fatal error, destroying HLS instance');
+              hls.destroy();
+              break;
           }
+        }
+      });
+    }
+    // Handle native MP4/MOV playback (including .mov files)
+    else if (mediaLink.kind === 'mp4' || mediaLink.kind === 'mov' || mediaLink.url) {
+      console.log(`Setting up native video player for ${mediaLink.kind}`);
+      video.src = mediaLink.url;
+      
+      // Set up error handling for direct video playback
+      video.onerror = (e) => {
+        console.error('Video playback error:', e);
+        toast({
+          title: "Playback Error",
+          description: "Video format may not be supported. Try Frame.io web interface.",
+          variant: "destructive",
         });
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS support (Safari)
-        video.src = links.hls;
-      } else if (links.mp4) {
-        // Fallback to MP4
-        video.src = links.mp4;
-      }
-    } else if (links.mp4) {
-      // Direct MP4 playback
-      video.src = links.mp4;
-    } else if (links.proxy) {
-      // Use proxy URL as fallback
-      video.src = links.proxy;
+      };
+      
+      // Auto-play when ready
+      video.oncanplay = () => {
+        console.log('Video can start playing');
+        video.play().catch(console.error);
+      };
+    }
+    else {
+      console.log('No compatible video format available');
+      toast({
+        title: "Unsupported Format",
+        description: "Video format not supported for direct playback.",
+        variant: "destructive",
+      });
     }
   };
 
