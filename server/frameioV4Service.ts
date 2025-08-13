@@ -786,7 +786,7 @@ export class FrameioV4Service {
   }
 
   /**
-   * Create a public share link for a specific asset
+   * Create a public share link for a specific asset (checks for existing shares first)
    */
   async createAssetShareLink(assetId: string, name: string): Promise<{ url: string; id: string }> {
     await this.initialize();
@@ -797,6 +797,17 @@ export class FrameioV4Service {
       
       const accountId = await this.getAccountId();
       const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
+      
+      // Step 1: Check if asset is already in an existing share
+      console.log('Checking for existing shares containing this asset...');
+      const existingShare = await this.findExistingShareForAsset(accountId, projectId, assetId);
+      
+      if (existingShare) {
+        console.log(`✅ Found existing share: ${existingShare.id} with URL: ${existingShare.url}`);
+        return existingShare;
+      }
+      
+      console.log('No existing share found, creating new share...');
       
       // Based on Frame.io V4 documentation, try creating share without discriminator first
       console.log('Creating share with minimal data...');
@@ -900,6 +911,61 @@ export class FrameioV4Service {
         url: fallbackUrl,
         id: 'fallback'
       };
+    }
+  }
+
+  /**
+   * Find existing share that contains the specified asset
+   */
+  async findExistingShareForAsset(accountId: string, projectId: string, assetId: string): Promise<{ url: string; id: string } | null> {
+    try {
+      console.log(`Searching for existing shares in project ${projectId}...`);
+      
+      // Get all shares for this project
+      const sharesResponse = await this.makeRequest('GET', `/accounts/${accountId}/projects/${projectId}/shares`);
+      const shares = sharesResponse.data || [];
+      
+      console.log(`Found ${shares.length} existing shares`);
+      
+      // Check each share to see if it contains our asset
+      for (const share of shares) {
+        if (!share.enabled || share.access !== 'public') {
+          continue; // Skip disabled or non-public shares
+        }
+        
+        try {
+          // Get assets in this share
+          const shareAssetsResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares/${share.id}/assets`);
+          const shareAssets = shareAssetsResponse.data || [];
+          
+          // Check if our asset is in this share
+          const assetInShare = shareAssets.find((asset: any) => asset.id === assetId);
+          
+          if (assetInShare) {
+            console.log(`✅ Asset ${assetId} found in existing share ${share.id}`);
+            
+            const shareUrl = share.short_url || 
+                           share.public_url || 
+                           share.url ||
+                           `https://share.frame.io/${share.id}`;
+            
+            return {
+              url: shareUrl,
+              id: share.id
+            };
+          }
+        } catch (assetCheckError) {
+          console.log(`Failed to check assets in share ${share.id}:`, assetCheckError.message);
+          continue;
+        }
+      }
+      
+      console.log(`Asset ${assetId} not found in any existing shares`);
+      return null;
+      
+    } catch (error) {
+      console.error('Failed to search existing shares:', error);
+      return null; // Continue with new share creation
     }
   }
 
