@@ -184,15 +184,16 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                   <div className="flex items-center gap-2 text-green-400 mb-2">
                     <ExternalLink className="w-5 h-5" />
                     <span className="font-semibold">Frame.io Public Share</span>
+                  </div>
 
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold text-white">
-                    "{primaryVideo.filename}"
-                  </h3>
-                  <p className="text-gray-400">
-                    Your video is ready for review in Frame.io
-                  </p>
-                </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold text-white">
+                      "{primaryVideo.filename}"
+                    </h3>
+                    <p className="text-gray-400">
+                      Your video is ready for review in Frame.io
+                    </p>
+                  </div>
                 
                 <Button
                   onClick={async () => {
@@ -232,8 +233,9 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                   View Video (Public Share)
                 </Button>
                 
-                <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 max-w-md text-xs text-gray-300">
-                  <p><strong>New:</strong> Frame.io V4 public shares - secure, no-login access with downloads enabled!</p>
+                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 max-w-md text-xs text-gray-300">
+                    <p><strong>New:</strong> Frame.io V4 public shares - secure, no-login access with downloads enabled!</p>
+                  </div>
                 </div>
               </div>
             </div>
