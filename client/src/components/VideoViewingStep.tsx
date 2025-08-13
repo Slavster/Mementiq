@@ -175,7 +175,6 @@ export function VideoViewingStep({
       <div className="text-center space-y-4">
         <div className="text-6xl">🎉</div>
         <h1 className="text-3xl font-bold text-white">Your Video is Ready!</h1>
-        <p className="text-xl text-gray-300">🎬 Get ready to see your amazing content come to life!</p>
       </div>
 
       {/* Main Video Card */}
@@ -205,24 +204,29 @@ export function VideoViewingStep({
                   const response = await apiRequest(
                     `/api/projects/${project.id}/video-share-link`,
                   );
-                  
+
                   if (response.shareUrl) {
-                    console.log("Opening Frame.io public share:", response.shareUrl);
+                    console.log(
+                      "Opening Frame.io public share:",
+                      response.shareUrl,
+                    );
                     window.open(response.shareUrl, "_blank");
 
                     toast({
                       title: "Share Link Created!",
-                      description: "Opening your video in a public Frame.io share (no login required)",
+                      description:
+                        "Opening your video in a public Frame.io share (no login required)",
                     });
                   } else {
                     throw new Error("No share URL returned");
                   }
                 } catch (error) {
                   console.error("Failed to create share link:", error);
-                  
+
                   toast({
                     title: "Error",
-                    description: "Could not create share link. Please try again.",
+                    description:
+                      "Could not create share link. Please try again.",
                     variant: "destructive",
                   });
                 }
@@ -230,39 +234,76 @@ export function VideoViewingStep({
               className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg px-8 py-4 h-auto"
             >
               <ExternalLink className="w-6 h-6 mr-3" />
-              🎯 Open Video Link
+              Open Video Link
             </Button>
 
             {/* Instructions */}
             <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
-              <h3 className="text-lg font-semibold text-cyan-400 text-center">📋 Instructions</h3>
-              
               <div className="space-y-3 text-gray-300">
                 <p>
-                  ✨ Clicking the button above will open a new tab where you can <strong>view</strong> and <strong>download</strong> your video.
+                  ✨ Clicking the button above will open a new tab where you can{" "}
+                  <strong>view</strong> and <strong>download</strong> your
+                  video.
                 </p>
-                
+
                 <p>
-                  ⏰ <strong>Important:</strong> This link will only be available for <strong>30 days</strong>, so make sure to download your video before then!
+                  ⏰ <strong>Important:</strong> This link will only be
+                  available for <strong>30 days</strong>, so make sure to
+                  download your video before then!
                 </p>
-                
+
                 <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
-                  <p className="font-semibold text-white">🎨 Need Changes? Frame.io Makes It Easy!</p>
-                  <p>
-                    The link allows detailed frame-by-frame edits and comments. You can click, highlight, and annotate directly on the screen. 
-                    Anything you need changed can be done this way - feel free to leave detailed comments, you can even include links in the comments if needed.
+                  <p className="font-semibold text-white">
+                    🎨 Need Changes? We Makes It Easy!
                   </p>
-                  <a 
+                  <p>
+                    Comment right on the video! Frame-accurate notes,
+                    highlights, and annotations. Add links if helpful.
+                  </p>
+                  <a
                     href="https://support.frame.io/en/articles/1161479-review-links-explained-for-clients"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-cyan-400 hover:text-cyan-300 underline"
                   >
-                    📖 Learn how to use Frame.io review tools
+                    📖 Quick primer on Frame.io review tool
                     <ExternalLink className="w-4 h-4 ml-1" />
                   </a>
                 </div>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Next Steps Section */}
+      <Card className="bg-gray-800/50 border-gray-600">
+        <CardContent className="p-6">
+          <h3 className="text-xl font-semibold text-white mb-4 text-center">🚀 Next Steps</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Accept Option */}
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 text-green-400">
+                <Check className="h-5 w-5" />
+                <span className="font-semibold">Option 1: Accept Video</span>
+              </div>
+              <p className="text-gray-300 text-sm">
+                Love your video as is? Click accept to mark the project as finished. 
+                <strong> No changes can be made after this point.</strong>
+              </p>
+            </div>
+
+            {/* Revision Option */}
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 text-orange-400">
+                <RotateCcw className="h-5 w-5" />
+                <span className="font-semibold">Option 2: Request Revision ($5)</span>
+              </div>
+              <p className="text-gray-300 text-sm">
+                Need changes? The editor will review all your comments and annotations to make updates. 
+                You can also upload new footage if needed.
+              </p>
             </div>
           </div>
         </CardContent>
@@ -281,7 +322,7 @@ export function VideoViewingStep({
           ) : (
             <Check className="h-6 w-6 mr-3" />
           )}
-          ✅ {isAccepting ? "Accepting Video..." : "Accept Video"}
+          {isAccepting ? "Accepting Video..." : "Accept Video"}
         </Button>
 
         {/* Request Revision Button */}
@@ -295,8 +336,10 @@ export function VideoViewingStep({
             <div className="animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full mr-3"></div>
           ) : (
             <RotateCcw className="h-6 w-6 mr-3" />
-          )}
-          🔄 {isRequestingRevision ? "Requesting Revision..." : "Request Revision ($5)"}
+          )}{" "}
+          {isRequestingRevision
+            ? "Requesting Revision..."
+            : "Request Revision ($5)"}
         </Button>
       </div>
 
@@ -304,7 +347,9 @@ export function VideoViewingStep({
       {videoFiles.length > 1 && (
         <Card className="bg-gray-900/50 border-gray-700">
           <CardHeader>
-            <CardTitle className="text-white text-lg">Additional Files</CardTitle>
+            <CardTitle className="text-white text-lg">
+              Additional Files
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
