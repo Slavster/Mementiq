@@ -805,53 +805,28 @@ export class FrameioV4Service {
       let shareCreateResponse;
       let shareId;
       
-      try {
-        // Try completely empty body first
-        console.log('Attempting empty share creation...');
-        shareCreateResponse = await this.makeRequest(
-          'POST', 
-          `/accounts/${accountId}/projects/${projectId}/shares`,
-          {}
-        );
-        shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
-      } catch (emptyError) {
-        console.log(`Empty failed: ${emptyError.message}`);
-        
-        try {
-          // Try with empty data wrapper 
-          console.log('Trying with data wrapper...');
-          shareCreateResponse = await this.makeRequest(
-            'POST',
-            `/accounts/${accountId}/projects/${projectId}/shares`,
-            { data: {} }
-          );
-          shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
-        } catch (dataError) {
-          console.log(`Data wrapper failed: ${dataError.message}`);
-          
-          try {
-            // Try with just type field
-            console.log('Trying with type field...');
-            shareCreateResponse = await this.makeRequest(
-              'POST',
-              `/accounts/${accountId}/projects/${projectId}/shares`,
-              { type: 'share' }
-            );
-            shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
-          } catch (typeError) {
-            console.log(`Type field failed: ${typeError.message}`);
-            
-            // Final attempt: assets array in body
-            console.log('Final attempt: assets in body...');
-            shareCreateResponse = await this.makeRequest(
-              'POST',
-              `/accounts/${accountId}/projects/${projectId}/shares`,
-              { assets: [assetId] }
-            );
-            shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
-          }
+      // Frame.io V4 requires correct schema with discriminator type "asset"
+      console.log('Creating Frame.io V4 share with correct schema...');
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 30); // 30 days from now
+      
+      const shareRequestBody = {
+        data: {
+          type: "asset",
+          asset_ids: [assetId],
+          access: "public",
+          name: `Share for ${assetId}`,
+          expiration: expirationDate.toISOString()
         }
-      }
+      };
+
+      shareCreateResponse = await this.makeRequest(
+        'POST',
+        `/accounts/${accountId}/projects/${projectId}/shares`,
+        shareRequestBody
+      );
+      
+      shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
       
       if (!shareId) {
         throw new Error('No share ID returned from any creation method');
@@ -917,8 +892,8 @@ export class FrameioV4Service {
     } catch (error) {
       console.error(`❌ Share creation failed:`, error);
       
-      // Return Frame.io asset view URL as fallback
-      const fallbackUrl = `https://app.frame.io/file/${assetId}`;
+      // Return Frame.io project view URL as fallback (this is the correct format)
+      const fallbackUrl = `https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/${assetId}`;
       console.log(`Using fallback URL: ${fallbackUrl}`);
       
       return {
