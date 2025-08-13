@@ -575,22 +575,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🚨 ROUTE ENTRY: Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
       console.log(`🚨 ROUTE: Current cached URL in database: ${videoFile.mediaAssetUrl}`);
       
-      // First priority: Check if we have a valid cached share URL in database
-      if (videoFile.mediaAssetUrl && (videoFile.mediaAssetUrl.includes('f.io/') || videoFile.mediaAssetUrl.includes('share.frame.io'))) {
-        console.log(`🔍 Found cached share URL in database: ${videoFile.mediaAssetUrl}`);
-        console.log(`✅ Using existing valid share link - opening in new tab`);
+      // First priority: Check if we have a VALID PUBLIC cached share URL in database
+      if (videoFile.mediaAssetUrl) {
+        console.log(`🔍 Found cached URL in database: ${videoFile.mediaAssetUrl}`);
         
-        return res.json({
-          shareUrl: videoFile.mediaAssetUrl,
-          shareId: 'cached',
-          filename: videoFile.filename,
-          isPublicShare: true,
-          note: 'Using cached Frame.io public share - no login required'
-        });
+        // Only accept f.io URLs as valid public shares
+        if (videoFile.mediaAssetUrl.includes('f.io/')) {
+          console.log(`✅ Found valid public share URL - using immediately`);
+          
+          return res.json({
+            shareUrl: videoFile.mediaAssetUrl,
+            shareId: 'cached-public',
+            filename: videoFile.filename,
+            isPublicShare: true,
+            note: 'Using cached Frame.io public share - no login required'
+          });
+        } else {
+          console.log(`⚠️ Cached URL is not public format (${videoFile.mediaAssetUrl})`);
+          console.log(`🔍 Searching Frame.io for correct public share version...`);
+          
+          // Search for the correct public share version
+          try {
+            await frameioV4Service.loadServiceAccountToken();
+            const accountId = await frameioV4Service.getAccountId();
+            
+            if (!project.mediaFolderId) {
+              throw new Error('Project has no media folder ID');
+            }
+            
+            const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId, videoFile.mediaAssetId);
+            
+            if (existingShare && existingShare.url.includes('f.io/')) {
+              console.log(`✅ Found public share version: ${existingShare.url}`);
+              
+              // Update database with correct public URL
+              await storage.updateProjectFile(videoFile.id, {
+                mediaAssetUrl: existingShare.url
+              });
+              
+              return res.json({
+                shareUrl: existingShare.url,
+                shareId: existingShare.id,
+                filename: videoFile.filename,
+                isPublicShare: true,
+                note: 'Found and cached public Frame.io share - no login required'
+              });
+            } else {
+              console.log(`❌ No public share version found, will search more broadly...`);
+            }
+          } catch (error) {
+            console.log(`❌ Error searching for public share version: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
       }
 
-      // Second priority: Search Frame.io for existing shares if no cached URL
-      console.log(`🚨 ROUTE: No cached share URL, searching Frame.io for existing shares...`);
+      // Second priority: Search Frame.io for existing public shares (either no cached URL or no valid public URL found)
+      console.log(`🚨 ROUTE: Searching Frame.io for existing PUBLIC shares...`);
       try {
         console.log(`🚨 ROUTE: Loading service account token...`);
         await frameioV4Service.loadServiceAccountToken();
@@ -607,23 +647,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🚨 ROUTE: findExistingShareForAsset returned:`, existingShare);
         
         if (existingShare) {
-          console.log(`🛡️ FOUND EXISTING SHARE: ${existingShare.id} - URL: ${existingShare.url}`);
-          console.log(`💾 Updating database cache with found share: ${existingShare.url}`);
-          
-          // Update database with existing share URL
-          await storage.updateProjectFile(videoFile.id, {
-            mediaAssetUrl: existingShare.url
-          });
-          
-          return res.json({
-            shareUrl: existingShare.url,
-            shareId: existingShare.id,
-            filename: videoFile.filename,
-            isPublicShare: true,
-            note: 'Found existing Frame.io share - no login required'
-          });
+          // Ensure we only return public f.io URLs
+          if (existingShare.url.includes('f.io/')) {
+            console.log(`🛡️ FOUND EXISTING PUBLIC SHARE: ${existingShare.id} - URL: ${existingShare.url}`);
+            console.log(`💾 Updating database cache with public share: ${existingShare.url}`);
+            
+            // Update database with existing public share URL
+            await storage.updateProjectFile(videoFile.id, {
+              mediaAssetUrl: existingShare.url
+            });
+            
+            return res.json({
+              shareUrl: existingShare.url,
+              shareId: existingShare.id,
+              filename: videoFile.filename,
+              isPublicShare: true,
+              note: 'Found existing Frame.io public share - no login required'
+            });
+          } else {
+            console.log(`⚠️ Found share but not public format: ${existingShare.url}`);
+            console.log(`🔍 Continuing search for public version...`);
+          }
         } else {
-          console.log(`❌ No existing shares found in Frame.io for asset ${videoFile.mediaAssetId}`);
+          console.log(`❌ No existing public shares found in Frame.io for asset ${videoFile.mediaAssetId}`);
         }
       } catch (searchError) {
         console.log(`❌ Existing share search failed: ${searchError instanceof Error ? searchError.message : String(searchError)}`);
