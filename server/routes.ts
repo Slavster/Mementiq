@@ -570,15 +570,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'No video file found for this project' });
       }
       
-      console.log(`Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
-      console.log(`Current cached URL in database: ${videoFile.mediaAssetUrl}`);
+      console.log(`🚨 ROUTE ENTRY: Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
+      console.log(`🚨 ROUTE: Current cached URL in database: ${videoFile.mediaAssetUrl}`);
       
       // ALWAYS check for existing shares first (even if no cached URL) to prevent duplicates
-      console.log(`🔍 Checking for existing shares in Frame.io before creating new ones...`);
+      console.log(`🚨 ROUTE: ALWAYS check for existing shares first - starting search...`);
       try {
+        console.log(`🚨 ROUTE: Loading service account token...`);
         await frameioV4Service.loadServiceAccountToken();
+        console.log(`🚨 ROUTE: Getting account ID...`);
         const accountId = await frameioV4Service.getAccountId();
+        console.log(`🚨 ROUTE: Account ID obtained: ${accountId}`);
+        console.log(`🚨 ROUTE: Project folder ID: ${project.mediaFolderId}`);
+        console.log(`🚨 ROUTE: Asset ID: ${videoFile.mediaAssetId}`);
+        console.log(`🚨 ROUTE: Calling findExistingShareForAsset...`);
         const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId!, videoFile.mediaAssetId);
+        console.log(`🚨 ROUTE: findExistingShareForAsset returned:`, existingShare);
         
         if (existingShare) {
           console.log(`🛡️ FOUND EXISTING SHARE: ${existingShare.id} - URL: ${existingShare.url}`);
