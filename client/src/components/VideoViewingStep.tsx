@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, Check, RotateCcw, Play, ExternalLink } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { FrameVideo } from './FrameVideo';
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Download, Check, RotateCcw, Play, ExternalLink } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { FrameVideo } from "./FrameVideo";
 
 interface VideoViewingStepProps {
   project: any;
@@ -22,9 +22,12 @@ interface VideoFile {
   fileSize: number;
 }
 
-
-
-export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionRequested }: VideoViewingStepProps) {
+export function VideoViewingStep({
+  project,
+  onBack,
+  onVideoAccepted,
+  onRevisionRequested,
+}: VideoViewingStepProps) {
   const { toast } = useToast();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRequestingRevision, setIsRequestingRevision] = useState(false);
@@ -37,14 +40,12 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
       try {
         const files = await apiRequest(`/api/projects/${project.id}/files`);
         // Filter for video files only
-        const videos = files.filter((file: any) => 
-          file.fileType && file.fileType.startsWith('video/')
+        const videos = files.filter(
+          (file: any) => file.fileType && file.fileType.startsWith("video/"),
         );
         setVideoFiles(videos);
-        
-
       } catch (error) {
-        console.error('Failed to fetch video files:', error);
+        console.error("Failed to fetch video files:", error);
         toast({
           title: "Error",
           description: "Could not load video files",
@@ -58,25 +59,21 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
     fetchVideoFiles();
   }, [project.id, toast]);
 
-
-
-
-
   const handleAcceptVideo = async () => {
     setIsAccepting(true);
     try {
       await apiRequest(`/api/projects/${project.id}/accept`, {
-        method: 'POST',
+        method: "POST",
       });
-      
+
       toast({
         title: "Video Accepted!",
         description: "The video has been marked as complete and accepted.",
       });
-      
+
       onVideoAccepted();
     } catch (error) {
-      console.error('Failed to accept video:', error);
+      console.error("Failed to accept video:", error);
       toast({
         title: "Error",
         description: "Could not accept the video. Please try again.",
@@ -91,17 +88,18 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
     setIsRequestingRevision(true);
     try {
       await apiRequest(`/api/projects/${project.id}/request-revision`, {
-        method: 'POST',
+        method: "POST",
       });
-      
+
       toast({
         title: "Revision Requested",
-        description: "The editor has been notified about your revision request.",
+        description:
+          "The editor has been notified about your revision request.",
       });
-      
+
       onRevisionRequested();
     } catch (error) {
-      console.error('Failed to request revision:', error);
+      console.error("Failed to request revision:", error);
       toast({
         title: "Error",
         description: "Could not request revision. Please try again.",
@@ -115,19 +113,21 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
   const handleDownload = async (videoFile: VideoFile) => {
     try {
       // Generate download link via Frame.io
-      const data = await apiRequest(`/api/projects/${project.id}/download/${videoFile.mediaAssetId}`);
-      
+      const data = await apiRequest(
+        `/api/projects/${project.id}/download/${videoFile.mediaAssetId}`,
+      );
+
       if (data.downloadUrl) {
-        window.open(data.downloadUrl, '_blank');
+        window.open(data.downloadUrl, "_blank");
         toast({
           title: "Download Started",
           description: "Your video download has started.",
         });
       } else {
-        throw new Error('Failed to generate download link');
+        throw new Error("Failed to generate download link");
       }
     } catch (error) {
-      console.error('Download failed:', error);
+      console.error("Download failed:", error);
       toast({
         title: "Download Failed",
         description: "Could not download the video. Please try again.",
@@ -137,11 +137,11 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   if (loading) {
@@ -157,8 +157,12 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
     return (
       <div className="text-center py-12">
         <Play className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-white mb-2">No Video Files Found</h3>
-        <p className="text-gray-400 mb-6">The video might still be processing or there was an issue loading it.</p>
+        <h3 className="text-xl font-semibold text-white mb-2">
+          No Video Files Found
+        </h3>
+        <p className="text-gray-400 mb-6">
+          The video might still be processing or there was an issue loading it.
+        </p>
       </div>
     );
   }
@@ -166,129 +170,133 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
   const primaryVideo = videoFiles[0]; // Use the first video as primary
 
   return (
-    <div className="space-y-6">
-      {/* Video Player Section */}
+    <div className="space-y-8">
+      {/* Excitement Header */}
+      <div className="text-center space-y-4">
+        <div className="text-6xl">🎉</div>
+        <h1 className="text-3xl font-bold text-white">Your Video is Ready!</h1>
+        <p className="text-xl text-gray-300">🎬 Get ready to see your amazing content come to life!</p>
+      </div>
+
+      {/* Main Video Card */}
       <Card className="bg-gray-900/50 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-cyan-500 flex items-center gap-2">
-            <Play className="h-5 w-5" />
-            Your Completed Video
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Frame.io V4 Notice - Authentication Required */}
-          <div className="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700" style={{ aspectRatio: '16/9' }}>
-            <div className="flex flex-col items-center justify-center h-full p-8">
-              <div className="text-center space-y-4">
-                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 max-w-md">
-                  <div className="flex items-center gap-2 text-green-400 mb-2">
-                    <ExternalLink className="w-5 h-5" />
-                    <span className="font-semibold">Frame.io Public Share</span>
-                  </div>
+        <CardContent className="p-8">
+          <div className="text-center space-y-6">
+            {/* Video Title */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold text-white">
+                "{primaryVideo.filename}"
+              </h2>
+              <div className="flex justify-center items-center gap-4 text-sm text-gray-400">
+                <span>📁 {formatFileSize(primaryVideo.fileSize)}</span>
+                <span>🎬 {primaryVideo.fileType}</span>
+              </div>
+            </div>
 
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-white">
-                      "{primaryVideo.filename}"
-                    </h3>
-                    <p className="text-gray-400">
-                      Your video is ready for review in Frame.io
-                    </p>
-                  </div>
-                
-                <Button
-                  onClick={async () => {
-                    try {
-                      toast({
-                        title: "Creating Share Link",
-                        description: "Generating public Frame.io share...",
-                      });
+            {/* Main Action Button */}
+            <Button
+              onClick={async () => {
+                try {
+                  toast({
+                    title: "Creating Share Link",
+                    description: "Generating public Frame.io share...",
+                  });
 
-                      // Generate Frame.io V4 public share using the new API approach
-                      const response = await apiRequest(`/api/projects/${project.id}/video-share-link`);
-                      
-                      if (response.shareUrl) {
-                        console.log('Opening Frame.io public share:', response.shareUrl);
-                        window.open(response.shareUrl, '_blank');
-                        
-                        toast({
-                          title: "Share Link Created!",
-                          description: "Opening your video in a public Frame.io share (no login required)",
-                        });
-                      } else {
-                        throw new Error('No share URL returned');
-                      }
-                    } catch (error) {
-                      console.error('Failed to create share link:', error);
-                      
-                      toast({
-                        title: "Error",
-                        description: "Could not create share link. Please try again.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  className="bg-cyan-500 hover:bg-cyan-400 text-black font-medium px-6 py-3"
-                >
-                  <ExternalLink className="w-5 h-5 mr-2" />
-                  View Video (Public Share)
-                </Button>
+                  const response = await apiRequest(
+                    `/api/projects/${project.id}/video-share-link`,
+                  );
+                  
+                  if (response.shareUrl) {
+                    console.log("Opening Frame.io public share:", response.shareUrl);
+                    window.open(response.shareUrl, "_blank");
+
+                    toast({
+                      title: "Share Link Created!",
+                      description: "Opening your video in a public Frame.io share (no login required)",
+                    });
+                  } else {
+                    throw new Error("No share URL returned");
+                  }
+                } catch (error) {
+                  console.error("Failed to create share link:", error);
+                  
+                  toast({
+                    title: "Error",
+                    description: "Could not create share link. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg px-8 py-4 h-auto"
+            >
+              <ExternalLink className="w-6 h-6 mr-3" />
+              🎯 Open Video Link
+            </Button>
+
+            {/* Instructions */}
+            <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
+              <h3 className="text-lg font-semibold text-cyan-400 text-center">📋 Instructions</h3>
+              
+              <div className="space-y-3 text-gray-300">
+                <p>
+                  ✨ Clicking the button above will open a new tab where you can <strong>view</strong> and <strong>download</strong> your video.
+                </p>
                 
-                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 max-w-md text-xs text-gray-300">
-                    <p><strong>New:</strong> Frame.io V4 public shares - secure, no-login access with downloads enabled!</p>
-                  </div>
+                <p>
+                  ⏰ <strong>Important:</strong> This link will only be available for <strong>30 days</strong>, so make sure to download your video before then!
+                </p>
+                
+                <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                  <p className="font-semibold text-white">🎨 Need Changes? Frame.io Makes It Easy!</p>
+                  <p>
+                    The link allows detailed frame-by-frame edits and comments. You can click, highlight, and annotate directly on the screen. 
+                    Anything you need changed can be done this way - feel free to leave detailed comments, you can even include links in the comments if needed.
+                  </p>
+                  <a 
+                    href="https://support.frame.io/en/articles/1161479-review-links-explained-for-clients"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-cyan-400 hover:text-cyan-300 underline"
+                  >
+                    📖 Learn how to use Frame.io review tools
+                    <ExternalLink className="w-4 h-4 ml-1" />
+                  </a>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Video Details */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-            <span>📁 {primaryVideo.filename}</span>
-            <span>📏 {formatFileSize(primaryVideo.fileSize)}</span>
-            <span>🎬 {primaryVideo.fileType}</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Download Button */}
-        <Button
-          variant="outline"
-          className="border-gray-600 hover:border-cyan-500 h-12"
-          onClick={() => handleDownload(primaryVideo)}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Download Video
-        </Button>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Accept Button */}
         <Button
-          className="bg-green-600 hover:bg-green-700 h-12"
+          className="bg-green-600 hover:bg-green-700 text-white font-bold text-lg h-16"
           onClick={handleAcceptVideo}
           disabled={isAccepting}
         >
           {isAccepting ? (
-            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"></div>
           ) : (
-            <Check className="h-4 w-4 mr-2" />
+            <Check className="h-6 w-6 mr-3" />
           )}
-          {isAccepting ? 'Accepting...' : 'Accept Video'}
+          ✅ {isAccepting ? "Accepting Video..." : "Accept Video"}
         </Button>
 
         {/* Request Revision Button */}
         <Button
           variant="outline"
-          className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white h-12"
+          className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white font-bold text-lg h-16"
           onClick={handleRequestRevision}
           disabled={isRequestingRevision}
         >
           {isRequestingRevision ? (
-            <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+            <div className="animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full mr-3"></div>
           ) : (
-            <RotateCcw className="h-4 w-4 mr-2" />
+            <RotateCcw className="h-6 w-6 mr-3" />
           )}
-          {isRequestingRevision ? 'Requesting...' : 'Request Revision'}
+          🔄 {isRequestingRevision ? "Requesting Revision..." : "Request Revision ($5)"}
         </Button>
       </div>
 
@@ -301,20 +309,19 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
           <CardContent>
             <div className="space-y-2">
               {videoFiles.slice(1).map((video, index) => (
-                <div key={video.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                <div
+                  key={video.id}
+                  className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg"
+                >
                   <div>
                     <p className="text-white font-medium">{video.filename}</p>
-                    <p className="text-sm text-gray-400">{formatFileSize(video.fileSize)} • {video.fileType}</p>
+                    <p className="text-sm text-gray-400">
+                      {formatFileSize(video.fileSize)} • {video.fileType}
+                    </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownload(video)}
-                    className="border-gray-600 hover:border-cyan-500"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
+                  <div className="text-sm text-gray-400">
+                    Available via Frame.io link above
+                  </div>
                 </div>
               ))}
             </div>
@@ -324,7 +331,11 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
 
       {/* Back Button */}
       <div className="text-center">
-        <Button variant="ghost" onClick={onBack} className="text-gray-400 hover:text-white">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="text-gray-400 hover:text-white"
+        >
           ← Back to Project Overview
         </Button>
       </div>
