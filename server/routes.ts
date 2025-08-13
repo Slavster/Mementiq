@@ -1860,27 +1860,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   }
                   
-                  // Step 3: Get assets if we found the folder
+                  // Step 3: Get assets from discovered folder AND check old folder locations
+                  let allAssets = [];
+                  
                   if (currentProjectFolderId) {
+                    console.log(`Checking assets in current folder: ${currentProjectFolderId}`);
                     const frameioAssets = await frameioV4Service.getFolderAssets(currentProjectFolderId);
+                    console.log(`Found ${frameioAssets.length} assets in current folder`);
+                    allAssets.push(...frameioAssets);
+                  }
+                  
+                  // ALSO check the old stored folder ID in case assets haven't been migrated
+                  if (project.mediaFolderId && project.mediaFolderId !== currentProjectFolderId) {
+                    console.log(`Also checking assets in old stored folder: ${project.mediaFolderId}`);
+                    try {
+                      const oldFolderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
+                      console.log(`Found ${oldFolderAssets.length} assets in old folder`);
+                      allAssets.push(...oldFolderAssets);
+                    } catch (oldFolderError) {
+                      console.log(`Old folder ${project.mediaFolderId} not accessible: ${oldFolderError.message}`);
+                    }
+                  }
+                  
+                  // Check the hardcoded old project structure as a last resort
+                  const LEGACY_PROJECT_ID = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
+                  if (!allAssets.length && currentProjectFolderId !== LEGACY_PROJECT_ID && project.mediaFolderId !== LEGACY_PROJECT_ID) {
+                    console.log(`Also checking legacy project structure: ${LEGACY_PROJECT_ID}`);
+                    try {
+                      const legacyAssets = await frameioV4Service.getFolderAssets(LEGACY_PROJECT_ID);
+                      console.log(`Found ${legacyAssets.length} assets in legacy project structure`);
+                      allAssets.push(...legacyAssets);
+                    } catch (legacyError) {
+                      console.log(`Legacy project structure not accessible: ${legacyError.message}`);
+                    }
+                  }
+                  
+                  console.log(`Total assets found for project ${project.id}: ${allAssets.length}`);
+                  
+                  if (allAssets.length > 0) {
+                    // Check both created_time and updated_time for all assets
+                    const assetDates = allAssets
+                      .flatMap((asset: any) => [
+                        asset.created_time ? new Date(asset.created_time) : null,
+                        asset.updated_time ? new Date(asset.updated_time) : null,
+                        asset.created_at ? new Date(asset.created_at) : null,
+                        asset.updated_at ? new Date(asset.updated_at) : null
+                      ])
+                      .filter(date => date !== null);
                     
-                    if (frameioAssets.length > 0) {
-                      // Check both created_time and updated_time for all assets
-                      const assetDates = frameioAssets
-                        .flatMap((asset: any) => [
-                          asset.created_time ? new Date(asset.created_time) : null,
-                          asset.updated_time ? new Date(asset.updated_time) : null
-                        ])
-                        .filter(date => date !== null);
-                      
-                      if (assetDates.length > 0) {
-                        const latestAssetDate = new Date(Math.max(...assetDates.map(d => d!.getTime())));
-                        console.log(`Latest Frame.io asset date for project ${project.id}: ${latestAssetDate}`);
-                        if (latestAssetDate > latestActivityDate) {
-                          latestActivityDate = latestAssetDate;
-                        }
+                    if (assetDates.length > 0) {
+                      const latestAssetDate = new Date(Math.max(...assetDates.map(d => d!.getTime())));
+                      console.log(`Latest Frame.io asset date for project ${project.id}: ${latestAssetDate}`);
+                      if (latestAssetDate > latestActivityDate) {
+                        latestActivityDate = latestAssetDate;
                       }
                     }
+                  } else {
+                    console.log(`No assets found in any location for project ${project.id}`);
                   }
                 } catch (folderError) {
                   console.log(`Could not dynamically locate Frame.io folder for project ${project.id}:`, folderError.message);
