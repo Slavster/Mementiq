@@ -799,15 +799,21 @@ export class FrameioV4Service {
       const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
       
       // Step 1: Check if asset is already in an existing share
-      console.log(`🔍 Checking for existing shares containing asset ${assetId}...`);
-      const existingShare = await this.findExistingShareForAsset(accountId, projectId, assetId);
-      
-      if (existingShare) {
-        console.log(`✅ REUSING existing share: ${existingShare.id} with URL: ${existingShare.url}`);
-        return existingShare;
+      console.log(`🔍 STARTING SHARE SEARCH for asset ${assetId}...`);
+      try {
+        const existingShare = await this.findExistingShareForAsset(accountId, projectId, assetId);
+        console.log(`🔍 SHARE SEARCH COMPLETED - Result:`, existingShare ? 'FOUND' : 'NOT FOUND');
+        
+        if (existingShare) {
+          console.log(`✅ REUSING existing share: ${existingShare.id} with URL: ${existingShare.url}`);
+          return existingShare;
+        }
+        
+        console.log(`❌ No existing share found for asset ${assetId}, creating new share...`);
+      } catch (searchError) {
+        console.error(`❌ SHARE SEARCH FAILED:`, searchError.message);
+        console.log(`Proceeding with new share creation...`);
       }
-      
-      console.log(`❌ No existing share found for asset ${assetId}, creating new share...`);
       
       // Based on Frame.io V4 documentation, try creating share without discriminator first
       console.log('Creating share with minimal data...');
