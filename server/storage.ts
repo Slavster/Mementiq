@@ -260,7 +260,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectFilesByProjectId(projectId: number): Promise<ProjectFile[]> {
-    return await this.getProjectFiles(projectId);
+    return this.getProjectFiles(projectId);
   }
 
   async createProjectFile(file: InsertProjectFile): Promise<ProjectFile> {
@@ -290,9 +290,9 @@ export class DatabaseStorage implements IStorage {
       mediaAssetUrl: shareUrl,
       ...additionalUpdates
     };
-    
+
     console.log(`📊 Synchronized share update for file ${id}: shareId=${shareId}, shareUrl=${shareUrl}`);
-    
+
     const [updatedFile] = await this.db
       .update(projectFiles)
       .set(updates)
@@ -615,6 +615,55 @@ export class DatabaseStorage implements IStorage {
     return updatedPayment || undefined;
   }
 
+  // Refresh lock management for single-flight token refresh
+  async acquireRefreshLock(lockKey: string, ttlSeconds: number): Promise<boolean> {
+    try {
+      const expiresAt = new Date(Date.now() + (ttlSeconds * 1000));
+
+      // Try to insert lock - will fail if already exists
+      await this.db.execute(
+        `INSERT INTO refresh_locks (lock_key, expires_at, created_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(lock_key) DO NOTHING`,
+        [lockKey, expiresAt.toISOString(), new Date().toISOString()]
+      );
+
+      // Check if we successfully acquired the lock
+      const result = await this.db.execute(
+        `SELECT lock_key FROM refresh_locks
+         WHERE lock_key = ? AND expires_at > datetime('now')`,
+        [lockKey]
+      );
+
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error('Failed to acquire refresh lock:', error);
+      return false;
+    }
+  }
+
+  async releaseRefreshLock(lockKey: string): Promise<void> {
+    try {
+      await this.db.execute(
+        `DELETE FROM refresh_locks WHERE lock_key = ?`,
+        [lockKey]
+      );
+    } catch (error) {
+      console.error('Failed to release refresh lock:', error);
+    }
+  }
+
+  // Clean up expired locks periodically
+  async cleanupExpiredLocks(): Promise<void> {
+    try {
+      await this.db.execute(
+        `DELETE FROM refresh_locks WHERE expires_at <= datetime('now')`
+      );
+    } catch (error) {
+      console.error('Failed to cleanup expired locks:', error);
+    }
+  }
+
   // OAuth state methods
   async createOAuthState(state: string, provider: string, expiresInMinutes: number): Promise<void> {
     const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
@@ -682,7 +731,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: tokenData.updatedAt
         }
       });
-    
+
     console.log(`✓ Service token updated for ${service} (expires: ${expiresAt?.toISOString() || 'unknown'})`);
   }
 
@@ -692,7 +741,7 @@ export class DatabaseStorage implements IStorage {
       .from(serviceTokens)
       .where(eq(serviceTokens.service, service))
       .limit(1);
-    
+
     return result[0] || null;
   }
 

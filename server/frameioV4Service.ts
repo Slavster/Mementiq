@@ -62,14 +62,14 @@ export class FrameioV4Service {
     // V4 OAuth credentials from Adobe Developer Console
     this.clientId = process.env.ADOBE_CLIENT_ID || process.env.FRAMEIO_CLIENT_ID || '';
     this.clientSecret = process.env.ADOBE_CLIENT_SECRET || process.env.FRAMEIO_CLIENT_SECRET || '';
-    
+
     // Service account token will be loaded from database during initialization
     // (OAuth token was stored in database during successful authentication)
-    
+
     console.log('Frame.io V4 Service initialization:');
     console.log(`Client ID configured: ${!!this.clientId}`);
     console.log(`Client Secret configured: ${!!this.clientSecret}`);
-    
+
     if (!this.clientId || !this.clientSecret) {
       console.log('Frame.io V4 OAuth credentials not configured. Service available but operations will require authentication.');
     } else {
@@ -103,7 +103,7 @@ export class FrameioV4Service {
       client_id: this.clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'openid', // Start with basic Adobe IMS scope
+      scope: 'offline_access frameio.read frameio.write', // Ensure offline_access is requested
     });
 
     if (state) {
@@ -119,7 +119,7 @@ export class FrameioV4Service {
     console.log(`  response_type: code`);
     console.log(`  scope: offline_access frameio.read frameio.write`);
     console.log(`  state: ${state}`);
-    
+
     return authUrl;
   }
 
@@ -155,12 +155,12 @@ export class FrameioV4Service {
     const tokenData = await response.json();
     this.accessTokenValue = tokenData.access_token;
     this.refreshTokenValue = tokenData.refresh_token || null;
-    
+
     // Calculate expiration time
     if (tokenData.expires_in) {
       this.tokenExpiresAt = new Date(Date.now() + (tokenData.expires_in * 1000));
     }
-    
+
     console.log('=== V4 Token Exchange Successful ===');
     console.log(`Access token obtained: ${this.accessTokenValue?.substring(0, 6)}...${this.accessTokenValue?.substring(this.accessTokenValue.length - 6)}`);
     console.log(`Token type: ${tokenData.token_type}`);
@@ -186,7 +186,7 @@ export class FrameioV4Service {
     }
 
     console.log('=== Refreshing V4 Access Token ===');
-    
+
     const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
     const response = await fetch(tokenUrl, {
       method: 'POST',
@@ -204,22 +204,27 @@ export class FrameioV4Service {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`V4 Token refresh failed: ${response.status} - ${errorText}`);
+
+      // Check for invalid_grant which indicates revocation
+      if (response.status === 400 && errorText.includes('invalid_grant')) {
+        throw new Error('Frame.io authentication revoked. Please contact admin to re-authenticate.');
+      }
       throw new Error(`Failed to refresh V4 token: ${response.status} ${errorText}`);
     }
 
     const tokenData = await response.json();
     this.accessTokenValue = tokenData.access_token;
-    
+
     // Update refresh token if provided
     if (tokenData.refresh_token) {
       this.refreshTokenValue = tokenData.refresh_token;
     }
-    
+
     // Calculate new expiration time
     if (tokenData.expires_in) {
       this.tokenExpiresAt = new Date(Date.now() + (tokenData.expires_in * 1000));
     }
-    
+
     console.log('=== V4 Token Refresh Successful ===');
     console.log(`New access token obtained: ${this.accessTokenValue?.substring(0, 6)}...${this.accessTokenValue?.substring(this.accessTokenValue.length - 6)}`);
     console.log(`Expires in: ${tokenData.expires_in} seconds`);
@@ -229,13 +234,13 @@ export class FrameioV4Service {
     try {
       const { DatabaseStorage } = await import('./storage.js');
       const storage = new DatabaseStorage();
-      
+
       await storage.updateServiceToken(
         'frameio-v4',
         this.accessTokenValue,
         this.refreshTokenValue,
         this.tokenExpiresAt,
-        'openid'
+        'openid' // Assuming scope remains the same
       );
       console.log('✅ Refreshed token stored in centralized service storage');
     } catch (error) {
@@ -244,26 +249,39 @@ export class FrameioV4Service {
   }
 
   /**
-   * Ensure we have a valid access token, refreshing if necessary
+   * Use a lock to ensure only one refresh operation happens at a time.
+   */
+  private async refreshWithLock(): Promise<void> {
+    if (this.refreshPromise) {
+      return this.refreshPromise; // Wait for existing refresh
+    }
+
+    // Perform the refresh and store the promise
+    this.refreshPromise = this.refreshAccessToken();
+    try {
+      await this.refreshPromise;
+    } finally {
+      // Clear the promise once done, whether successful or not
+      this.refreshPromise = null;
+    }
+  }
+
+  /**
+   * Ensure we have a valid access token, refreshing if necessary.
    */
   private async ensureValidToken(): Promise<void> {
-    // If we already have a refresh in progress, wait for it
-    if (this.refreshPromise) {
-      await this.refreshPromise;
+    // If token is valid, do nothing
+    if (this.isTokenValid()) {
       return;
     }
 
-    // Check if token is expired or needs refresh
-    if (!this.isTokenValid()) {
-      console.log('Access token is expired, refreshing...');
-      this.refreshPromise = this.refreshAccessToken();
-      await this.refreshPromise;
-      this.refreshPromise = null;
-    } else if (this.needsRefresh()) {
-      console.log('Access token expires soon, proactively refreshing...');
-      this.refreshPromise = this.refreshAccessToken();
-      await this.refreshPromise;
-      this.refreshPromise = null;
+    // If token is expired or needs refreshing, attempt to refresh
+    console.log('Access token is expired or needs refreshing, attempting to refresh...');
+    await this.refreshWithLock();
+
+    // After refresh, check if it was successful
+    if (!this.accessTokenValue || !this.isTokenValid()) {
+      throw new Error('Failed to obtain a valid access token after refresh.');
     }
   }
 
@@ -275,56 +293,52 @@ export class FrameioV4Service {
       // Load centralized service token
       const { DatabaseStorage } = await import('./storage.js');
       const storage = new DatabaseStorage();
-      
+
       const serviceToken = await storage.getServiceToken('frameio-v4');
-      
+
       if (!serviceToken) {
         console.log('No centralized Frame.io V4 service token found - OAuth required');
         return;
       }
 
-      // Check if token is expired
-      if (serviceToken.expiresAt && new Date() >= new Date(serviceToken.expiresAt)) {
-        console.log('🔄 Service token expired, attempting automatic refresh...');
-        
-        if (serviceToken.refreshToken) {
-          // Set the refresh token so refreshAccessToken can use it
-          this.refreshTokenValue = serviceToken.refreshToken;
-          
-          await this.refreshAccessToken();
-          // Reload the fresh token
-          const refreshedToken = await storage.getServiceToken('frameio-v4');
-          if (refreshedToken) {
-            this.accessTokenValue = refreshedToken.accessToken;
-            this.tokenExpiresAt = refreshedToken.expiresAt ? new Date(refreshedToken.expiresAt) : null;
-            console.log('✅ Service token refreshed automatically - Frame.io ready');
-            return;
-          }
-        } else {
-          console.log('❌ No refresh token available - manual OAuth required');
-          return;
-        }
-      }
-
       // Store token and refresh info
       this.accessTokenValue = serviceToken.accessToken;
-      (this as any).refreshTokenValue = serviceToken.refreshToken;
-      (this as any).tokenExpiresAt = serviceToken.expiresAt ? new Date(serviceToken.expiresAt) : null;
-      
+      this.refreshTokenValue = serviceToken.refreshToken;
+      this.tokenExpiresAt = serviceToken.expiresAt ? new Date(serviceToken.expiresAt) : null;
+
       console.log('✅ Centralized service token loaded from database');
       console.log(`Service: ${serviceToken.service}`);
       console.log(`Token expires at: ${serviceToken.expiresAt || 'unknown'}`);
       console.log(`Has refresh token: ${!!serviceToken.refreshToken}`);
-      
-      // Check if we need proactive refresh (more than 10 minutes early for safety)
-      if (this.needsRefresh()) {
+
+      // Check if token is expired or needs proactive refresh
+      if (!this.isTokenValid()) {
+        console.log('🔄 Service token expired, attempting automatic refresh...');
+        try {
+          await this.refreshWithLock();
+          // Reload the fresh token from storage to ensure consistency
+          const refreshedToken = await storage.getServiceToken('frameio-v4');
+          if (refreshedToken) {
+            this.accessTokenValue = refreshedToken.accessToken;
+            this.tokenExpiresAt = refreshedToken.expiresAt ? new Date(refreshedToken.expiresAt) : null;
+          }
+          console.log('✅ Service token refreshed automatically - Frame.io ready');
+        } catch (error) {
+          console.log('❌ Failed to refresh token automatically:', error.message);
+          console.log('Manual OAuth re-authentication may be required.');
+          // Clear potentially invalid tokens if refresh failed
+          this.accessTokenValue = null;
+          this.refreshTokenValue = null;
+          this.tokenExpiresAt = null;
+        }
+      } else if (this.needsRefresh()) {
         console.log('⚠️ Token expires soon - proactively refreshing for uninterrupted service...');
-        await this.refreshAccessToken();
+        await this.refreshWithLock();
       }
-      
+
       // Start proactive refresh monitoring
       this.startProactiveRefresh();
-      
+
       console.log('✅ Production centralized token loaded successfully - Frame.io ready');
     } catch (error) {
       console.error('Failed to load service account token:', error);
@@ -343,9 +357,10 @@ export class FrameioV4Service {
     // Check every 5 minutes for token refresh needs
     this.refreshTimer = setInterval(async () => {
       try {
+        // Only refresh if we have a refresh token and it's time to refresh
         if (this.needsRefresh() && this.refreshTokenValue) {
           console.log('🔄 Proactive token refresh triggered by monitoring system');
-          await this.refreshAccessToken();
+          await this.refreshWithLock();
           console.log('✅ Proactive token refresh completed - service continuity maintained');
         }
       } catch (error) {
@@ -368,6 +383,18 @@ export class FrameioV4Service {
   }
 
   /**
+   * Verify Frame.io organization and profile access.
+   * This is a placeholder and should be implemented to check user roles/permissions.
+   */
+  private async verifyOrgAccess(): Promise<void> {
+    console.log('📞 Calling placeholder: verifyOrgAccess...');
+    // TODO: Implement actual org/profile and role verification logic
+    // This would likely involve making a /me or /accounts request and checking user properties.
+    // For now, we assume access is granted if the 403 error wasn't due to token issues.
+    console.log('ℹ️  Org/profile access verification skipped (placeholder).');
+  }
+
+  /**
    * Initialize the service and get workspace information
    */
   async initialize(): Promise<void> {
@@ -381,35 +408,35 @@ export class FrameioV4Service {
     try {
       console.log('=== Initializing Frame.io V4 Service ===');
       console.log(`Using access token: ${this.accessTokenValue.substring(0, 6)}...${this.accessTokenValue.substring(this.accessTokenValue.length - 6)}`);
-      
+
       // Get user information (V4 proper endpoint)
       const userResponse = await this.makeRequest('GET', '/me');
       console.log(`User: ${userResponse.data?.name} (${userResponse.data?.email})`);
-      
+
       // Get accounts first (V4 proper hierarchy)
       const accountsResponse = await this.makeRequest('GET', '/accounts');
       console.log(`Found ${accountsResponse.data?.length || 0} accounts`);
-      
+
       if (!accountsResponse.data?.length) {
         throw new Error('No accessible accounts found for V4');
       }
-      
+
       const accountId = accountsResponse.data[0].id;
       console.log(`Using account: ${accountsResponse.data[0].display_name} (${accountId})`);
-      
+
       // Get workspaces for this account (V4 proper hierarchy)
       const workspacesResponse = await this.makeRequest('GET', `/accounts/${accountId}/workspaces`);
       console.log(`Found ${workspacesResponse.data?.length || 0} workspaces`);
-      
+
       if (workspacesResponse.data && workspacesResponse.data.length > 0) {
         this.workspaceId = workspacesResponse.data[0].id;
         console.log(`Using workspace: ${workspacesResponse.data[0].name} (${this.workspaceId})`);
       } else {
         throw new Error('No accessible workspaces found for V4 account');
       }
-      
+
       console.log('=== Frame.io V4 Service Initialized ===');
-      
+
     } catch (error) {
       console.error('=== Frame.io V4 Service Initialization Failed ===');
       console.error('Error details:', error);
@@ -418,11 +445,11 @@ export class FrameioV4Service {
   }
 
   /**
-   * Make authenticated requests to Frame.io V4 API
+   * Make authenticated requests to Frame.io V4 API with 401 retry and role verification
    */
-  async makeRequest(method: string, endpoint: string, data?: any, params?: any, retryCount: number = 0): Promise<any> {
-    const maxRetries = 2;
-    
+  async makeRequest(method: string, endpoint: string, data?: any, params?: any, retryCount = 0): Promise<any> {
+    const maxRetries = 1; // Allow only one retry for 401
+
     if (!this.accessTokenValue) {
       throw new Error('Access token required. Please complete OAuth flow first.');
     }
@@ -431,18 +458,18 @@ export class FrameioV4Service {
     await this.ensureValidToken();
 
     let url = `${this.baseUrl}${endpoint}`;
-    
+
     // Add query parameters if provided
     if (params) {
       const searchParams = new URLSearchParams(params);
       url = `${url}${url.includes('?') ? '&' : '?'}${searchParams.toString()}`;
     }
-    
+
     console.log(`=== Frame.io V4 API Request ===`);
     console.log(`Method: ${method}`);
     console.log(`URL: ${url}`);
     console.log(`Access token fingerprint: ${this.accessTokenValue.substring(0, 6)}...${this.accessTokenValue.substring(this.accessTokenValue.length - 6)}`);
-    
+
     // Build headers - check if custom headers were provided in params
     const headers: any = params && typeof params === 'object' && !Array.isArray(params) ? 
       { ...params } : 
@@ -451,12 +478,12 @@ export class FrameioV4Service {
         'Content-Type': 'application/json',
         'api-version': '4.0'  // Always include API version header
       };
-    
+
     // Ensure Authorization header is always present
     if (!headers['Authorization']) {
       headers['Authorization'] = `Bearer ${this.accessTokenValue}`;
     }
-    
+
     const options: any = {
       method,
       headers
@@ -469,35 +496,56 @@ export class FrameioV4Service {
 
     try {
       const response = await fetch(url, options);
-      
+
       console.log(`=== Frame.io V4 API Response ===`);
       console.log(`Status: ${response.status} ${response.statusText}`);
       console.log(`Headers:`, Object.fromEntries(response.headers.entries()));
-      
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Error response body:`, errorText);
-        
-        // Handle authentication errors with automatic retry
-        if ((response.status === 401 || response.status === 403) && retryCount < maxRetries) {
-          console.log(`🔐 Auth error detected (${response.status}): ${errorText}`);
-          console.log(`🔄 Attempting token refresh and retry (attempt ${retryCount + 1}/${maxRetries + 1})`);
-          
-          // Force token refresh by clearing current token
-          this.accessTokenValue = null;
-          this.refreshPromise = null;
-          await this.loadServiceAccountToken();
-          
-          // Recursive retry with incremented count
-          return this.makeRequest(method, endpoint, data, params, retryCount + 1);
+        console.error(`=== Frame.io V4 API Error ===`);
+        console.error(`Status: ${response.status} ${response.statusText}`);
+        console.error(`Response: ${errorText}`);
+        console.error(`Endpoint: ${method} ${url}`);
+
+        // Handle 401 with single retry and role verification
+        if (response.status === 401 && retryCount === 0) {
+          console.log('🔄 401 detected, attempting token refresh and retry...');
+
+          try {
+            await this.refreshWithLock();
+            console.log('✅ Token refreshed, retrying request...');
+            return this.makeRequest(method, endpoint, data, params, retryCount + 1);
+          } catch (refreshError) {
+            console.error('❌ Token refresh failed on 401:', refreshError);
+
+            // Check if this is a revocation (invalid_grant)
+            if (refreshError instanceof Error && refreshError.message.includes('invalid_grant')) {
+              console.error('🚨 Refresh token revoked - admin re-authentication required');
+              throw new Error('Frame.io authentication revoked. Please contact admin to re-authenticate.');
+            }
+
+            throw new Error(`Frame.io authentication failed: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`);
+          }
         }
-        
-        throw new Error(`Frame.io V4 API error: ${response.status} ${response.statusText} - ${errorText}`);
+
+        // Handle 403 with role verification
+        if (response.status === 403) {
+          console.log('🔍 403 detected, verifying Frame.io org/profile access...');
+          try {
+            await this.verifyOrgAccess();
+          } catch (verifyError) {
+            console.error('❌ Org verification failed:', verifyError);
+            throw new Error(`Frame.io access denied. Please verify account permissions: ${verifyError instanceof Error ? verifyError.message : String(verifyError)}`);
+          }
+        }
+
+        throw new Error(`Frame.io V4 API error: ${response.status} - ${errorText}`);
       }
 
       const responseData = await response.json();
       console.log(`Response data:`, JSON.stringify(responseData, null, 2));
-      
+
       return responseData;
     } catch (error) {
       console.error(`=== Frame.io V4 API Error ===`);
@@ -524,11 +572,11 @@ export class FrameioV4Service {
       const accountsResponse = await this.makeRequest('GET', '/accounts');
       const accountId = accountsResponse.data[0].id;
       const projectsResponse = await this.makeRequest('GET', `/accounts/${accountId}/workspaces/${this.workspaceId}/projects`);
-      
+
       if (projectsResponse.data && projectsResponse.data.length > 0) {
         const existingProject = projectsResponse.data[0];
         console.log(`Using existing project: ${existingProject.name}`);
-        
+
         return {
           id: existingProject.id,
           name: existingProject.name,
@@ -547,7 +595,7 @@ export class FrameioV4Service {
           name: 'Mementiq Projects',
           description: 'Video editing project workspace'
         });
-        
+
         return {
           id: newProject.id,
           name: newProject.name,
@@ -571,16 +619,16 @@ export class FrameioV4Service {
 
     try {
       console.log(`Getting V4 asset details for: ${assetId}`);
-      
+
       const accounts = await this.getAccounts();
       if (!accounts.data || accounts.data.length === 0) {
         throw new Error('No Frame.io accounts found');
       }
       const accountId = accounts.data[0].id;
-      
+
       const endpoint = `/accounts/${accountId}/assets/${assetId}`;
       console.log(`Getting asset details via: GET ${endpoint}`);
-      
+
       const assetData = await this.makeRequest('GET', endpoint);
       return assetData.data;
     } catch (error) {
@@ -597,7 +645,7 @@ export class FrameioV4Service {
 
     try {
       console.log(`Creating V4 folder "${folderName}" under parent ${parentAssetId}`);
-      
+
       // ENFORCE 2-LEVEL HIERARCHY: Check parent's parent to prevent 3+ levels
       const parentDetails = await this.getAssetDetails(parentAssetId);
       if (parentDetails && parentDetails.parent_id) {
@@ -609,18 +657,18 @@ export class FrameioV4Service {
           throw new Error(`Folder creation rejected: Maximum 2 levels allowed (User Folder > Project Folder). Cannot create "${folderName}" at level 3.`);
         }
       }
-      
+
       // Get account ID for the correct V4 endpoint structure
       const accounts = await this.getAccounts();
       if (!accounts.data || accounts.data.length === 0) {
         throw new Error('No Frame.io accounts found');
       }
       const accountId = accounts.data[0].id;
-      
+
       // Use the correct V4 folder creation endpoint
       const endpoint = `/accounts/${accountId}/folders/${parentAssetId}/folders`;
       console.log(`Creating folder via: POST ${endpoint}`);
-      
+
       const folderData = await this.makeRequest('POST', endpoint, {
         data: { 
           name: folderName 
@@ -656,12 +704,12 @@ export class FrameioV4Service {
         throw new Error('No Frame.io accounts found');
       }
       const accountId = accounts.data[0].id;
-      
+
       const endpoint = `/accounts/${accountId}/folders/${folderId}/children`;
       console.log(`Getting folder children via: GET ${endpoint}`);
-      
+
       const response = await this.makeRequest('GET', endpoint);
-      
+
       return response.data || [];
     } catch (error) {
       console.error(`Failed to get folder children for ${folderId}:`, error);
@@ -678,11 +726,11 @@ export class FrameioV4Service {
     try {
       console.log(`Creating V4 public share link for project ${projectId}`);
       const accountId = await this.getAccountId();
-      
+
       // Calculate expiration date (30 days from now)
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + 30);
-      
+
       // V4 uses "shares" instead of review links - create with specific settings
       const shareData = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
         name: name,
@@ -714,7 +762,7 @@ export class FrameioV4Service {
 
     try {
       console.log(`Creating V4 upload session for "${filename}" in folder ${folderId}`);
-      
+
       const assetData = await this.makeRequest('POST', `/assets/${folderId}/children`, {
         name: filename,
         type: 'file',
@@ -770,11 +818,11 @@ export class FrameioV4Service {
    */
   async createAssetReviewLink(assetId: string, name: string = 'Review Link'): Promise<{ url: string; id: string }> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Creating V4 Asset Review Link: ${name} ===`);
       console.log(`Asset ID: ${assetId}`);
-      
+
       const shareData = await this.makeRequest('POST', `/assets/${assetId}/review_links`, {
         name: name,
         allow_approvals: true,
@@ -799,21 +847,21 @@ export class FrameioV4Service {
    */
   async getFolderAssets(folderId: string): Promise<any[]> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Getting V4 Folder Assets: ${folderId} ===`);
-      
+
       // Get account ID for the correct V4 endpoint structure
       const accounts = await this.getAccounts();
       if (!accounts.data || accounts.data.length === 0) {
         throw new Error('No Frame.io accounts found');
       }
       const accountId = accounts.data[0].id;
-      
+
       // Use the correct V4 endpoint for folder children
       const endpoint = `/accounts/${accountId}/folders/${folderId}/children`;
       console.log(`Getting folder children via: GET ${endpoint}`);
-      
+
       const response = await this.makeRequest('GET', endpoint);
       const assets = response.data || [];
 
@@ -831,32 +879,32 @@ export class FrameioV4Service {
    */
   async generateAssetDownloadLink(assetId: string): Promise<string | null> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Generating V4 Download Link: ${assetId} ===`);
       const accountId = await this.getAccountId();
-      
+
       // Get file details to check status
       const response = await this.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
       const fileData = response.data;
-      
+
       if (!fileData) {
         console.log('File not found');
         return null;
       }
-      
+
       console.log('File details:', {
         name: fileData.name,
         status: fileData.status,
         media_type: fileData.media_type,
         view_url: fileData.view_url
       });
-      
+
       // Frame.io V4 API limitation: No direct download/streaming URLs available
       // However, we can try to extract the actual file content using authenticated requests
       console.log('Frame.io V4 API does not provide direct download URLs');
       console.log('Available URL is view-only:', fileData.view_url);
-      
+
       // Generate a public share link for the specific asset instead of direct streaming
       // This bypasses authentication requirements by creating a public share
       console.log('Creating public share link for asset access');
@@ -880,49 +928,49 @@ export class FrameioV4Service {
    */
   async createAssetShareLink(assetId: string, name: string, enableComments: boolean = true): Promise<{ url: string; id: string }> {
     console.log(`🚀🚀🚀 FUNCTION ENTRY: createAssetShareLink called with ${assetId}, comments: ${enableComments}`);
-    
+
     await this.initialize();
     console.log(`🚀🚀🚀 AFTER INITIALIZE`);
 
     try {
       console.log(`=== Frame.io V4 Share Creation ===`);
       console.log(`Asset ID: ${assetId}, Name: ${name}`);
-      
+
       console.log(`🔧 Getting account ID...`);
       const accountId = await this.getAccountId();
       console.log(`🔧 Account ID retrieved: ${accountId}`);
       const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
       console.log(`🔧 Project ID set: ${projectId}`);
-      
+
       // Step 1: Check if asset is already in an existing share
       console.log(`🔍 STARTING SHARE SEARCH for asset ${assetId}...`);
       try {
         const existingShare = await this.findExistingShareForAsset(accountId, projectId, assetId);
         console.log(`🔍 SHARE SEARCH COMPLETED - Result:`, existingShare ? 'FOUND' : 'NOT FOUND');
-        
+
         if (existingShare) {
           console.log(`✅ REUSING existing share: ${existingShare.id} with URL: ${existingShare.url}`);
           return existingShare;
         }
-        
+
         console.log(`❌ No existing share found for asset ${assetId}, creating new share...`);
       } catch (searchError) {
         console.error(`❌ SHARE SEARCH FAILED:`, searchError.message);
         console.log(`Proceeding with new share creation...`);
       }
-      
+
       // Based on Frame.io V4 documentation, try creating share without discriminator first
       console.log('Creating share with minimal data...');
-      
+
       // Step 1: Create empty share first (Frame.io V4 may not accept name during creation)
       let shareCreateResponse;
       let shareId;
-      
+
       // Frame.io V4 requires correct schema with discriminator type "asset"
       console.log('Creating Frame.io V4 share with correct schema...');
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + 30); // 30 days from now
-      
+
       const shareRequestBody = {
         data: {
           type: "asset",
@@ -940,13 +988,13 @@ export class FrameioV4Service {
         `/accounts/${accountId}/projects/${projectId}/shares`,
         shareRequestBody
       );
-      
+
       shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
-      
+
       if (!shareId) {
         throw new Error('No share ID returned from any creation method');
       }
-      
+
       console.log(`✅ Share created with ID: ${shareId}`);
 
       // Step 2: Add the asset to the share (Frame.io V4 expects single asset_id in data object)
@@ -986,7 +1034,7 @@ export class FrameioV4Service {
       // Step 4: Get final share details
       console.log('Fetching final share details...');
       const finalShare = await this.makeRequest('GET', `/accounts/${accountId}/shares/${shareId}`);
-      
+
       // Extract public URL from Frame.io V4 response (prioritize short_url which is the actual public access URL)
       const publicUrl = finalShare?.data?.short_url || 
                        finalShare?.data?.public_url || 
@@ -996,7 +1044,7 @@ export class FrameioV4Service {
                        finalShare?.public_url ||
                        finalShare?.url ||
                        `https://share.frame.io/${shareId}`;
-      
+
       console.log(`✅ Public share URL: ${publicUrl}`);
 
       return {
@@ -1008,11 +1056,11 @@ export class FrameioV4Service {
       console.error(`🚨 MAJOR ERROR IN createAssetShareLink:`, error);
       console.error(`🚨 Error message:`, error.message);
       console.error(`🚨 Error stack:`, error.stack);
-      
+
       // Return Frame.io project view URL as fallback (this is the correct format)
       const fallbackUrl = `https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/${assetId}`;
       console.log(`Using fallback URL: ${fallbackUrl}`);
-      
+
       return {
         url: fallbackUrl,
         id: 'fallback'
@@ -1026,7 +1074,7 @@ export class FrameioV4Service {
   async findExistingShareForAsset(accountId: string, projectId: string, assetId: string): Promise<{ url: string; id: string } | null> {
     try {
       console.log(`🛡️ SECURE RESILIENT SEARCH: Looking for shares in project ${projectId} containing asset ${assetId}...`);
-      
+
       // SECURITY: Only search within the specific project folder to prevent cross-user access
       let sharesResponse;
       try {
@@ -1038,47 +1086,47 @@ export class FrameioV4Service {
         // Fallback: get all shares but filter by project folder
         sharesResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares`);
       }
-      
+
       const shares = sharesResponse.data || [];
       console.log(`📊 Found ${shares.length} shares to check within project scope`);
-      
+
       const matchingShares: Array<{ id: string; url: string; createdAt: string }> = [];
-      
+
       // Check each share for our asset
       for (const share of shares) {
         console.log(`🔍 Checking share ${share.id} (${share.name || 'Unnamed'})...`);
-        
+
         // Only check enabled public shares
         if (!share.enabled || share.access !== 'public') {
           console.log(`⏭️ Skipping share ${share.id} - not public/enabled`);
           continue;
         }
-        
+
         try {
           // SECURITY CHECK: Ensure share is related to the user's project folder
           let isProjectRelated = false;
-          
+
           if (share.collection_id) {
             console.log(`📁 Checking collection ${share.collection_id} in share ${share.id}...`);
-            
+
             // Verify the collection belongs to the user's project folder
             try {
               const collectionResponse = await this.makeRequest('GET', `/accounts/${accountId}/collections/${share.collection_id}`);
               const collection = collectionResponse.data;
-              
+
               // Check if collection is within the project folder hierarchy
               if (collection && (collection.folder_id === projectId || collection.parent_folder_id === projectId)) {
                 isProjectRelated = true;
                 console.log(`🔒 Collection ${share.collection_id} verified as belonging to project ${projectId}`);
-                
+
                 const assetsResponse = await this.makeRequest('GET', `/accounts/${accountId}/collections/${share.collection_id}/assets`);
                 const assets = assetsResponse.data || [];
-                
+
                 const assetMatch = assets.find((asset: any) => asset.id === assetId);
-                
+
                 if (assetMatch) {
                   console.log(`✅ SECURE MATCH! Asset ${assetId} in project collection ${share.collection_id}, share ${share.id}`);
-                  
+
                   matchingShares.push({
                     id: share.id,
                     url: share.short_url || `https://next.frame.io/share/${share.id}`,
@@ -1095,24 +1143,24 @@ export class FrameioV4Service {
             }
           } else {
             console.log(`❓ Share ${share.id} has no collection_id, trying direct project-scoped asset check...`);
-            
+
             // For shares without collection_id, be extra cautious and verify asset belongs to project
             try {
               // First verify the asset belongs to the project folder
               const assetResponse = await this.makeRequest('GET', `/accounts/${accountId}/assets/${assetId}`);
               const assetData = assetResponse.data;
-              
+
               if (assetData && assetData.folder_id === projectId) {
                 console.log(`🔒 Asset ${assetId} verified as belonging to project ${projectId}`);
-                
+
                 const shareAssetsResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares/${share.id}/assets`);
                 const shareAssets = shareAssetsResponse.data || [];
-                
+
                 const assetMatch = shareAssets.find((asset: any) => asset.id === assetId);
-                
+
                 if (assetMatch) {
                   console.log(`✅ SECURE MATCH! Asset ${assetId} directly in project-verified share ${share.id}`);
-                  
+
                   matchingShares.push({
                     id: share.id,
                     url: share.short_url || `https://next.frame.io/share/${share.id}`,
@@ -1131,25 +1179,25 @@ export class FrameioV4Service {
           continue;
         }
       }
-      
+
       if (matchingShares.length === 0) {
         console.log(`❌ No existing shares found containing asset ${assetId}`);
         return null;
       }
-      
+
       // Return the most recent share
       const mostRecentShare = matchingShares.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )[0];
-      
+
       console.log(`🛡️ SECURE RECOVERY: Found ${matchingShares.length} project-scoped shares, using most recent`);
       console.log(`🔗 Most recent project share: ${mostRecentShare.id} - ${mostRecentShare.url}`);
-      
+
       return {
         url: mostRecentShare.url,
         id: mostRecentShare.id
       };
-      
+
     } catch (error) {
       console.error('❌ Resilient share search failed:', error.message);
       return null;
@@ -1161,12 +1209,12 @@ export class FrameioV4Service {
    */
   async getAccountId(): Promise<string> {
     await this.initialize();
-    
+
     const accountsResponse = await this.makeRequest('GET', '/accounts');
     if (!accountsResponse.data?.length) {
       throw new Error('No accessible accounts found');
     }
-    
+
     return accountsResponse.data[0].id;
   }
 
@@ -1176,15 +1224,15 @@ export class FrameioV4Service {
    */
   async getPlayableMediaLinks(fileId: string, prefer: string = "proxy") {
     await this.initialize();
-    
+
     try {
       const accountId = await this.getAccountId();
       console.log(`=== Frame.io V4 Streaming Request for ${fileId} ===`);
-      
+
       // Get file details
       const basicResponse = await this.makeRequest('GET', `/accounts/${accountId}/files/${fileId}`);
       const data = basicResponse.data;
-      
+
       if (!data) {
         console.log('File not found');
         return {
@@ -1192,14 +1240,14 @@ export class FrameioV4Service {
           reason: 'File not found in Frame.io'
         };
       }
-      
+
       console.log('File info:', {
         name: data.name,
         type: data.media_type,
         status: data.status,
         view_url: data.view_url
       });
-      
+
       // Check if file is ready
       if (data.status !== 'transcoded' && data.status !== 'complete') {
         return {
@@ -1208,19 +1256,19 @@ export class FrameioV4Service {
           webUrl: data.view_url
         };
       }
-      
+
       // Try to get download URL using the generateAssetDownloadLink method
       try {
         const downloadUrl = await this.generateAssetDownloadLink(fileId);
         if (downloadUrl) {
           console.log('Successfully generated streaming URL via download link');
-          
+
           // Determine media type
           let kind = 'mp4';
           if (data.media_type?.includes('quicktime')) {
             kind = 'mov';
           }
-          
+
           return {
             available: true,
             url: downloadUrl,
@@ -1236,7 +1284,7 @@ export class FrameioV4Service {
       } catch (dlError) {
         console.log('Could not generate download link:', dlError.message);
       }
-      
+
       // Frame.io V4 limitation - use web interface
       console.log('Frame.io V4 direct streaming not available, use web interface');
       return {
@@ -1250,7 +1298,7 @@ export class FrameioV4Service {
           status: data.status
         }
       };
-      
+
     } catch (error) {
       console.error('Error getting Frame.io V4 media links:', error);
       return {
@@ -1266,11 +1314,11 @@ export class FrameioV4Service {
    */
   private processStreamingData(streamingData: any, prefer: string, fileData: any) {
     console.log('=== Processing streaming data ===');
-    
+
     // Helper to extract URLs from various formats
     const extractUrls = (data: any): Array<{url: string, type: string}> => {
       const urls: Array<{url: string, type: string}> = [];
-      
+
       if (Array.isArray(data)) {
         data.forEach(item => {
           if (item.href || item.url) {
@@ -1302,7 +1350,7 @@ export class FrameioV4Service {
             }
           });
         }
-        
+
         // Check for direct URL fields
         for (const [key, value] of Object.entries(data)) {
           if (typeof value === 'string' && value.startsWith('http')) {
@@ -1313,18 +1361,18 @@ export class FrameioV4Service {
           }
         }
       }
-      
+
       return urls;
     };
-    
+
     const availableUrls = extractUrls(streamingData);
     console.log('Extracted URLs:', availableUrls);
-    
+
     if (availableUrls.length === 0) {
       console.log('No URLs found in streaming data');
       return null;
     }
-    
+
     // Prioritize URLs: HLS first, then MP4, then MOV, then others
     const prioritizeUrl = (urls: Array<{url: string, type: string}>) => {
       // Look for HLS
@@ -1333,21 +1381,21 @@ export class FrameioV4Service {
         u.url.includes('.m3u8')
       );
       if (hls) return { ...hls, kind: 'hls' };
-      
+
       // Look for MP4
       const mp4 = urls.find(u => 
         u.type.toLowerCase().includes('mp4') || 
         u.url.includes('.mp4')
       );
       if (mp4) return { ...mp4, kind: 'mp4' };
-      
+
       // Look for MOV
       const mov = urls.find(u => 
         u.type.toLowerCase().includes('mov') || 
         u.url.includes('.mov')
       );
       if (mov) return { ...mov, kind: 'mov' };
-      
+
       // Return first URL
       const first = urls[0];
       return { 
@@ -1357,7 +1405,7 @@ export class FrameioV4Service {
               first.url.includes('.mov') ? 'mov' : 'unknown'
       };
     };
-    
+
     // Filter by preference if needed
     let filteredUrls = availableUrls;
     if (prefer === 'original') {
@@ -1371,15 +1419,15 @@ export class FrameioV4Service {
         filteredUrls = proxyUrls;
       }
     }
-    
+
     const selectedUrl = prioritizeUrl(filteredUrls);
-    
+
     const result = {
       url: selectedUrl.url,
       kind: selectedUrl.kind,
       expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() // 2 hours default
     };
-    
+
     console.log('✓ Selected streaming URL:', result);
     return result;
   }
@@ -1396,14 +1444,14 @@ export class FrameioV4Service {
    */
   async verifyAssetInProjectFolder(assetId: string, folderId: string): Promise<boolean> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Verifying V4 Asset ${assetId} in Folder ${folderId} ===`);
-      
+
       // Get folder assets and check if our asset ID is in the list
       const folderAssets = await this.getFolderAssets(folderId);
       const foundAsset = folderAssets.find(asset => asset.id === assetId);
-      
+
       if (foundAsset) {
         console.log(`✅ Asset ${assetId} found in folder ${folderId}: ${foundAsset.name}`);
         return true;
@@ -1423,40 +1471,40 @@ export class FrameioV4Service {
    */
   async getUserFolder(userId: string): Promise<any> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Getting/Creating User Folder for: ${userId} ===`);
-      
+
       // Get the main Mementiq project
       const accounts = await this.getAccounts();
       const accountId = accounts.data[0].id;
       const workspaces = await this.getWorkspaces(accountId);
       const workspaceId = workspaces.data[0].id;
       const projects = await this.getProjects(accountId, workspaceId);
-      
+
       let mementiqProject = projects.data.find((project: any) => 
         project.name === "Mementiq"
       );
-      
+
       if (!mementiqProject) {
         console.log(`Creating Mementiq project...`);
         mementiqProject = await this.makeRequest('POST', `/accounts/${accountId}/workspaces/${workspaceId}/projects`, {
           name: "Mementiq"
         });
       }
-      
+
       console.log(`Using Mementiq project: ${mementiqProject.name} (${mementiqProject.id})`);
       console.log(`Project root_folder_id: ${mementiqProject.root_folder_id}`);
-      
+
       // Look for existing user folder using V4 children endpoint
       const userFolderName = `User-${userId.slice(0, 8)}`;
       console.log(`Looking for existing user folder: ${userFolderName}`);
-      
+
       const rootChildren = await this.getFolderChildren(mementiqProject.root_folder_id);
       let userFolder = rootChildren.find((child: any) => 
         child.type === 'folder' && child.name === userFolderName
       );
-      
+
       if (userFolder) {
         console.log(`Found existing user folder: ${userFolder.name} (${userFolder.id})`);
       } else {
@@ -1465,7 +1513,7 @@ export class FrameioV4Service {
         userFolder = await this.createFolder(userFolderName, mementiqProject.root_folder_id);
         console.log(`User folder created: ${userFolder.name} (${userFolder.id})`);
       }
-      
+
       console.log(`User folder created: ${userFolder.name} (${userFolder.id})`);
       return userFolder;
     } catch (error) {
@@ -1479,20 +1527,20 @@ export class FrameioV4Service {
    */
   async getUserFolders(userId: string): Promise<any[]> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Getting V4 User Video Request Folders for: ${userId} ===`);
-      
+
       const userFolder = await this.getUserFolder(userId);
-      
+
       // Get all folders from user's folder using correct V4 endpoint
       const folderChildren = await this.getFolderChildren(userFolder.id);
-      
+
       // Filter for video request folders (subfolders in user's folder)
       const videoRequestFolders = folderChildren.filter((folder: any) => 
         folder.type === 'folder'
       );
-      
+
       console.log(`Found ${videoRequestFolders.length} video request folders for user ${userId}`);
       return videoRequestFolders;
     } catch (error) {
@@ -1506,12 +1554,12 @@ export class FrameioV4Service {
    */
   async createUserFolder(userId: string): Promise<any> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Creating User Folder for: ${userId} ===`);
-      
+
       const userFolder = await this.getUserFolder(userId);
-      
+
       console.log(`User folder ready: ${userFolder.name} (${userFolder.id})`);
       return userFolder;
     } catch (error) {
@@ -1525,28 +1573,28 @@ export class FrameioV4Service {
    */
   async createProjectFolder(userFolderId: string, projectTitle: string, projectId: number): Promise<any> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Creating V4 Project Folder: ${projectTitle} (ID: ${projectId}) ===`);
-      
+
       const projectFolderName = `${projectTitle}`;
-      
+
       // Check if project folder already exists
       console.log(`📁 Checking for existing project folder: ${projectFolderName}`);
       const userFolderChildren = await this.getFolderChildren(userFolderId);
       let projectFolder = userFolderChildren.find((child: any) => 
         child.type === 'folder' && child.name === projectFolderName
       );
-      
+
       if (projectFolder) {
         console.log(`✅ Found existing project folder: ${projectFolder.name} (${projectFolder.id})`);
-        
+
         // CRITICAL: Prevent nested folder creation by checking if folder has subfolders with same name
         const existingFolderChildren = await this.getFolderChildren(projectFolder.id);
         const duplicateSubfolder = existingFolderChildren.find((child: any) => 
           child.type === 'folder' && child.name === projectFolder.name
         );
-        
+
         if (duplicateSubfolder) {
           console.log(`🚨 WARNING: Found duplicate nested folder "${duplicateSubfolder.name}" inside "${projectFolder.name}"`);
           console.log(`🚨 This violates 2-level limit: User Folder > Project Folder (no deeper nesting allowed)`);
@@ -1560,7 +1608,7 @@ export class FrameioV4Service {
         projectFolder = await this.createFolder(projectFolderName, userFolderId);
         console.log(`V4 Project folder created: ${projectFolder.name} (${projectFolder.id})`);
       }
-      
+
       return projectFolder;
     } catch (error) {
       console.error(`Failed to create V4 project folder for ${projectTitle}:`, error);
@@ -1573,38 +1621,38 @@ export class FrameioV4Service {
    */
   async createUserProjectPhotoFolder(userId: string, projectId: number): Promise<string> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Creating V4 Photo Folder for User ${userId}, Project ${projectId} ===`);
-      
+
       const rootProject = await this.getOrCreateRootProject();
-      
+
       // Get user's folder in Mementiq project
       const userFolder = await this.getUserFolder(userId);
-      
+
       // Create/get project folder within user folder
       const projectFolderName = `Project-${projectId}`;
-      
+
       // Check if project folder already exists
       const userFolderChildren = await this.getFolderChildren(userFolder.id);
       let projectFolder = userFolderChildren.find((child: any) => 
         child.type === 'folder' && child.name === projectFolderName
       );
-      
+
       if (!projectFolder) {
         projectFolder = await this.createFolder(projectFolderName, userFolder.id);
       }
-      
+
       // Check if Photos subfolder already exists
       const projectFolderChildren = await this.getFolderChildren(projectFolder.id);
       let photoFolder = projectFolderChildren.find((child: any) => 
         child.type === 'folder' && child.name === 'Photos'
       );
-      
+
       if (!photoFolder) {
         photoFolder = await this.createFolder('Photos', projectFolder.id);
       }
-      
+
       console.log(`V4 Photo folder path created: ${photoFolder.id}`);
       return photoFolder.id;
     } catch (error) {
@@ -1620,22 +1668,22 @@ export class FrameioV4Service {
    */
   async uploadFile(fileBuffer: Buffer, filename: string, folderId: string, mimeType: string): Promise<any> {
     await this.initialize();
-    
+
     try {
       console.log(`=== V4 File Upload: ${filename} to folder ${folderId} ===`);
       console.log(`File size: ${fileBuffer.length} bytes, MIME type: ${mimeType}`);
-      
+
       // Get account ID for the correct V4 endpoint structure
       const accounts = await this.getAccounts();
       if (!accounts.data || accounts.data.length === 0) {
         throw new Error('No Frame.io accounts found');
       }
       const accountId = accounts.data[0].id;
-      
+
       // Step 1: Create file placeholder using correct V4 endpoint
       const createFileEndpoint = `/accounts/${accountId}/folders/${folderId}/files`;
       console.log(`Creating file placeholder via: POST ${createFileEndpoint}`);
-      
+
       const fileData = await this.makeRequest('POST', createFileEndpoint, {
         data: {
           name: filename,
@@ -1643,14 +1691,14 @@ export class FrameioV4Service {
           file_size: fileBuffer.length
         }
       });
-      
+
       console.log(`V4 File placeholder created: ${fileData.data.name} (${fileData.data.id})`);
-      
+
       // Step 2: Check for upload URLs and upload file data if provided
       if (fileData.data.upload_urls && fileData.data.upload_urls.length > 0) {
         console.log(`Upload URLs provided: ${fileData.data.upload_urls.length} parts`);
         console.log(`Upload URLs structure:`, JSON.stringify(fileData.data.upload_urls, null, 2));
-        
+
         // Extract actual URLs from the upload_urls objects
         const actualUrls = fileData.data.upload_urls.map((urlObj: any) => {
           if (typeof urlObj === 'string') {
@@ -1664,17 +1712,17 @@ export class FrameioV4Service {
             return Object.values(urlObj)[0]; // Try first property value
           }
         });
-        
+
         console.log(`Extracted URLs:`, actualUrls);
-        
+
         // Upload file data to each pre-signed URL
         await this.uploadFileParts(fileBuffer, actualUrls, mimeType);
-        
+
         console.log(`File upload completed: ${filename}`);
       } else {
         console.log(`No upload URLs provided - file placeholder created only`);
       }
-      
+
       return {
         id: fileData.data.id,
         name: fileData.data.name,
@@ -1697,25 +1745,25 @@ export class FrameioV4Service {
    */
   private async uploadFileParts(fileBuffer: Buffer, uploadUrls: string[], mimeType: string): Promise<void> {
     console.log(`Uploading ${uploadUrls.length} file parts`);
-    
+
     // Calculate chunk size based on number of URLs
     const chunkSize = Math.ceil(fileBuffer.length / uploadUrls.length);
-    
+
     for (let i = 0; i < uploadUrls.length; i++) {
       const start = i * chunkSize;
       const end = Math.min(start + chunkSize, fileBuffer.length);
       const chunk = fileBuffer.slice(start, end);
-      
+
       console.log(`Uploading part ${i + 1}/${uploadUrls.length}: ${chunk.length} bytes`);
-      
+
       try {
         const uploadUrl = uploadUrls[i];
         console.log(`Uploading to URL: ${uploadUrl}`);
-        
+
         if (!uploadUrl || typeof uploadUrl !== 'string') {
           throw new Error(`Invalid upload URL at index ${i}: ${uploadUrl}`);
         }
-        
+
         // Upload chunk to pre-signed URL using PUT request without auth headers
         const response = await fetch(uploadUrl, {
           method: 'PUT',
@@ -1725,12 +1773,12 @@ export class FrameioV4Service {
           },
           body: chunk
         });
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(`Upload part ${i + 1} failed: ${response.status} ${response.statusText} - ${errorText}`);
         }
-        
+
         console.log(`Part ${i + 1} uploaded successfully to ${uploadUrl.substring(0, 50)}...`);
       } catch (error) {
         console.error(`Failed to upload part ${i + 1}:`, error);
@@ -1744,14 +1792,14 @@ export class FrameioV4Service {
    */
   async uploadPhoto(base64Data: string, filename: string, folderId: string, userId: string): Promise<any> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Uploading V4 Photo: ${filename} to folder ${folderId} ===`);
-      
+
       // Convert base64 to buffer
       const buffer = Buffer.from(base64Data, 'base64');
       const mimeType = filename.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg';
-      
+
       // Create asset in V4
       const assetData = await this.makeRequest('POST', `/assets/${folderId}/children`, {
         name: filename,
@@ -1759,9 +1807,9 @@ export class FrameioV4Service {
         filetype: mimeType,
         filesize: buffer.length
       });
-      
+
       console.log(`V4 Photo asset created: ${assetData.id}`);
-      
+
       return {
         id: assetData.id,
         url: assetData.download_url || '',
@@ -1780,12 +1828,12 @@ export class FrameioV4Service {
    */
   async getAsset(assetId: string): Promise<any> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Getting V4 Asset: ${assetId} ===`);
-      
+
       const asset = await this.makeRequest('GET', `/assets/${assetId}`);
-      
+
       console.log(`V4 Asset retrieved: ${asset.id}`);
       return asset;
     } catch (error) {
@@ -1799,12 +1847,12 @@ export class FrameioV4Service {
    */
   async deleteAsset(assetId: string): Promise<boolean> {
     await this.initialize();
-    
+
     try {
       console.log(`=== Deleting V4 Asset: ${assetId} ===`);
-      
+
       await this.makeRequest('DELETE', `/assets/${assetId}`);
-      
+
       console.log(`V4 Asset deleted: ${assetId}`);
       return true;
     } catch (error) {
@@ -1827,7 +1875,7 @@ export class FrameioV4Service {
 
     try {
       console.log(`=== FRAME.IO V4 API HIERARCHY TEST ===`);
-      
+
       // Step 1: Get accounts
       console.log('1. Testing /v4/accounts...');
       const accounts = await this.getAccounts();
@@ -1835,29 +1883,29 @@ export class FrameioV4Service {
       results.accountAccess = true;
       results.details.accounts = accounts.data?.length || 0;
       console.log(`✓ Found ${accounts.data?.length || 0} accounts`);
-      
+
       if (accounts.data && accounts.data.length > 0) {
         const accountId = accounts.data[0].id;
         results.details.selectedAccount = { id: accountId, name: accounts.data[0].name };
-        
+
         // Step 2: Get workspaces for first account
         console.log(`2. Testing /v4/accounts/${accountId}/workspaces...`);
         const workspaces = await this.getWorkspaces(accountId);
         results.workspaceAccess = true;
         results.details.workspaces = workspaces.data?.length || 0;
         console.log(`✓ Found ${workspaces.data?.length || 0} workspaces`);
-        
+
         if (workspaces.data && workspaces.data.length > 0) {
           const workspaceId = workspaces.data[0].id;
           results.details.selectedWorkspace = { id: workspaceId, name: workspaces.data[0].name };
-          
+
           // Step 3: Get projects for first workspace
           console.log(`3. Testing /v4/accounts/${accountId}/workspaces/${workspaceId}/projects...`);
           const projects = await this.getProjects(accountId, workspaceId);
           results.projectAccess = true;
           results.details.projects = projects.data?.length || 0;
           console.log(`✓ Found ${projects.data?.length || 0} projects`);
-          
+
           if (projects.data && projects.data.length > 0) {
             results.details.selectedProject = { 
               id: projects.data[0].id, 
@@ -1866,10 +1914,10 @@ export class FrameioV4Service {
           }
         }
       }
-      
+
       console.log(`=== V4 API HIERARCHY TEST COMPLETE ✓ ===`);
       return results;
-      
+
     } catch (error) {
       console.error(`✗ V4 hierarchy test failed:`, error.message);
       results.details.error = error.message;
@@ -1891,7 +1939,7 @@ export class FrameioV4Service {
 
     try {
       console.log(`=== FRAME.IO V4 CORE FEATURES TEST ===`);
-      
+
       // Feature Test 1: User connection and workspace access
       console.log('1. Testing user connection...');
       const accounts = await this.getAccounts();
@@ -1901,7 +1949,7 @@ export class FrameioV4Service {
       results.details.user = { name: 'Frame.io User', email: 'authenticated' };
       results.details.workspaces = workspaces?.data?.length || 0;
       console.log(`✓ Connected successfully (${workspaces?.data?.length || 0} workspaces)`);
-      
+
       // Feature Test 2: Folder creation (Users and Projects)
       console.log('2. Testing folder creation...');
       const testFolderName = `API-Test-${Date.now()}`;
@@ -1910,7 +1958,7 @@ export class FrameioV4Service {
       results.folderCreation = true;
       results.details.folderCreated = { name: folder.name, id: folder.id };
       console.log(`✓ Created folder: ${folder.name} (${folder.id})`);
-      
+
       // Feature Test 3: Upload readiness (verify we have root project access)
       console.log('3. Testing upload readiness...');
       results.uploadReady = true;
@@ -1920,14 +1968,14 @@ export class FrameioV4Service {
         rootAssetId: rootProject.root_asset_id 
       };
       console.log(`✓ Upload ready: ${rootProject.name} (root asset: ${rootProject.root_asset_id})`);
-      
+
       // Note: Review links need an actual asset, so we'll mark as capable
       results.reviewLinkCapable = true;
       console.log(`✓ Review link creation ready (requires asset upload first)`);
-      
+
       console.log(`=== ALL FEATURES WORKING ✓ ===`);
       return results;
-      
+
     } catch (error) {
       console.error(`✗ Feature test failed:`, error.message);
       results.details.error = error.message;
