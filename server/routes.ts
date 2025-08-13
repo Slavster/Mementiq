@@ -575,8 +575,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🚨 ROUTE ENTRY: Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
       console.log(`🚨 ROUTE: Current cached URL in database: ${videoFile.mediaAssetUrl}`);
       
-      // ALWAYS check for existing shares first (even if no cached URL) to prevent duplicates
-      console.log(`🚨 ROUTE: ALWAYS check for existing shares first - starting search...`);
+      // First priority: Check if we have a valid cached share URL in database
+      if (videoFile.mediaAssetUrl && (videoFile.mediaAssetUrl.includes('f.io/') || videoFile.mediaAssetUrl.includes('share.frame.io'))) {
+        console.log(`🔍 Found cached share URL in database: ${videoFile.mediaAssetUrl}`);
+        console.log(`✅ Using existing valid share link - opening in new tab`);
+        
+        return res.json({
+          shareUrl: videoFile.mediaAssetUrl,
+          shareId: 'cached',
+          filename: videoFile.filename,
+          isPublicShare: true,
+          note: 'Using cached Frame.io public share - no login required'
+        });
+      }
+
+      // Second priority: Search Frame.io for existing shares if no cached URL
+      console.log(`🚨 ROUTE: No cached share URL, searching Frame.io for existing shares...`);
       try {
         console.log(`🚨 ROUTE: Loading service account token...`);
         await frameioV4Service.loadServiceAccountToken();
@@ -615,7 +629,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`❌ Existing share search failed: ${searchError instanceof Error ? searchError.message : String(searchError)}`);
       }
       
-      // Check if we already have a Frame.io share URL and validate it's still working
+      // This section should not be reached if we have a valid cached URL above
+      // Check if we have any Frame.io share URL but need to validate it
       if (videoFile.mediaAssetUrl && (videoFile.mediaAssetUrl.includes('share.frame.io') || videoFile.mediaAssetUrl.includes('f.io'))) {
         console.log(`🔍 Validating cached share URL: ${videoFile.mediaAssetUrl}`);
         
