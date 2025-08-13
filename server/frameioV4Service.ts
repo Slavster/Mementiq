@@ -929,67 +929,101 @@ export class FrameioV4Service {
   }
 
   /**
-   * Find existing share that contains the specified asset
+   * Resilient search for existing shares containing the specified asset
    */
   async findExistingShareForAsset(accountId: string, projectId: string, assetId: string): Promise<{ url: string; id: string } | null> {
     try {
-      console.log(`🔍 SEARCHING for existing shares in project ${projectId} containing asset ${assetId}...`);
+      console.log(`🛡️ RESILIENT SEARCH: Looking for existing shares containing asset ${assetId}...`);
       
-      // Get all shares for this project
-      const sharesResponse = await this.makeRequest('GET', `/accounts/${accountId}/projects/${projectId}/shares`);
+      // Search at account level for all shares (Frame.io V4 shares are account-level)
+      const sharesResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares`);
       const shares = sharesResponse.data || [];
       
-      console.log(`📊 Found ${shares.length} existing shares to check`);
+      console.log(`📊 Found ${shares.length} total shares in account to check`);
       
-      // Check each share to see if it contains our asset
+      const matchingShares: Array<{ id: string; url: string; createdAt: string }> = [];
+      
+      // Check each share for our asset
       for (const share of shares) {
-        console.log(`Checking share ${share.id}: enabled=${share.enabled}, access=${share.access}`);
+        console.log(`🔍 Checking share ${share.id} (${share.name || 'Unnamed'})...`);
         
+        // Only check enabled public shares
         if (!share.enabled || share.access !== 'public') {
-          console.log(`❌ Skipping share ${share.id} - not enabled/public`);
-          continue; // Skip disabled or non-public shares
+          console.log(`⏭️ Skipping share ${share.id} - not public/enabled`);
+          continue;
         }
         
         try {
-          console.log(`🔍 Checking assets in share ${share.id}...`);
-          // Get assets in this share
-          const shareAssetsResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares/${share.id}/assets`);
-          const shareAssets = shareAssetsResponse.data || [];
-          
-          console.log(`Share ${share.id} contains ${shareAssets.length} assets`);
-          
-          // Check if our asset is in this share
-          const assetInShare = shareAssets.find((asset: any) => asset.id === assetId);
-          
-          if (assetInShare) {
-            console.log(`🎉 FOUND IT! Asset ${assetId} exists in share ${share.id}`);
+          // Check if share contains our asset - Frame.io V4 uses collections
+          if (share.collection_id) {
+            console.log(`📁 Checking collection ${share.collection_id} in share ${share.id}...`);
             
-            const shareUrl = share.short_url || 
-                           share.public_url || 
-                           share.url ||
-                           `https://share.frame.io/${share.id}`;
+            const collectionResponse = await this.makeRequest('GET', `/accounts/${accountId}/collections/${share.collection_id}/assets`);
+            const assets = collectionResponse.data || [];
             
-            console.log(`🔗 Returning existing share URL: ${shareUrl}`);
+            const assetMatch = assets.find((asset: any) => asset.id === assetId);
             
-            return {
-              url: shareUrl,
-              id: share.id
-            };
+            if (assetMatch) {
+              console.log(`✅ FOUND! Asset ${assetId} in collection ${share.collection_id}, share ${share.id}`);
+              
+              matchingShares.push({
+                id: share.id,
+                url: share.short_url || `https://next.frame.io/share/${share.id}`,
+                createdAt: share.created_at || new Date().toISOString()
+              });
+            } else {
+              console.log(`❌ Asset not in collection ${share.collection_id}`);
+            }
           } else {
-            console.log(`❌ Asset ${assetId} NOT in share ${share.id}`);
+            console.log(`❓ Share ${share.id} has no collection_id, trying direct asset check...`);
+            
+            // Try direct asset check as fallback
+            try {
+              const shareAssetsResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares/${share.id}/assets`);
+              const shareAssets = shareAssetsResponse.data || [];
+              
+              const assetMatch = shareAssets.find((asset: any) => asset.id === assetId);
+              
+              if (assetMatch) {
+                console.log(`✅ FOUND! Asset ${assetId} directly in share ${share.id}`);
+                
+                matchingShares.push({
+                  id: share.id,
+                  url: share.short_url || `https://next.frame.io/share/${share.id}`,
+                  createdAt: share.created_at || new Date().toISOString()
+                });
+              }
+            } catch (directCheckError) {
+              console.log(`❌ Direct asset check failed for share ${share.id}`);
+            }
           }
-        } catch (assetCheckError) {
-          console.log(`❌ Failed to check assets in share ${share.id}:`, assetCheckError.message);
+        } catch (shareCheckError) {
+          console.log(`❌ Failed to check share ${share.id}: ${shareCheckError.message}`);
           continue;
         }
       }
       
-      console.log(`Asset ${assetId} not found in any existing shares`);
-      return null;
+      if (matchingShares.length === 0) {
+        console.log(`❌ No existing shares found containing asset ${assetId}`);
+        return null;
+      }
+      
+      // Return the most recent share
+      const mostRecentShare = matchingShares.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0];
+      
+      console.log(`🛡️ RESILIENT RECOVERY: Found ${matchingShares.length} existing shares, using most recent`);
+      console.log(`🔗 Most recent share: ${mostRecentShare.id} - ${mostRecentShare.url}`);
+      
+      return {
+        url: mostRecentShare.url,
+        id: mostRecentShare.id
+      };
       
     } catch (error) {
-      console.error('Failed to search existing shares:', error);
-      return null; // Continue with new share creation
+      console.error('❌ Resilient share search failed:', error.message);
+      return null;
     }
   }
 
