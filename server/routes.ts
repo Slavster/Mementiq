@@ -2121,11 +2121,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Verify project is in "delivered" status
-      if (project.status !== 'delivered') {
+      // Verify project is in "video is ready" status
+      if (project.status !== 'video is ready') {
         return res.status(400).json({ 
           success: false, 
-          message: "Project must be in delivered status to accept" 
+          message: "Project must be in video is ready status to accept" 
         });
       }
       
@@ -2140,14 +2140,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get the download link from project files
       const projectFiles = await storage.getProjectFiles(projectId);
-      const deliveredVideo = projectFiles.find(file => file.mediaAssetUrl);
+      const completedVideo = projectFiles.find(file => file.mediaAssetUrl);
       
-      if (user && deliveredVideo?.mediaAssetUrl) {
+      if (user && completedVideo?.mediaAssetUrl) {
         // Send completion confirmation email
         const emailTemplate = emailService.generateProjectCompletionEmail(
           user.email,
           project.title,
-          deliveredVideo.mediaAssetUrl
+          completedVideo.mediaAssetUrl
         );
         
         await emailService.sendEmail(emailTemplate);
@@ -2194,13 +2194,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try to get download link from project files first
       const projectFiles = await storage.getProjectFiles(projectId);
-      const deliveredVideo = projectFiles.find(file => file.mediaAssetUrl);
+      const completedVideo = projectFiles.find(file => file.mediaAssetUrl);
       
-      if (deliveredVideo?.mediaAssetUrl) {
+      if (completedVideo?.mediaAssetUrl) {
         return res.json({ 
           success: true, 
-          downloadLink: deliveredVideo.mediaAssetUrl,
-          filename: deliveredVideo.filename
+          downloadLink: completedVideo.mediaAssetUrl,
+          filename: completedVideo.filename
         });
       }
       
