@@ -237,8 +237,8 @@ export class FrameioV4Service {
 
       await storage.updateServiceToken(
         'frameio-v4',
-        this.accessTokenValue,
-        this.refreshTokenValue,
+        this.accessTokenValue!,
+        this.refreshTokenValue || null,
         this.tokenExpiresAt,
         'openid' // Assuming scope remains the same
       );
@@ -324,7 +324,7 @@ export class FrameioV4Service {
           }
           console.log('✅ Service token refreshed automatically - Frame.io ready');
         } catch (error) {
-          console.log('❌ Failed to refresh token automatically:', error.message);
+          console.log('❌ Failed to refresh token automatically:', error instanceof Error ? error.message : String(error));
           console.log('Manual OAuth re-authentication may be required.');
           // Clear potentially invalid tokens if refresh failed
           this.accessTokenValue = null;
