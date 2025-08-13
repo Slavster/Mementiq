@@ -564,13 +564,51 @@ export class FrameioV4Service {
   }
 
   /**
-   * Create a folder in Frame.io V4
+   * Get asset details from Frame.io V4
+   */
+  async getAssetDetails(assetId: string): Promise<any> {
+    await this.initialize();
+
+    try {
+      console.log(`Getting V4 asset details for: ${assetId}`);
+      
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+      
+      const endpoint = `/accounts/${accountId}/assets/${assetId}`;
+      console.log(`Getting asset details via: GET ${endpoint}`);
+      
+      const assetData = await this.makeRequest('GET', endpoint);
+      return assetData.data;
+    } catch (error) {
+      console.error(`Failed to get asset details for ${assetId}:`, error);
+      return null; // Return null instead of throwing to allow graceful fallback
+    }
+  }
+
+  /**
+   * Create a folder in Frame.io V4 with hierarchy validation
    */
   async createFolder(folderName: string, parentAssetId: string): Promise<any> {
     await this.initialize();
 
     try {
       console.log(`Creating V4 folder "${folderName}" under parent ${parentAssetId}`);
+      
+      // ENFORCE 2-LEVEL HIERARCHY: Check parent's parent to prevent 3+ levels
+      const parentDetails = await this.getAssetDetails(parentAssetId);
+      if (parentDetails && parentDetails.parent_id) {
+        const grandparentDetails = await this.getAssetDetails(parentDetails.parent_id);
+        if (grandparentDetails && grandparentDetails.parent_id) {
+          console.log(`🚨 HIERARCHY VIOLATION: Attempting to create folder at level 3+`);
+          console.log(`🚨 Current structure: ${grandparentDetails.parent_id} > ${parentDetails.parent_id} > ${parentAssetId}`);
+          console.log(`🚨 REJECTED: Cannot create "${folderName}" - exceeds 2-level limit (User > Project)`);
+          throw new Error(`Folder creation rejected: Maximum 2 levels allowed (User Folder > Project Folder). Cannot create "${folderName}" at level 3.`);
+        }
+      }
       
       // Get account ID for the correct V4 endpoint structure
       const accounts = await this.getAccounts();
@@ -1502,9 +1540,23 @@ export class FrameioV4Service {
       
       if (projectFolder) {
         console.log(`✅ Found existing project folder: ${projectFolder.name} (${projectFolder.id})`);
+        
+        // CRITICAL: Prevent nested folder creation by checking if folder has subfolders with same name
+        const existingFolderChildren = await this.getFolderChildren(projectFolder.id);
+        const duplicateSubfolder = existingFolderChildren.find((child: any) => 
+          child.type === 'folder' && child.name === projectFolder.name
+        );
+        
+        if (duplicateSubfolder) {
+          console.log(`🚨 WARNING: Found duplicate nested folder "${duplicateSubfolder.name}" inside "${projectFolder.name}"`);
+          console.log(`🚨 This violates 2-level limit: User Folder > Project Folder (no deeper nesting allowed)`);
+          console.log(`🚨 Using parent folder ${projectFolder.id} instead of nested ${duplicateSubfolder.id}`);
+          // Use the parent folder, not the nested one - the current projectFolder is correct
+        }
       } else {
-        // Create project folder within user folder
-        console.log(`📁 Creating new project folder: ${projectFolderName}`);
+        // Create project folder within user folder (ENFORCE 2-LEVEL LIMIT)
+        console.log(`📁 Creating new project folder: ${projectFolderName} (Level 2 - User > Project)`);
+        console.log(`📁 Validating folder hierarchy: User Folder ${userFolderId} > Project Folder "${projectFolderName}"`);
         projectFolder = await this.createFolder(projectFolderName, userFolderId);
         console.log(`V4 Project folder created: ${projectFolder.name} (${projectFolder.id})`);
       }
