@@ -789,7 +789,11 @@ export class FrameioV4Service {
    * Create a public share link for a specific asset (checks for existing shares first)
    */
   async createAssetShareLink(assetId: string, name: string): Promise<{ url: string; id: string }> {
+    console.log(`🚀 ENTERING createAssetShareLink function`);
+    console.log(`🚀 Parameters: assetId=${assetId}, name=${name}`);
+    
     await this.initialize();
+    console.log(`🚀 Initialize completed`);
 
     try {
       console.log(`=== Frame.io V4 Share Creation ===`);
@@ -910,7 +914,9 @@ export class FrameioV4Service {
       };
 
     } catch (error) {
-      console.error(`❌ Share creation failed:`, error);
+      console.error(`🚨 MAJOR ERROR IN createAssetShareLink:`, error);
+      console.error(`🚨 Error message:`, error.message);
+      console.error(`🚨 Error stack:`, error.stack);
       
       // Return Frame.io project view URL as fallback (this is the correct format)
       const fallbackUrl = `https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/${assetId}`;
