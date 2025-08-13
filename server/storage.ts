@@ -57,6 +57,7 @@ export interface IStorage {
   getProjectFiles(projectId: number): Promise<ProjectFile[]>;
   getProjectFilesByProjectId(projectId: number): Promise<ProjectFile[]>;
   createProjectFile(file: InsertProjectFile): Promise<ProjectFile>;
+  updateProjectFile(id: number, updates: Partial<ProjectFile>): Promise<ProjectFile | undefined>;
   deleteProjectFile(id: number): Promise<void>;
 
   // Project status methods
@@ -268,6 +269,15 @@ export class DatabaseStorage implements IStorage {
       .values(file)
       .returning();
     return newFile;
+  }
+
+  async updateProjectFile(id: number, updates: Partial<ProjectFile>): Promise<ProjectFile | undefined> {
+    const [updatedFile] = await this.db
+      .update(projectFiles)
+      .set(updates)
+      .where(eq(projectFiles.id, id))
+      .returning();
+    return updatedFile || undefined;
   }
 
   async deleteProjectFile(id: number): Promise<void> {
