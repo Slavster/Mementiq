@@ -2,7 +2,6 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "../shared/schema";
-import { sql, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 // Configure Neon for serverless environment
 neonConfig.webSocketConstructor = ws;
@@ -24,11 +23,3 @@ export const pool = new Pool({
 });
 
 export const db = drizzle({ client: pool, schema });
-
-export const refreshLocks = sqliteTable("refresh_locks", {
-  lockKey: text("lock_key").primaryKey(),
-  expiresAt: text("expires_at").notNull(),
-  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const serviceTokens = sqliteTable("service_tokens", {
