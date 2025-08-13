@@ -789,7 +789,7 @@ export class FrameioV4Service {
    * Create a public share link for a specific asset with comments disabled by default
    * (checks for existing shares first)
    */
-  async createAssetShareLink(assetId: string, name: string, enableComments: boolean = false): Promise<{ url: string; id: string }> {
+  async createAssetShareLink(assetId: string, name: string, enableComments: boolean = true): Promise<{ url: string; id: string }> {
     console.log(`🚀🚀🚀 FUNCTION ENTRY: createAssetShareLink called with ${assetId}, comments: ${enableComments}`);
     
     await this.initialize();
@@ -841,7 +841,7 @@ export class FrameioV4Service {
           access: "public",
           name: `Share for ${assetId}`,
           expiration: expirationDate.toISOString(),
-          allow_comments: enableComments,  // Comments controlled by parameter (default false)
+          allow_comments: true,  // Always enable comments per user preference
           allow_downloads: true             // ENABLE downloads
         }
       };
@@ -885,7 +885,7 @@ export class FrameioV4Service {
           `/accounts/${accountId}/shares/${shareId}`,
           {
             data: {
-              description: `Public share with downloads enabled${enableComments ? ', comments enabled' : ', comments disabled'}, expires in 30 days`
+              description: `Public share with downloads and comments enabled, expires in 30 days`
             }
           }
         );

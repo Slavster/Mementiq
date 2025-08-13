@@ -596,19 +596,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const commentSettings = await shareConfigService.getShareCommentSettings(shareId, accountId);
               
               if (commentSettings && commentSettings.commentsEnabled) {
-                console.log(`⚠️ Comments are ENABLED on share ${shareId} - disabling before serving...`);
-                const actualShareId = commentSettings.actualShareId || shareId;
-                const disableSuccess = await shareConfigService.disableCommentsOnShare(actualShareId, accountId);
-                
-                if (disableSuccess) {
-                  console.log(`✅ Comments successfully DISABLED on share ${actualShareId}`);
-                } else {
-                  console.log(`❌ Failed to disable comments on share ${actualShareId} - proceeding anyway`);
-                }
+                console.log(`✅ Comments are ENABLED on share ${shareId} - keeping enabled per user preference`);
               } else if (commentSettings) {
-                console.log(`✅ Comments already DISABLED on share ${commentSettings.actualShareId || shareId}`);
+                console.log(`✅ Comments already ENABLED on share ${commentSettings.actualShareId || shareId}`);
               } else {
-                console.log(`⚠️ Could not verify comment settings for share ${shareId} - assuming disabled`);
+                console.log(`✅ Could not verify comment settings for share ${shareId} - comments will remain as configured`);
               }
             }
           } catch (commentCheckError) {
@@ -620,10 +612,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             shareId: 'cached-public',
             filename: videoFile.filename,
             isPublicShare: true,
-            note: 'Using cached Frame.io public share - no login required, comments disabled',
+            note: 'Using cached Frame.io public share - no login required, comments enabled',
             features: {
               publicAccess: true,
-              commentsDisabled: true,
+              commentsEnabled: true,
               downloadsEnabled: true
             }
           });
