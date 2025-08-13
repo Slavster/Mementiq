@@ -1702,26 +1702,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let latestActivityDate = new Date(project.createdAt);
             
             try {
-              // Check latest project file upload
-              const projectFiles = await storage.getProjectFiles(project.id);
-              if (projectFiles.length > 0) {
-                const latestProjectFileDate = new Date(Math.max(...projectFiles.map(f => new Date(f.uploadDate).getTime())));
-                console.log(`Latest project file date for project ${project.id}: ${latestProjectFileDate}`);
-                if (latestProjectFileDate > latestActivityDate) {
-                  latestActivityDate = latestProjectFileDate;
-                }
-              }
-
-              // Check latest photo upload
-              const photoFiles = await storage.getPhotoFilesByProject(project.id);
-              if (photoFiles.length > 0) {
-                const latestPhotoDate = new Date(Math.max(...photoFiles.map(f => new Date(f.uploadDate).getTime())));
-                console.log(`Latest photo date for project ${project.id}: ${latestPhotoDate}`);
-                if (latestPhotoDate > latestActivityDate) {
-                  latestActivityDate = latestPhotoDate;
-                }
-              }
-              
               // Check latest Tally form submission
               const tallySubmission = await storage.getTallyFormSubmission(project.id);
               if (tallySubmission && tallySubmission.submittedAt) {
@@ -1732,29 +1712,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
               
-              // Check latest video upload via Frame.io API
+              // Check latest Frame.io assets (all types: videos, photos, etc.)
               if (project.mediaFolderId) {
                 try {
-                  // Use the project's mediaFolderId which already contains the full path
-                  console.log(`Checking videos for project ${project.id} in folder: ${project.mediaFolderId}`);
+                  console.log(`Checking Frame.io assets for project ${project.id} in folder: ${project.mediaFolderId}`);
                   
-                  await frameioV4Service.loadServiceAccountToken();
-                  const frameioVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-                  if (frameioVideos.length > 0) {
-                    const videoDates = frameioVideos
-                      .map((v: any) => v.created_time ? new Date(v.created_time) : null)
-                      .filter(date => date !== null);
+                  // Try to load service token, but continue if it fails
+                  try {
+                    await frameioV4Service.loadServiceAccountToken();
+                    const frameioAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
                     
-                    if (videoDates.length > 0) {
-                      const latestVideoDate = new Date(Math.max(...videoDates.map(d => d!.getTime())));
-                      console.log(`Latest video date for project ${project.id}: ${latestVideoDate}`);
-                      if (latestVideoDate > latestActivityDate) {
-                        latestActivityDate = latestVideoDate;
+                    if (frameioAssets.length > 0) {
+                      // Check both created_time and updated_time for all assets
+                      const assetDates = frameioAssets
+                        .flatMap((asset: any) => [
+                          asset.created_time ? new Date(asset.created_time) : null,
+                          asset.updated_time ? new Date(asset.updated_time) : null
+                        ])
+                        .filter(date => date !== null);
+                      
+                      if (assetDates.length > 0) {
+                        const latestAssetDate = new Date(Math.max(...assetDates.map(d => d!.getTime())));
+                        console.log(`Latest Frame.io asset date for project ${project.id}: ${latestAssetDate}`);
+                        if (latestAssetDate > latestActivityDate) {
+                          latestActivityDate = latestAssetDate;
+                        }
                       }
                     }
+                  } catch (tokenError) {
+                    console.log(`Frame.io token issue for project ${project.id}, using fallback data:`, tokenError.message);
                   }
                 } catch (frameioError) {
-                  console.log(`Could not fetch Frame.io videos for project ${project.id}:`, frameioError);
+                  console.log(`Could not fetch Frame.io assets for project ${project.id}:`, frameioError.message);
                 }
               }
               
