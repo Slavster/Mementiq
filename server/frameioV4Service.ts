@@ -30,6 +30,7 @@ export class FrameioV4Service {
   private refreshTokenValue: string | null = null;
   private tokenExpiresAt: Date | null = null;
   private refreshPromise: Promise<void> | null = null;
+  private refreshTimer: NodeJS.Timeout | null = null;
 
   // Expose getter for access token status (without revealing the token)
   get hasAccessToken(): boolean {
@@ -47,11 +48,11 @@ export class FrameioV4Service {
     return new Date() < this.tokenExpiresAt;
   }
 
-  // Check if token needs refresh (refresh 5 minutes before expiry)
+  // Check if token needs refresh (refresh 10 minutes before expiry for maximum safety)
   private needsRefresh(): boolean {
     if (!this.tokenExpiresAt) return false;
-    const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
-    return fiveMinutesFromNow >= this.tokenExpiresAt;
+    const tenMinutesFromNow = new Date(Date.now() + 10 * 60 * 1000);
+    return tenMinutesFromNow >= this.tokenExpiresAt;
   }
   private workspaceId: string | null = null;
   private initialized: boolean = false;
@@ -314,9 +315,55 @@ export class FrameioV4Service {
       console.log(`Service: ${serviceToken.service}`);
       console.log(`Token expires at: ${serviceToken.expiresAt || 'unknown'}`);
       console.log(`Has refresh token: ${!!serviceToken.refreshToken}`);
+      
+      // Check if we need proactive refresh (more than 10 minutes early for safety)
+      if (this.needsRefresh()) {
+        console.log('⚠️ Token expires soon - proactively refreshing for uninterrupted service...');
+        await this.refreshAccessToken();
+      }
+      
+      // Start proactive refresh monitoring
+      this.startProactiveRefresh();
+      
       console.log('✅ Production centralized token loaded successfully - Frame.io ready');
     } catch (error) {
       console.error('Failed to load service account token:', error);
+    }
+  }
+
+  /**
+   * Start proactive token refresh monitoring
+   */
+  private startProactiveRefresh(): void {
+    // Clear existing timer if any
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+
+    // Check every 5 minutes for token refresh needs
+    this.refreshTimer = setInterval(async () => {
+      try {
+        if (this.needsRefresh() && this.refreshTokenValue) {
+          console.log('🔄 Proactive token refresh triggered by monitoring system');
+          await this.refreshAccessToken();
+          console.log('✅ Proactive token refresh completed - service continuity maintained');
+        }
+      } catch (error) {
+        console.error('⚠️ Proactive token refresh failed:', error);
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    console.log('🛡️ Proactive token refresh monitoring started - checking every 5 minutes');
+  }
+
+  /**
+   * Stop proactive refresh monitoring (for cleanup)
+   */
+  public stopProactiveRefresh(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+      console.log('🛡️ Proactive token refresh monitoring stopped');
     }
   }
 
@@ -373,7 +420,9 @@ export class FrameioV4Service {
   /**
    * Make authenticated requests to Frame.io V4 API
    */
-  async makeRequest(method: string, endpoint: string, data?: any, params?: any): Promise<any> {
+  async makeRequest(method: string, endpoint: string, data?: any, params?: any, retryCount: number = 0): Promise<any> {
+    const maxRetries = 2;
+    
     if (!this.accessTokenValue) {
       throw new Error('Access token required. Please complete OAuth flow first.');
     }
@@ -428,6 +477,21 @@ export class FrameioV4Service {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Error response body:`, errorText);
+        
+        // Handle authentication errors with automatic retry
+        if ((response.status === 401 || response.status === 403) && retryCount < maxRetries) {
+          console.log(`🔐 Auth error detected (${response.status}): ${errorText}`);
+          console.log(`🔄 Attempting token refresh and retry (attempt ${retryCount + 1}/${maxRetries + 1})`);
+          
+          // Force token refresh by clearing current token
+          this.accessTokenValue = null;
+          this.refreshPromise = null;
+          await this.loadServiceAccountToken();
+          
+          // Recursive retry with incremented count
+          return this.makeRequest(method, endpoint, data, params, retryCount + 1);
+        }
+        
         throw new Error(`Frame.io V4 API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
