@@ -582,14 +582,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Only accept f.io URLs as valid public shares
         if (videoFile.mediaAssetUrl.includes('f.io/')) {
-          console.log(`✅ Found valid public share URL - using immediately`);
+          console.log(`✅ Found valid public share URL - checking comment settings before serving...`);
+          
+          // SECURITY CHECK: Ensure comments are disabled before serving to user
+          try {
+            await frameioV4Service.loadServiceAccountToken();
+            const accountId = await frameioV4Service.getAccountId();
+            
+            // Extract share ID from f.io URL (format: https://f.io/SHARE_ID)
+            const shareId = videoFile.mediaAssetUrl.split('/').pop();
+            if (shareId) {
+              console.log(`🔒 Checking comment settings for share ${shareId}...`);
+              const commentSettings = await shareConfigService.getShareCommentSettings(shareId, accountId);
+              
+              if (commentSettings && commentSettings.commentsEnabled) {
+                console.log(`⚠️ Comments are ENABLED on share ${shareId} - disabling before serving...`);
+                const disableSuccess = await shareConfigService.disableCommentsOnShare(shareId, accountId);
+                
+                if (disableSuccess) {
+                  console.log(`✅ Comments successfully DISABLED on share ${shareId}`);
+                } else {
+                  console.log(`❌ Failed to disable comments on share ${shareId} - proceeding anyway`);
+                }
+              } else {
+                console.log(`✅ Comments already DISABLED on share ${shareId}`);
+              }
+            }
+          } catch (commentCheckError) {
+            console.log(`⚠️ Comment check failed: ${commentCheckError instanceof Error ? commentCheckError.message : String(commentCheckError)} - proceeding with cached URL`);
+          }
           
           return res.json({
             shareUrl: videoFile.mediaAssetUrl,
             shareId: 'cached-public',
             filename: videoFile.filename,
             isPublicShare: true,
-            note: 'Using cached Frame.io public share - no login required',
+            note: 'Using cached Frame.io public share - no login required, comments disabled',
             features: {
               publicAccess: true,
               commentsDisabled: true,
@@ -614,6 +642,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (existingShare && existingShare.url.includes('f.io/')) {
               console.log(`✅ Found public share version: ${existingShare.url}`);
               
+              // SECURITY CHECK: Ensure comments are disabled before serving
+              try {
+                console.log(`🔒 Ensuring comments are disabled on share ${existingShare.id}...`);
+                const commentSettings = await shareConfigService.getShareCommentSettings(existingShare.id, accountId);
+                
+                if (commentSettings && commentSettings.commentsEnabled) {
+                  console.log(`⚠️ Comments are ENABLED on share ${existingShare.id} - disabling before serving...`);
+                  await shareConfigService.disableCommentsOnShare(existingShare.id, accountId);
+                  console.log(`✅ Comments successfully DISABLED on share ${existingShare.id}`);
+                }
+              } catch (commentError) {
+                console.log(`⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
+              }
+              
               // Update database with correct public URL
               await storage.updateProjectFile(videoFile.id, {
                 mediaAssetUrl: existingShare.url
@@ -624,7 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 shareId: existingShare.id,
                 filename: videoFile.filename,
                 isPublicShare: true,
-                note: 'Found and cached public Frame.io share - no login required',
+                note: 'Found and cached public Frame.io share - no login required, comments disabled',
             features: {
               publicAccess: true,
               commentsDisabled: true,
@@ -661,6 +703,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Ensure we only return public f.io URLs
           if (existingShare.url.includes('f.io/')) {
             console.log(`🛡️ FOUND EXISTING PUBLIC SHARE: ${existingShare.id} - URL: ${existingShare.url}`);
+            
+            // SECURITY CHECK: Ensure comments are disabled before serving
+            try {
+              console.log(`🔒 Ensuring comments are disabled on share ${existingShare.id}...`);
+              const commentSettings = await shareConfigService.getShareCommentSettings(existingShare.id, accountId);
+              
+              if (commentSettings && commentSettings.commentsEnabled) {
+                console.log(`⚠️ Comments are ENABLED on share ${existingShare.id} - disabling before serving...`);
+                await shareConfigService.disableCommentsOnShare(existingShare.id, accountId);
+                console.log(`✅ Comments successfully DISABLED on share ${existingShare.id}`);
+              }
+            } catch (commentError) {
+              console.log(`⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
+            }
+            
             console.log(`💾 Updating database cache with public share: ${existingShare.url}`);
             
             // Update database with existing public share URL
@@ -673,7 +730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               shareId: existingShare.id,
               filename: videoFile.filename,
               isPublicShare: true,
-              note: 'Found existing Frame.io public share - no login required',
+              note: 'Found existing Frame.io public share - no login required, comments disabled',
             features: {
               publicAccess: true,
               commentsDisabled: true,
@@ -766,17 +823,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       console.log(`🚨 RETURNED from createAssetShareLink with URL: ${shareLink.url}`);
 
+      // SECURITY CHECK: Ensure comments are disabled on newly created share
+      try {
+        console.log(`🔒 Ensuring comments are disabled on new share ${shareLink.id}...`);
+        const commentSettings = await shareConfigService.getShareCommentSettings(shareLink.id, await frameioV4Service.getAccountId());
+        
+        if (commentSettings && commentSettings.commentsEnabled) {
+          console.log(`⚠️ Comments are ENABLED on new share ${shareLink.id} - disabling before serving...`);
+          await shareConfigService.disableCommentsOnShare(shareLink.id, await frameioV4Service.getAccountId());
+          console.log(`✅ Comments successfully DISABLED on new share ${shareLink.id}`);
+        }
+      } catch (commentError) {
+        console.log(`⚠️ Comment disable failed on new share: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
+      }
+
       // Store the new share URL in the database to avoid duplicate creation
       console.log(`💾 Updating database with new share URL: ${shareLink.url}`);
       await storage.updateProjectFile(videoFile.id, {
         mediaAssetUrl: shareLink.url
       });
       console.log(`✅ Database updated with share URL`);
-      
-      // Store the share URL in the database for future reference
-      await storage.updateProjectFile(videoFile.id, {
-        mediaAssetUrl: shareLink.url
-      });
       
       console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
       
@@ -786,6 +852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filename: videoFile.filename,
         isPublicShare: true,
         expiresInDays: 30,
+        note: 'New Frame.io public share created - comments disabled',
         features: {
           publicAccess: true,
           commentsDisabled: true,
