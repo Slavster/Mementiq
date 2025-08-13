@@ -17,20 +17,37 @@ export class ShareConfigService {
       
       await frameioV4Service.loadServiceAccountToken();
       
-      // Update share to enable comments
-      await frameioV4Service.makeRequest(
-        'PATCH',
-        `/accounts/${accountId}/shares/${shareId}`,
-        {
-          data: {
-            allow_comments: true,
-            description: 'Public share with downloads and comments enabled, expires in 30 days'
-          }
-        }
+      // Find which project this share belongs to
+      const projectsResponse = await frameioV4Service.makeRequest(
+        'GET',
+        `/accounts/${accountId}/projects`
       );
       
-      console.log(`✅ Comments ENABLED on share ${shareId}`);
-      return true;
+      const projects = projectsResponse.data || [];
+      for (const project of projects) {
+        try {
+          // Update share to enable comments
+          await frameioV4Service.makeRequest(
+            'PATCH',
+            `/accounts/${accountId}/projects/${project.id}/shares/${shareId}`,
+            {
+              data: {
+                allow_comments: true,
+                description: 'Public share with downloads and comments enabled, expires in 30 days'
+              }
+            }
+          );
+          
+          console.log(`✅ Comments ENABLED on share ${shareId} in project ${project.id}`);
+          return true;
+        } catch (shareError) {
+          // Share not in this project, continue searching
+          continue;
+        }
+      }
+      
+      console.log(`❌ Share ${shareId} not found in any project for comment enabling`);
+      return false;
       
     } catch (error) {
       console.error(`❌ Failed to enable comments on share ${shareId}:`, error);
@@ -49,20 +66,37 @@ export class ShareConfigService {
       
       await frameioV4Service.loadServiceAccountToken();
       
-      // Update share to disable comments
-      await frameioV4Service.makeRequest(
-        'PATCH',
-        `/accounts/${accountId}/shares/${shareId}`,
-        {
-          data: {
-            allow_comments: false,
-            description: 'Public share with downloads enabled, comments disabled, expires in 30 days'
-          }
-        }
+      // Find which project this share belongs to
+      const projectsResponse = await frameioV4Service.makeRequest(
+        'GET',
+        `/accounts/${accountId}/projects`
       );
       
-      console.log(`✅ Comments DISABLED on share ${shareId}`);
-      return true;
+      const projects = projectsResponse.data || [];
+      for (const project of projects) {
+        try {
+          // Update share to disable comments
+          await frameioV4Service.makeRequest(
+            'PATCH',
+            `/accounts/${accountId}/projects/${project.id}/shares/${shareId}`,
+            {
+              data: {
+                allow_comments: false,
+                description: 'Public share with downloads enabled, comments disabled, expires in 30 days'
+              }
+            }
+          );
+          
+          console.log(`✅ Comments DISABLED on share ${shareId} in project ${project.id}`);
+          return true;
+        } catch (shareError) {
+          // Share not in this project, continue searching
+          continue;
+        }
+      }
+      
+      console.log(`❌ Share ${shareId} not found in any project for comment disabling`);
+      return false;
       
     } catch (error) {
       console.error(`❌ Failed to disable comments on share ${shareId}:`, error);
@@ -81,51 +115,83 @@ export class ShareConfigService {
       
       await frameioV4Service.loadServiceAccountToken();
       
-      // If it's an f.io URL short ID, we need to find the actual share ID by searching all shares
+      // If it's an f.io URL short ID, we need to find the actual share ID by searching projects for shares
       if (shareId.length < 20 || !shareId.includes('-')) {
         console.log(`🔍 Short ID detected (${shareId}), searching for full share UUID...`);
         
-        // Get all shares and find the one with matching f.io URL
-        const sharesResponse = await frameioV4Service.makeRequest(
+        // Get all projects and search for shares within them (Frame.io V4 pattern)
+        const projectsResponse = await frameioV4Service.makeRequest(
           'GET',
-          `/accounts/${accountId}/shares`
+          `/accounts/${accountId}/projects`
         );
         
-        const shares = sharesResponse.data || [];
-        console.log(`🔍 Searching through ${shares.length} shares for f.io URL containing ${shareId}...`);
+        const projects = projectsResponse.data || [];
+        console.log(`🔍 Searching through ${projects.length} projects for shares containing ${shareId}...`);
         
-        for (const share of shares) {
-          const shareUrl = share.short_url || share.public_url || share.url || '';
-          if (shareUrl.includes(shareId)) {
-            console.log(`✅ Found matching share: ${share.id} with URL: ${shareUrl}`);
-            const commentsEnabled = share.allow_comments || false;
-            console.log(`📊 Share ${share.id} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
+        for (const project of projects) {
+          try {
+            // Get shares for this project
+            const sharesResponse = await frameioV4Service.makeRequest(
+              'GET',
+              `/accounts/${accountId}/projects/${project.id}/shares`
+            );
             
-            return { 
-              commentsEnabled,
-              actualShareId: share.id,
-              actualShareUrl: shareUrl
-            };
+            const shares = sharesResponse.data || [];
+            for (const share of shares) {
+              const shareUrl = share.short_url || share.public_url || share.url || '';
+              if (shareUrl.includes(shareId)) {
+                console.log(`✅ Found matching share: ${share.id} with URL: ${shareUrl} in project ${project.id}`);
+                const commentsEnabled = share.allow_comments || false;
+                console.log(`📊 Share ${share.id} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
+                
+                return { 
+                  commentsEnabled,
+                  actualShareId: share.id,
+                  actualShareUrl: shareUrl
+                };
+              }
+            }
+          } catch (projectError) {
+            console.log(`⚠️ Failed to get shares for project ${project.id}: ${projectError instanceof Error ? projectError.message : String(projectError)}`);
+            continue;
           }
         }
         
-        console.log(`❌ No share found with f.io URL containing ${shareId}`);
+        console.log(`❌ No share found with f.io URL containing ${shareId} across all projects`);
         return null;
       }
       
-      // Direct UUID lookup
-      const shareResponse = await frameioV4Service.makeRequest(
+      // Direct UUID lookup - need to find which project this share belongs to
+      console.log(`🔍 Full UUID detected (${shareId}), searching across projects...`);
+      
+      const projectsResponse = await frameioV4Service.makeRequest(
         'GET',
-        `/accounts/${accountId}/shares/${shareId}`
+        `/accounts/${accountId}/projects`
       );
       
-      const commentsEnabled = shareResponse?.data?.allow_comments || false;
-      console.log(`📊 Share ${shareId} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
+      const projects = projectsResponse.data || [];
+      for (const project of projects) {
+        try {
+          const shareResponse = await frameioV4Service.makeRequest(
+            'GET',
+            `/accounts/${accountId}/projects/${project.id}/shares/${shareId}`
+          );
+          
+          const commentsEnabled = shareResponse?.data?.allow_comments || false;
+          console.log(`📊 Share ${shareId} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
+          
+          return { 
+            commentsEnabled,
+            actualShareId: shareId 
+          };
+        } catch (shareError) {
+          // Share not in this project, continue searching
+          continue;
+        }
+      }
       
-      return { 
-        commentsEnabled,
-        actualShareId: shareId 
-      };
+      console.log(`❌ Share ${shareId} not found in any project`);
+      return null;
       
     } catch (error) {
       console.error(`❌ Failed to get comment settings for share ${shareId}:`, error);
