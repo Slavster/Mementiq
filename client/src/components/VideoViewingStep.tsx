@@ -279,8 +279,10 @@ export function VideoViewingStep({
       {/* Next Steps Section */}
       <Card className="bg-gray-800/50 border-gray-600">
         <CardContent className="p-6">
-          <h3 className="text-xl font-semibold text-white mb-4 text-center">🚀 Next Steps</h3>
-          
+          <h3 className="text-xl font-semibold text-white mb-4 text-center">
+            🚀 Next Steps
+          </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Accept Option */}
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-3">
@@ -289,8 +291,10 @@ export function VideoViewingStep({
                 <span className="font-semibold">Option 1: Accept Video</span>
               </div>
               <p className="text-gray-300 text-sm">
-                Love your video as is? Click accept to mark the project as finished. 
-                <strong> No changes can be made after this point.</strong>
+                Love your video? Click accept to mark the project as finished.
+                <strong className="block mt-1">
+                  No changes can be made after this point.
+                </strong>
               </p>
             </div>
 
@@ -298,11 +302,14 @@ export function VideoViewingStep({
             <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2 text-orange-400">
                 <RotateCcw className="h-5 w-5" />
-                <span className="font-semibold">Option 2: Request Revision ($5)</span>
+                <span className="font-semibold">
+                  Option 2: Paid Revision Request
+                </span>
               </div>
               <p className="text-gray-300 text-sm">
-                Need changes? The editor will review all your comments and highlights and make updates. 
-                You'll be able to upload new footage too, if needed.
+                Need changes? The editor will review all your comments and
+                highlights and make updates. You'll be able to upload new
+                footage too, if needed. <strong> Each round costs $5.</strong>
               </p>
             </div>
           </div>
@@ -339,7 +346,7 @@ export function VideoViewingStep({
           )}{" "}
           {isRequestingRevision
             ? "Requesting Revision..."
-            : "Request Revision ($5)"}
+            : "Request Revisions ($5)"}
         </Button>
       </div>
 

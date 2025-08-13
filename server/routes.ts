@@ -1702,6 +1702,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let latestActivityDate = new Date(project.createdAt);
             
             try {
+              // Check latest project file upload
+              const projectFiles = await storage.getProjectFiles(project.id);
+              if (projectFiles.length > 0) {
+                const latestProjectFileDate = new Date(Math.max(...projectFiles.map(f => new Date(f.uploadDate).getTime())));
+                console.log(`Latest project file date for project ${project.id}: ${latestProjectFileDate}`);
+                if (latestProjectFileDate > latestActivityDate) {
+                  latestActivityDate = latestProjectFileDate;
+                }
+              }
+
               // Check latest photo upload
               const photoFiles = await storage.getPhotoFilesByProject(project.id);
               if (photoFiles.length > 0) {
