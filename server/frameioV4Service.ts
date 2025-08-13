@@ -789,11 +789,10 @@ export class FrameioV4Service {
    * Create a public share link for a specific asset (checks for existing shares first)
    */
   async createAssetShareLink(assetId: string, name: string): Promise<{ url: string; id: string }> {
-    console.log(`🚀 ENTERING createAssetShareLink function`);
-    console.log(`🚀 Parameters: assetId=${assetId}, name=${name}`);
+    console.log(`🚀🚀🚀 FUNCTION ENTRY: createAssetShareLink called with ${assetId}`);
     
     await this.initialize();
-    console.log(`🚀 Initialize completed`);
+    console.log(`🚀🚀🚀 AFTER INITIALIZE`);
 
     try {
       console.log(`=== Frame.io V4 Share Creation ===`);
