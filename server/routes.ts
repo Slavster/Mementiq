@@ -572,15 +572,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
       
-      // Check if we already have a Frame.io share URL
-      if (videoFile.mediaAssetUrl && videoFile.mediaAssetUrl.includes('share.frame.io')) {
-        console.log(`Using existing share URL: ${videoFile.mediaAssetUrl}`);
+      // Check if we already have a Frame.io share URL (V4 uses f.io format)
+      if (videoFile.mediaAssetUrl && (videoFile.mediaAssetUrl.includes('share.frame.io') || videoFile.mediaAssetUrl.includes('f.io'))) {
+        console.log(`✅ Using cached share URL from database: ${videoFile.mediaAssetUrl}`);
         return res.json({
           shareUrl: videoFile.mediaAssetUrl,
-          shareId: 'existing',
+          shareId: 'cached',
           filename: videoFile.filename,
           isPublicShare: true,
-          note: 'Existing Frame.io public share - no login required'
+          note: 'Cached Frame.io public share - no login required'
         });
       }
       
