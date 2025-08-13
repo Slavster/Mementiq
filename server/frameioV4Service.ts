@@ -48,11 +48,11 @@ export class FrameioV4Service {
     return new Date() < this.tokenExpiresAt;
   }
 
-  // Check if token needs refresh (refresh 10 minutes before expiry for maximum safety)
+  // Check if token needs refresh (refresh 5 minutes before expiry as per OAuth best practices)
   private needsRefresh(): boolean {
     if (!this.tokenExpiresAt) return false;
-    const tenMinutesFromNow = new Date(Date.now() + 10 * 60 * 1000);
-    return tenMinutesFromNow >= this.tokenExpiresAt;
+    const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
+    return fiveMinutesFromNow >= this.tokenExpiresAt;
   }
   private workspaceId: string | null = null;
   private initialized: boolean = false;
@@ -249,20 +249,48 @@ export class FrameioV4Service {
   }
 
   /**
-   * Use a lock to ensure only one refresh operation happens at a time.
+   * Use a DB lock to ensure only one refresh operation happens at a time across all instances.
    */
   private async refreshWithLock(): Promise<void> {
     if (this.refreshPromise) {
       return this.refreshPromise; // Wait for existing refresh
     }
 
+    const lockKey = 'frameio-v4-token-refresh';
+    const lockTtlSeconds = 300; // 5 minutes TTL
+
+    // Try to acquire database lock for single-flight refresh
+    const { DatabaseStorage } = await import('./storage.js');
+    const storage = new DatabaseStorage();
+    
+    const lockAcquired = await storage.acquireRefreshLock(lockKey, lockTtlSeconds);
+    
+    if (!lockAcquired) {
+      console.log('🔒 Another process is already refreshing tokens, waiting...');
+      // Wait briefly and reload token from database (another process likely refreshed it)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const serviceToken = await storage.getServiceToken('frameio-v4');
+      if (serviceToken) {
+        this.accessTokenValue = serviceToken.accessToken;
+        this.refreshTokenValue = serviceToken.refreshToken;
+        this.tokenExpiresAt = serviceToken.expiresAt ? new Date(serviceToken.expiresAt) : null;
+        console.log('✅ Token refreshed by another process - using updated token');
+      }
+      return;
+    }
+
+    console.log('🔒 Database lock acquired for token refresh');
+
     // Perform the refresh and store the promise
     this.refreshPromise = this.refreshAccessToken();
     try {
       await this.refreshPromise;
     } finally {
-      // Clear the promise once done, whether successful or not
+      // Clear the promise and release the database lock
       this.refreshPromise = null;
+      await storage.releaseRefreshLock(lockKey);
+      console.log('🔓 Database lock released after token refresh');
     }
   }
 
@@ -383,15 +411,59 @@ export class FrameioV4Service {
   }
 
   /**
-   * Verify Frame.io organization and profile access.
-   * This is a placeholder and should be implemented to check user roles/permissions.
+   * Verify Frame.io organization and profile access when encountering 403 errors.
    */
   private async verifyOrgAccess(): Promise<void> {
-    console.log('📞 Calling placeholder: verifyOrgAccess...');
-    // TODO: Implement actual org/profile and role verification logic
-    // This would likely involve making a /me or /accounts request and checking user properties.
-    // For now, we assume access is granted if the 403 error wasn't due to token issues.
-    console.log('ℹ️  Org/profile access verification skipped (placeholder).');
+    console.log('🔍 Verifying Frame.io organization and profile access...');
+    
+    try {
+      // Check user profile and permissions
+      const userResponse = await fetch(`${this.baseUrl}/me`, {
+        headers: {
+          'Authorization': `Bearer ${this.accessTokenValue}`,
+          'Content-Type': 'application/json',
+          'api-version': '4.0'
+        }
+      });
+
+      if (!userResponse.ok) {
+        throw new Error(`Failed to verify user profile: ${userResponse.status}`);
+      }
+
+      const userData = await userResponse.json();
+      console.log(`✅ User verified: ${userData.data?.name} (${userData.data?.email})`);
+
+      // Check account access
+      const accountsResponse = await fetch(`${this.baseUrl}/accounts`, {
+        headers: {
+          'Authorization': `Bearer ${this.accessTokenValue}`,
+          'Content-Type': 'application/json',
+          'api-version': '4.0'
+        }
+      });
+
+      if (!accountsResponse.ok) {
+        throw new Error(`Failed to access accounts: ${accountsResponse.status}`);
+      }
+
+      const accountsData = await accountsResponse.json();
+      const accountCount = accountsData.data?.length || 0;
+      
+      if (accountCount === 0) {
+        throw new Error('No accessible Frame.io accounts found for this user');
+      }
+
+      console.log(`✅ Organization access verified: ${accountCount} account(s) accessible`);
+      
+      // Log account details for debugging
+      accountsData.data?.forEach((account: any, index: number) => {
+        console.log(`  Account ${index + 1}: ${account.display_name || account.name} (${account.id})`);
+      });
+
+    } catch (error) {
+      console.error('❌ Organization/profile verification failed:', error);
+      throw new Error(`Frame.io access verification failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
