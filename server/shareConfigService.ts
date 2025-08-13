@@ -23,7 +23,7 @@ export class ShareConfigService {
         `/accounts/${accountId}/shares/${shareId}`,
         {
           data: {
-            allow_comments: true,
+            commenting_enabled: true,
             description: 'Public share with downloads and comments enabled, expires in 30 days'
           }
         }
@@ -55,7 +55,7 @@ export class ShareConfigService {
         `/accounts/${accountId}/shares/${shareId}`,
         {
           data: {
-            allow_comments: false,
+            commenting_enabled: false,
             description: 'Public share with downloads enabled, comments disabled, expires in 30 days'
           }
         }
