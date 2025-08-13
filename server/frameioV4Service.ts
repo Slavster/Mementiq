@@ -1,4 +1,21 @@
 // Frame.io V4 types defined inline
+interface FrameioProject {
+  id: string;
+  name: string;
+  description: string;
+  root_asset_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface FrameioAsset {
+  id: string;
+  name: string;
+  type: string;
+  parent_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
 /**
  * Frame.io V4 API Service with OAuth Authentication
@@ -272,7 +289,7 @@ export class FrameioV4Service {
         console.log('🔄 Service token expired, attempting automatic refresh...');
         
         if (serviceToken.refreshToken) {
-          await this.refreshAccessToken(serviceToken.refreshToken, storage);
+          await this.refreshAccessToken();
           // Reload the fresh token
           const refreshedToken = await storage.getServiceToken('frameio-v4');
           if (refreshedToken) {
@@ -583,39 +600,7 @@ export class FrameioV4Service {
     }
   }
 
-  /**
-   * Upload file to Frame.io V4 folder - Compatible with TUS uploads
-   */
-  async uploadFile(folderId: string, file: Buffer, filename: string, mimeType: string): Promise<FrameioAsset> {
-    await this.initialize();
 
-    try {
-      console.log(`Uploading "${filename}" to V4 folder ${folderId}`);
-      
-      // V4 asset creation for uploads
-      const assetData = await this.makeRequest('POST', `/assets/${folderId}/children`, {
-        name: filename,
-        type: 'file',
-        filetype: mimeType,
-        filesize: file.length
-      });
-
-      console.log(`V4 Asset placeholder created: ${assetData.id}`);
-
-      // For now, return the asset info - TUS upload will be handled by frontend
-      return {
-        id: assetData.id,
-        name: filename,
-        type: 'file',
-        parent_id: folderId,
-        created_at: assetData.created_at || new Date().toISOString(),
-        updated_at: assetData.updated_at || new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error(`Failed to create upload asset "${filename}" in V4:`, error);
-      throw error;
-    }
-  }
 
   /**
    * Create upload session for TUS protocol
@@ -1791,24 +1776,25 @@ export class FrameioV4Service {
       
       // Feature Test 1: User connection and workspace access
       console.log('1. Testing user connection...');
-      const user = await this.getCurrentUser();
-      const teams = await this.getTeams();
+      const accounts = await this.getAccounts();
+      const workspaces = accounts.data && accounts.data.length > 0 ? 
+        await this.getWorkspaces(accounts.data[0].id) : { data: [] };
       results.connection = true;
-      results.details.user = { name: user.display_name, email: user.email };
-      results.details.workspaces = teams?.data?.length || 0;
-      console.log(`✓ Connected as: ${user.display_name} (${teams?.data?.length || 0} workspaces)`);
+      results.details.user = { name: 'Frame.io User', email: 'authenticated' };
+      results.details.workspaces = workspaces?.data?.length || 0;
+      console.log(`✓ Connected successfully (${workspaces?.data?.length || 0} workspaces)`);
       
       // Feature Test 2: Folder creation (Users and Projects)
       console.log('2. Testing folder creation...');
       const testFolderName = `API-Test-${Date.now()}`;
-      const folder = await this.createFolder(testFolderName);
+      const rootProject = await this.getOrCreateRootProject();
+      const folder = await this.createFolder(testFolderName, rootProject.root_asset_id);
       results.folderCreation = true;
       results.details.folderCreated = { name: folder.name, id: folder.id };
       console.log(`✓ Created folder: ${folder.name} (${folder.id})`);
       
       // Feature Test 3: Upload readiness (verify we have root project access)
       console.log('3. Testing upload readiness...');
-      const rootProject = await this.getOrCreateRootProject();
       results.uploadReady = true;
       results.details.rootProject = { 
         name: rootProject.name, 

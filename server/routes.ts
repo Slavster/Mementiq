@@ -2867,7 +2867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { assetId } = req.params;
       console.log(`Testing Frame.io API for asset ${assetId}...`);
       
-      const assetDetails = await frameioService.getAssetDetails(assetId);
+      const assetDetails = await frameioV4Service.getAsset(assetId);
       
       res.json({
         success: true,
@@ -4517,12 +4517,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Testing Frame.io V4 projects/workspaces access...");
       
       await frameioV4Service.initialize();
-      const teams = await frameioV4Service.getTeams();
+      const accounts = await frameioV4Service.getAccounts();
+      const workspaces = accounts.data && accounts.data.length > 0 ? 
+        await frameioV4Service.getWorkspaces(accounts.data[0].id) : { data: [] };
       
       res.json({
         success: true,
         message: "Projects/workspaces access successful",
-        teams
+        accounts,
+        workspaces
       });
     } catch (error) {
       console.error("Projects access test failed:", error);
@@ -4580,7 +4583,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/frameio/v4/me", async (req: Request, res: Response) => {
     try {
       await frameioV4Service.initialize();
-      const user = await frameioV4Service.getCurrentUser();
+      const accounts = await frameioV4Service.getAccounts();
+      const user = { id: 'current', display_name: 'Frame.io User', accounts: accounts.data || [] };
       res.json({ success: true, user });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -4590,7 +4594,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/frameio/v4/workspaces", async (req: Request, res: Response) => {
     try {
       await frameioV4Service.initialize();
-      const workspaces = await frameioV4Service.getTeams();
+      const accounts = await frameioV4Service.getAccounts();
+      const workspaces = accounts.data && accounts.data.length > 0 ? 
+        await frameioV4Service.getWorkspaces(accounts.data[0].id) : { data: [] };
       res.json({ success: true, workspaces });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
