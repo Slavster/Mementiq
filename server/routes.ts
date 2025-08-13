@@ -598,7 +598,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (error) {
           console.log(`❌ Cached share URL is invalid or requires login: ${videoFile.mediaAssetUrl}`);
-          console.log(`Creating fresh share to replace invalid cached URL...`);
+          console.log(`🛡️ Attempting resilient recovery - searching Frame.io for existing shares...`);
+          
+          // Try to find existing shares in Frame.io before creating new one
+          try {
+            await frameioV4Service.loadServiceAccountToken();
+            const accountId = await frameioV4Service.getAccountId();
+            const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId!, videoFile.mediaAssetId);
+            
+            if (existingShare) {
+              console.log(`🛡️ RESILIENT RECOVERY SUCCESS: Found existing share ${existingShare.id}`);
+              console.log(`💾 Updating database cache with recovered share: ${existingShare.url}`);
+              
+              // Update database with recovered share URL
+              await storage.updateProjectFile(videoFile.id, {
+                mediaAssetUrl: existingShare.url
+              });
+              
+              return res.json({
+                shareUrl: existingShare.url,
+                shareId: existingShare.id,
+                filename: videoFile.filename,
+                isPublicShare: true,
+                note: 'Recovered existing Frame.io share - no login required'
+              });
+            } else {
+              console.log(`🛡️ No existing shares found in Frame.io, will create new share`);
+            }
+          } catch (recoveryError) {
+            console.log(`❌ Resilient recovery failed: ${recoveryError.message}`);
+          }
           // Continue to create new share below
         }
       }
