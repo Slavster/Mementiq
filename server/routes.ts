@@ -1717,7 +1717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 try {
                   console.log(`Checking Frame.io assets for project ${project.id} in folder: ${project.mediaFolderId}`);
                   
-                  // Try to load service token, but continue if it fails
+                  // Always reload service token to ensure we have the latest
                   try {
                     await frameioV4Service.loadServiceAccountToken();
                     const frameioAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);

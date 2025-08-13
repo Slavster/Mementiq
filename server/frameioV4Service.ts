@@ -270,8 +270,6 @@ export class FrameioV4Service {
    * Load service account token from database (from successful OAuth completion)
    */
   async loadServiceAccountToken(): Promise<void> {
-    if (this.accessTokenValue) return; // Already loaded
-
     try {
       // Load centralized service token
       const { DatabaseStorage } = await import('./storage.js');
@@ -289,11 +287,15 @@ export class FrameioV4Service {
         console.log('🔄 Service token expired, attempting automatic refresh...');
         
         if (serviceToken.refreshToken) {
+          // Set the refresh token so refreshAccessToken can use it
+          this.refreshTokenValue = serviceToken.refreshToken;
+          
           await this.refreshAccessToken();
           // Reload the fresh token
           const refreshedToken = await storage.getServiceToken('frameio-v4');
           if (refreshedToken) {
             this.accessTokenValue = refreshedToken.accessToken;
+            this.tokenExpiresAt = refreshedToken.expiresAt ? new Date(refreshedToken.expiresAt) : null;
             console.log('✅ Service token refreshed automatically - Frame.io ready');
             return;
           }
