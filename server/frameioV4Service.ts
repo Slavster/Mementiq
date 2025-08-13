@@ -834,39 +834,38 @@ export class FrameioV4Service {
       
       console.log(`✅ Share created with ID: ${shareId}`);
 
-      // Step 2: Add the asset to the share
+      // Step 2: Add the asset to the share (Frame.io V4 expects single asset_id in data object)
       console.log('Adding asset to share...');
       try {
         await this.makeRequest(
           'POST',
           `/accounts/${accountId}/shares/${shareId}/assets`,
-          { data: [{ id: assetId, type: 'file' }] }
+          { 
+            data: {
+              asset_id: assetId
+            }
+          }
         );
         console.log(`✅ Asset ${assetId} added to share`);
       } catch (assetError) {
-        console.log('Asset addition failed, continuing...');
+        console.log(`Asset addition failed: ${assetError.message}, continuing...`);
       }
 
-      // Step 3: Configure share settings
-      console.log('Configuring share settings...');
-      const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
-      
+      // Step 3: Update share description (Frame.io V4 UpdateShareParams only supports basic fields)
+      console.log('Setting share description...');
       try {
         await this.makeRequest(
           'PATCH',
           `/accounts/${accountId}/shares/${shareId}`,
           {
             data: {
-              visibility: 'public',
-              downloads_enabled: true,
-              comments_enabled: false,
-              expires_at: expiresAt
+              description: `Public share with downloads enabled, expires in 30 days`
             }
           }
         );
-        console.log(`✅ Share configured: public, downloads enabled, comments disabled, 30-day expiry`);
+        console.log(`✅ Share description updated`);
       } catch (patchError) {
-        console.log('Settings configuration failed, share still usable');
+        console.log(`Share description update failed: ${patchError.message}, continuing...`);
       }
 
       // Step 4: Get final share details
