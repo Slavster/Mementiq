@@ -573,6 +573,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
       console.log(`Current cached URL in database: ${videoFile.mediaAssetUrl}`);
       
+      // ALWAYS check for existing shares first (even if no cached URL) to prevent duplicates
+      console.log(`🔍 Checking for existing shares in Frame.io before creating new ones...`);
+      try {
+        await frameioV4Service.loadServiceAccountToken();
+        const accountId = await frameioV4Service.getAccountId();
+        const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId!, videoFile.mediaAssetId);
+        
+        if (existingShare) {
+          console.log(`🛡️ FOUND EXISTING SHARE: ${existingShare.id} - URL: ${existingShare.url}`);
+          console.log(`💾 Updating database cache with found share: ${existingShare.url}`);
+          
+          // Update database with existing share URL
+          await storage.updateProjectFile(videoFile.id, {
+            mediaAssetUrl: existingShare.url
+          });
+          
+          return res.json({
+            shareUrl: existingShare.url,
+            shareId: existingShare.id,
+            filename: videoFile.filename,
+            isPublicShare: true,
+            note: 'Found existing Frame.io share - no login required'
+          });
+        } else {
+          console.log(`❌ No existing shares found in Frame.io for asset ${videoFile.mediaAssetId}`);
+        }
+      } catch (searchError) {
+        console.log(`❌ Existing share search failed: ${searchError.message}`);
+      }
+      
       // Check if we already have a Frame.io share URL and validate it's still working
       if (videoFile.mediaAssetUrl && (videoFile.mediaAssetUrl.includes('share.frame.io') || videoFile.mediaAssetUrl.includes('f.io'))) {
         console.log(`🔍 Validating cached share URL: ${videoFile.mediaAssetUrl}`);
