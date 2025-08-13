@@ -572,16 +572,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
       
-      // Check if we already have a Frame.io share URL (V4 uses f.io format)
+      // Check if we already have a Frame.io share URL and validate it's still working
       if (videoFile.mediaAssetUrl && (videoFile.mediaAssetUrl.includes('share.frame.io') || videoFile.mediaAssetUrl.includes('f.io'))) {
-        console.log(`✅ Using cached share URL from database: ${videoFile.mediaAssetUrl}`);
-        return res.json({
-          shareUrl: videoFile.mediaAssetUrl,
-          shareId: 'cached',
-          filename: videoFile.filename,
-          isPublicShare: true,
-          note: 'Cached Frame.io public share - no login required'
-        });
+        console.log(`🔍 Validating cached share URL: ${videoFile.mediaAssetUrl}`);
+        
+        try {
+          // Test if the share URL is still valid by making a HEAD request
+          const axios = require('axios');
+          const response = await axios.head(videoFile.mediaAssetUrl, { 
+            timeout: 5000,
+            maxRedirects: 2 // Allow some redirects but not too many
+          });
+          
+          // If we get a successful response, the share is still valid
+          if (response.status === 200) {
+            console.log(`✅ Cached share URL is still valid: ${videoFile.mediaAssetUrl}`);
+            return res.json({
+              shareUrl: videoFile.mediaAssetUrl,
+              shareId: 'cached-validated',
+              filename: videoFile.filename,
+              isPublicShare: true,
+              note: 'Validated Frame.io public share - no login required'
+            });
+          }
+        } catch (error) {
+          console.log(`❌ Cached share URL is invalid or requires login: ${videoFile.mediaAssetUrl}`);
+          console.log(`Creating fresh share to replace invalid cached URL...`);
+          // Continue to create new share below
+        }
       }
       
       // Create Frame.io V4 public share using the 4-step process
