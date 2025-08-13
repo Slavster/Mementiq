@@ -586,10 +586,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create Frame.io V4 public share using the 4-step process
       await frameioV4Service.loadServiceAccountToken();
+      console.log(`🚨 CALLING createAssetShareLink from routes.ts with assetId: ${videoFile.mediaAssetId}`);
       const shareLink = await frameioV4Service.createAssetShareLink(
         videoFile.mediaAssetId,
         `${project.title} - ${videoFile.filename} - ${new Date().toLocaleDateString()}`
       );
+      console.log(`🚨 RETURNED from createAssetShareLink with URL: ${shareLink.url}`);
       
       // Store the share URL in the database for future reference
       await storage.updateProjectFile(videoFile.id, {
