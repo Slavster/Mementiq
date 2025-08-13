@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import confetti from "canvas-confetti";
-import { useToast } from "@/hooks/use-toast";
 
 interface ProjectAcceptanceModalProps {
   open: boolean;
@@ -42,7 +40,6 @@ export function ProjectAcceptanceModal({
   const [showThankYou, setShowThankYou] = useState(false);
   const [mediaAssetId, setMediaAssetId] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   // Revision payment mutation
   const revisionPaymentMutation = useMutation({
@@ -121,27 +118,9 @@ export function ProjectAcceptanceModal({
       });
     },
     onSuccess: () => {
-      // Show confetti animation
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-      
-      // Show success toast
-      toast({
-        title: "Video Accepted!",
-        description: "Your project has been marked as complete.",
-      });
-      
       // Invalidate projects query to refresh the dashboard
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      
-      // Close modal and redirect to dashboard after a brief delay
-      setTimeout(() => {
-        onOpenChange(false);
-        // The user will already be on the dashboard since this modal opens from the dashboard
-      }, 1500);
+      setShowThankYou(true);
     },
   });
 
