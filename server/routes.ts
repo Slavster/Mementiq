@@ -857,6 +857,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to get current Frame.io folder structure
+  app.get("/api/frameio/debug/folders", async (req, res) => {
+    try {
+      await frameioV4Service.loadServiceAccountToken();
+      const accountId = await frameioV4Service.getAccountId();
+      const workspaces = await frameioV4Service.getWorkspaces(accountId);
+      
+      if (workspaces.data && workspaces.data.length > 0) {
+        const workspace = workspaces.data[0];
+        const projects = await frameioV4Service.getProjects(accountId, workspace.id);
+        
+        res.json({
+          success: true,
+          workspace: { id: workspace.id, name: workspace.name },
+          projects: projects.data?.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            created_at: p.created_at
+          })) || []
+        });
+      } else {
+        res.json({ success: true, workspace: null, projects: [] });
+      }
+    } catch (error) {
+      console.error('Debug folders error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Frame.io proxy endpoint for authenticated file access
   app.get("/api/frameio/proxy/file/:assetId", async (req, res) => {
     try {
@@ -1743,7 +1772,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     console.log(`Frame.io token issue for project ${project.id}, using fallback data:`, tokenError.message);
                   }
                 } catch (frameioError) {
-                  console.log(`Could not fetch Frame.io assets for project ${project.id}:`, frameioError.message);
+                  // Check if it's a 404 folder not found error
+                  if (frameioError.message?.includes('404') || frameioError.message?.includes('not found')) {
+                    console.log(`⚠️ Frame.io folder ${project.mediaFolderId} not found for project ${project.id} - may need manual folder ID update`);
+                  } else {
+                    console.log(`Could not fetch Frame.io assets for project ${project.id}:`, frameioError.message);
+                  }
                 }
               }
               
