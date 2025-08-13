@@ -682,7 +682,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      {project.status.toLowerCase() === "video is ready" ? (
+                      {project.status.toLowerCase() === "delivered" ? (
                         <Button
                           size="sm"
                           className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -720,57 +720,32 @@ export default function DashboardPage() {
                             onClick={async (e) => {
                               e.stopPropagation();
                               try {
-                                const token = await supabase.auth.getSession();
-                                if (!token.data.session?.access_token) {
-                                  toast({
-                                    title: "Authentication Error",
-                                    description: "Please log in again",
-                                    variant: "destructive",
-                                  });
-                                  return;
-                                }
-
                                 const response = await fetch(
-                                  `/api/projects/${project.id}/video-share-link`,
-                                  {
-                                    headers: {
-                                      Authorization: `Bearer ${token.data.session.access_token}`,
-                                    },
-                                  }
+                                  `/api/projects/${project.id}/download-link`,
                                 );
                                 if (response.ok) {
                                   const data = await response.json();
-                                  if (data.shareUrl) {
-                                    window.open(data.shareUrl, "_blank");
-                                    toast({
-                                      title: "Opening Final Video",
-                                      description: "Your completed video is opening in a new tab.",
-                                    });
-                                  } else {
-                                    toast({
-                                      title: "Video unavailable",
-                                      description: "The video link is no longer available. Contact support for assistance.",
-                                      variant: "destructive",
-                                    });
-                                  }
+                                  window.open(data.downloadLink, "_blank");
                                 } else {
                                   toast({
-                                    title: "Video unavailable",
-                                    description: "Failed to access your final video. Contact support for assistance.",
+                                    title: "Download unavailable",
+                                    description:
+                                      "The download link is no longer available. Contact support for assistance.",
                                     variant: "destructive",
                                   });
                                 }
                               } catch (error) {
                                 toast({
-                                  title: "Access error",
-                                  description: "Failed to access final video. Please try again.",
+                                  title: "Download error",
+                                  description:
+                                    "Failed to get download link. Please try again.",
                                   variant: "destructive",
                                 });
                               }
                             }}
                           >
                             <Download className="h-4 w-4 mr-2" />
-                            Download Final Video
+                            Download Video
                           </Button>
                         </div>
                       ) : (

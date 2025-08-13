@@ -5,8 +5,6 @@ import { Download, Check, RotateCcw, Play, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { FrameVideo } from "./FrameVideo";
-import confetti from "canvas-confetti";
-import { useLocation } from "wouter";
 
 interface VideoViewingStepProps {
   project: any;
@@ -31,7 +29,6 @@ export function VideoViewingStep({
   onRevisionRequested,
 }: VideoViewingStepProps) {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRequestingRevision, setIsRequestingRevision] = useState(false);
   const [videoFiles, setVideoFiles] = React.useState<VideoFile[]>([]);
@@ -69,25 +66,12 @@ export function VideoViewingStep({
         method: "POST",
       });
 
-      // Show confetti animation
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-
       toast({
         title: "Video Accepted!",
         description: "The video has been marked as complete and accepted.",
       });
 
-      // Call onVideoAccepted and redirect to dashboard after a brief delay
       onVideoAccepted();
-      
-      setTimeout(() => {
-        setLocation("/dashboard");
-      }, 1500);
-      
     } catch (error) {
       console.error("Failed to accept video:", error);
       toast({
@@ -404,7 +388,7 @@ export function VideoViewingStep({
           onClick={onBack}
           className="text-gray-400 hover:text-white"
         >
-          ← Back to Dashboard
+          ← Back to Project Overview
         </Button>
       </div>
     </div>
