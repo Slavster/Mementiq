@@ -1741,15 +1741,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
               
-              // Check latest Frame.io assets (all types: videos, photos, etc.)
-              if (project.mediaFolderId) {
+              // Check latest Frame.io assets using dynamic folder discovery (same approach as share links)
+              try {
+                console.log(`Checking Frame.io assets for project ${project.id} using dynamic folder discovery`);
+                
+                // Always reload service token to ensure we have the latest
+                await frameioV4Service.loadServiceAccountToken();
+                
+                // Use dynamic folder discovery - same logic as share links
+                let currentProjectFolderId = null;
+                
                 try {
-                  console.log(`Checking Frame.io assets for project ${project.id} in folder: ${project.mediaFolderId}`);
+                  // Step 1: Find user folder dynamically
+                  const userFolders = await frameioV4Service.getUserFolders(project.userId);
+                  if (userFolders && userFolders.length > 0) {
+                    const userFolderId = userFolders[0].id;
+                    console.log(`Found dynamic user folder: ${userFolderId}`);
+                    
+                    // Step 2: Find or create project folder dynamically
+                    const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
+                    let projectFolder = userFolderChildren.find((child: any) => 
+                      child.type === 'folder' && (
+                        child.name === project.title ||
+                        child.name === `${project.title}-${project.id.toString().slice(0, 8)}` ||
+                        child.name === `Project-${project.id}`
+                      )
+                    );
+                    
+                    if (projectFolder) {
+                      currentProjectFolderId = projectFolder.id;
+                      console.log(`Found dynamic project folder: ${currentProjectFolderId}`);
+                      
+                      // Update database if different from stored value
+                      if (currentProjectFolderId !== project.mediaFolderId) {
+                        console.log(`📁 Updating project ${project.id} with correct folder ID: ${currentProjectFolderId}`);
+                        await storage.updateProject(project.id, {
+                          mediaFolderId: currentProjectFolderId,
+                          mediaUserFolderId: userFolderId
+                        });
+                      }
+                    } else {
+                      console.log(`No project folder found for project ${project.id} - assets may not be uploaded yet`);
+                    }
+                  }
                   
-                  // Always reload service token to ensure we have the latest
-                  try {
-                    await frameioV4Service.loadServiceAccountToken();
-                    const frameioAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
+                  // Step 3: Get assets if we found the folder
+                  if (currentProjectFolderId) {
+                    const frameioAssets = await frameioV4Service.getFolderAssets(currentProjectFolderId);
                     
                     if (frameioAssets.length > 0) {
                       // Check both created_time and updated_time for all assets
@@ -1768,17 +1806,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         }
                       }
                     }
-                  } catch (tokenError) {
-                    console.log(`Frame.io token issue for project ${project.id}, using fallback data:`, tokenError.message);
                   }
-                } catch (frameioError) {
-                  // Check if it's a 404 folder not found error
-                  if (frameioError.message?.includes('404') || frameioError.message?.includes('not found')) {
-                    console.log(`⚠️ Frame.io folder ${project.mediaFolderId} not found for project ${project.id} - may need manual folder ID update`);
-                  } else {
-                    console.log(`Could not fetch Frame.io assets for project ${project.id}:`, frameioError.message);
-                  }
+                } catch (folderError) {
+                  console.log(`Could not dynamically locate Frame.io folder for project ${project.id}:`, folderError.message);
                 }
+              } catch (frameioError) {
+                console.log(`Frame.io error for project ${project.id}:`, frameioError.message);
               }
               
             } catch (error) {
@@ -3876,17 +3909,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`✅ Created new user folder: ${userFolderId}`);
           }
 
-          // Step 2: Get or create project subfolder within user folder
+          // Step 2: Get or create project subfolder within user folder using dynamic discovery
           console.log(`📁 Step 2: Getting/creating project folder for project ${projectId}`);
           
-          // Check if project already has a folder ID stored
-          if (project.mediaFolderId) {
-            projectFolderId = project.mediaFolderId;
-            console.log(`✅ Verified existing project folder: ${projectFolderId}`);
+          // Use dynamic folder discovery instead of trusting stored ID
+          const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
+          let projectFolder = userFolderChildren.find((child: any) => 
+            child.type === 'folder' && (
+              child.name === project.title ||
+              child.name === `${project.title}-${project.id.toString().slice(0, 8)}` ||
+              child.name === `Project-${project.id}`
+            )
+          );
+
+          if (projectFolder) {
+            projectFolderId = projectFolder.id;
+            console.log(`✅ Found existing project folder via discovery: ${projectFolderId}`);
             frameioConfigured = true;
+            
+            // Update database if different from stored value
+            if (projectFolderId !== project.mediaFolderId) {
+              console.log(`📁 Updating project ${projectId} database with correct folder ID: ${projectFolderId}`);
+              await storage.updateProject(projectId, {
+                mediaFolderId: projectFolderId,
+                mediaUserFolderId: userFolderId,
+                updatedAt: new Date()
+              });
+            }
           }
 
-          // Create project folder if not found or verified
+          // Create project folder if not found
           if (!projectFolderId) {
             console.log(`🆕 Creating new project folder for: ${project.title}`);
             const projectFolder = await frameioV4Service.createProjectFolder(
