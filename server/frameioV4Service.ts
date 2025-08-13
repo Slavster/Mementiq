@@ -929,17 +929,26 @@ export class FrameioV4Service {
   }
 
   /**
-   * Resilient search for existing shares containing the specified asset
+   * Resilient search for existing shares containing the specified asset (project-scoped for security)
    */
   async findExistingShareForAsset(accountId: string, projectId: string, assetId: string): Promise<{ url: string; id: string } | null> {
     try {
-      console.log(`🛡️ RESILIENT SEARCH: Looking for existing shares containing asset ${assetId}...`);
+      console.log(`🛡️ SECURE RESILIENT SEARCH: Looking for shares in project ${projectId} containing asset ${assetId}...`);
       
-      // Search at account level for all shares (Frame.io V4 shares are account-level)
-      const sharesResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares`);
+      // SECURITY: Only search within the specific project folder to prevent cross-user access
+      let sharesResponse;
+      try {
+        // Try project-specific shares endpoint first
+        sharesResponse = await this.makeRequest('GET', `/accounts/${accountId}/projects/${projectId}/shares`);
+        console.log(`📁 Searching project-scoped shares for security`);
+      } catch (projectError) {
+        console.log(`⚠️ Project-scoped search failed, falling back to filtered account search`);
+        // Fallback: get all shares but filter by project folder
+        sharesResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares`);
+      }
+      
       const shares = sharesResponse.data || [];
-      
-      console.log(`📊 Found ${shares.length} total shares in account to check`);
+      console.log(`📊 Found ${shares.length} shares to check within project scope`);
       
       const matchingShares: Array<{ id: string; url: string; createdAt: string }> = [];
       
@@ -954,47 +963,75 @@ export class FrameioV4Service {
         }
         
         try {
-          // Check if share contains our asset - Frame.io V4 uses collections
+          // SECURITY CHECK: Ensure share is related to the user's project folder
+          let isProjectRelated = false;
+          
           if (share.collection_id) {
             console.log(`📁 Checking collection ${share.collection_id} in share ${share.id}...`);
             
-            const collectionResponse = await this.makeRequest('GET', `/accounts/${accountId}/collections/${share.collection_id}/assets`);
-            const assets = collectionResponse.data || [];
-            
-            const assetMatch = assets.find((asset: any) => asset.id === assetId);
-            
-            if (assetMatch) {
-              console.log(`✅ FOUND! Asset ${assetId} in collection ${share.collection_id}, share ${share.id}`);
+            // Verify the collection belongs to the user's project folder
+            try {
+              const collectionResponse = await this.makeRequest('GET', `/accounts/${accountId}/collections/${share.collection_id}`);
+              const collection = collectionResponse.data;
               
-              matchingShares.push({
-                id: share.id,
-                url: share.short_url || `https://next.frame.io/share/${share.id}`,
-                createdAt: share.created_at || new Date().toISOString()
-              });
-            } else {
-              console.log(`❌ Asset not in collection ${share.collection_id}`);
+              // Check if collection is within the project folder hierarchy
+              if (collection && (collection.folder_id === projectId || collection.parent_folder_id === projectId)) {
+                isProjectRelated = true;
+                console.log(`🔒 Collection ${share.collection_id} verified as belonging to project ${projectId}`);
+                
+                const assetsResponse = await this.makeRequest('GET', `/accounts/${accountId}/collections/${share.collection_id}/assets`);
+                const assets = assetsResponse.data || [];
+                
+                const assetMatch = assets.find((asset: any) => asset.id === assetId);
+                
+                if (assetMatch) {
+                  console.log(`✅ SECURE MATCH! Asset ${assetId} in project collection ${share.collection_id}, share ${share.id}`);
+                  
+                  matchingShares.push({
+                    id: share.id,
+                    url: share.short_url || `https://next.frame.io/share/${share.id}`,
+                    createdAt: share.created_at || new Date().toISOString()
+                  });
+                } else {
+                  console.log(`❌ Asset not in project collection ${share.collection_id}`);
+                }
+              } else {
+                console.log(`🚫 SECURITY: Collection ${share.collection_id} not in project ${projectId} - skipping`);
+              }
+            } catch (collectionError) {
+              console.log(`❌ Could not verify collection security: ${collectionError.message}`);
             }
           } else {
-            console.log(`❓ Share ${share.id} has no collection_id, trying direct asset check...`);
+            console.log(`❓ Share ${share.id} has no collection_id, trying direct project-scoped asset check...`);
             
-            // Try direct asset check as fallback
+            // For shares without collection_id, be extra cautious and verify asset belongs to project
             try {
-              const shareAssetsResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares/${share.id}/assets`);
-              const shareAssets = shareAssetsResponse.data || [];
+              // First verify the asset belongs to the project folder
+              const assetResponse = await this.makeRequest('GET', `/accounts/${accountId}/assets/${assetId}`);
+              const assetData = assetResponse.data;
               
-              const assetMatch = shareAssets.find((asset: any) => asset.id === assetId);
-              
-              if (assetMatch) {
-                console.log(`✅ FOUND! Asset ${assetId} directly in share ${share.id}`);
+              if (assetData && assetData.folder_id === projectId) {
+                console.log(`🔒 Asset ${assetId} verified as belonging to project ${projectId}`);
                 
-                matchingShares.push({
-                  id: share.id,
-                  url: share.short_url || `https://next.frame.io/share/${share.id}`,
-                  createdAt: share.created_at || new Date().toISOString()
-                });
+                const shareAssetsResponse = await this.makeRequest('GET', `/accounts/${accountId}/shares/${share.id}/assets`);
+                const shareAssets = shareAssetsResponse.data || [];
+                
+                const assetMatch = shareAssets.find((asset: any) => asset.id === assetId);
+                
+                if (assetMatch) {
+                  console.log(`✅ SECURE MATCH! Asset ${assetId} directly in project-verified share ${share.id}`);
+                  
+                  matchingShares.push({
+                    id: share.id,
+                    url: share.short_url || `https://next.frame.io/share/${share.id}`,
+                    createdAt: share.created_at || new Date().toISOString()
+                  });
+                }
+              } else {
+                console.log(`🚫 SECURITY: Asset ${assetId} not in project ${projectId} - skipping share`);
               }
             } catch (directCheckError) {
-              console.log(`❌ Direct asset check failed for share ${share.id}`);
+              console.log(`❌ Project-scoped asset verification failed for share ${share.id}`);
             }
           }
         } catch (shareCheckError) {
@@ -1013,8 +1050,8 @@ export class FrameioV4Service {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )[0];
       
-      console.log(`🛡️ RESILIENT RECOVERY: Found ${matchingShares.length} existing shares, using most recent`);
-      console.log(`🔗 Most recent share: ${mostRecentShare.id} - ${mostRecentShare.url}`);
+      console.log(`🛡️ SECURE RECOVERY: Found ${matchingShares.length} project-scoped shares, using most recent`);
+      console.log(`🔗 Most recent project share: ${mostRecentShare.id} - ${mostRecentShare.url}`);
       
       return {
         url: mostRecentShare.url,
