@@ -550,9 +550,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
   // Frame.io webhook endpoint for video upload notifications
-  // Generate Frame.io V4 public share link for project video
+  // Generate Frame.io V4 public share link for project video  
   app.get("/api/projects/:id/video-share-link", requireAuth, async (req: AuthenticatedRequest, res) => {
-    console.log(`🚨🚨🚨 ROUTE HIT: /api/projects/${req.params.id}/video-share-link`);
+    console.log(`🔥🔥🔥 NEW ROUTE CODE LOADED: /api/projects/${req.params.id}/video-share-link`);
+    console.log(`🔥🔥🔥 THIS SHOULD ALWAYS APPEAR FIRST!`);
     try {
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
@@ -585,7 +586,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🚨 ROUTE: Project folder ID: ${project.mediaFolderId}`);
         console.log(`🚨 ROUTE: Asset ID: ${videoFile.mediaAssetId}`);
         console.log(`🚨 ROUTE: Calling findExistingShareForAsset...`);
-        const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId!, videoFile.mediaAssetId);
+        if (!project.mediaFolderId) {
+          throw new Error('Project has no media folder ID');
+        }
+        const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId, videoFile.mediaAssetId);
         console.log(`🚨 ROUTE: findExistingShareForAsset returned:`, existingShare);
         
         if (existingShare) {
@@ -608,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`❌ No existing shares found in Frame.io for asset ${videoFile.mediaAssetId}`);
         }
       } catch (searchError) {
-        console.log(`❌ Existing share search failed: ${searchError.message}`);
+        console.log(`❌ Existing share search failed: ${searchError instanceof Error ? searchError.message : String(searchError)}`);
       }
       
       // Check if we already have a Frame.io share URL and validate it's still working
@@ -642,7 +646,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             await frameioV4Service.loadServiceAccountToken();
             const accountId = await frameioV4Service.getAccountId();
-            const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId!, videoFile.mediaAssetId);
+            if (!project.mediaFolderId) {
+              throw new Error('Project has no media folder ID');
+            }
+            const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId, videoFile.mediaAssetId);
             
             if (existingShare) {
               console.log(`🛡️ RESILIENT RECOVERY SUCCESS: Found existing share ${existingShare.id}`);
@@ -664,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`🛡️ No existing shares found in Frame.io, will create new share`);
             }
           } catch (recoveryError) {
-            console.log(`❌ Resilient recovery failed: ${recoveryError.message}`);
+            console.log(`❌ Resilient recovery failed: ${recoveryError instanceof Error ? recoveryError.message : String(recoveryError)}`);
           }
           // Continue to create new share below
         }
@@ -672,10 +679,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create Frame.io V4 public share using the 4-step process
       await frameioV4Service.loadServiceAccountToken();
-      console.log(`🚨 CALLING createAssetShareLink from routes.ts with assetId: ${videoFile.mediaAssetId}`);
+      if (!project.mediaFolderId) {
+        return res.status(400).json({ error: 'Project has no media folder ID configured' });
+      }
+      console.log(`🚨 CALLING createAssetShareLink with mediaFolderId: ${project.mediaFolderId}, assetId: ${videoFile.mediaAssetId}`);
       const shareLink = await frameioV4Service.createAssetShareLink(
-        videoFile.mediaAssetId,
-        `${project.title} - ${videoFile.filename} - ${new Date().toLocaleDateString()}`
+        project.mediaFolderId,
+        videoFile.mediaAssetId
       );
       console.log(`🚨 RETURNED from createAssetShareLink with URL: ${shareLink.url}`);
 
