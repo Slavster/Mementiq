@@ -50,6 +50,7 @@ import {
   Download,
   Play,
   Eye,
+  ExternalLink,
 } from "lucide-react";
 
 import TallyFormStep from "@/components/TallyFormStep";
@@ -720,32 +721,38 @@ export default function DashboardPage() {
                             onClick={async (e) => {
                               e.stopPropagation();
                               try {
-                                const response = await fetch(
-                                  `/api/projects/${project.id}/download-link`,
-                                );
-                                if (response.ok) {
-                                  const data = await response.json();
-                                  window.open(data.downloadLink, "_blank");
+                                // Use the latest review link instead of download link
+                                if (project.mediaReviewLink) {
+                                  window.open(project.mediaReviewLink, "_blank");
                                 } else {
-                                  toast({
-                                    title: "Download unavailable",
-                                    description:
-                                      "The download link is no longer available. Contact support for assistance.",
-                                    variant: "destructive",
-                                  });
+                                  // Fallback to generating a fresh review link
+                                  const response = await fetch(
+                                    `/api/projects/${project.id}/video-share-link`,
+                                  );
+                                  if (response.ok) {
+                                    const data = await response.json();
+                                    window.open(data.shareUrl, "_blank");
+                                  } else {
+                                    toast({
+                                      title: "Video unavailable",
+                                      description:
+                                        "Could not access the final video. Contact support for assistance.",
+                                      variant: "destructive",
+                                    });
+                                  }
                                 }
                               } catch (error) {
                                 toast({
-                                  title: "Download error",
+                                  title: "Video access error",
                                   description:
-                                    "Failed to get download link. Please try again.",
+                                    "Failed to access the final video. Please try again.",
                                   variant: "destructive",
                                 });
                               }
                             }}
                           >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download Video
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Download Final Video
                           </Button>
                         </div>
                       ) : (
@@ -833,8 +840,7 @@ export default function DashboardPage() {
                               setCurrentStep("video-ready");
                             } else if (
                               project.status.toLowerCase() === "edit in progress" ||
-                              project.status.toLowerCase() === "delivered" ||
-                              project.status.toLowerCase() === "complete"
+                              project.status.toLowerCase() === "delivered"
                             ) {
                               setCurrentStep("confirmation");
                             } else {

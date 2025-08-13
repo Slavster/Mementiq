@@ -19,6 +19,9 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Server-only token storage (never exposed to browser)
   - ✅ invalid_grant detection for admin re-authentication
   - ✅ Organization/profile verification on 403 errors
+- Updated project status workflow to replace "delivered" with "complete" status
+- Enhanced "Accept Video" functionality with confetti animation and automatic dashboard redirect
+- Updated dashboard UI to show "Download Final Video" button for completed projects instead of "Manage & Upload Footage"
 
 ## System Architecture
 
@@ -48,7 +51,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 ### Core Features
 - **User Authentication**: Supabase Auth integration for email/password and Google social login with JWT token-based API authentication.
 - **Subscription Management**: Full Stripe integration with a three-tier model, including real-time usage tracking, project creation validation against limits, and a customer portal.
-- **Project Management Dashboard**: Comprehensive dashboard for users to view, create, and manage video projects with status tracking (`draft`, `awaiting instructions`, `edit in progress`, `video is ready`, `revision in progress`). Last Updated timestamps calculated from latest Frame.io asset activity and Tally form submissions.
+- **Project Management Dashboard**: Comprehensive dashboard for users to view, create, and manage video projects with status tracking (`draft`, `awaiting instructions`, `edit in progress`, `video is ready`, `complete`, `revision in progress`). Last Updated timestamps calculated from latest Frame.io asset activity and Tally form submissions.
 - **Video & Photo Upload System**: Utilizes Frame.io API for direct client-to-platform uploads (TUS protocol), managing video and photo assets, generating review links, and handling hierarchical folder structures (User -> Project). Includes a centralized, automatically refreshed token system for Frame.io V4 API.
 - **Tally Form Integration**: Integrated as a mandatory step for users to provide editing instructions, tracking the latest submission.
 - **Video Delivery Detection**: Automatic detection of completed video deliveries via Frame.io webhooks, updating project status, sending notifications, and storing metadata.

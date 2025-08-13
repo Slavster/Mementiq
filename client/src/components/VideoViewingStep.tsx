@@ -5,6 +5,7 @@ import { Download, Check, RotateCcw, Play, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { FrameVideo } from "./FrameVideo";
+import Confetti from "react-confetti";
 
 interface VideoViewingStepProps {
   project: any;
@@ -33,6 +34,26 @@ export function VideoViewingStep({
   const [isRequestingRevision, setIsRequestingRevision] = useState(false);
   const [videoFiles, setVideoFiles] = React.useState<VideoFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [windowDimensions, setWindowDimensions] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0
+  });
+
+  // Update window dimensions for confetti
+  useEffect(() => {
+    function handleResize() {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   // Fetch video files for this project
   React.useEffect(() => {
@@ -66,12 +87,20 @@ export function VideoViewingStep({
         method: "POST",
       });
 
+      // Show confetti animation
+      setShowConfetti(true);
+
       toast({
         title: "Video Accepted!",
         description: "The video has been marked as complete and accepted.",
       });
 
-      onVideoAccepted();
+      // Wait for confetti animation before redirecting
+      setTimeout(() => {
+        setShowConfetti(false);
+        onVideoAccepted();
+      }, 3000); // 3 seconds of confetti
+
     } catch (error) {
       console.error("Failed to accept video:", error);
       toast({
@@ -79,7 +108,6 @@ export function VideoViewingStep({
         description: "Could not accept the video. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsAccepting(false);
     }
   };
@@ -171,6 +199,16 @@ export function VideoViewingStep({
 
   return (
     <div className="space-y-8">
+      {/* Confetti Effect */}
+      {showConfetti && (
+        <Confetti
+          width={windowDimensions.width}
+          height={windowDimensions.height}
+          recycle={false}
+          numberOfPieces={300}
+          gravity={0.3}
+        />
+      )}
       {/* Excitement Header */}
       <div className="text-center space-y-4">
         <div className="text-6xl">🎉</div>
