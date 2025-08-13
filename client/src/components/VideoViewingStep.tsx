@@ -301,8 +301,8 @@ export function VideoViewingStep({
                 <span className="font-semibold">Option 2: Request Revision ($5)</span>
               </div>
               <p className="text-gray-300 text-sm">
-                Need changes? The editor will review all your comments and annotations to make updates. 
-                You can also upload new footage if needed.
+                Need changes? The editor will review all your comments and highlights and make updates. 
+                You'll be able to upload new footage too, if needed.
               </p>
             </div>
           </div>
