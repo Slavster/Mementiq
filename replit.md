@@ -8,6 +8,18 @@ Preferred communication style: Simple, everyday language.
 Frame.io Account: V4 account with OAuth authentication successfully configured via Adobe Developer Console.
 Design Standard: NEVER use blue colors anywhere in the app - all blue instances must be cyan (hsl(180, 85%, 55%)). This is a permanent design requirement.
 
+## Recent Changes (August 13, 2025)
+- Fixed corrupted database configuration that was preventing app startup
+- Enhanced Frame.io V4 OAuth implementation to meet enterprise security standards:
+  - ✅ offline_access scope properly requested during authorization
+  - ✅ Refresh token rotation on each refresh cycle
+  - ✅ Early token refresh (T-5 minutes) using expires_in
+  - ✅ Database-level locking for single-flight refresh operations
+  - ✅ Single retry on 401 with proper error surfacing
+  - ✅ Server-only token storage (never exposed to browser)
+  - ✅ invalid_grant detection for admin re-authentication
+  - ✅ Organization/profile verification on 403 errors
+
 ## System Architecture
 
 ### Frontend
