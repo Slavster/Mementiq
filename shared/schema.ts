@@ -40,7 +40,8 @@ export const projectFiles = pgTable("project_files", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id).notNull(),
   mediaAssetId: text("media_asset_id"), // Media platform asset ID (Frame.io, etc.)
-  mediaAssetUrl: text("media_asset_url"), // Public media platform URL
+  mediaAssetUrl: text("media_asset_url"), // Frame.io public share link (f.io format)
+  frameioShareId: text("frameio_share_id"), // Frame.io share UUID for API operations
   filename: text("filename").notNull(),
   originalFilename: text("original_filename").notNull(),
   fileType: text("file_type").notNull(),
