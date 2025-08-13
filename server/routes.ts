@@ -552,6 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Frame.io webhook endpoint for video upload notifications
   // Generate Frame.io V4 public share link for project video
   app.get("/api/projects/:id/video-share-link", requireAuth, async (req: AuthenticatedRequest, res) => {
+    console.log(`🚨🚨🚨 ROUTE HIT: /api/projects/${req.params.id}/video-share-link`);
     try {
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
