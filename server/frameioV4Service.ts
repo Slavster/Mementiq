@@ -872,8 +872,9 @@ export class FrameioV4Service {
       console.log('Fetching final share details...');
       const finalShare = await this.makeRequest('GET', `/accounts/${accountId}/shares/${shareId}`);
       
-      // Extract public URL from various possible locations in response
-      const publicUrl = finalShare?.data?.public_url || 
+      // Extract public URL from Frame.io V4 response (prioritize short_url which is the actual public access URL)
+      const publicUrl = finalShare?.data?.short_url || 
+                       finalShare?.data?.public_url || 
                        finalShare?.data?.url || 
                        finalShare?.data?.share_url ||
                        finalShare?.data?.link ||
