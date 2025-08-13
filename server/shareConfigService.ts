@@ -17,13 +17,15 @@ export class ShareConfigService {
       
       await frameioV4Service.loadServiceAccountToken();
       
-      // Update share to enable comments using direct shares endpoint
+      // Update share to enable comments using account-based endpoint (like in working code)
       await frameioV4Service.makeRequest(
         'PATCH',
-        `/shares/${shareId}`,
+        `/accounts/${accountId}/shares/${shareId}`,
         {
-          commenting_enabled: true,
-          description: 'Public share with downloads and comments enabled, expires in 30 days'
+          data: {
+            commenting_enabled: true,
+            description: 'Public share with downloads and comments enabled, expires in 30 days'
+          }
         }
       );
       
@@ -47,13 +49,15 @@ export class ShareConfigService {
       
       await frameioV4Service.loadServiceAccountToken();
       
-      // Update share to disable comments using direct shares endpoint
+      // Update share to disable comments using account-based endpoint (like in working code)
       await frameioV4Service.makeRequest(
         'PATCH',
-        `/shares/${shareId}`,
+        `/accounts/${accountId}/shares/${shareId}`,
         {
-          commenting_enabled: false,
-          description: 'Public share with downloads enabled, comments disabled, expires in 30 days'
+          data: {
+            commenting_enabled: false,
+            description: 'Public share with downloads enabled, comments disabled, expires in 30 days'
+          }
         }
       );
       
@@ -81,21 +85,24 @@ export class ShareConfigService {
       if (shareId.length < 20 || !shareId.includes('-')) {
         console.log(`🔍 Short ID detected (${shareId}), searching for full share UUID...`);
         
-        // Search through all shares directly (Frame.io V4 API pattern)
+        // Search through project shares using the correct Frame.io V4 API pattern
         try {
+          // Use the same project ID as in the working code
+          const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
+          
           const sharesResponse = await frameioV4Service.makeRequest(
             'GET',
-            `/shares`
+            `/accounts/${accountId}/projects/${projectId}/shares`
           );
           
           const shares = sharesResponse.data || [];
-          console.log(`🔍 Searching through ${shares.length} shares for f.io URL containing ${shareId}...`);
+          console.log(`🔍 Searching through ${shares.length} project shares for f.io URL containing ${shareId}...`);
           
           for (const share of shares) {
             const shareUrl = share.short_url || share.public_url || share.url || '';
             if (shareUrl.includes(shareId)) {
               console.log(`✅ Found matching share: ${share.id} with URL: ${shareUrl}`);
-              const commentsEnabled = share.commenting_enabled || false;
+              const commentsEnabled = share.commenting_enabled || share.allow_comments || false;
               console.log(`📊 Share ${share.id} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
               
               return { 
@@ -106,23 +113,23 @@ export class ShareConfigService {
             }
           }
         } catch (sharesError) {
-          console.log(`⚠️ Failed to get shares: ${sharesError instanceof Error ? sharesError.message : String(sharesError)}`);
+          console.log(`⚠️ Failed to get project shares: ${sharesError instanceof Error ? sharesError.message : String(sharesError)}`);
         }
         
         console.log(`❌ No share found with f.io URL containing ${shareId} across all projects`);
         return null;
       }
       
-      // Direct UUID lookup using shares endpoint
+      // Direct UUID lookup using account-based shares endpoint (like in working code)
       console.log(`🔍 Full UUID detected (${shareId}), getting share details...`);
       
       try {
         const shareResponse = await frameioV4Service.makeRequest(
           'GET',
-          `/shares/${shareId}`
+          `/accounts/${accountId}/shares/${shareId}`
         );
         
-        const commentsEnabled = shareResponse?.data?.commenting_enabled || false;
+        const commentsEnabled = shareResponse?.data?.commenting_enabled || shareResponse?.data?.allow_comments || false;
         console.log(`📊 Share ${shareId} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
         
         return { 
