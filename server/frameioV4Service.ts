@@ -801,28 +801,60 @@ export class FrameioV4Service {
       // Based on Frame.io V4 documentation, try creating share without discriminator first
       console.log('Creating share with minimal data...');
       
-      // Step 1: Create share with just name (based on common API patterns)
-      const shareCreateResponse = await this.makeRequest(
-        'POST', 
-        `/accounts/${accountId}/projects/${projectId}/shares`,
-        { name: name }  // Simple format without data wrapper or type
-      );
+      // Step 1: Create empty share first (Frame.io V4 may not accept name during creation)
+      let shareCreateResponse;
+      let shareId;
       
-      let shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
-      if (!shareId) {
-        console.log('First format failed, trying alternative...');
-        
-        // Alternative format with data wrapper but no type
-        const altResponse = await this.makeRequest(
-          'POST',
+      try {
+        // Try completely empty body first
+        console.log('Attempting empty share creation...');
+        shareCreateResponse = await this.makeRequest(
+          'POST', 
           `/accounts/${accountId}/projects/${projectId}/shares`,
-          { data: { name: name } }
+          {}
         );
+        shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
+      } catch (emptyError) {
+        console.log(`Empty failed: ${emptyError.message}`);
         
-        shareId = altResponse?.data?.id || altResponse?.id;
-        if (!shareId) {
-          throw new Error('No share ID returned from any format attempted');
+        try {
+          // Try with empty data wrapper 
+          console.log('Trying with data wrapper...');
+          shareCreateResponse = await this.makeRequest(
+            'POST',
+            `/accounts/${accountId}/projects/${projectId}/shares`,
+            { data: {} }
+          );
+          shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
+        } catch (dataError) {
+          console.log(`Data wrapper failed: ${dataError.message}`);
+          
+          try {
+            // Try with just type field
+            console.log('Trying with type field...');
+            shareCreateResponse = await this.makeRequest(
+              'POST',
+              `/accounts/${accountId}/projects/${projectId}/shares`,
+              { type: 'share' }
+            );
+            shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
+          } catch (typeError) {
+            console.log(`Type field failed: ${typeError.message}`);
+            
+            // Final attempt: assets array in body
+            console.log('Final attempt: assets in body...');
+            shareCreateResponse = await this.makeRequest(
+              'POST',
+              `/accounts/${accountId}/projects/${projectId}/shares`,
+              { assets: [assetId] }
+            );
+            shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
+          }
         }
+      }
+      
+      if (!shareId) {
+        throw new Error('No share ID returned from any creation method');
       }
       
       console.log(`✅ Share created with ID: ${shareId}`);
