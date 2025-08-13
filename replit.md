@@ -40,7 +40,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **Video & Photo Upload System**: Utilizes Frame.io API for direct client-to-platform uploads (TUS protocol), managing video and photo assets, generating review links, and handling hierarchical folder structures (User -> Project). Includes a centralized, automatically refreshed token system for Frame.io V4 API.
 - **Tally Form Integration**: Integrated as a mandatory step for users to provide editing instructions, tracking the latest submission.
 - **Video Delivery Detection**: Automatic detection of completed video deliveries via Frame.io webhooks, updating project status, sending notifications, and storing metadata.
-- **Public Share Creation**: Implementation of Frame.io V4 public share system with proper API schema compliance, including intelligent share reuse and project-level security to prevent cross-user access.
+- **Public Share Creation**: Implementation of Frame.io V4 public share system with proper API schema compliance, including intelligent share reuse, project-level security to prevent cross-user access, and automatic comment disabling with real-time enforcement before serving shares to users.
 - **Email Capture**: Persistent storage for email signups.
 
 ## External Dependencies
