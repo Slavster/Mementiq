@@ -17,6 +17,7 @@ import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
 import { frameioV4Service } from "./frameioV4Service";
+import { shareConfigService } from "./shareConfigService";
 import { getProjectUploadSize } from "./upload";
 import {
   createFrameioUploadSession,
@@ -588,7 +589,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             shareId: 'cached-public',
             filename: videoFile.filename,
             isPublicShare: true,
-            note: 'Using cached Frame.io public share - no login required'
+            note: 'Using cached Frame.io public share - no login required',
+            features: {
+              publicAccess: true,
+              commentsDisabled: true,
+              downloadsEnabled: true
+            }
           });
         } else {
           console.log(`⚠️ Cached URL is not public format (${videoFile.mediaAssetUrl})`);
@@ -618,7 +624,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 shareId: existingShare.id,
                 filename: videoFile.filename,
                 isPublicShare: true,
-                note: 'Found and cached public Frame.io share - no login required'
+                note: 'Found and cached public Frame.io share - no login required',
+            features: {
+              publicAccess: true,
+              commentsDisabled: true,
+              downloadsEnabled: true
+            }
               });
             } else {
               console.log(`❌ No public share version found, will search more broadly...`);
@@ -662,7 +673,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               shareId: existingShare.id,
               filename: videoFile.filename,
               isPublicShare: true,
-              note: 'Found existing Frame.io public share - no login required'
+              note: 'Found existing Frame.io public share - no login required',
+            features: {
+              publicAccess: true,
+              commentsDisabled: true,
+              downloadsEnabled: true
+            }
             });
           } else {
             console.log(`⚠️ Found share but not public format: ${existingShare.url}`);
