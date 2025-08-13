@@ -660,10 +660,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
               }
               
-              // Update database with correct public URL
-              await storage.updateProjectFile(videoFile.id, {
-                mediaAssetUrl: existingShare.url
-              });
+              // Update database with correct public URL and share ID
+              await storage.updateProjectFileShareInfo(videoFile.id, existingShare.id, existingShare.url);
               
               return res.json({
                 shareUrl: existingShare.url,
@@ -725,10 +723,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`💾 Updating database cache with public share: ${existingShare.url}`);
             
-            // Update database with existing public share URL
-            await storage.updateProjectFile(videoFile.id, {
-              mediaAssetUrl: existingShare.url
-            });
+            // Update database with existing public share URL and share ID
+            await storage.updateProjectFileShareInfo(videoFile.id, existingShare.id, existingShare.url);
             
             return res.json({
               shareUrl: existingShare.url,
@@ -842,12 +838,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`⚠️ Comment disable failed on new share: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
       }
 
-      // Store the new share URL in the database to avoid duplicate creation
-      console.log(`💾 Updating database with new share URL: ${shareLink.url}`);
-      await storage.updateProjectFile(videoFile.id, {
-        mediaAssetUrl: shareLink.url
-      });
-      console.log(`✅ Database updated with share URL`);
+      // Store the new share URL and ID in the database to avoid duplicate creation
+      console.log(`💾 Updating database with new share URL: ${shareLink.url} and ID: ${shareLink.id}`);
+      await storage.updateProjectFileShareInfo(videoFile.id, shareLink.id, shareLink.url);
+      console.log(`✅ Database updated with synchronized share info`);
       
       console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
       

@@ -75,13 +75,13 @@ export class ShareConfigService {
    * @param shareId Frame.io share ID or f.io URL
    * @param accountId Frame.io account ID
    */
-  async getShareCommentSettings(shareId: string, accountId: string): Promise<{ commentsEnabled: boolean; actualShareId?: string } | null> {
+  async getShareCommentSettings(shareId: string, accountId: string): Promise<{ commentsEnabled: boolean; actualShareId?: string; actualShareUrl?: string } | null> {
     try {
       console.log(`🔍 Getting comment settings for share ${shareId}...`);
       
       await frameioV4Service.loadServiceAccountToken();
       
-      // If it's an f.io URL, we need to find the actual share ID by searching all shares
+      // If it's an f.io URL short ID, we need to find the actual share ID by searching all shares
       if (shareId.length < 20 || !shareId.includes('-')) {
         console.log(`🔍 Short ID detected (${shareId}), searching for full share UUID...`);
         
@@ -103,7 +103,8 @@ export class ShareConfigService {
             
             return { 
               commentsEnabled,
-              actualShareId: share.id 
+              actualShareId: share.id,
+              actualShareUrl: shareUrl
             };
           }
         }
