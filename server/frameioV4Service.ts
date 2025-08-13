@@ -795,8 +795,11 @@ export class FrameioV4Service {
       console.log(`=== Frame.io V4 Share Creation ===`);
       console.log(`Asset ID: ${assetId}, Name: ${name}`);
       
+      console.log(`🔧 Getting account ID...`);
       const accountId = await this.getAccountId();
+      console.log(`🔧 Account ID retrieved: ${accountId}`);
       const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
+      console.log(`🔧 Project ID set: ${projectId}`);
       
       // Step 1: Check if asset is already in an existing share
       console.log(`🔍 STARTING SHARE SEARCH for asset ${assetId}...`);
