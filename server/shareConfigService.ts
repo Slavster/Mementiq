@@ -45,23 +45,10 @@ export class ShareConfigService {
    */
   async disableCommentsOnShare(shareId: string, accountId: string): Promise<boolean> {
     try {
-      console.log(`🚫 DISABLING comments on share ${shareId}...`);
+      console.log(`✅ KEEPING comments enabled on share ${shareId} (user request)...`);
       
-      await frameioV4Service.loadServiceAccountToken();
-      
-      // Update share to disable comments using account-based endpoint (like in working code)
-      await frameioV4Service.makeRequest(
-        'PATCH',
-        `/accounts/${accountId}/shares/${shareId}`,
-        {
-          data: {
-            commenting_enabled: false,
-            description: 'Public share with downloads enabled, comments disabled, expires in 30 days'
-          }
-        }
-      );
-      
-      console.log(`✅ Comments DISABLED on share ${shareId}`);
+      // User requested to keep comments enabled, so no action needed
+      console.log(`✅ Comments remain enabled on share ${shareId}`);
       return true;
       
     } catch (error) {
