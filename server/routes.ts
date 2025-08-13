@@ -571,6 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
+      console.log(`Current cached URL in database: ${videoFile.mediaAssetUrl}`);
       
       // Check if we already have a Frame.io share URL and validate it's still working
       if (videoFile.mediaAssetUrl && (videoFile.mediaAssetUrl.includes('share.frame.io') || videoFile.mediaAssetUrl.includes('f.io'))) {
@@ -610,6 +611,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `${project.title} - ${videoFile.filename} - ${new Date().toLocaleDateString()}`
       );
       console.log(`🚨 RETURNED from createAssetShareLink with URL: ${shareLink.url}`);
+
+      // Store the new share URL in the database to avoid duplicate creation
+      console.log(`💾 Updating database with new share URL: ${shareLink.url}`);
+      await storage.updateProjectFile(videoFile.id, {
+        mediaAssetUrl: shareLink.url
+      });
+      console.log(`✅ Database updated with share URL`);
       
       // Store the share URL in the database for future reference
       await storage.updateProjectFile(videoFile.id, {
