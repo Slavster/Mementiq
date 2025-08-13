@@ -72,31 +72,45 @@ export class ShareConfigService {
       if (shareId.length < 20 || !shareId.includes('-')) {
         console.log(`🔍 Short ID detected (${shareId}), searching for full share UUID...`);
         
-        // Search through project shares using the correct Frame.io V4 API pattern
+        // Search through ALL projects to find the share (since we don't know which project it's in)
         try {
-          // Use the same project ID as in the working code
-          const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
-          
-          const sharesResponse = await frameioV4Service.makeRequest(
+          // Get all projects to search through (since shares could be in any project)
+          console.log(`🔍 Searching all projects for share containing ${shareId}...`);
+          const projectsResponse = await frameioV4Service.makeRequest(
             'GET',
-            `/accounts/${accountId}/projects/${projectId}/shares`
+            `/accounts/${accountId}/projects`
           );
           
-          const shares = sharesResponse.data || [];
-          console.log(`🔍 Searching through ${shares.length} project shares for f.io URL containing ${shareId}...`);
+          const projects = projectsResponse.data || [];
+          console.log(`🔍 Found ${projects.length} projects to search through`);
           
-          for (const share of shares) {
-            const shareUrl = share.short_url || share.public_url || share.url || '';
-            if (shareUrl.includes(shareId)) {
-              console.log(`✅ Found matching share: ${share.id} with URL: ${shareUrl}`);
-              const commentsEnabled = share.commenting_enabled || share.allow_comments || false;
-              console.log(`📊 Share ${share.id} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
+          // Search through each project's shares
+          for (const project of projects) {
+            try {
+              const sharesResponse = await frameioV4Service.makeRequest(
+                'GET',
+                `/accounts/${accountId}/projects/${project.id}/shares`
+              );
+          
+              const shares = sharesResponse.data || [];
+              console.log(`🔍 Searching through ${shares.length} shares in project ${project.id} for f.io URL containing ${shareId}...`);
               
-              return { 
-                commentsEnabled,
-                actualShareId: share.id,
-                actualShareUrl: shareUrl
-              };
+              for (const share of shares) {
+                const shareUrl = share.short_url || share.public_url || share.url || '';
+                if (shareUrl.includes(shareId)) {
+                  console.log(`✅ Found matching share: ${share.id} with URL: ${shareUrl} in project ${project.id}`);
+                  const commentsEnabled = share.commenting_enabled || share.allow_comments || false;
+                  console.log(`📊 Share ${share.id} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
+                  
+                  return { 
+                    commentsEnabled,
+                    actualShareId: share.id,
+                    actualShareUrl: shareUrl
+                  };
+                }
+              }
+            } catch (projectShareError) {
+              console.log(`⚠️ Failed to get shares for project ${project.id}: ${projectShareError instanceof Error ? projectShareError.message : String(projectShareError)}`);
             }
           }
         } catch (sharesError) {

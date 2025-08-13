@@ -628,11 +628,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await frameioV4Service.loadServiceAccountToken();
             const accountId = await frameioV4Service.getAccountId();
             
-            if (!project.mediaFolderId) {
-              throw new Error('Project has no media folder ID');
+            // Use dynamic folder discovery instead of trusting stored folder ID
+            let currentProjectFolderId = null;
+            
+            try {
+              const userFolders = await frameioV4Service.getUserFolders(project.userId);
+              if (userFolders && userFolders.length > 0) {
+                const userFolderId = userFolders[0].id;
+                const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
+                let projectFolder = userFolderChildren.find((child: any) => 
+                  child.type === 'folder' && (
+                    child.name === project.title ||
+                    child.name === `${project.title}-${project.id.toString().slice(0, 8)}` ||
+                    child.name === `Project-${project.id}`
+                  )
+                );
+                
+                if (projectFolder) {
+                  currentProjectFolderId = projectFolder.id;
+                  console.log(`Found correct project folder via discovery: ${currentProjectFolderId}`);
+                  
+                  // Update database if different
+                  if (currentProjectFolderId !== project.mediaFolderId) {
+                    await storage.updateProject(project.id, {
+                      mediaFolderId: currentProjectFolderId,
+                      mediaUserFolderId: userFolderId
+                    });
+                  }
+                }
+              }
+            } catch (discoveryError) {
+              console.log(`Dynamic folder discovery failed, using stored ID: ${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}`);
+              currentProjectFolderId = project.mediaFolderId;
             }
             
-            const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId, videoFile.mediaAssetId);
+            if (!currentProjectFolderId) {
+              throw new Error('Could not determine project folder ID');
+            }
+            
+            const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, currentProjectFolderId, videoFile.mediaAssetId);
             
             if (existingShare && existingShare.url.includes('f.io/')) {
               console.log(`✅ Found public share version: ${existingShare.url}`);
@@ -684,13 +718,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🚨 ROUTE: Getting account ID...`);
         const accountId = await frameioV4Service.getAccountId();
         console.log(`🚨 ROUTE: Account ID obtained: ${accountId}`);
-        console.log(`🚨 ROUTE: Project folder ID: ${project.mediaFolderId}`);
+        // Use dynamic folder discovery instead of trusting stored folder ID
+        console.log(`🚨 ROUTE: Using dynamic folder discovery for share creation...`);
+        let currentProjectFolderId = null;
+        
+        try {
+          // Dynamic folder discovery - same approach as Last Updated calculation
+          const userFolders = await frameioV4Service.getUserFolders(project.userId);
+          if (userFolders && userFolders.length > 0) {
+            const userFolderId = userFolders[0].id;
+            console.log(`🚨 ROUTE: Found user folder: ${userFolderId}`);
+            
+            const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
+            let projectFolder = userFolderChildren.find((child: any) => 
+              child.type === 'folder' && (
+                child.name === project.title ||
+                child.name === `${project.title}-${project.id.toString().slice(0, 8)}` ||
+                child.name === `Project-${project.id}`
+              )
+            );
+            
+            if (projectFolder) {
+              currentProjectFolderId = projectFolder.id;
+              console.log(`🚨 ROUTE: Found project folder via discovery: ${currentProjectFolderId}`);
+              
+              // Update database if different from stored value
+              if (currentProjectFolderId !== project.mediaFolderId) {
+                console.log(`📁 Share creation: Updating project ${project.id} with correct folder ID: ${currentProjectFolderId}`);
+                await storage.updateProject(project.id, {
+                  mediaFolderId: currentProjectFolderId,
+                  mediaUserFolderId: userFolderId
+                });
+              }
+            }
+          }
+        } catch (discoveryError) {
+          console.log(`❌ Dynamic folder discovery failed: ${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}`);
+          // Fall back to stored folder ID if discovery fails
+          currentProjectFolderId = project.mediaFolderId;
+        }
+
+        if (!currentProjectFolderId) {
+          throw new Error('Could not determine project folder ID (neither via discovery nor database)');
+        }
+        
+        console.log(`🚨 ROUTE: Using project folder ID: ${currentProjectFolderId}`);
         console.log(`🚨 ROUTE: Asset ID: ${videoFile.mediaAssetId}`);
         console.log(`🚨 ROUTE: Calling findExistingShareForAsset...`);
-        if (!project.mediaFolderId) {
-          throw new Error('Project has no media folder ID');
-        }
-        const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId, videoFile.mediaAssetId);
+        const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, currentProjectFolderId, videoFile.mediaAssetId);
         console.log(`🚨 ROUTE: findExistingShareForAsset returned:`, existingShare);
         
         if (existingShare) {
