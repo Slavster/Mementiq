@@ -72,16 +72,47 @@ export class ShareConfigService {
   
   /**
    * Get current comment settings for a share
-   * @param shareId Frame.io share ID
+   * @param shareId Frame.io share ID or f.io URL
    * @param accountId Frame.io account ID
    */
-  async getShareCommentSettings(shareId: string, accountId: string): Promise<{ commentsEnabled: boolean } | null> {
+  async getShareCommentSettings(shareId: string, accountId: string): Promise<{ commentsEnabled: boolean; actualShareId?: string } | null> {
     try {
       console.log(`🔍 Getting comment settings for share ${shareId}...`);
       
       await frameioV4Service.loadServiceAccountToken();
       
-      // Get share details
+      // If it's an f.io URL, we need to find the actual share ID by searching all shares
+      if (shareId.length < 20 || !shareId.includes('-')) {
+        console.log(`🔍 Short ID detected (${shareId}), searching for full share UUID...`);
+        
+        // Get all shares and find the one with matching f.io URL
+        const sharesResponse = await frameioV4Service.makeRequest(
+          'GET',
+          `/accounts/${accountId}/shares`
+        );
+        
+        const shares = sharesResponse.data || [];
+        console.log(`🔍 Searching through ${shares.length} shares for f.io URL containing ${shareId}...`);
+        
+        for (const share of shares) {
+          const shareUrl = share.short_url || share.public_url || share.url || '';
+          if (shareUrl.includes(shareId)) {
+            console.log(`✅ Found matching share: ${share.id} with URL: ${shareUrl}`);
+            const commentsEnabled = share.allow_comments || false;
+            console.log(`📊 Share ${share.id} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
+            
+            return { 
+              commentsEnabled,
+              actualShareId: share.id 
+            };
+          }
+        }
+        
+        console.log(`❌ No share found with f.io URL containing ${shareId}`);
+        return null;
+      }
+      
+      // Direct UUID lookup
       const shareResponse = await frameioV4Service.makeRequest(
         'GET',
         `/accounts/${accountId}/shares/${shareId}`
@@ -90,7 +121,10 @@ export class ShareConfigService {
       const commentsEnabled = shareResponse?.data?.allow_comments || false;
       console.log(`📊 Share ${shareId} comments: ${commentsEnabled ? 'ENABLED' : 'DISABLED'}`);
       
-      return { commentsEnabled };
+      return { 
+        commentsEnabled,
+        actualShareId: shareId 
+      };
       
     } catch (error) {
       console.error(`❌ Failed to get comment settings for share ${shareId}:`, error);

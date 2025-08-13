@@ -597,15 +597,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (commentSettings && commentSettings.commentsEnabled) {
                 console.log(`⚠️ Comments are ENABLED on share ${shareId} - disabling before serving...`);
-                const disableSuccess = await shareConfigService.disableCommentsOnShare(shareId, accountId);
+                const actualShareId = commentSettings.actualShareId || shareId;
+                const disableSuccess = await shareConfigService.disableCommentsOnShare(actualShareId, accountId);
                 
                 if (disableSuccess) {
-                  console.log(`✅ Comments successfully DISABLED on share ${shareId}`);
+                  console.log(`✅ Comments successfully DISABLED on share ${actualShareId}`);
                 } else {
-                  console.log(`❌ Failed to disable comments on share ${shareId} - proceeding anyway`);
+                  console.log(`❌ Failed to disable comments on share ${actualShareId} - proceeding anyway`);
                 }
+              } else if (commentSettings) {
+                console.log(`✅ Comments already DISABLED on share ${commentSettings.actualShareId || shareId}`);
               } else {
-                console.log(`✅ Comments already DISABLED on share ${shareId}`);
+                console.log(`⚠️ Could not verify comment settings for share ${shareId} - assuming disabled`);
               }
             }
           } catch (commentCheckError) {
@@ -649,8 +652,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 if (commentSettings && commentSettings.commentsEnabled) {
                   console.log(`⚠️ Comments are ENABLED on share ${existingShare.id} - disabling before serving...`);
-                  await shareConfigService.disableCommentsOnShare(existingShare.id, accountId);
-                  console.log(`✅ Comments successfully DISABLED on share ${existingShare.id}`);
+                  const actualShareId = commentSettings.actualShareId || existingShare.id;
+                  await shareConfigService.disableCommentsOnShare(actualShareId, accountId);
+                  console.log(`✅ Comments successfully DISABLED on share ${actualShareId}`);
                 }
               } catch (commentError) {
                 console.log(`⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
@@ -711,8 +715,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (commentSettings && commentSettings.commentsEnabled) {
                 console.log(`⚠️ Comments are ENABLED on share ${existingShare.id} - disabling before serving...`);
-                await shareConfigService.disableCommentsOnShare(existingShare.id, accountId);
-                console.log(`✅ Comments successfully DISABLED on share ${existingShare.id}`);
+                const actualShareId = commentSettings.actualShareId || existingShare.id;
+                await shareConfigService.disableCommentsOnShare(actualShareId, accountId);
+                console.log(`✅ Comments successfully DISABLED on share ${actualShareId}`);
               }
             } catch (commentError) {
               console.log(`⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
