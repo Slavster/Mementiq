@@ -566,8 +566,8 @@ export class FrameioV4Service {
       const shareData = await this.makeRequest('POST', `/accounts/${accountId}/projects/${projectId}/shares`, {
         name: name,
         share_type: 'public', // Frame.io V4 uses share_type instead of type
-        allow_comments: false,
-        allow_downloads: true,
+        allow_comments: false,  // DISABLE comments by default
+        allow_downloads: true,  // ENABLE downloads
         expires_at: expirationDate.toISOString()
       });
 
@@ -786,10 +786,11 @@ export class FrameioV4Service {
   }
 
   /**
-   * Create a public share link for a specific asset (checks for existing shares first)
+   * Create a public share link for a specific asset with comments disabled by default
+   * (checks for existing shares first)
    */
-  async createAssetShareLink(assetId: string, name: string): Promise<{ url: string; id: string }> {
-    console.log(`🚀🚀🚀 FUNCTION ENTRY: createAssetShareLink called with ${assetId}`);
+  async createAssetShareLink(assetId: string, name: string, enableComments: boolean = false): Promise<{ url: string; id: string }> {
+    console.log(`🚀🚀🚀 FUNCTION ENTRY: createAssetShareLink called with ${assetId}, comments: ${enableComments}`);
     
     await this.initialize();
     console.log(`🚀🚀🚀 AFTER INITIALIZE`);
@@ -839,7 +840,9 @@ export class FrameioV4Service {
           asset_ids: [assetId],
           access: "public",
           name: `Share for ${assetId}`,
-          expiration: expirationDate.toISOString()
+          expiration: expirationDate.toISOString(),
+          allow_comments: enableComments,  // Comments controlled by parameter (default false)
+          allow_downloads: true             // ENABLE downloads
         }
       };
 
@@ -882,7 +885,7 @@ export class FrameioV4Service {
           `/accounts/${accountId}/shares/${shareId}`,
           {
             data: {
-              description: `Public share with downloads enabled, expires in 30 days`
+              description: `Public share with downloads enabled${enableComments ? ', comments enabled' : ', comments disabled'}, expires in 30 days`
             }
           }
         );
