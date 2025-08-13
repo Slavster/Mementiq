@@ -184,12 +184,7 @@ export function VideoViewingStep({ project, onBack, onVideoAccepted, onRevisionR
                   <div className="flex items-center gap-2 text-green-400 mb-2">
                     <ExternalLink className="w-5 h-5" />
                     <span className="font-semibold">Frame.io Public Share</span>
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    Creates a secure public share link with no login required. Downloads enabled, comments disabled, expires in 30 days.
-                  </p>
-                </div>
-                
+
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold text-white">
                     "{primaryVideo.filename}"
