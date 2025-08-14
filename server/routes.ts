@@ -1882,18 +1882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   }
                   
-                  // Check the hardcoded old project structure as a last resort
-                  const LEGACY_PROJECT_ID = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
-                  if (!allAssets.length && currentProjectFolderId !== LEGACY_PROJECT_ID && project.mediaFolderId !== LEGACY_PROJECT_ID) {
-                    console.log(`Also checking legacy project structure: ${LEGACY_PROJECT_ID}`);
-                    try {
-                      const legacyAssets = await frameioV4Service.getFolderAssets(LEGACY_PROJECT_ID);
-                      console.log(`Found ${legacyAssets.length} assets in legacy project structure`);
-                      allAssets.push(...legacyAssets);
-                    } catch (legacyError) {
-                      console.log(`Legacy project structure not accessible: ${legacyError.message}`);
-                    }
-                  }
+                  // Skip legacy hardcoded folder check - use only discovered and stored folder IDs
                   
                   console.log(`Total assets found for project ${project.id}: ${allAssets.length}`);
                   
