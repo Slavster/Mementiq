@@ -10,6 +10,12 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 
 ## Recent Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup
+- **FIXED FRAME.IO LAST UPDATED DATE CALCULATION:**
+  - ✅ Resolved missing `refresh_locks` table preventing Frame.io token refresh
+  - ✅ Fixed SQL parameter syntax for PostgreSQL compatibility  
+  - ✅ Eliminated "Frame.io ready" console messages that might appear as popups
+  - ✅ Test 9 and other completed projects now properly calculate Last Updated from Frame.io asset activity instead of falling back to database timestamps
+  - ✅ Token refresh mechanism now works properly for consistent Frame.io API access
 - Enhanced Frame.io V4 OAuth implementation to meet enterprise security standards:
   - ✅ offline_access scope properly requested during authorization
   - ✅ Refresh token rotation on each refresh cycle
