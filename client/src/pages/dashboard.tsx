@@ -219,6 +219,7 @@ export default function DashboardPage() {
   // Send to editor mutation
   const sendToEditorMutation = useMutation({
     mutationFn: async (projectId: number) => {
+      console.log("🚀 MUTATION: Starting sendToEditor mutation for project", projectId);
       const response = await apiRequest(
         "PATCH",
         `/api/projects/${projectId}/status`,
@@ -226,10 +227,13 @@ export default function DashboardPage() {
           status: "edit in progress",
         },
       );
+      console.log("🚀 MUTATION: Server response:", response);
       return response;
     },
     onSuccess: (data) => {
+      console.log("🎉 MUTATION SUCCESS: onSuccess called with data:", data);
       if (data.success) {
+        console.log("🎉 MUTATION SUCCESS: data.success is true, proceeding with updates");
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
         toast({
           title: "Project Sent to Editor!",
@@ -240,14 +244,16 @@ export default function DashboardPage() {
         
         // Update the selected project with the new status instead of closing dialog
         if (selectedProject) {
-          console.log("Updating selectedProject status from:", selectedProject.status, "to: Edit in Progress");
+          console.log("🔄 STATE UPDATE: Updating selectedProject status from:", selectedProject.status, "to: Edit in Progress");
           const updatedProject = {
             ...selectedProject,
             status: "Edit in Progress",
             updatedAt: new Date().toISOString()
           };
           setSelectedProject(updatedProject);
-          console.log("Updated selectedProject:", updatedProject);
+          console.log("✅ STATE UPDATE: Updated selectedProject:", updatedProject);
+        } else {
+          console.error("❌ STATE UPDATE: selectedProject is null/undefined");
         }
         
         setCurrentStep("confirmation");
@@ -1047,9 +1053,10 @@ export default function DashboardPage() {
                     <CardContent className="p-6 text-center">
                       <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-green-400 mb-2">
-                        {console.log("Confirmation screen - selectedProject.status:", selectedProject.status) || selectedProject.status === "Edit in Progress"
-                          ? "Project Submitted!"
-                          : "Ready to Submit?"}
+                        {(() => {
+                          console.log("Confirmation screen - selectedProject.status:", selectedProject.status);
+                          return selectedProject.status === "Edit in Progress" ? "Project Submitted!" : "Ready to Submit?";
+                        })()}
                       </h3>
                       <p className="text-gray-300 mb-6 whitespace-pre-line">
                         {selectedProject.status === "Edit in Progress"
@@ -1269,11 +1276,16 @@ export default function DashboardPage() {
                   : "bg-red-600 hover:bg-red-700 text-white"
               }
               onClick={() => {
+                console.log("🔘 DIALOG BUTTON: Clicked with step:", sendToEditorConfirmationStep);
                 if (sendToEditorConfirmationStep === 1) {
+                  console.log("🔘 DIALOG BUTTON: Moving to step 2");
                   setSendToEditorConfirmationStep(2);
                 } else {
                   if (pendingProject) {
+                    console.log("🔘 DIALOG BUTTON: Triggering mutation for project:", pendingProject.id);
                     sendToEditorMutation.mutate(pendingProject.id);
+                  } else {
+                    console.error("❌ DIALOG BUTTON: No pendingProject available");
                   }
                 }
               }}
