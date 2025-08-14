@@ -684,6 +684,93 @@ export class FrameioV4Service {
   }
 
   /**
+   * Update Frame.io asset status (for workflow tracking)
+   */
+  async updateAssetStatus(assetId: string, status: string): Promise<boolean> {
+    await this.initialize();
+
+    try {
+      console.log(`🔄 Updating Frame.io asset ${assetId} status to: ${status}`);
+
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+
+      const endpoint = `/accounts/${accountId}/assets/${assetId}`;
+      console.log(`Updating asset status via: PATCH ${endpoint}`);
+
+      await this.makeRequest('PATCH', endpoint, {
+        data: {
+          status: status
+        }
+      });
+
+      console.log(`✅ Frame.io asset ${assetId} status updated to: ${status}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to update Frame.io asset ${assetId} status:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Update all Frame.io assets in a project folder with new status
+   */
+  async updateProjectAssetsStatus(projectId: number, status: string): Promise<void> {
+    try {
+      console.log(`🔄 Updating all Frame.io assets for project ${projectId} to status: ${status}`);
+      
+      // Import storage dynamically to avoid circular dependency
+      const { storage } = await import('./storage.js');
+      
+      // Get project from database to find Frame.io folder
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        console.log(`❌ Project ${projectId} not found`);
+        return;
+      }
+
+      let assetsUpdated = 0;
+      const foldersToCheck = [];
+      
+      // Add project folder if exists
+      if (project.mediaFolderId) {
+        foldersToCheck.push(project.mediaFolderId);
+      }
+      
+      // Add user folder if exists
+      if (project.mediaUserFolderId) {
+        foldersToCheck.push(project.mediaUserFolderId);
+      }
+
+      // Update assets in all relevant folders
+      for (const folderId of foldersToCheck) {
+        try {
+          const assets = await this.getFolderAssets(folderId);
+          console.log(`📁 Found ${assets.length} assets in folder ${folderId}`);
+          
+          for (const asset of assets) {
+            if (asset.type === 'file' && (asset.media_type?.startsWith('video/') || asset.media_type?.startsWith('image/'))) {
+              const updated = await this.updateAssetStatus(asset.id, status);
+              if (updated) {
+                assetsUpdated++;
+              }
+            }
+          }
+        } catch (folderError) {
+          console.log(`⚠️ Could not update assets in folder ${folderId}:`, folderError.message);
+        }
+      }
+
+      console.log(`✅ Updated ${assetsUpdated} Frame.io assets for project ${projectId} to status: ${status}`);
+    } catch (error) {
+      console.error(`❌ Failed to update project assets status:`, error);
+    }
+  }
+
+  /**
    * Get asset details from Frame.io V4
    */
   async getAssetDetails(assetId: string): Promise<any> {

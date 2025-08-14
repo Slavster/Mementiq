@@ -1244,6 +1244,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log status change
       await storage.logProjectStatusChange(projectId, project.status, 'complete');
       
+      // Update Frame.io assets status to "Accepted"
+      try {
+        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Accepted');
+        console.log(`✅ Frame.io assets updated to "Accepted" for project ${projectId}`);
+      } catch (frameioError) {
+        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
+        // Don't fail the request if Frame.io update fails
+      }
+      
       res.json({ success: true, message: "Video accepted successfully" });
     } catch (error) {
       console.error("Failed to accept video:", error);
@@ -1271,6 +1280,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log status change
       await storage.logProjectStatusChange(projectId, project.status, 'revision in progress');
+      
+      // Update Frame.io assets status to "Needs Review"
+      try {
+        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Needs Review');
+        console.log(`✅ Frame.io assets updated to "Needs Review" for project ${projectId}`);
+      } catch (frameioError) {
+        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
+        // Don't fail the request if Frame.io update fails
+      }
       
       res.json({ success: true, message: "Revision requested successfully" });
     } catch (error) {
