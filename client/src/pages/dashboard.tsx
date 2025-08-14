@@ -1055,16 +1055,16 @@ export default function DashboardPage() {
                       <h3 className="text-xl font-semibold text-green-400 mb-2">
                         {(() => {
                           console.log("Confirmation screen - selectedProject.status:", selectedProject.status);
-                          return selectedProject.status === "Edit in Progress" ? "Project Submitted!" : "Ready to Submit?";
+                          return selectedProject.status.toLowerCase() === "edit in progress" ? "Project Submitted!" : "Ready to Submit?";
                         })()}
                       </h3>
                       <p className="text-gray-300 mb-6 whitespace-pre-line">
-                        {selectedProject.status === "Edit in Progress"
+                        {selectedProject.status.toLowerCase() === "edit in progress"
                           ? "Your project is being worked on by an editor 🎉\n You can't upload more footage now, but you can update your instructions if needed."
                           : "Everything looks in order, nice!\n You can send it off to an editor now or upload additional footage / new instructions."}
                       </p>
                       <div className="flex gap-4 justify-center">
-                        {selectedProject.status === "Edit in Progress" ? (
+                        {selectedProject.status.toLowerCase() === "edit in progress" ? (
                           <Button
                             variant="outline"
                             onClick={() => setCurrentStep("form")}
