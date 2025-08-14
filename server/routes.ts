@@ -71,7 +71,7 @@ async function requireAuth(
       .json({ success: false, message: "Invalid token format" });
   }
 
-  console.log("Verifying token for request:", req.method, req.path);
+  console.log("🔐 AUTH: Verifying token for request:", req.method, req.path);
   const result = await verifySupabaseToken(token);
 
   if (!result.success) {
@@ -4016,8 +4016,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ensure Frame.io folder structure exists for project
   app.post(
     "/api/projects/:id/ensure-folder-structure",
+    (req, res, next) => {
+      console.log(`🚨 ROUTE HIT: POST /api/projects/${req.params.id}/ensure-folder-structure called!`);
+      next();
+    },
     requireAuth,
     async (req: AuthenticatedRequest, res) => {
+      console.log(`🚨 AFTER AUTH: Authentication passed, proceeding with folder setup`);
       try {
         const projectId = parseInt(req.params.id);
         const userId = req.user!.id;
