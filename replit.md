@@ -61,6 +61,14 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Instead of closing dialog, updates selectedProject status and stays on confirmation screen
   - ✅ Confirmation screen automatically detects status change and shows appropriate "submitted" view
   - ✅ Users can now see immediate feedback that project was successfully sent to editor
+- **DATABASE-DRIVEN TIMESTAMP TRACKING:**
+  - ✅ Implemented reliable database-only "Last Updated" tracking for all key project actions
+  - ✅ Added `updateProjectTimestamp()` helper function with consistent logging
+  - ✅ Project listing now uses database timestamps only (no Frame.io API calls for performance)
+  - ✅ All key actions tracked: project creation, asset uploads, form submissions, video delivery, acceptance, revisions
+- **FIXED FRAME.IO ASSET STATUS:**
+  - ✅ Project acceptance now correctly updates Frame.io assets to "Approved" status (was "Accepted")
+  - ✅ Ensures Frame.io asset status matches expected "Approved" state after video acceptance
 
 ## System Architecture
 
