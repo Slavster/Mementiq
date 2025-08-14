@@ -219,6 +219,7 @@ export default function DashboardPage() {
   // Send to editor mutation
   const sendToEditorMutation = useMutation({
     mutationFn: async (projectId: number) => {
+      console.log("Sending project to editor:", projectId);
       const response = await apiRequest(
         "PATCH",
         `/api/projects/${projectId}/status`,
@@ -226,9 +227,11 @@ export default function DashboardPage() {
           status: "edit in progress",
         },
       );
+      console.log("Send to editor response:", response);
       return response;
     },
     onSuccess: (data) => {
+      console.log("Send to editor success:", data);
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
         toast({
@@ -251,6 +254,7 @@ export default function DashboardPage() {
       }
     },
     onError: (error) => {
+      console.error("Send to editor error:", error);
       toast({
         title: "Failed to send project",
         description: `An error occurred: ${error.message || "Please try again."}`,
@@ -928,12 +932,17 @@ export default function DashboardPage() {
               {/* Step Progress */}
               <div className="flex items-center gap-2 mb-6">
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : (currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready") ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : (currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready") ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {(currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready") ? "✓" : "1"}
+                    {currentStep === "form" ||
+                    currentStep === "confirmation" ||
+                    selectedProject.status === "Edit in Progress" ||
+                    selectedProject.status === "Video is Ready"
+                      ? "✓"
+                      : "1"}
                   </div>
                   <span className="font-medium">Upload Footage</span>
                 </div>
@@ -963,7 +972,7 @@ export default function DashboardPage() {
                       ? "✓"
                       : "3"}
                   </div>
-                  <span className="font-medium">Editor is On It!</span>
+                  <span className="font-medium">Submit to Editor</span>
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
@@ -1031,7 +1040,7 @@ export default function DashboardPage() {
                       <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-green-400 mb-2">
                         {selectedProject.status === "Edit in Progress"
-                          ? "Editor is On It!"
+                          ? "Submit to Editor"
                           : "Ready to Submit?"}
                       </h3>
                       <p className="text-gray-300 mb-6 whitespace-pre-line">
@@ -1205,12 +1214,12 @@ export default function DashboardPage() {
                     </p>
                     <p>
                       You'll only be able to edit your project instructions
-                      through the form. Make sure you've uploaded all the
+                      through a new form. Make sure you've uploaded all the
                       footage you need before proceeding.
                     </p>
                     <p className="text-amber-400 font-medium">
-                      Are you absolutely sure you want to send "
-                      {pendingProject?.title}" to the editor?
+                      Sure you're ready to send "{pendingProject?.title}" to the
+                      editor?
                     </p>
                   </>
                 ) : (
