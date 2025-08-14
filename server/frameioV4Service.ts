@@ -1775,6 +1775,8 @@ export class FrameioV4Service {
         console.log(`🔍 DEBUG: About to call createFolder with:`);
         console.log(`  - folderName: "${projectFolderName}"`);
         console.log(`  - parentAssetId: "${userFolderId}" (should be User Folder ID)`);
+        console.log(`🚨 CRITICAL: This will create: User Folder (${userFolderId}) > Project Folder (${projectFolderName})`);
+        console.log(`🚨 CRITICAL: This should NOT create any deeper nesting!`);
         projectFolder = await this.createFolder(projectFolderName, userFolderId);
         console.log(`V4 Project folder created: ${projectFolder.name} (${projectFolder.id})`);
       }
