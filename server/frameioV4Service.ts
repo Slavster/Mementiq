@@ -819,24 +819,18 @@ export class FrameioV4Service {
         }
       }
 
-      // TEMPORARY WORKAROUND: Frame.io V4 API folder creation endpoints appear to be unavailable
-      // This is a known limitation - we'll use the parent folder as a fallback
-      console.log(`⚠️ WORKAROUND: Frame.io V4 folder creation not available, using parent folder ${parentAssetId} as project folder`);
-      console.log(`📁 This may be a V4 API limitation - folder creation endpoints return 404`);
+      // Frame.io V4 API: Create folder using proper endpoint and centralized token
+      console.log(`📁 Creating V4 folder via proper API endpoint`);
       
-      // Return a virtual folder that uses the parent ID
-      // This allows the upload process to continue by uploading files directly to the parent folder
-      const virtualFolder = {
-        id: parentAssetId, // Use parent folder ID
-        name: folderName,
-        type: 'folder',
-        parent_id: parentAssetId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const folderData = await this.makeRequest('POST', '/folders', {
+        data: {
+          name: folderName,
+          parent_id: parentAssetId
+        }
+      });
 
-      console.log(`✅ Using parent folder as project container: ${folderName} (${parentAssetId})`);
-      return virtualFolder;
+      console.log(`✅ V4 folder created successfully: ${folderData.data.name} (${folderData.data.id})`);
+      return folderData.data;
     } catch (error) {
       console.error(`Failed to create V4 folder "${folderName}":`, error);
       throw error;

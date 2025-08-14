@@ -32,6 +32,11 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Maximum 2-level folder hierarchy enforced: User → Project (no deeper nesting allowed)
   - ✅ Removed automatic folder creation from project listing and general project creation
   - ✅ Added Frame.io asset status updates: Accept Video → "Accepted", Request Revision → "Needs Review"
+- **FRAME.IO V4 FOLDER CREATION IMPLEMENTED:**
+  - ✅ Removed workaround code and implemented proper V4 folder creation endpoint
+  - ✅ Using centralized token system exclusively for all API calls
+  - ✅ Proper V4 API endpoint: `POST /folders` with `data: {name, parent_id}` structure
+  - ✅ Full compliance with Frame.io V4 API specification
 
 ## System Architecture
 
