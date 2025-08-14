@@ -240,11 +240,14 @@ export default function DashboardPage() {
         
         // Update the selected project with the new status instead of closing dialog
         if (selectedProject) {
-          setSelectedProject({
+          console.log("Updating selectedProject status from:", selectedProject.status, "to: Edit in Progress");
+          const updatedProject = {
             ...selectedProject,
             status: "Edit in Progress",
             updatedAt: new Date().toISOString()
-          });
+          };
+          setSelectedProject(updatedProject);
+          console.log("Updated selectedProject:", updatedProject);
         }
         
         setCurrentStep("confirmation");
@@ -1044,8 +1047,8 @@ export default function DashboardPage() {
                     <CardContent className="p-6 text-center">
                       <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-green-400 mb-2">
-                        {selectedProject.status === "Edit in Progress"
-                          ? "Submit to Editor"
+                        {console.log("Confirmation screen - selectedProject.status:", selectedProject.status) || selectedProject.status === "Edit in Progress"
+                          ? "Project Submitted!"
                           : "Ready to Submit?"}
                       </h3>
                       <p className="text-gray-300 mb-6 whitespace-pre-line">
