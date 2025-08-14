@@ -797,56 +797,51 @@ export class FrameioV4Service {
   }
 
   /**
-   * Create a folder in Frame.io V4 with hierarchy validation
+   * Create a folder in Frame.io V4 with STRICT hierarchy validation
+   * CRITICAL: Only call this from "New Video Request" button flow
    */
   async createFolder(folderName: string, parentAssetId: string): Promise<any> {
     await this.initialize();
 
     try {
-      console.log(`Creating V4 folder "${folderName}" under parent ${parentAssetId}`);
+      console.log(`🚨 FOLDER CREATION: Creating V4 folder "${folderName}" under parent ${parentAssetId}`);
+      console.log(`🚨 ENSURE THIS IS ONLY CALLED FROM "New Video Request" BUTTON!`);
 
-      // ENFORCE 2-LEVEL HIERARCHY: Check parent's parent to prevent 3+ levels
+      // ENFORCE STRICT 2-LEVEL HIERARCHY: Check parent's parent to prevent 3+ levels
       const parentDetails = await this.getAssetDetails(parentAssetId);
       if (parentDetails && parentDetails.parent_id) {
+        console.log(`🔍 Parent ${parentAssetId} has parent: ${parentDetails.parent_id}`);
         const grandparentDetails = await this.getAssetDetails(parentDetails.parent_id);
         if (grandparentDetails && grandparentDetails.parent_id) {
-          console.log(`🚨 HIERARCHY VIOLATION: Attempting to create folder at level 3+`);
-          console.log(`🚨 Current structure: ${grandparentDetails.parent_id} > ${parentDetails.parent_id} > ${parentAssetId}`);
-          console.log(`🚨 REJECTED: Cannot create "${folderName}" - exceeds 2-level limit (User > Project)`);
-          throw new Error(`Folder creation rejected: Maximum 2 levels allowed (User Folder > Project Folder). Cannot create "${folderName}" at level 3.`);
+          console.log(`🚨 HIERARCHY VIOLATION: Attempting to create 3+ level folder structure`);
+          console.log(`🚨 Current: ${grandparentDetails.parent_id} -> ${parentDetails.parent_id} -> ${parentAssetId} -> ${folderName}`);
+          throw new Error(`HIERARCHY VIOLATION: Cannot create folder "${folderName}" - would exceed 2-level depth limit (User -> Project). Current structure would be 3+ levels deep.`);
         }
       }
 
-      // Get account ID for the correct V4 endpoint structure
       const accounts = await this.getAccounts();
       if (!accounts.data || accounts.data.length === 0) {
         throw new Error('No Frame.io accounts found');
       }
       const accountId = accounts.data[0].id;
 
-      // Use the correct V4 folder creation endpoint
-      const endpoint = `/accounts/${accountId}/folders/${parentAssetId}/folders`;
+      const endpoint = `/accounts/${accountId}/folders`;
       console.log(`Creating folder via: POST ${endpoint}`);
 
       const folderData = await this.makeRequest('POST', endpoint, {
-        data: { 
-          name: folderName 
+        data: {
+          name: folderName,
+          parent_id: parentAssetId,
+          type: 'folder'
         }
       });
 
-      console.log(`V4 Folder created successfully: ${folderData.data.name} (${folderData.data.id})`);
-
-      return {
-        id: folderData.data.id,
-        name: folderData.data.name,
-        parent_id: parentAssetId,
-        type: 'folder',
-        created_at: folderData.data.created_at || new Date().toISOString(),
-        updated_at: folderData.data.updated_at || new Date().toISOString(),
-      };
+      console.log(`✅ V4 folder created: ${folderData.data.name} (${folderData.data.id})`);
+      return folderData.data;
     } catch (error) {
       console.error(`Failed to create V4 folder "${folderName}":`, error);
       throw error;
+
     }
   }
 
