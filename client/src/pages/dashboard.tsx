@@ -712,7 +712,7 @@ export default function DashboardPage() {
                         <div className="space-y-2">
                           <Button
                             size="sm"
-                            className="w-full bg-green-600 hover:bg-green-700 text-white"
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                             onClick={async (e) => {
                               e.stopPropagation();
                               // Use the stored Frame.io review link from the project  
