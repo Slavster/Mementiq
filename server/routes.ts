@@ -4017,12 +4017,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:id/ensure-folder-structure",
     (req, res, next) => {
-      console.log(`🚨 ROUTE HIT: POST /api/projects/${req.params.id}/ensure-folder-structure called!`);
+      console.log(`🚨🚨🚨 MAJOR LOG: POST /api/projects/${req.params.id}/ensure-folder-structure ENDPOINT HIT! 🚨🚨🚨`);
+      console.log(`🚨🚨🚨 TIMESTAMP: ${new Date().toISOString()} 🚨🚨🚨`);
+      console.log(`🚨🚨🚨 USER AGENT: ${req.headers['user-agent']} 🚨🚨🚨`);
       next();
     },
     requireAuth,
     async (req: AuthenticatedRequest, res) => {
-      console.log(`🚨 AFTER AUTH: Authentication passed, proceeding with folder setup`);
+      console.log(`🚨🚨🚨 AFTER AUTH: Authentication passed, proceeding with folder setup 🚨🚨🚨`);
       try {
         const projectId = parseInt(req.params.id);
         const userId = req.user!.id;
@@ -4100,10 +4102,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Create project folder if not found
           if (!projectFolderId) {
-            console.log(`🆕 Creating new project folder for: ${project.title}`);
-            console.log(`🔍 HIERARCHY CHECK: User Folder ID = ${userFolderId}`);
-            console.log(`🔍 HIERARCHY CHECK: Will create project folder with user folder as parent`);
-            console.log(`🔍 HIERARCHY CHECK: Target hierarchy = User(${userFolderId}) > Project(${project.title})`);
+            console.log(`🚨🚨🚨 CREATING NEW PROJECT FOLDER: ${project.title} 🚨🚨🚨`);
+            console.log(`🚨🚨🚨 HIERARCHY CHECK: User Folder ID = ${userFolderId} 🚨🚨🚨`);
+            console.log(`🚨🚨🚨 HIERARCHY CHECK: Will create project folder with user folder as parent 🚨🚨🚨`);
+            console.log(`🚨🚨🚨 HIERARCHY CHECK: Target hierarchy = User(${userFolderId}) > Project(${project.title}) 🚨🚨🚨`);
             
             const projectFolder = await frameioV4Service.createProjectFolder(
               userFolderId,
@@ -4112,9 +4114,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             projectFolderId = projectFolder.id;
             
-            console.log(`✅ NEW FOLDER CREATED: Project Folder ID = ${projectFolderId}`);
-            console.log(`✅ HIERARCHY VERIFIED: User(${userFolderId}) > Project(${projectFolderId})`);
-            console.log(`✅ FOLDER NAME: ${projectFolder.name}`);
+            console.log(`🚨🚨🚨 NEW FOLDER CREATED: Project Folder ID = ${projectFolderId} 🚨🚨🚨`);
+            console.log(`🚨🚨🚨 HIERARCHY VERIFIED: User(${userFolderId}) > Project(${projectFolderId}) 🚨🚨🚨`);
+            console.log(`🚨🚨🚨 FOLDER NAME: ${projectFolder.name} 🚨🚨🚨`);
             
             // Update project in database with new folder ID
             await storage.updateProject(projectId, {
