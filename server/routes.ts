@@ -1932,6 +1932,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   } else {
                     console.log(`No assets found in project-specific location for project ${project.id}`);
+                    
+                    // Even if no assets found in project folder, check user folder for loose assets
+                    if (userFolderId && currentProjectFolderId !== userFolderId) {
+                      try {
+                        console.log(`Checking user folder ${userFolderId} for assets for project ${project.id}`);
+                        const userFolderAssets = await frameioV4Service.getFolderAssets(userFolderId);
+                        console.log(`Found ${userFolderAssets.length} assets in user folder`);
+                        
+                        if (userFolderAssets.length > 0) {
+                          // Check both created_time and updated_time for user folder assets
+                          const userAssetDates = userFolderAssets
+                            .flatMap((asset: any) => [
+                              asset.created_time ? new Date(asset.created_time) : null,
+                              asset.updated_time ? new Date(asset.updated_time) : null,
+                              asset.created_at ? new Date(asset.created_at) : null,
+                              asset.updated_at ? new Date(asset.updated_at) : null
+                            ])
+                            .filter(date => date !== null);
+                          
+                          if (userAssetDates.length > 0) {
+                            const latestUserAssetDate = new Date(Math.max(...userAssetDates.map(d => d!.getTime())));
+                            console.log(`Latest asset date in user folder for project ${project.id}: ${latestUserAssetDate}`);
+                            if (latestUserAssetDate > latestActivityDate) {
+                              latestActivityDate = latestUserAssetDate;
+                            }
+                          }
+                        }
+                      } catch (userFolderError) {
+                        console.log(`Could not check user folder assets: ${userFolderError.message}`);
+                      }
+                    }
                   }
                 } catch (folderError) {
                   console.log(`Could not dynamically locate Frame.io folder for project ${project.id}:`, folderError.message);
