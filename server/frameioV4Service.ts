@@ -806,17 +806,27 @@ export class FrameioV4Service {
     try {
       console.log(`🚨 FOLDER CREATION: Creating V4 folder "${folderName}" under parent ${parentAssetId}`);
       console.log(`🚨 ENSURE THIS IS ONLY CALLED FROM "New Video Request" BUTTON!`);
+      console.log(`🔍 DEBUG: About to validate parent folder hierarchy for ${parentAssetId}`);
 
-      // ENFORCE STRICT 2-LEVEL HIERARCHY: Check parent's parent to prevent 3+ levels
+      // ENFORCE STRICT 2-LEVEL HIERARCHY: Verify parent is a User Folder, not a Project Folder
       const parentDetails = await this.getAssetDetails(parentAssetId);
       if (parentDetails && parentDetails.parent_id) {
         console.log(`🔍 Parent ${parentAssetId} has parent: ${parentDetails.parent_id}`);
+        
+        // If parent has a parent, check if grandparent also has a parent (would be 3+ levels)
         const grandparentDetails = await this.getAssetDetails(parentDetails.parent_id);
         if (grandparentDetails && grandparentDetails.parent_id) {
-          console.log(`🚨 HIERARCHY VIOLATION: Attempting to create 3+ level folder structure`);
-          console.log(`🚨 Current: ${grandparentDetails.parent_id} -> ${parentDetails.parent_id} -> ${parentAssetId} -> ${folderName}`);
-          throw new Error(`HIERARCHY VIOLATION: Cannot create folder "${folderName}" - would exceed 2-level depth limit (User -> Project). Current structure would be 3+ levels deep.`);
+          console.log(`🚨 HIERARCHY VIOLATION: Parent folder "${parentDetails.name}" is already a project folder (not user folder)`);
+          console.log(`🚨 Attempted structure: ${grandparentDetails.parent_id} -> ${parentDetails.parent_id} -> ${parentAssetId} -> ${folderName}`);
+          console.log(`🚨 Maximum allowed: Root -> User Folder -> Project Folder`);
+          throw new Error(`HIERARCHY VIOLATION: Cannot create folder "${folderName}" under project folder "${parentDetails.name}". Project folders must be created directly under User folders only.`);
         }
+        
+        // Parent is valid (User Folder under Root), proceed with folder creation
+        console.log(`✅ Valid hierarchy: Parent "${parentDetails.name}" is a User Folder under Root`);
+      } else {
+        // Parent has no parent (likely Root), which is also valid for User Folder creation
+        console.log(`✅ Valid hierarchy: Parent ${parentAssetId} appears to be Root or has no parent`);
       }
 
       // Frame.io V4 API: Create folder using correct account-prefixed endpoint
@@ -1762,6 +1772,9 @@ export class FrameioV4Service {
         // Create project folder within user folder (ENFORCE 2-LEVEL LIMIT)
         console.log(`📁 Creating new project folder: ${projectFolderName} (Level 2 - User > Project)`);
         console.log(`📁 Validating folder hierarchy: User Folder ${userFolderId} > Project Folder "${projectFolderName}"`);
+        console.log(`🔍 DEBUG: About to call createFolder with:`);
+        console.log(`  - folderName: "${projectFolderName}"`);
+        console.log(`  - parentAssetId: "${userFolderId}" (should be User Folder ID)`);
         projectFolder = await this.createFolder(projectFolderName, userFolderId);
         console.log(`V4 Project folder created: ${projectFolder.name} (${projectFolder.id})`);
       }
