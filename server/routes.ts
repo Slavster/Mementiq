@@ -1853,7 +1853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const userFolderId = userFolders[0].id;
                     console.log(`Found dynamic user folder: ${userFolderId}`);
                     
-                    // Step 2: Find or create project folder dynamically
+                    // Step 2: ONLY find existing project folder - NEVER create new ones during listing
                     const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
                     let projectFolder = userFolderChildren.find((child: any) => 
                       child.type === 'folder' && (
@@ -1865,7 +1865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     
                     if (projectFolder) {
                       currentProjectFolderId = projectFolder.id;
-                      console.log(`Found dynamic project folder: ${currentProjectFolderId}`);
+                      console.log(`Found existing project folder: ${currentProjectFolderId}`);
                       
                       // Update database if different from stored value
                       if (currentProjectFolderId !== project.mediaFolderId) {
@@ -1876,8 +1876,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         });
                       }
                     } else {
-                      console.log(`No project folder found for project ${project.id} - will use user folder assets directly`);
-                      // Don't create folders automatically - only during new project creation
+                      console.log(`No existing project folder found for project ${project.id} - using user folder for asset discovery`);
+                      // CRITICAL: NEVER create folders during listing - only use existing ones
                       // Use the user folder itself if no project subfolder exists
                       currentProjectFolderId = userFolderId;
                     }
@@ -2075,47 +2075,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Increment user usage count for successful project creation
         await storage.incrementUserUsage(req.user!.id);
 
-        // Try to configure Frame.io V4 organization structure
+        // 🚨 CRITICAL: Frame.io folders are ONLY created when "New Video Request" button is clicked
+        // This project creation endpoint should NOT create folders automatically
+        console.log(`🚨 PROJECT CREATED WITHOUT FRAME.IO FOLDERS - folders only created on "New Video Request" button`);
         let frameioConfigured = false;
         
+        // Only prepare Frame.io service but don't create folders yet
         try {
-          // Load service account token from database first
           await frameioV4Service.loadServiceAccountToken();
           
-          // Use service account for all Frame.io V4 operations (all projects in your Frame.io account)
           if (frameioV4Service.accessToken) {
-            console.log(
-              `Configuring Frame.io V4 integration for user ${req.user!.id} (${req.user!.email}) using service account`,
-            );
-            
+            console.log(`Frame.io V4 service ready for user ${req.user!.id} - folders will be created on first "New Video Request"`);
             await frameioV4Service.initialize();
-            
-            // Create virtual folder structure using V4 API
-            const rootProject = await frameioV4Service.getOrCreateRootProject();
-            
-            const userFolderName = `User-${req.user!.email.split('@')[0]}-${req.user!.id.slice(0, 8)}`;
-            const userFolder = await frameioV4Service.createFolder(userFolderName, rootProject.root_asset_id);
-            
-            const projectFolderName = `${project.title}-${project.id.slice(0, 8)}`;
-            const projectFolder = await frameioV4Service.createFolder(projectFolderName, userFolder.id);
-
-            // Store organization structure in database
-            await storage.updateProjectMediaInfo(
-              project.id,
-              projectFolder.id,
-              userFolder.id,
-            );
-
-            console.log(
-              `✓ Frame.io V4 organization structure configured: ${userFolder.id} -> ${projectFolder.id}`,
-            );
-            
             frameioConfigured = true;
           } else {
-            console.log("Frame.io V4 OAuth not completed - project created without folder structure");
+            console.log("Frame.io V4 OAuth not completed - will need authentication before folder creation");
           }
         } catch (frameioError) {
-          console.error("Frame.io V4 configuration failed:", frameioError);
+          console.error("Frame.io V4 service preparation failed:", frameioError);
         }
 
         // Always return success for project creation
@@ -2126,8 +2103,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Project created successfully",
           project: updatedProject,
           frameio: frameioConfigured ? {
-            status: 'configured',
-            note: 'Frame.io V4 folders created and ready for uploads'
+            status: 'ready',
+            note: 'Frame.io V4 service ready - folders will be created on first "New Video Request"'
           } : {
             status: 'pending',
             note: 'Complete Frame.io OAuth to enable folder organization',

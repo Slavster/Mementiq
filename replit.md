@@ -8,7 +8,7 @@ Preferred communication style: Simple, everyday language.
 Frame.io Account: V4 account with OAuth authentication successfully configured via Adobe Developer Console.
 Design Standard: NEVER use blue colors anywhere in the app - all blue instances must be cyan (hsl(180, 85%, 55%)). This is a permanent design requirement.
 
-## Recent Changes (August 13, 2025)
+## Recent Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup
 - Enhanced Frame.io V4 OAuth implementation to meet enterprise security standards:
   - ✅ offline_access scope properly requested during authorization
@@ -22,6 +22,11 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - Updated project status workflow to replace "delivered" with "complete" status
 - Enhanced "Accept Video" functionality with confetti animation and automatic dashboard redirect
 - Updated dashboard UI to show "Download Final Video" button for completed projects instead of "Manage & Upload Footage"
+- **CRITICAL FOLDER MANAGEMENT RULES ENFORCED:**
+  - ✅ Frame.io folders are ONLY created when "New Video Request" button is clicked (never during project listing or other operations)
+  - ✅ Maximum 2-level folder hierarchy enforced: User → Project (no deeper nesting allowed)
+  - ✅ Removed automatic folder creation from project listing and general project creation
+  - ✅ Added Frame.io asset status updates: Accept Video → "Accepted", Request Revision → "Needs Review"
 
 ## System Architecture
 
