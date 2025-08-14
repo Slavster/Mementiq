@@ -947,10 +947,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!project.mediaFolderId) {
         return res.status(400).json({ error: 'Project has no media folder ID configured' });
       }
-      console.log(`🚨 CALLING createAssetShareLink with mediaFolderId: ${project.mediaFolderId}, assetId: ${videoFile.mediaAssetId}`);
+      console.log(`🚨 CALLING createAssetShareLink with assetId: ${videoFile.mediaAssetId}, filename: ${videoFile.filename}`);
       const shareLink = await frameioV4Service.createAssetShareLink(
-        project.mediaFolderId,
-        videoFile.mediaAssetId
+        videoFile.mediaAssetId,
+        videoFile.filename || 'Video Share',
+        true  // Enable comments per user preference
       );
       console.log(`🚨 RETURNED from createAssetShareLink with URL: ${shareLink.url}`);
 
