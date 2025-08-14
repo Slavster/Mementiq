@@ -928,12 +928,12 @@ export default function DashboardPage() {
               {/* Step Progress */}
               <div className="flex items-center gap-2 mb-6">
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : (selectedProject.fileCount && selectedProject.fileCount > 0) ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : ((selectedProject as any).fileCount && (selectedProject as any).fileCount > 0) ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : (selectedProject.fileCount && selectedProject.fileCount > 0) ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : ((selectedProject as any).fileCount && (selectedProject as any).fileCount > 0) ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {(selectedProject.fileCount && selectedProject.fileCount > 0) ? "✓" : "1"}
+                    {((selectedProject as any).fileCount && (selectedProject as any).fileCount > 0) ? "✓" : "1"}
                   </div>
                   <span className="font-medium">Upload Footage</span>
                 </div>
