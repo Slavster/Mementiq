@@ -571,11 +571,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Project not found' });
       }
       
-      // Get the completed video file
-      const projectFiles = await storage.getProjectFiles(projectId);
-      const videoFile = projectFiles.find(file => 
-        file.fileType && file.fileType.startsWith('video/') && file.mediaAssetId
-      );
+      // Get the completed video file - for "video is ready" projects, use Frame.io assets directly
+      let videoFile = null;
+      
+      if (project.status.toLowerCase() === "video is ready" && project.mediaFolderId) {
+        try {
+          // Use same logic as /files endpoint to get the correct detected video
+          await frameioV4Service.loadServiceAccountToken();
+          const accountId = await frameioV4Service.getAccountId();
+          const response = await frameioV4Service.makeRequest(
+            'GET', 
+            `/accounts/${accountId}/folders/${project.mediaFolderId}/children`
+          );
+          
+          if (response && response.data) {
+            // Filter for video files uploaded after submission timestamp
+            const videoAssets = response.data.filter(asset => 
+              asset.media_type && 
+              asset.media_type.startsWith('video/') && 
+              project.submittedToEditorAt && 
+              new Date(asset.created_at) > new Date(project.submittedToEditorAt)
+            );
+            
+            // Sort by creation date and take the most recent
+            videoAssets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            if (videoAssets.length > 0) {
+              const latestVideo = videoAssets[0];
+              console.log(`🎯 For share creation, using detected Frame.io asset: ${latestVideo.name}`);
+              
+              // Format as expected by share creation logic
+              videoFile = {
+                id: latestVideo.id,
+                projectId: projectId,
+                mediaAssetId: latestVideo.id,
+                mediaAssetUrl: latestVideo.view_url || '',
+                filename: latestVideo.name,
+                originalFilename: latestVideo.name,
+                fileType: latestVideo.media_type,
+                fileSize: latestVideo.file_size || 0,
+                uploadStatus: 'completed'
+              };
+            }
+          }
+        } catch (frameioError) {
+          console.error("Failed to get Frame.io assets for share creation:", frameioError);
+          // Fall back to database files if Frame.io fails
+        }
+      }
+      
+      // Fallback: if not "video is ready" or Frame.io failed, use database files
+      if (!videoFile) {
+        const projectFiles = await storage.getProjectFiles(projectId);
+        videoFile = projectFiles.find(file => 
+          file.fileType && file.fileType.startsWith('video/') && file.mediaAssetId
+        );
+      }
       
       if (!videoFile) {
         return res.status(404).json({ error: 'No video file found for this project' });
