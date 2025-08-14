@@ -79,7 +79,7 @@ export class FrameioV4Service {
       this.loadServiceAccountToken()
         .then(() => {
           if (this.accessTokenValue) {
-            console.log('✅ Production service account token loaded successfully - Frame.io ready');
+            console.log('✅ Production service account token loaded successfully');
           } else {
             console.log('ℹ️  No service account token found - OAuth required for Frame.io integration');
           }
@@ -350,7 +350,7 @@ export class FrameioV4Service {
             this.accessTokenValue = refreshedToken.accessToken;
             this.tokenExpiresAt = refreshedToken.expiresAt ? new Date(refreshedToken.expiresAt) : null;
           }
-          console.log('✅ Service token refreshed automatically - Frame.io ready');
+          console.log('✅ Service token refreshed automatically');
         } catch (error) {
           console.log('❌ Failed to refresh token automatically:', error instanceof Error ? error.message : String(error));
           console.log('Manual OAuth re-authentication may be required.');
@@ -367,7 +367,7 @@ export class FrameioV4Service {
       // Start proactive refresh monitoring
       this.startProactiveRefresh();
 
-      console.log('✅ Production centralized token loaded successfully - Frame.io ready');
+      console.log('✅ Production centralized token loaded successfully');
     } catch (error) {
       console.error('Failed to load service account token:', error);
     }
