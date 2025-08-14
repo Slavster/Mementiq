@@ -642,16 +642,14 @@ export class DatabaseStorage implements IStorage {
       // Try to insert lock - will fail if already exists
       await this.db.execute(
         `INSERT INTO refresh_locks (lock_key, expires_at, created_at)
-         VALUES (?, ?, ?)
-         ON CONFLICT(lock_key) DO NOTHING`,
-        [lockKey, expiresAt.toISOString(), new Date().toISOString()]
+         VALUES ('${lockKey}', '${expiresAt.toISOString()}', '${new Date().toISOString()}')
+         ON CONFLICT(lock_key) DO NOTHING`
       );
 
       // Check if we successfully acquired the lock
       const result = await this.db.execute(
         `SELECT lock_key FROM refresh_locks
-         WHERE lock_key = ? AND expires_at > datetime('now')`,
-        [lockKey]
+         WHERE lock_key = '${lockKey}' AND expires_at > NOW()`
       );
 
       return result.rows.length > 0;
@@ -664,8 +662,7 @@ export class DatabaseStorage implements IStorage {
   async releaseRefreshLock(lockKey: string): Promise<void> {
     try {
       await this.db.execute(
-        `DELETE FROM refresh_locks WHERE lock_key = ?`,
-        [lockKey]
+        `DELETE FROM refresh_locks WHERE lock_key = '${lockKey}'`
       );
     } catch (error) {
       console.error('Failed to release refresh lock:', error);
