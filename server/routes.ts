@@ -34,7 +34,15 @@ import multer from "multer";
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
-
+// Helper function to update project's updatedAt timestamp for key actions
+async function updateProjectTimestamp(projectId: number, action?: string) {
+  const now = new Date();
+  await storage.updateProject(projectId, { updatedAt: now });
+  if (action) {
+    console.log(`📅 Updated project ${projectId} timestamp for action: ${action} at ${now.toISOString()}`);
+  }
+  return now;
+}
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -915,6 +923,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // ALSO store the share link at the project level for easy access (enforces 1:1 relationship)
       await storage.updateProjectShareLink(projectId, shareLink.id, shareLink.url);
+      await updateProjectTimestamp(projectId, "share link generated");
       console.log(`✅ Database updated with synchronized share info at both file and project level`);
       
       console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
@@ -1040,11 +1049,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (foundAsset && isVideoAsset) {
                 console.log(`✅ Video asset ${assetId} delivered to project ${project.id} (${project.title})`);
                 
-                // Update project status to "video is ready"
+                // Update project status to "video is ready" with timestamp tracking
                 await storage.updateProject(project.id, {
                   status: 'video is ready',
                   updatedAt: new Date(),
                 });
+                await updateProjectTimestamp(project.id, "video delivered");
                 
                 // Get user details for email
                 const user = await storage.getUserById(project.userId);
@@ -1280,11 +1290,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Project not found" });
       }
       
-      // Update project status to revision in progress
+      // Update project status to revision in progress with timestamp tracking
       await storage.updateProject(projectId, {
         status: 'revision in progress',
         updatedAt: new Date(),
       });
+      await updateProjectTimestamp(projectId, "revision requested");
       
       // Log status change
       await storage.logProjectStatusChange(projectId, project.status, 'revision in progress');
@@ -1825,187 +1836,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
+        // Get projects directly from database - updatedAt is now maintained by individual actions
         const projects = await storage.getProjectsByUser(req.user!.id);
         
-        // Calculate true "Last Updated" timestamp for each project based on latest activity
-        const projectsWithActualLastUpdated = await Promise.all(
-          projects.map(async (project) => {
-            let latestActivityDate = new Date(project.createdAt);
-            
-            try {
-              // Check latest Tally form submission
-              const tallySubmission = await storage.getTallyFormSubmission(project.id);
-              if (tallySubmission && tallySubmission.submittedAt) {
-                const tallyDate = new Date(tallySubmission.submittedAt);
-                console.log(`Latest Tally submission date for project ${project.id}: ${tallyDate}`);
-                if (tallyDate > latestActivityDate) {
-                  latestActivityDate = tallyDate;
-                }
-              }
-              
-              // Check latest Frame.io assets using dynamic folder discovery (same approach as share links)
-              try {
-                console.log(`Checking Frame.io assets for project ${project.id} using dynamic folder discovery`);
-                
-                // Always reload service token to ensure we have the latest
-                await frameioV4Service.loadServiceAccountToken();
-                
-                // Use dynamic folder discovery - same logic as share links
-                let currentProjectFolderId = null;
-                
-                try {
-                  // Step 1: Find user folder dynamically
-                  const userFolders = await frameioV4Service.getUserFolders(project.userId);
-                  if (userFolders && userFolders.length > 0) {
-                    const userFolderId = userFolders[0].id;
-                    console.log(`Found dynamic user folder: ${userFolderId}`);
-                    
-                    // Step 2: ONLY find existing project folder - NEVER create new ones during listing
-                    const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
-                    let projectFolder = userFolderChildren.find((child: any) => 
-                      child.type === 'folder' && (
-                        child.name === project.title ||
-                        child.name === `${project.title}-${project.id.toString().slice(0, 8)}` ||
-                        child.name === `Project-${project.id}`
-                      )
-                    );
-                    
-                    if (projectFolder) {
-                      currentProjectFolderId = projectFolder.id;
-                      console.log(`Found existing project folder: ${currentProjectFolderId}`);
-                      
-                      // Update database if different from stored value
-                      if (currentProjectFolderId !== project.mediaFolderId) {
-                        console.log(`📁 Updating project ${project.id} with correct folder ID: ${currentProjectFolderId}`);
-                        await storage.updateProject(project.id, {
-                          mediaFolderId: currentProjectFolderId,
-                          mediaUserFolderId: userFolderId
-                        });
-                      }
-                    } else {
-                      console.log(`No existing project folder found for project ${project.id} - using user folder for asset discovery`);
-                      // CRITICAL: NEVER create folders during listing - only use existing ones
-                      // Use the user folder itself if no project subfolder exists
-                      currentProjectFolderId = userFolderId;
-                    }
-                  }
-                  
-                  // Step 3: Get assets from discovered folder AND check old folder locations
-                  let allAssets = [];
-                  
-                  if (currentProjectFolderId) {
-                    console.log(`Checking assets in current folder: ${currentProjectFolderId}`);
-                    const frameioAssets = await frameioV4Service.getFolderAssets(currentProjectFolderId);
-                    console.log(`Found ${frameioAssets.length} assets in current folder`);
-                    allAssets.push(...frameioAssets);
-                  }
-                  
-                  // ALSO check the old stored folder ID in case assets haven't been migrated
-                  if (project.mediaFolderId && project.mediaFolderId !== currentProjectFolderId) {
-                    console.log(`Also checking assets in old stored folder: ${project.mediaFolderId}`);
-                    try {
-                      const oldFolderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-                      console.log(`Found ${oldFolderAssets.length} assets in old folder`);
-                      allAssets.push(...oldFolderAssets);
-                    } catch (oldFolderError) {
-                      console.log(`Old folder ${project.mediaFolderId} not accessible: ${oldFolderError.message}`);
-                      // Clear invalid folder ID from database to prevent future 404s
-                      console.log(`Clearing invalid folder ID for project ${project.id}`);
-                      await storage.updateProject(project.id, { mediaFolderId: null });
-                    }
-                  }
-                  
-                  // Skip legacy hardcoded folder check - use only discovered and stored folder IDs
-                  
-                  console.log(`Total assets found for project ${project.id}: ${allAssets.length}`);
-                  
-                  if (allAssets.length > 0) {
-                    // Check both created_time and updated_time for all assets
-                    const assetDates = allAssets
-                      .flatMap((asset: any) => [
-                        asset.created_time ? new Date(asset.created_time) : null,
-                        asset.updated_time ? new Date(asset.updated_time) : null,
-                        asset.created_at ? new Date(asset.created_at) : null,
-                        asset.updated_at ? new Date(asset.updated_at) : null
-                      ])
-                      .filter(date => date !== null);
-                    
-                    if (assetDates.length > 0) {
-                      const latestAssetDate = new Date(Math.max(...assetDates.map(d => d!.getTime())));
-                      console.log(`Latest Frame.io asset date for project ${project.id}: ${latestAssetDate}`);
-                      if (latestAssetDate > latestActivityDate) {
-                        latestActivityDate = latestAssetDate;
-                      }
-                    }
-                  } else {
-                    console.log(`No assets found in project-specific location for project ${project.id}`);
-                    
-                    // Even if no assets found in project folder, check user folder for loose assets
-                    if (userFolderId && currentProjectFolderId !== userFolderId) {
-                      try {
-                        console.log(`Checking user folder ${userFolderId} for assets for project ${project.id}`);
-                        const userFolderAssets = await frameioV4Service.getFolderAssets(userFolderId);
-                        console.log(`Found ${userFolderAssets.length} assets in user folder`);
-                        
-                        if (userFolderAssets.length > 0) {
-                          // Check both created_time and updated_time for user folder assets
-                          const userAssetDates = userFolderAssets
-                            .flatMap((asset: any) => [
-                              asset.created_time ? new Date(asset.created_time) : null,
-                              asset.updated_time ? new Date(asset.updated_time) : null,
-                              asset.created_at ? new Date(asset.created_at) : null,
-                              asset.updated_at ? new Date(asset.updated_at) : null
-                            ])
-                            .filter(date => date !== null);
-                          
-                          if (userAssetDates.length > 0) {
-                            const latestUserAssetDate = new Date(Math.max(...userAssetDates.map(d => d!.getTime())));
-                            console.log(`Latest asset date in user folder for project ${project.id}: ${latestUserAssetDate}`);
-                            if (latestUserAssetDate > latestActivityDate) {
-                              latestActivityDate = latestUserAssetDate;
-                            }
-                          }
-                        }
-                      } catch (userFolderError) {
-                        console.log(`Could not check user folder assets: ${userFolderError.message}`);
-                      }
-                    }
-                  }
-                } catch (folderError) {
-                  console.log(`Could not dynamically locate Frame.io folder for project ${project.id}:`, folderError.message);
-                }
-              } catch (frameioError) {
-                console.log(`Frame.io error for project ${project.id}:`, frameioError.message);
-              }
-              
-            } catch (error) {
-              console.error(`Error calculating last activity for project ${project.id}:`, error);
-            }
-            
-            console.log(`Final calculated last activity date for project ${project.id}: ${latestActivityDate}`);
-            
-            // Always update with the calculated timestamp for accurate display
-            const updated = await storage.updateProject(project.id, {
-              updatedAt: latestActivityDate,
-            });
-            
-            const finalProject = updated || { ...project, updatedAt: latestActivityDate.toISOString() };
-            console.log(`Returning project ${project.id} with updatedAt: ${finalProject.updatedAt}`);
-            
-            return finalProject;
-          })
-        );
-        
-        // Ensure fresh data by preventing caching
-        res.set({
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        });
-        
+        console.log(`Returning ${projects.length} projects using reliable database timestamps`);
         res.json({
           success: true,
-          projects: projectsWithActualLastUpdated,
+          projects: projects,
         });
       } catch (error) {
         console.error("Get projects error:", error);
@@ -2078,6 +1915,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.user!.id,
           validatedData,
         );
+        
+        // Track project creation timestamp
+        await updateProjectTimestamp(project.id, "project created");
 
         // Increment user usage count for successful project creation
         await storage.incrementUserUsage(req.user!.id);
@@ -2159,11 +1999,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update project status to "complete"
+      // Update project status to "complete" with automatic timestamp tracking
       await storage.updateProject(projectId, {
         status: 'complete',
         updatedAt: new Date(),
       });
+      await updateProjectTimestamp(projectId, "video accepted");
 
       // Update Frame.io assets status to "Accepted"
       console.log(`🧪 TESTING: About to update Frame.io assets to "Accepted" for project ${projectId}`);
@@ -2666,11 +2507,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update project status to "revision in progress"
+      // Update project status to "revision in progress" with timestamp tracking
       await storage.updateProject(projectId, {
         status: 'revision in progress',
         updatedAt: new Date(),
       });
+      await updateProjectTimestamp(projectId, "revision requested");
       
       // Get user details for revision notification email
       const user = await storage.getUserById(userId);
@@ -3567,6 +3409,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "awaiting instructions",
           });
         }
+        
+        // Track asset upload timestamp
+        await updateProjectTimestamp(projectId, "asset uploaded");
 
         res.json({
           success: true,
@@ -3881,10 +3726,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
           );
 
-          // Update project status to "Edit in Progress" when form is completed
+          // Update project status to "Edit in Progress" with timestamp tracking
           await storage.updateProject(projectId, {
             status: "Edit in Progress",
           });
+          await updateProjectTimestamp(projectId, "form submission updated");
 
           return res.json({
             success: true,
@@ -3893,13 +3739,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Create the submission record
+        // Create the submission record with timestamp tracking
         const submission = await storage.createTallyFormSubmission({
           projectId,
           userId: req.user!.id,
           tallySubmissionId,
           submissionData: JSON.stringify(submissionData),
         });
+        await updateProjectTimestamp(projectId, "form submitted");
 
         // Note: Status remains as "awaiting instructions" until user clicks "Send to Editor"
 
