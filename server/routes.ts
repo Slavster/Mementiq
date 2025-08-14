@@ -1141,6 +1141,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Project not found" });
       }
       
+      // For projects in "video is ready" status, return Frame.io assets directly
+      if (project.status.toLowerCase() === "video is ready" && project.mediaFolderId) {
+        try {
+          await frameioV4Service.loadServiceAccountToken();
+          const accountId = await frameioV4Service.getAccountId();
+          const response = await frameioV4Service.makeRequest(
+            'GET', 
+            `/accounts/${accountId}/folders/${project.mediaFolderId}/children`
+          );
+          
+          if (response && response.data) {
+            // Filter for video files uploaded after submission timestamp
+            const videoAssets = response.data.filter(asset => 
+              asset.media_type && 
+              asset.media_type.startsWith('video/') && 
+              project.submittedToEditorAt && 
+              new Date(asset.created_at) > new Date(project.submittedToEditorAt)
+            );
+            
+            // Sort by creation date and take the most recent
+            videoAssets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            if (videoAssets.length > 0) {
+              const latestVideo = videoAssets[0];
+              console.log(`📁 For project ${projectId} in "video is ready" status, returning Frame.io asset: ${latestVideo.name}`);
+              
+              // Return in the format expected by VideoViewingStep
+              const frameioFileFormat = [{
+                id: latestVideo.id,
+                projectId: projectId,
+                mediaAssetId: latestVideo.id,
+                mediaAssetUrl: latestVideo.view_url || '',
+                filename: latestVideo.name,
+                originalFilename: latestVideo.name,
+                fileType: latestVideo.media_type,
+                fileSize: latestVideo.file_size || 0,
+                uploadStatus: 'completed',
+                uploadDate: latestVideo.created_at
+              }];
+              
+              return res.json(frameioFileFormat);
+            }
+          }
+        } catch (frameioError) {
+          console.error("Failed to get Frame.io assets for video ready project:", frameioError);
+          // Fall back to database files if Frame.io fails
+        }
+      }
+      
+      // Default: return database files
       const projectFiles = await storage.getProjectFilesByProjectId(projectId);
       res.json(projectFiles);
     } catch (error) {
