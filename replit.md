@@ -22,6 +22,11 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - Updated project status workflow to replace "delivered" with "complete" status
 - Enhanced "Accept Video" functionality with confetti animation and automatic dashboard redirect
 - Updated dashboard UI to show "Download Final Video" button for completed projects instead of "Manage & Upload Footage"
+- **ENFORCED 1:1 SHARE LINK RELATIONSHIP:**
+  - ✅ Added `frameioReviewLink` and `frameioReviewShareId` columns to projects table
+  - ✅ Share links stored at both file level AND project level simultaneously
+  - ✅ "Download Final Video" button uses existing project-level share link (no new API calls)
+  - ✅ Prevents duplicate share link creation and ensures consistency
 - **CRITICAL FOLDER MANAGEMENT RULES ENFORCED:**
   - ✅ Frame.io folders are ONLY created when "New Video Request" button is clicked (never during project listing or other operations)
   - ✅ Maximum 2-level folder hierarchy enforced: User → Project (no deeper nesting allowed)

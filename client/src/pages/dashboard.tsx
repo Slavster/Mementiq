@@ -715,23 +715,17 @@ export default function DashboardPage() {
                             className="w-full bg-green-600 hover:bg-green-700 text-white"
                             onClick={async (e) => {
                               e.stopPropagation();
-                              // Debug: Log project data to see what share link fields are available
-                              console.log("Project data for download:", project);
-                              
-                              // Try multiple possible share link fields in the project data
-                              const shareLink = project.frameioReviewLink || 
-                                               project.mediaReviewLink ||
-                                               project.shareUrl ||
-                                               project.reviewUrl;
+                              // Use the stored Frame.io review link from the project
+                              const shareLink = project.frameioReviewLink || project.mediaReviewLink;
                               
                               if (shareLink) {
                                 window.open(shareLink, "_blank");
                                 console.log("Opened existing share link:", shareLink);
                               } else {
-                                console.log("No share link found in project data, available fields:", Object.keys(project));
+                                console.log("No share link found, project data:", project);
                                 toast({
                                   title: "Video unavailable",
-                                  description: "Could not find the video share link. Please try viewing the video from the previous screen first.",
+                                  description: "No video share link found. Please view the video first to generate a share link.",
                                   variant: "destructive",
                                 });
                               }

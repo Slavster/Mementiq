@@ -793,6 +793,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Update database with existing public share URL and share ID
             await storage.updateProjectFileShareInfo(videoFile.id, existingShare.id, existingShare.url);
             
+            // Store existing share at project level for consistency
+            await storage.updateProjectShareLink(projectId, existingShare.id, existingShare.url);
+            
             return res.json({
               shareUrl: existingShare.url,
               shareId: existingShare.id,
@@ -857,10 +860,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`🛡️ RESILIENT RECOVERY SUCCESS: Found existing share ${existingShare.id}`);
               console.log(`💾 Updating database cache with recovered share: ${existingShare.url}`);
               
-              // Update database with recovered share URL
+              // Update database with recovered share URL (both file and project level)
               await storage.updateProjectFile(videoFile.id, {
                 mediaAssetUrl: existingShare.url
               });
+              await storage.updateProjectShareLink(projectId, existingShare.id, existingShare.url);
               
               return res.json({
                 shareUrl: existingShare.url,
@@ -908,7 +912,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store the new share URL and ID in the database to avoid duplicate creation
       console.log(`💾 Updating database with new share URL: ${shareLink.url} and ID: ${shareLink.id}`);
       await storage.updateProjectFileShareInfo(videoFile.id, shareLink.id, shareLink.url);
-      console.log(`✅ Database updated with synchronized share info`);
+      
+      // ALSO store the share link at the project level for easy access (enforces 1:1 relationship)
+      await storage.updateProjectShareLink(projectId, shareLink.id, shareLink.url);
+      console.log(`✅ Database updated with synchronized share info at both file and project level`);
       
       console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
       

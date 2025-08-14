@@ -51,6 +51,7 @@ export interface IStorage {
   createProject(userId: string, project: InsertProject): Promise<Project>;
   updateProject(id: number, updates: UpdateProject): Promise<Project | undefined>;
   updateProjectMediaInfo(id: number, mediaFolderId: string, userFolderUri?: string): Promise<void>;
+  updateProjectShareLink(projectId: number, shareId: string, shareUrl: string): Promise<Project | undefined>;
   deleteProject(id: number): Promise<void>;
 
   // Project file methods
@@ -278,6 +279,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projectFiles.id, id))
       .returning();
     return updatedFile || undefined;
+  }
+
+  /**
+   * Update project-level Frame.io share link (both full URL and share ID)
+   * Ensures 1:1 relationship between share UUID and public URL
+   */
+  async updateProjectShareLink(projectId: number, shareId: string, shareUrl: string): Promise<Project | undefined> {
+    const [updatedProject] = await this.db
+      .update(projects)
+      .set({
+        frameioReviewLink: shareUrl,
+        frameioReviewShareId: shareId,
+      })
+      .where(eq(projects.id, projectId))
+      .returning();
+    
+    console.log(`📊 Synchronized project share update for ${projectId}: shareId=${shareId}, shareUrl=${shareUrl}`);
+    return updatedProject || undefined;
   }
 
   /**
