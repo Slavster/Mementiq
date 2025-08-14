@@ -819,13 +819,23 @@ export class FrameioV4Service {
         }
       }
 
-      // Frame.io V4 API: Create folder using proper endpoint and centralized token
-      console.log(`📁 Creating V4 folder via proper API endpoint`);
+      // Frame.io V4 API: Create folder using correct account-prefixed endpoint
+      console.log(`📁 Creating V4 folder via correct API endpoint`);
       
-      const folderData = await this.makeRequest('POST', '/folders', {
+      // Get account ID for the proper V4 endpoint structure
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+
+      // V4 folder creation: POST /accounts/{account_id}/folders/{parent_folder_id}/folders
+      const endpoint = `/accounts/${accountId}/folders/${parentAssetId}/folders`;
+      console.log(`Creating folder via: POST ${endpoint}`);
+      
+      const folderData = await this.makeRequest('POST', endpoint, {
         data: {
-          name: folderName,
-          parent_id: parentAssetId
+          name: folderName
         }
       });
 
