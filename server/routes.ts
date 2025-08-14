@@ -586,7 +586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (response && response.data) {
             // Filter for video files uploaded after submission timestamp
-            const videoAssets = response.data.filter(asset => 
+            const videoAssets = response.data.filter((asset: any) => 
               asset.media_type && 
               asset.media_type.startsWith('video/') && 
               project.submittedToEditorAt && 
@@ -594,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             
             // Sort by creation date and take the most recent
-            videoAssets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            videoAssets.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             
             if (videoAssets.length > 0) {
               const latestVideo = videoAssets[0];
@@ -970,12 +970,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Store the new share URL and ID in the database to avoid duplicate creation
       console.log(`💾 Updating database with new share URL: ${shareLink.url} and ID: ${shareLink.id}`);
-      await storage.updateProjectFileShareInfo(videoFile.id, shareLink.id, shareLink.url);
       
-      // ALSO store the share link at the project level for easy access (enforces 1:1 relationship)
+      // Only update file-level info if we have a database record (not Frame.io direct asset)
+      if (typeof videoFile.id === 'number') {
+        await storage.updateProjectFileShareInfo(videoFile.id, shareLink.id, shareLink.url);
+        console.log(`📊 Updated file-level database record ${videoFile.id} with share info`);
+      } else {
+        console.log(`📊 Skipping file-level update - using Frame.io asset directly (${videoFile.id})`);
+      }
+      
+      // ALWAYS store the share link at the project level for easy access (enforces 1:1 relationship)
       await storage.updateProjectShareLink(projectId, shareLink.id, shareLink.url);
       await updateProjectTimestamp(projectId, "share link generated");
-      console.log(`✅ Database updated with synchronized share info at both file and project level`);
+      console.log(`✅ Database updated with project-level share info`);
       
       console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
       
@@ -1204,7 +1211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (response && response.data) {
             // Filter for video files uploaded after submission timestamp
-            const videoAssets = response.data.filter(asset => 
+            const videoAssets = response.data.filter((asset: any) => 
               asset.media_type && 
               asset.media_type.startsWith('video/') && 
               project.submittedToEditorAt && 
@@ -1212,7 +1219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             
             // Sort by creation date and take the most recent
-            videoAssets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            videoAssets.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             
             if (videoAssets.length > 0) {
               const latestVideo = videoAssets[0];
