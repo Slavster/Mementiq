@@ -971,13 +971,14 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status === "Edit in Progress" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status === "Edit in Progress" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
                     {currentStep === "confirmation" ||
-                    selectedProject.status === "Edit in Progress"
+                    selectedProject.status === "Edit in Progress" ||
+                    selectedProject.status === "Video is Ready"
                       ? "✓"
                       : "2"}
                   </div>
