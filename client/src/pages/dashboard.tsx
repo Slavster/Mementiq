@@ -219,7 +219,6 @@ export default function DashboardPage() {
   // Send to editor mutation
   const sendToEditorMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      console.log("Sending project to editor:", projectId);
       const response = await apiRequest(
         "PATCH",
         `/api/projects/${projectId}/status`,
@@ -227,11 +226,9 @@ export default function DashboardPage() {
           status: "edit in progress",
         },
       );
-      console.log("Send to editor response:", response);
       return response;
     },
     onSuccess: (data) => {
-      console.log("Send to editor success:", data);
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
         toast({
@@ -240,8 +237,17 @@ export default function DashboardPage() {
             "Your project is now being worked on. Keep an eye on your email for updates.",
           duration: 5000,
         });
-        setSelectedProject(null);
-        setCurrentStep("upload");
+        
+        // Update the selected project with the new status instead of closing dialog
+        if (selectedProject) {
+          setSelectedProject({
+            ...selectedProject,
+            status: "edit in progress",
+            updatedAt: new Date()
+          });
+        }
+        
+        setCurrentStep("confirmation");
         setShowSendToEditorDialog(false);
         setPendingProject(null);
         setSendToEditorConfirmationStep(1);
@@ -254,7 +260,6 @@ export default function DashboardPage() {
       }
     },
     onError: (error) => {
-      console.error("Send to editor error:", error);
       toast({
         title: "Failed to send project",
         description: `An error occurred: ${error.message || "Please try again."}`,
