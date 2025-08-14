@@ -907,6 +907,9 @@ export default function DashboardPage() {
 
           {selectedProject && (
             <div className="space-y-6">
+              {/* Debug project data */}
+              {console.log("Selected project data:", selectedProject)}
+              {console.log("File count:", (selectedProject as any).fileCount)}
               {/* Project Info */}
               <div className="grid grid-cols-1 gap-4">
                 <div className="flex items-center gap-2">
