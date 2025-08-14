@@ -18,6 +18,13 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Test 10 successfully transitioned from "Edit in Progress" to "Video is Ready" via automatic detection
   - ✅ Service provides manual trigger endpoint for testing and debugging
   - ✅ Runs continuously in background to ensure no video deliveries are missed
+- **ENHANCED ASSET DETECTION WITH TIMESTAMP FILTERING:**
+  - ✅ Added `submittedToEditorAt` timestamp field to projects table
+  - ✅ Asset detection now only processes videos uploaded AFTER project submission to editor
+  - ✅ When multiple videos are detected, only the most recently uploaded video is used
+  - ✅ "Send to Editor" action now properly sets submission timestamp for accurate filtering
+  - ✅ Enhanced logging shows video upload times vs submission times for debugging
+  - ✅ Prevents false positives from videos uploaded during initial project setup
 - **FIXED FRAME.IO LAST UPDATED DATE CALCULATION:**
   - ✅ Resolved missing `refresh_locks` table preventing Frame.io token refresh
   - ✅ Fixed SQL parameter syntax for PostgreSQL compatibility  

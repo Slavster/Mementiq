@@ -145,11 +145,35 @@ class AssetDetectionService {
 
     // Get assets in the project folder
     const folderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-    const videoAssets = folderAssets.filter(asset => 
+    const allVideoAssets = folderAssets.filter(asset => 
       asset.type === 'file' && 
       asset.media_type && 
       asset.media_type.startsWith('video/')
     );
+
+    console.log(`🎬 Project ${project.id}: Found ${allVideoAssets.length} total video assets`);
+
+    // Filter videos uploaded AFTER project was submitted to editor
+    let videoAssets = allVideoAssets;
+    if (project.submittedToEditorAt) {
+      const submissionTime = new Date(project.submittedToEditorAt);
+      videoAssets = allVideoAssets.filter(asset => {
+        const assetTime = new Date(asset.created_at);
+        const isAfterSubmission = assetTime > submissionTime;
+        console.log(`📅 Asset "${asset.name}": created ${asset.created_at}, submitted ${project.submittedToEditorAt}, after submission: ${isAfterSubmission}`);
+        return isAfterSubmission;
+      });
+      console.log(`⏰ Project ${project.id}: ${videoAssets.length} videos uploaded after submission to editor`);
+    } else {
+      console.log(`⚠️ Project ${project.id}: No submission timestamp found, considering all videos`);
+    }
+
+    // Sort by creation date (most recent first) and take the newest video only
+    if (videoAssets.length > 1) {
+      videoAssets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      console.log(`📊 Multiple videos found, using most recent: "${videoAssets[0].name}" (${videoAssets[0].created_at})`);
+      videoAssets = [videoAssets[0]]; // Keep only the most recent
+    }
 
     result.videoCount = videoAssets.length;
     result.assets = videoAssets.map(asset => ({
@@ -159,11 +183,12 @@ class AssetDetectionService {
       media_type: asset.media_type
     }));
 
-    console.log(`🎬 Project ${project.id}: Found ${videoAssets.length} video assets`);
+    console.log(`🎯 Project ${project.id}: Using ${videoAssets.length} video for detection`);
 
-    // If we have video assets, update project status
+    // If we have valid video assets (uploaded after submission), update project status
     if (videoAssets.length > 0) {
-      console.log(`🚀 Updating project ${project.id} status to "video is ready"`);
+      const selectedVideo = videoAssets[0];
+      console.log(`🚀 Updating project ${project.id} status to "video is ready" based on video: "${selectedVideo.name}"`);
       
       await storage.updateProject(project.id, {
         status: 'video is ready',
@@ -171,14 +196,14 @@ class AssetDetectionService {
       });
 
       // Update timestamp
-      await this.updateProjectTimestamp(project.id, "video delivered (auto-detected)");
+      await this.updateProjectTimestamp(project.id, `video delivered: "${selectedVideo.name}" (auto-detected)`);
       
       result.statusUpdated = true;
 
-      // Send email notification to user
+      // Send email notification to user with the most recent video
       try {
-        await this.sendVideoDeliveryNotification(project, videoAssets[0]);
-        console.log(`📧 Video delivery notification sent for project ${project.id}`);
+        await this.sendVideoDeliveryNotification(project, selectedVideo);
+        console.log(`📧 Video delivery notification sent for project ${project.id} with video: "${selectedVideo.name}"`);
       } catch (emailError) {
         console.error(`❌ Failed to send email for project ${project.id}:`, emailError instanceof Error ? emailError.message : String(emailError));
       }
