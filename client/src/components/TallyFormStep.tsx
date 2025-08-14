@@ -193,36 +193,35 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   // Show submission status if we have a submission AND form is not visible
   if (hasExistingSubmission && !isFormVisible) {
     return (
-      <Card className="w-full">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            Instructions Already Provided
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-center">
-          <Alert>
-            <AlertDescription>
-              Your instructions were submitted on{" "}
-              {new Date(existingSubmission?.submittedAt).toLocaleDateString()}.{" "}
-              <br />
-              You can submit a fresh form if you need to give the editor new
-              directions.
-            </AlertDescription>
-          </Alert>
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            onClick={onFormComplete}
+            className="text-white border-gray-600 hover:bg-gray-700"
+          >
+            Continue to Confirmation →
+          </Button>
+        </div>
+        
+        <Card className="w-full">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Instructions Already Provided
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-center">
+            <Alert>
+              <AlertDescription>
+                Your instructions were submitted on{" "}
+                {new Date(existingSubmission?.submittedAt).toLocaleDateString()}.{" "}
+                <br />
+                You can submit a fresh form if you need to give the editor new
+                directions.
+              </AlertDescription>
+            </Alert>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div></div>
-              <Button
-                variant="outline"
-                onClick={onFormComplete}
-                className="text-white border-gray-600 hover:bg-gray-700"
-              >
-                Continue to Confirmation →
-              </Button>
-            </div>
-            
             <Button
               onClick={() => setIsFormVisible(true)}
               className="w-full flex items-center justify-center gap-2 bg-[#2abdee] hover:bg-cyan-600 text-white"
@@ -231,9 +230,9 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
               <ExternalLink className="h-4 w-4" />
               Update Instructions
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
