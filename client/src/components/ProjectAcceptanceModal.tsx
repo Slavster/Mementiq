@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectAcceptanceModalProps {
   open: boolean;
@@ -37,6 +38,7 @@ export function ProjectAcceptanceModal({
   project,
   downloadLink,
 }: ProjectAcceptanceModalProps) {
+  const { toast } = useToast();
   const [showThankYou, setShowThankYou] = useState(false);
   const [mediaAssetId, setMediaAssetId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -130,95 +132,23 @@ export function ProjectAcceptanceModal({
 
   const handleDownload = async () => {
     try {
-      // First try to get direct download using apiRequest (which handles auth properly)
-      const data = await apiRequest(
-        `/api/projects/${project.id}/download-link`,
-      );
+      // Get the share link (same as previous screen functionality)
+      const data = await apiRequest(`/api/projects/${project.id}/share-link`);
 
-      if (data?.success && data?.downloadLink) {
-        const downloadLink = data.downloadLink;
-        console.log("Got download link:", downloadLink);
-
-        // Check if it's a direct file URL we can download
-        if (
-          downloadLink.includes(".mp4") ||
-          downloadLink.includes(".mov") ||
-          downloadLink.includes("download") ||
-          downloadLink.includes("app.frame.io")
-        ) {
-          try {
-            // For Frame.io player URLs, we can't directly download, so skip to fallback
-            if (downloadLink.includes("app.frame.io")) {
-              throw new Error("Player URL, redirect to Frame.io");
-            }
-
-            // Try to fetch the file directly with CORS headers
-            const response = await fetch(downloadLink, {
-              mode: "cors",
-              cache: "no-cache",
-            });
-
-            if (response.ok) {
-              const blob = await response.blob();
-
-              // Create download link
-              const url = window.URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = data.filename || "video.mp4";
-              link.style.display = "none";
-
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              window.URL.revokeObjectURL(url);
-
-              console.log("Direct download successful");
-              return;
-            } else {
-              console.log(
-                "Direct fetch failed:",
-                response.status,
-                response.statusText,
-              );
-              throw new Error(`HTTP ${response.status}`);
-            }
-          } catch (downloadError) {
-            console.error("Direct download failed:", downloadError);
-          }
-        }
-
-        // Fallback: open media platform page
-        window.open(downloadLink, "_blank");
-        console.log("Opened Frame.io download page");
+      if (data?.success && data?.shareLink) {
+        // Open Frame.io share link in new tab (consistent with previous screen)
+        window.open(data.shareLink, "_blank");
+        console.log("Opened Frame.io share link:", data.shareLink);
       } else {
-        throw new Error("No download link available");
+        throw new Error("No share link available");
       }
     } catch (error) {
-      console.error("Error initiating download:", error);
-
-      // Fallback: try the original method
-      try {
-        const data = await apiRequest(
-          `/api/projects/${project.id}/download-link`,
-        );
-        if (data?.success && data?.downloadLink) {
-          window.open(data.downloadLink, "_blank");
-        } else {
-          // For Test 2 project, use the correct Frame.io URL with hash
-          if (project.id === 5) {
-            const directFrameioUrl = `https://app.frame.io/1107336225/46fe797c9e`;
-            window.open(directFrameioUrl, "_blank");
-          }
-        }
-      } catch (fallbackError) {
-        console.error("Fallback download also failed:", fallbackError);
-        // Final fallback for Test 2
-        if (project.id === 5) {
-          const directFrameioUrl = `https://app.frame.io/1107336225/46fe797c9e`;
-          window.open(directFrameioUrl, "_blank");
-        }
-      }
+      console.error("Error opening share link:", error);
+      toast({
+        title: "Video unavailable",
+        description: "Could not access the final video. Contact support for assistance.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -253,9 +183,13 @@ export function ProjectAcceptanceModal({
             </div>
 
             {downloadLink && (
-              <Button onClick={handleDownload} className="w-full" size="lg">
-                <Download className="mr-2 h-4 w-4" />
-                Download Your Video
+              <Button 
+                onClick={handleDownload} 
+                className="w-full bg-green-600 hover:bg-green-700 text-white" 
+                size="lg"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Download Final Video
               </Button>
             )}
           </div>

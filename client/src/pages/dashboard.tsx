@@ -710,20 +710,18 @@ export default function DashboardPage() {
                         </Button>
                       ) : project.status.toLowerCase() === "complete" ? (
                         <div className="space-y-2">
-                          <Badge className="w-full bg-emerald-600 text-white py-2 text-center">
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Project Complete
-                          </Badge>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="w-full"
+                            className="w-full bg-green-600 hover:bg-green-700 text-white"
                             onClick={async (e) => {
                               e.stopPropagation();
                               try {
                                 // Use the latest review link instead of download link
-                                if (project.mediaReviewLink) {
-                                  window.open(project.mediaReviewLink, "_blank");
+                                if (project.frameioReviewLink) {
+                                  window.open(
+                                    project.frameioReviewLink,
+                                    "_blank",
+                                  );
                                 } else {
                                   // Fallback to generating a fresh review link
                                   const response = await fetch(
@@ -836,10 +834,13 @@ export default function DashboardPage() {
                             // Continue with normal flow regardless of folder setup result
                             setSelectedProject(project);
                             // Set the appropriate step based on project status
-                            if (project.status.toLowerCase() === "video is ready") {
+                            if (
+                              project.status.toLowerCase() === "video is ready"
+                            ) {
                               setCurrentStep("video-ready");
                             } else if (
-                              project.status.toLowerCase() === "edit in progress" ||
+                              project.status.toLowerCase() ===
+                                "edit in progress" ||
                               project.status.toLowerCase() === "delivered"
                             ) {
                               setCurrentStep("confirmation");
@@ -932,7 +933,10 @@ export default function DashboardPage() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "✓" : "3"}
+                    {selectedProject.status === "Edit in Progress" ||
+                    selectedProject.status === "Video is Ready"
+                      ? "✓"
+                      : "3"}
                   </div>
                   <span className="font-medium">Editor is On It!</span>
                 </div>
@@ -973,20 +977,21 @@ export default function DashboardPage() {
               ) : currentStep === "form" ? (
                 <div className="space-y-4">
                   {/* Only show back button for projects that haven't been submitted yet */}
-                  {selectedProject.status.toLowerCase() !== "edit in progress" && 
-                   selectedProject.status.toLowerCase() !== "video is ready" && 
-                   selectedProject.status.toLowerCase() !== "delivered" && 
-                   selectedProject.status.toLowerCase() !== "complete" && (
-                    <div className="flex gap-2 mb-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setCurrentStep("upload")}
-                        className="text-white border-gray-600 hover:bg-gray-700"
-                      >
-                        ← Back to Upload
-                      </Button>
-                    </div>
-                  )}
+                  {selectedProject.status.toLowerCase() !==
+                    "edit in progress" &&
+                    selectedProject.status.toLowerCase() !== "video is ready" &&
+                    selectedProject.status.toLowerCase() !== "delivered" &&
+                    selectedProject.status.toLowerCase() !== "complete" && (
+                      <div className="flex gap-2 mb-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => setCurrentStep("upload")}
+                          className="text-white border-gray-600 hover:bg-gray-700"
+                        >
+                          ← Back to Upload
+                        </Button>
+                      </div>
+                    )}
                   <TallyFormStep
                     projectId={selectedProject.id}
                     userId={user?.id || ""}
@@ -1050,16 +1055,21 @@ export default function DashboardPage() {
                   project={selectedProject}
                   onBack={() => setCurrentStep("confirmation")}
                   onVideoAccepted={() => {
-                    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/projects"],
+                    });
                     toast({
                       title: "Video Accepted!",
-                      description: "Thank you for your feedback. The project is now complete.",
+                      description:
+                        "Thank you for your feedback. The project is now complete.",
                     });
                     setSelectedProject(null);
                     setCurrentStep("upload");
                   }}
                   onRevisionRequested={() => {
-                    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/projects"],
+                    });
                     setCurrentStep("confirmation");
                   }}
                 />
