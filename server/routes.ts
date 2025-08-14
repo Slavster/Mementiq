@@ -1856,7 +1856,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         });
                       }
                     } else {
-                      console.log(`No project folder found for project ${project.id} - assets may not be uploaded yet`);
+                      console.log(`No project folder found for project ${project.id} - attempting to create missing folder`);
+                      
+                      // Try to create the missing project folder
+                      try {
+                        await frameioV4Service.loadServiceAccountToken();
+                        if (frameioV4Service.accessToken) {
+                          const projectFolderName = `${project.title}-${project.id.slice(0, 8)}`;
+                          console.log(`Creating missing project folder: ${projectFolderName} in ${userFolderId}`);
+                          
+                          const newProjectFolder = await frameioV4Service.createFolder(projectFolderName, userFolderId);
+                          currentProjectFolderId = newProjectFolder.id;
+                          
+                          // Update database with new folder
+                          await storage.updateProject(project.id, {
+                            mediaFolderId: currentProjectFolderId,
+                            mediaUserFolderId: userFolderId
+                          });
+                          
+                          console.log(`✓ Created and stored new project folder: ${currentProjectFolderId}`);
+                        }
+                      } catch (createError) {
+                        console.log(`Failed to create project folder: ${createError.message}`);
+                      }
                     }
                   }
                   
@@ -1909,11 +1931,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   } else {
                     console.log(`No assets found in any location for project ${project.id}`);
-                    // For projects in "video is ready" status with no accessible assets,
-                    // use a more recent timestamp to reflect the actual status
-                    if (project.status === 'video is ready') {
-                      console.log(`Project ${project.id} is in video ready status, using status-based timestamp`);
-                      latestActivityDate = new Date(); // Current time for recently ready videos
+                    // Check if we found assets in the user folder but not in a specific project folder
+                    if (userFolderId) {
+                      try {
+                        console.log(`Checking user folder ${userFolderId} for loose assets for project ${project.id}`);
+                        const userFolderAssets = await frameioV4Service.getFolderAssets(userFolderId);
+                        console.log(`Found ${userFolderAssets.length} assets in user folder`);
+                        
+                        if (userFolderAssets.length > 0) {
+                          // Check both created_time and updated_time for user folder assets
+                          const userAssetDates = userFolderAssets
+                            .flatMap((asset: any) => [
+                              asset.created_time ? new Date(asset.created_time) : null,
+                              asset.updated_time ? new Date(asset.updated_time) : null,
+                              asset.created_at ? new Date(asset.created_at) : null,
+                              asset.updated_at ? new Date(asset.updated_at) : null
+                            ])
+                            .filter(date => date !== null);
+                          
+                          if (userAssetDates.length > 0) {
+                            const latestUserAssetDate = new Date(Math.max(...userAssetDates.map(d => d!.getTime())));
+                            console.log(`Latest asset date in user folder for project ${project.id}: ${latestUserAssetDate}`);
+                            if (latestUserAssetDate > latestActivityDate) {
+                              latestActivityDate = latestUserAssetDate;
+                            }
+                          }
+                        }
+                      } catch (userFolderError) {
+                        console.log(`Could not check user folder assets: ${userFolderError.message}`);
+                      }
                     }
                   }
                 } catch (folderError) {
@@ -2046,10 +2092,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const rootProject = await frameioV4Service.getOrCreateRootProject();
             
             const userFolderName = `User-${req.user!.email.split('@')[0]}-${req.user!.id.slice(0, 8)}`;
-            const userFolder = await frameioV4Service.createFolder(rootProject.root_asset_id, userFolderName);
+            const userFolder = await frameioV4Service.createFolder(userFolderName, rootProject.root_asset_id);
             
             const projectFolderName = `${project.title}-${project.id.slice(0, 8)}`;
-            const projectFolder = await frameioV4Service.createFolder(userFolder.id, projectFolderName);
+            const projectFolder = await frameioV4Service.createFolder(projectFolderName, userFolder.id);
 
             // Store organization structure in database
             await storage.updateProjectMediaInfo(
