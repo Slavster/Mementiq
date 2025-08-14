@@ -907,9 +907,6 @@ export default function DashboardPage() {
 
           {selectedProject && (
             <div className="space-y-6">
-              {/* Debug project data */}
-              {console.log("Selected project data:", selectedProject)}
-              {console.log("File count:", (selectedProject as any).fileCount)}
               {/* Project Info */}
               <div className="grid grid-cols-1 gap-4">
                 <div className="flex items-center gap-2">
@@ -931,12 +928,12 @@ export default function DashboardPage() {
               {/* Step Progress */}
               <div className="flex items-center gap-2 mb-6">
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : ((selectedProject as any).fileCount && (selectedProject as any).fileCount > 0) ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : (currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready") ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : ((selectedProject as any).fileCount && (selectedProject as any).fileCount > 0) ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : (currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready") ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {((selectedProject as any).fileCount && (selectedProject as any).fileCount > 0) ? "✓" : "1"}
+                    {(currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready") ? "✓" : "1"}
                   </div>
                   <span className="font-medium">Upload Footage</span>
                 </div>

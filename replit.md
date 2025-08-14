@@ -46,9 +46,10 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Users can now proceed to upload step or update existing instructions
   - ✅ Enhanced user experience for returning to projects with existing form submissions
 - **ENHANCED STEP PROGRESS INDICATORS:**
-  - ✅ "Upload Footage" step now shows green checkmark when assets are detected in Frame.io folder
+  - ✅ "Upload Footage" step shows green checkmark when user progresses to later workflow stages
   - ✅ Visual progress indicator matches completion styling of other workflow steps
-  - ✅ Dynamic status updates based on actual file upload detection
+  - ✅ Simplified logic: completed when currentStep is "form"/"confirmation" or project status is "Edit in Progress"/"Video is Ready"
+  - ✅ No additional API calls needed - relies on existing workflow progression logic
 
 ## System Architecture
 
