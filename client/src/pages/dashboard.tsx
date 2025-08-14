@@ -242,8 +242,8 @@ export default function DashboardPage() {
         if (selectedProject) {
           setSelectedProject({
             ...selectedProject,
-            status: "edit in progress",
-            updatedAt: new Date()
+            status: "Edit in Progress",
+            updatedAt: new Date().toISOString()
           });
         }
         
