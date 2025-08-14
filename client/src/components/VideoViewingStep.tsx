@@ -37,7 +37,7 @@ export function VideoViewingStep({
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({
     width: typeof window !== "undefined" ? window.innerWidth : 0,
-    height: typeof window !== "undefined" ? window.innerHeight : 0,
+    height: typeof window !== "undefined" ? Math.max(window.innerHeight, document.documentElement.scrollHeight) : 0,
   });
 
   // Update window dimensions for confetti
@@ -45,13 +45,18 @@ export function VideoViewingStep({
     function handleResize() {
       setWindowDimensions({
         width: window.innerWidth,
-        height: window.innerHeight,
+        height: Math.max(window.innerHeight, document.documentElement.scrollHeight, document.body.scrollHeight),
       });
     }
 
     if (typeof window !== "undefined") {
+      handleResize(); // Set initial dimensions
       window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
+      window.addEventListener("scroll", handleResize); // Update on scroll changes
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("scroll", handleResize);
+      };
     }
   }, []);
 
@@ -99,7 +104,7 @@ export function VideoViewingStep({
       setTimeout(() => {
         setShowConfetti(false);
         onVideoAccepted();
-      }, 3000); // 3 seconds of confetti
+      }, 6000); // 6 seconds of confetti
     } catch (error) {
       console.error("Failed to accept video:", error);
       toast({
@@ -200,13 +205,18 @@ export function VideoViewingStep({
     <div className="space-y-8">
       {/* Confetti Effect */}
       {showConfetti && (
-        <Confetti
-          width={windowDimensions.width}
-          height={windowDimensions.height}
-          recycle={false}
-          numberOfPieces={300}
-          gravity={0.3}
-        />
+        <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-50">
+          <Confetti
+            width={windowDimensions.width}
+            height={windowDimensions.height}
+            recycle={false}
+            numberOfPieces={400}
+            gravity={0.2}
+            initialVelocityY={15}
+            initialVelocityX={5}
+            colors={['#10b981', '#22c55e', '#34d399', '#fbbf24', '#f59e0b', '#f97316', '#ec4899', '#a855f7']}
+          />
+        </div>
       )}
       {/* Excitement Header */}
       <div className="text-center space-y-4">
