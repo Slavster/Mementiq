@@ -819,20 +819,29 @@ export class FrameioV4Service {
         }
       }
 
+      // Frame.io V4 API requires proper hierarchy - folders are created within projects
+      // Get the workspace and project context first  
+      if (!this.workspaceId) {
+        throw new Error('Workspace ID not available for folder creation');
+      }
+      
       const accounts = await this.getAccounts();
       if (!accounts.data || accounts.data.length === 0) {
         throw new Error('No Frame.io accounts found');
       }
       const accountId = accounts.data[0].id;
+      
+      // Get the project that contains this folder hierarchy
+      const rootProject = await this.getOrCreateRootProject();
+      const projectId = rootProject.id;
 
-      const endpoint = `/accounts/${accountId}/folders`;
+      const endpoint = `/accounts/${accountId}/projects/${projectId}/folders`;
       console.log(`Creating folder via: POST ${endpoint}`);
 
       const folderData = await this.makeRequest('POST', endpoint, {
         data: {
           name: folderName,
-          parent_id: parentAssetId,
-          type: 'folder'
+          parent_id: parentAssetId
         }
       });
 
