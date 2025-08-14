@@ -754,11 +754,14 @@ export default function DashboardPage() {
                           className="w-full bg-accent text-secondary hover:bg-yellow-500"
                           onClick={async (e) => {
                             e.stopPropagation();
+                            console.log(`🟡 BUTTON: Manage & Upload Footage clicked for project ${project.id}`);
 
                             // Ensure Frame.io folder structure exists before opening project
                             try {
+                              console.log(`🟡 BUTTON: Getting auth token...`);
                               const token = await supabase.auth.getSession();
                               if (!token.data.session?.access_token) {
+                                console.log(`🔴 BUTTON: No authentication token found`);
                                 toast({
                                   title: "Authentication Error",
                                   description: "Please log in again",
@@ -766,18 +769,19 @@ export default function DashboardPage() {
                                 });
                                 return;
                               }
+                              console.log(`🟡 BUTTON: Token found, making API call...`);
 
                               // Call folder structure verification endpoint
-                              const response = await fetch(
-                                `/api/projects/${project.id}/ensure-folder-structure`,
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    Authorization: `Bearer ${token.data.session.access_token}`,
-                                    "Content-Type": "application/json",
-                                  },
+                              const url = `/api/projects/${project.id}/ensure-folder-structure`;
+                              console.log(`🟡 BUTTON: Calling ${url}`);
+                              const response = await fetch(url, {
+                                method: "POST",
+                                headers: {
+                                  Authorization: `Bearer ${token.data.session.access_token}`,
+                                  "Content-Type": "application/json",
                                 },
-                              );
+                              });
+                              console.log(`🟡 BUTTON: Response status: ${response.status}`);
 
                               const result = await response.json();
 

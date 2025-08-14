@@ -96,6 +96,8 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
 
   // Check folder structure on component mount
   React.useEffect(() => {
+    console.log(`🟢 COMPONENT: FrameioUploadInterface mounted for project ${project.id}`);
+    console.log(`🟢 COMPONENT: Initial folder setup status: ${folderSetupStatus}`);
     checkFolderStructure();
   }, [project.id]);
 
@@ -360,6 +362,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
   };
 
   if (folderSetupStatus === 'checking') {
+    console.log(`🟡 UI: Showing "Setting up video project" screen for project ${project.id}`);
     return (
       <Card className="bg-yellow-500/10 border-yellow-500/30">
         <CardContent className="p-6 text-center">
@@ -376,6 +379,7 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
   }
 
   if (folderSetupStatus === 'error') {
+    console.log(`🔴 UI: Showing "Setup Error" screen for project ${project.id}`);
     return (
       <Card className="bg-red-500/10 border-red-500/30">
         <CardContent className="p-6 text-center">
