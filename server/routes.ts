@@ -950,6 +950,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Manual trigger for asset detection service
+  app.post("/api/debug/trigger-asset-detection", async (req, res) => {
+    try {
+      console.log('🔧 Manual asset detection triggered via API');
+      
+      // Import the service
+      const { assetDetectionService } = await import('./assetDetectionService.js');
+      const results = await assetDetectionService.triggerManualCheck();
+      
+      res.json({
+        success: true,
+        message: `Asset detection completed: ${results.updated} projects updated`,
+        results
+      });
+    } catch (error) {
+      console.error('❌ Manual asset detection failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  });
+
   // Debug endpoint to get current Frame.io folder structure
   app.get("/api/frameio/debug/folders", async (req, res) => {
     try {

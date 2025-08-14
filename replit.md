@@ -10,6 +10,14 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 
 ## Recent Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup
+- **IMPLEMENTED AUTOMATIC VIDEO ASSET DETECTION SERVICE:**
+  - ✅ Created automatic background service that checks for new video uploads every 5 minutes
+  - ✅ Detects when videos are uploaded to projects in "Edit in Progress" status
+  - ✅ Automatically transitions projects to "Video is Ready" when videos are found
+  - ✅ Sends email notifications and updates timestamps when videos are detected
+  - ✅ Test 10 successfully transitioned from "Edit in Progress" to "Video is Ready" via automatic detection
+  - ✅ Service provides manual trigger endpoint for testing and debugging
+  - ✅ Runs continuously in background to ensure no video deliveries are missed
 - **FIXED FRAME.IO LAST UPDATED DATE CALCULATION:**
   - ✅ Resolved missing `refresh_locks` table preventing Frame.io token refresh
   - ✅ Fixed SQL parameter syntax for PostgreSQL compatibility  
