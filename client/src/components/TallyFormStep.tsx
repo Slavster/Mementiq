@@ -212,7 +212,8 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
           </Alert>
 
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-between items-center">
+              <div></div>
               <Button
                 variant="outline"
                 onClick={onFormComplete}
