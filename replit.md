@@ -50,6 +50,11 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Visual progress indicator matches completion styling of other workflow steps
   - ✅ Simplified logic: completed when currentStep is "form"/"confirmation" or project status is "Edit in Progress"/"Video is Ready"
   - ✅ No additional API calls needed - relies on existing workflow progression logic
+- **FIXED SEND TO EDITOR WORKFLOW:**
+  - ✅ "Send to Editor" confirmation now properly updates UI to show "Edit in Progress" state
+  - ✅ Instead of closing dialog, updates selectedProject status and stays on confirmation screen
+  - ✅ Confirmation screen automatically detects status change and shows appropriate "submitted" view
+  - ✅ Users can now see immediate feedback that project was successfully sent to editor
 
 ## System Architecture
 
