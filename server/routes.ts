@@ -1879,6 +1879,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       allAssets.push(...oldFolderAssets);
                     } catch (oldFolderError) {
                       console.log(`Old folder ${project.mediaFolderId} not accessible: ${oldFolderError.message}`);
+                      // Clear invalid folder ID from database to prevent future 404s
+                      console.log(`Clearing invalid folder ID for project ${project.id}`);
+                      await storage.updateProject(project.id, { mediaFolderId: null });
                     }
                   }
                   
@@ -1906,6 +1909,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   } else {
                     console.log(`No assets found in any location for project ${project.id}`);
+                    // For projects in "video is ready" status with no accessible assets,
+                    // use a more recent timestamp to reflect the actual status
+                    if (project.status === 'video is ready') {
+                      console.log(`Project ${project.id} is in video ready status, using status-based timestamp`);
+                      latestActivityDate = new Date(); // Current time for recently ready videos
+                    }
                   }
                 } catch (folderError) {
                   console.log(`Could not dynamically locate Frame.io folder for project ${project.id}:`, folderError.message);
