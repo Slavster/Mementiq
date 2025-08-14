@@ -716,34 +716,21 @@ export default function DashboardPage() {
                             onClick={async (e) => {
                               e.stopPropagation();
                               try {
-                                // Use the latest review link instead of download link
-                                if (project.frameioReviewLink) {
-                                  window.open(
-                                    project.frameioReviewLink,
-                                    "_blank",
-                                  );
+                                // Get the share link (same as previous screen functionality)
+                                const data = await apiRequest(`/api/projects/${project.id}/share-link`);
+
+                                if (data?.success && data?.shareLink) {
+                                  // Open Frame.io share link in new tab (consistent with previous screen)
+                                  window.open(data.shareLink, "_blank");
+                                  console.log("Opened Frame.io share link:", data.shareLink);
                                 } else {
-                                  // Fallback to generating a fresh review link
-                                  const response = await fetch(
-                                    `/api/projects/${project.id}/video-share-link`,
-                                  );
-                                  if (response.ok) {
-                                    const data = await response.json();
-                                    window.open(data.shareUrl, "_blank");
-                                  } else {
-                                    toast({
-                                      title: "Video unavailable",
-                                      description:
-                                        "Could not access the final video. Contact support for assistance.",
-                                      variant: "destructive",
-                                    });
-                                  }
+                                  throw new Error("No share link available");
                                 }
                               } catch (error) {
+                                console.error("Error opening share link:", error);
                                 toast({
-                                  title: "Video access error",
-                                  description:
-                                    "Failed to access the final video. Please try again.",
+                                  title: "Video unavailable",
+                                  description: "Could not access the final video. Contact support for assistance.",
                                   variant: "destructive",
                                 });
                               }
