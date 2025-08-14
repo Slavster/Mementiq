@@ -669,17 +669,19 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <div>
-                        <p className="text-sm text-gray-400">Created</p>
-                        <p className="text-sm">
-                          {new Date(project.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-400">Last Updated</p>
-                        <p className="text-sm">
-                          {new Date(project.updatedAt).toLocaleDateString()}
-                        </p>
+                      <div className="flex justify-between">
+                        <div>
+                          <p className="text-sm text-gray-400">Created</p>
+                          <p className="text-sm">
+                            {new Date(project.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-400">Last Updated</p>
+                          <p className="text-sm">
+                            {new Date(project.updatedAt).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
                     </div>
                     <div className="mt-4">
