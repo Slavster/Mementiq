@@ -948,6 +948,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // Debug endpoint to get current Frame.io folder structure
   app.get("/api/frameio/debug/folders", async (req, res) => {
     try {
