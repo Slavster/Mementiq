@@ -144,6 +144,9 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function DashboardPage() {
+  // 🟣 IMMEDIATE LOGGING: Dashboard component loaded
+  console.log(`🟣 DASHBOARD: Component loaded at ${new Date().toISOString()}`);
+
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -755,6 +758,7 @@ export default function DashboardPage() {
                           onClick={async (e) => {
                             e.stopPropagation();
                             console.log(`🟡 BUTTON: Manage & Upload Footage clicked for project ${project.id}`);
+                            console.log(`🟡 BUTTON: Project status is: ${project.status}`);
 
                             // Ensure Frame.io folder structure exists before opening project
                             try {
