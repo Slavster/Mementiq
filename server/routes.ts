@@ -4012,6 +4012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+
   // Ensure Frame.io folder structure exists for project
   app.post(
     "/api/projects/:id/ensure-folder-structure",
@@ -4021,7 +4022,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const projectId = parseInt(req.params.id);
         const userId = req.user!.id;
 
-        console.log(`🔧 Ensuring Frame.io folder structure for project ${projectId}, user ${userId}`);
+        console.log(`🔧 ROUTE CALLED: Ensuring Frame.io folder structure for project ${projectId}, user ${userId}`);
+        console.log(`🔍 DEBUG: Request received at ensure-folder-structure endpoint`);
+        console.log(`🔍 DEBUG: User authentication successful, proceeding with folder setup`);
 
         // Verify project exists and user owns it
         const project = await storage.getProject(projectId);
