@@ -2157,6 +2157,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'complete',
         updatedAt: new Date(),
       });
+
+      // Update Frame.io assets status to "Accepted"
+      console.log(`🧪 TESTING: About to update Frame.io assets to "Accepted" for project ${projectId}`);
+      try {
+        await frameioV4Service.initialize();
+        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Accepted');
+        console.log(`✅ Frame.io assets updated to "Accepted" for project ${projectId}`);
+      } catch (frameioError) {
+        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
+        // Don't fail the request if Frame.io update fails
+      }
       
       // Get user details for completion email
       const user = await storage.getUserById(userId);
