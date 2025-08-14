@@ -30,6 +30,8 @@ export const projects = pgTable("projects", {
   mediaUserFolderId: text("media_user_folder_id"), // User's main folder ID on media platform
   tallyFormUrl: text("tally_form_url"),
   mediaReviewLink: text("media_review_link"), // Media platform review link for revisions
+  frameioReviewLink: text("frameio_review_link"), // Frame.io public share URL (full format)
+  frameioReviewShareId: text("frameio_review_share_id"), // Frame.io share UUID for the public link
   uploadSizeLimit: bigint("upload_size_limit", { mode: "number" }).default(10737418240), // 10GB default
   currentUploadSize: bigint("current_upload_size", { mode: "number" }).default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
