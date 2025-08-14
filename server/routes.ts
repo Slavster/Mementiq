@@ -3901,8 +3901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           submissionData: JSON.stringify(submissionData),
         });
 
-        // Update project status to "Edit in Progress"
-        await storage.updateProject(projectId, { status: "Edit in Progress" });
+        // Note: Status remains as "awaiting instructions" until user clicks "Send to Editor"
 
         res.json({
           success: true,
