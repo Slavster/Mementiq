@@ -721,7 +721,7 @@ export default function DashboardPage() {
                             onClick={async (e) => {
                               e.stopPropagation();
                               // Use the stored Frame.io review link from the project  
-                              const shareLink = project.frameioReviewLink || project.mediaReviewLink;
+                              const shareLink = project.frameioReviewLink;
                               
                               if (shareLink) {
                                 window.open(shareLink, "_blank");
@@ -978,33 +978,29 @@ export default function DashboardPage() {
                   }}
                 />
               ) : currentStep === "form" ? (
-                <div className="space-y-4">
-                  {/* Only show back button for projects that haven't been submitted yet */}
-                  {selectedProject.status.toLowerCase() !==
-                    "edit in progress" &&
+                <TallyFormStep
+                  projectId={selectedProject.id}
+                  userId={user?.id || ""}
+                  backToUploadButton={
+                    selectedProject.status.toLowerCase() !== "edit in progress" &&
                     selectedProject.status.toLowerCase() !== "video is ready" &&
                     selectedProject.status.toLowerCase() !== "delivered" &&
-                    selectedProject.status.toLowerCase() !== "complete" && (
-                      <div className="flex gap-2 mb-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentStep("upload")}
-                          className="text-white border-gray-600 hover:bg-gray-700"
-                        >
-                          ← Back to Upload
-                        </Button>
-                      </div>
-                    )}
-                  <TallyFormStep
-                    projectId={selectedProject.id}
-                    userId={user?.id || ""}
-                    onFormComplete={() => {
-                      // Move to step 3 instead of closing
-                      setCurrentStep("confirmation");
-                      queryClient.invalidateQueries({ queryKey: ["projects"] });
-                    }}
-                  />
-                </div>
+                    selectedProject.status.toLowerCase() !== "complete" ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep("upload")}
+                        className="text-white border-gray-600 hover:bg-gray-700"
+                      >
+                        ← Back to Upload
+                      </Button>
+                    ) : null
+                  }
+                  onFormComplete={() => {
+                    // Move to step 3 instead of closing
+                    setCurrentStep("confirmation");
+                    queryClient.invalidateQueries({ queryKey: ["projects"] });
+                  }}
+                />
               ) : currentStep === "confirmation" ? (
                 <div className="space-y-4">
                   <Card className="bg-green-500/10 border-green-500/30">
