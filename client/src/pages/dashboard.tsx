@@ -955,15 +955,15 @@ export default function DashboardPage() {
               {/* Step Progress */}
               <div className="flex items-center gap-2 mb-6">
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
                     {currentStep === "form" ||
                     currentStep === "confirmation" ||
-                    selectedProject.status === "Edit in Progress" ||
-                    selectedProject.status === "Video is Ready"
+                    selectedProject.status.toLowerCase() === "edit in progress" ||
+                    selectedProject.status.toLowerCase() === "video is ready"
                       ? "✓"
                       : "1"}
                   </div>
@@ -971,14 +971,14 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
                     {currentStep === "confirmation" ||
-                    selectedProject.status === "Edit in Progress" ||
-                    selectedProject.status === "Video is Ready"
+                    selectedProject.status.toLowerCase() === "edit in progress" ||
+                    selectedProject.status.toLowerCase() === "video is ready"
                       ? "✓"
                       : "2"}
                   </div>
@@ -986,13 +986,13 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "confirmation" ? "text-[#2abdee]" : selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "confirmation" ? "text-[#2abdee]" : selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status === "Edit in Progress" || selectedProject.status === "Video is Ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {selectedProject.status === "Edit in Progress" ||
-                    selectedProject.status === "Video is Ready"
+                    {selectedProject.status.toLowerCase() === "edit in progress" ||
+                    selectedProject.status.toLowerCase() === "video is ready"
                       ? "✓"
                       : "3"}
                   </div>
