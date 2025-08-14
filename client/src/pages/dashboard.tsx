@@ -720,27 +720,39 @@ export default function DashboardPage() {
                             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                             onClick={async (e) => {
                               e.stopPropagation();
-                              // Use the stored Frame.io review link from the project  
+                              // Use the stored Frame.io review link from the project
                               const shareLink = project.frameioReviewLink;
-                              
+
                               if (shareLink) {
                                 window.open(shareLink, "_blank");
-                                console.log("Opened existing share link:", shareLink);
+                                console.log(
+                                  "Opened existing share link:",
+                                  shareLink,
+                                );
                               } else {
                                 // Fallback: Try to get share link via API for older projects
                                 try {
-                                  const data = await apiRequest(`/api/projects/${project.id}/video-share-link`);
+                                  const data = await apiRequest(
+                                    `/api/projects/${project.id}/video-share-link`,
+                                  );
                                   if (data?.shareUrl) {
                                     window.open(data.shareUrl, "_blank");
-                                    console.log("Opened share link from API:", data.shareUrl);
+                                    console.log(
+                                      "Opened share link from API:",
+                                      data.shareUrl,
+                                    );
                                   } else {
                                     throw new Error("No share link available");
                                   }
                                 } catch (error) {
-                                  console.error("Error opening share link:", error);
+                                  console.error(
+                                    "Error opening share link:",
+                                    error,
+                                  );
                                   toast({
                                     title: "Video unavailable",
-                                    description: "Could not access the video. Please try viewing the video from the Review screen first.",
+                                    description:
+                                      "Could not access the video. Please try viewing the video from the Review screen first.",
                                     variant: "destructive",
                                   });
                                 }
@@ -757,15 +769,21 @@ export default function DashboardPage() {
                           className="w-full bg-accent text-secondary hover:bg-yellow-500"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            console.log(`🟡 BUTTON: Manage & Upload Footage clicked for project ${project.id}`);
-                            console.log(`🟡 BUTTON: Project status is: ${project.status}`);
+                            console.log(
+                              `🟡 BUTTON: Manage & Upload Footage clicked for project ${project.id}`,
+                            );
+                            console.log(
+                              `🟡 BUTTON: Project status is: ${project.status}`,
+                            );
 
                             // Ensure Frame.io folder structure exists before opening project
                             try {
                               console.log(`🟡 BUTTON: Getting auth token...`);
                               const token = await supabase.auth.getSession();
                               if (!token.data.session?.access_token) {
-                                console.log(`🔴 BUTTON: No authentication token found`);
+                                console.log(
+                                  `🔴 BUTTON: No authentication token found`,
+                                );
                                 toast({
                                   title: "Authentication Error",
                                   description: "Please log in again",
@@ -773,7 +791,9 @@ export default function DashboardPage() {
                                 });
                                 return;
                               }
-                              console.log(`🟡 BUTTON: Token found, making API call...`);
+                              console.log(
+                                `🟡 BUTTON: Token found, making API call...`,
+                              );
 
                               // Call folder structure verification endpoint
                               const url = `/api/projects/${project.id}/ensure-folder-structure`;
@@ -785,7 +805,9 @@ export default function DashboardPage() {
                                   "Content-Type": "application/json",
                                 },
                               });
-                              console.log(`🟡 BUTTON: Response status: ${response.status}`);
+                              console.log(
+                                `🟡 BUTTON: Response status: ${response.status}`,
+                              );
 
                               const result = await response.json();
 
@@ -906,12 +928,12 @@ export default function DashboardPage() {
               {/* Step Progress */}
               <div className="flex items-center gap-2 mb-6">
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : (selectedProject.fileCount && selectedProject.fileCount > 0) ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : (selectedProject.fileCount && selectedProject.fileCount > 0) ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    1
+                    {(selectedProject.fileCount && selectedProject.fileCount > 0) ? "✓" : "1"}
                   </div>
                   <span className="font-medium">Upload Footage</span>
                 </div>
@@ -982,7 +1004,8 @@ export default function DashboardPage() {
                   projectId={selectedProject.id}
                   userId={user?.id || ""}
                   backToUploadButton={
-                    selectedProject.status.toLowerCase() !== "edit in progress" &&
+                    selectedProject.status.toLowerCase() !==
+                      "edit in progress" &&
                     selectedProject.status.toLowerCase() !== "video is ready" &&
                     selectedProject.status.toLowerCase() !== "delivered" &&
                     selectedProject.status.toLowerCase() !== "complete" ? (
@@ -1009,12 +1032,12 @@ export default function DashboardPage() {
                       <h3 className="text-xl font-semibold text-green-400 mb-2">
                         {selectedProject.status === "Edit in Progress"
                           ? "Editor is On It!"
-                          : "Form Submitted Successfully!"}
+                          : "Ready to Submit?"}
                       </h3>
                       <p className="text-gray-300 mb-6 whitespace-pre-line">
                         {selectedProject.status === "Edit in Progress"
                           ? "Your project is being worked on by an editor 🎉\n You can't upload more footage now, but you can update your instructions if needed."
-                          : "Your request has been received, nice!\n You can send it off to an editor now or go back to upload additional footage."}
+                          : "Everything looks in order, nice!\n You can send it off to an editor now or upload additional footage / new instructions."}
                       </p>
                       <div className="flex gap-4 justify-center">
                         {selectedProject.status === "Edit in Progress" ? (
