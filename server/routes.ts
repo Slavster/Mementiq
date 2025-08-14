@@ -1261,11 +1261,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log status change
       await storage.logProjectStatusChange(projectId, project.status, 'complete');
       
-      // Update Frame.io assets status to "Accepted"
-      console.log(`🧪 TESTING: About to update Frame.io assets to "Accepted" for project ${projectId}`);
+      // Update Frame.io assets status to "Approved"
+      console.log(`🧪 TESTING: About to update Frame.io assets to "Approved" for project ${projectId}`);
       try {
-        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Accepted');
-        console.log(`✅ Frame.io assets updated to "Accepted" for project ${projectId}`);
+        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Approved');
+        console.log(`✅ Frame.io assets updated to "Approved" for project ${projectId}`);
       } catch (frameioError) {
         console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
         // Don't fail the request if Frame.io update fails
@@ -2006,12 +2006,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       await updateProjectTimestamp(projectId, "video accepted");
 
-      // Update Frame.io assets status to "Accepted"
-      console.log(`🧪 TESTING: About to update Frame.io assets to "Accepted" for project ${projectId}`);
+      // Update Frame.io assets status to "Approved"
+      console.log(`🧪 TESTING: About to update Frame.io assets to "Approved" for project ${projectId}`);
       try {
         await frameioV4Service.initialize();
-        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Accepted');
-        console.log(`✅ Frame.io assets updated to "Accepted" for project ${projectId}`);
+        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Approved');
+        console.log(`✅ Frame.io assets updated to "Approved" for project ${projectId}`);
       } catch (frameioError) {
         console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
         // Don't fail the request if Frame.io update fails
