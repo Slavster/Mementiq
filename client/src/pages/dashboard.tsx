@@ -715,19 +715,23 @@ export default function DashboardPage() {
                             className="w-full bg-green-600 hover:bg-green-700 text-white"
                             onClick={async (e) => {
                               e.stopPropagation();
-                              try {
-                                // Use existing share link if available, otherwise open the stored Frame.io review link
-                                if (project.frameioReviewLink) {
-                                  window.open(project.frameioReviewLink, "_blank");
-                                  console.log("Opened existing Frame.io review link:", project.frameioReviewLink);
-                                } else {
-                                  throw new Error("No existing share link found");
-                                }
-                              } catch (error) {
-                                console.error("Error opening existing share link:", error);
+                              // Debug: Log project data to see what share link fields are available
+                              console.log("Project data for download:", project);
+                              
+                              // Try multiple possible share link fields in the project data
+                              const shareLink = project.frameioReviewLink || 
+                                               project.mediaReviewLink ||
+                                               project.shareUrl ||
+                                               project.reviewUrl;
+                              
+                              if (shareLink) {
+                                window.open(shareLink, "_blank");
+                                console.log("Opened existing share link:", shareLink);
+                              } else {
+                                console.log("No share link found in project data, available fields:", Object.keys(project));
                                 toast({
                                   title: "Video unavailable",
-                                  description: "Could not access the final video. The share link may have expired.",
+                                  description: "Could not find the video share link. Please try viewing the video from the previous screen first.",
                                   variant: "destructive",
                                 });
                               }
