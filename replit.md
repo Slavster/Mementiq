@@ -42,9 +42,13 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Fixed mismatch between getUserFolders() and getUserFolder() methods causing incorrect parent selection
   - ✅ Project folders now properly created as siblings to existing projects, not nested within them
 - **IMPROVED INSTRUCTIONS WORKFLOW:**
-  - ✅ Added "Continue to Upload" button when instructions are already provided
+  - ✅ Added "Continue to Confirmation" button positioned on same line as "Back to Upload" button
   - ✅ Users can now proceed to upload step or update existing instructions
   - ✅ Enhanced user experience for returning to projects with existing form submissions
+- **ENHANCED STEP PROGRESS INDICATORS:**
+  - ✅ "Upload Footage" step now shows green checkmark when assets are detected in Frame.io folder
+  - ✅ Visual progress indicator matches completion styling of other workflow steps
+  - ✅ Dynamic status updates based on actual file upload detection
 
 ## System Architecture
 
