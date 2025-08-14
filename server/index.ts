@@ -104,6 +104,13 @@ app.use((req, res, next) => {
       reusePort: true,
     }, () => {
       log(`serving on port ${port}`);
+      
+      // Initialize asset detection service after server starts
+      import('./assetDetectionService.js').then(({ assetDetectionService }) => {
+        assetDetectionService.start();
+      }).catch(error => {
+        console.error('❌ Failed to start asset detection service:', error);
+      });
     });
   } catch (error) {
     console.error('Failed to start server:', error);
