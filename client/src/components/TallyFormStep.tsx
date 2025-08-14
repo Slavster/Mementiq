@@ -213,7 +213,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
 
           <div className="space-y-3">
             <Button
-              onClick={onComplete}
+              onClick={onFormComplete}
               className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white"
               size="lg"
             >
