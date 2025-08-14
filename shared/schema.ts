@@ -26,6 +26,7 @@ export const projects = pgTable("projects", {
   userId: text("user_id").references(() => users.id).notNull(), // Changed to text
   title: text("title").notNull(),
   status: text("status").notNull().default("draft"),
+  submittedToEditorAt: timestamp("submitted_to_editor_at"), // When project was sent to editor (edit in progress)
   mediaFolderId: text("media_folder_id"), // Media platform folder ID (Frame.io, etc.)
   mediaUserFolderId: text("media_user_folder_id"), // User's main folder ID on media platform
   tallyFormUrl: text("tally_form_url"),

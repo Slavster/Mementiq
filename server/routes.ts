@@ -2726,11 +2726,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Update project status
-      const updatedProject = await storage.updateProject(projectId, {
+      // Prepare update object
+      const updateObject: any = {
         status,
         updatedAt: new Date(),
-      });
+      };
+
+      // If changing status to "edit in progress", set submission timestamp
+      if (status === 'edit in progress') {
+        updateObject.submittedToEditorAt = new Date();
+        console.log(`📅 Setting submittedToEditorAt timestamp for project ${projectId}: ${updateObject.submittedToEditorAt.toISOString()}`);
+      }
+
+      // Update project status
+      const updatedProject = await storage.updateProject(projectId, updateObject);
+
+      // Update timestamp tracking for "edit in progress" status
+      if (status === 'edit in progress') {
+        await updateProjectTimestamp(projectId, "project sent to editor");
+      }
 
       res.json({
         success: true,
