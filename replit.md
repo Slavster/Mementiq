@@ -37,6 +37,14 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Using centralized token system exclusively for all API calls
   - ✅ Proper V4 API endpoint: `POST /folders` with `data: {name, parent_id}` structure
   - ✅ Full compliance with Frame.io V4 API specification
+- **FIXED FOLDER HIERARCHY ISSUE:**
+  - ✅ Resolved issue where project folders were being created at wrong nesting level (3 levels deep instead of 2)
+  - ✅ Fixed mismatch between getUserFolders() and getUserFolder() methods causing incorrect parent selection
+  - ✅ Project folders now properly created as siblings to existing projects, not nested within them
+- **IMPROVED INSTRUCTIONS WORKFLOW:**
+  - ✅ Added "Continue to Upload" button when instructions are already provided
+  - ✅ Users can now proceed to upload step or update existing instructions
+  - ✅ Enhanced user experience for returning to projects with existing form submissions
 
 ## System Architecture
 
