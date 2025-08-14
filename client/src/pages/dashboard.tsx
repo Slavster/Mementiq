@@ -715,19 +715,30 @@ export default function DashboardPage() {
                             className="w-full bg-green-600 hover:bg-green-700 text-white"
                             onClick={async (e) => {
                               e.stopPropagation();
-                              // Use the stored Frame.io review link from the project
+                              // Use the stored Frame.io review link from the project  
                               const shareLink = project.frameioReviewLink || project.mediaReviewLink;
                               
                               if (shareLink) {
                                 window.open(shareLink, "_blank");
                                 console.log("Opened existing share link:", shareLink);
                               } else {
-                                console.log("No share link found, project data:", project);
-                                toast({
-                                  title: "Video unavailable",
-                                  description: "No video share link found. Please view the video first to generate a share link.",
-                                  variant: "destructive",
-                                });
+                                // Fallback: Try to get share link via API for older projects
+                                try {
+                                  const data = await apiRequest(`/api/projects/${project.id}/video-share-link`);
+                                  if (data?.shareUrl) {
+                                    window.open(data.shareUrl, "_blank");
+                                    console.log("Opened share link from API:", data.shareUrl);
+                                  } else {
+                                    throw new Error("No share link available");
+                                  }
+                                } catch (error) {
+                                  console.error("Error opening share link:", error);
+                                  toast({
+                                    title: "Video unavailable",
+                                    description: "Could not access the video. Please try viewing the video from the Review screen first.",
+                                    variant: "destructive",
+                                  });
+                                }
                               }
                             }}
                           >
