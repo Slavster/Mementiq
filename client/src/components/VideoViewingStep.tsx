@@ -62,15 +62,22 @@ export function VideoViewingStep({
 
   // Fetch video files for this project
   React.useEffect(() => {
+    let mounted = true;
+    
     const fetchVideoFiles = async () => {
       try {
         const files = await apiRequest(`/api/projects/${project.id}/files`);
+        
+        if (!mounted) return; // Prevent state update if component unmounted
+        
         // Filter for video files only
         const videos = files.filter(
           (file: any) => file.fileType && file.fileType.startsWith("video/"),
         );
         setVideoFiles(videos);
       } catch (error) {
+        if (!mounted) return; // Prevent state update if component unmounted
+        
         console.error("Failed to fetch video files:", error);
         toast({
           title: "Error",
@@ -78,11 +85,17 @@ export function VideoViewingStep({
           variant: "destructive",
         });
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchVideoFiles();
+    
+    return () => {
+      mounted = false; // Cleanup function to prevent memory leaks
+    };
   }, [project.id, toast]);
 
   const handleAcceptVideo = async () => {

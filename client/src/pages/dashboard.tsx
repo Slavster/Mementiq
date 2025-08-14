@@ -59,6 +59,7 @@ import { RevisionModal } from "@/components/RevisionModal";
 import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface User {
   id: number;
@@ -1107,28 +1108,30 @@ export default function DashboardPage() {
                   </Card>
                 </div>
               ) : currentStep === "video-ready" ? (
-                <VideoViewingStep
-                  project={selectedProject}
-                  onBack={() => setCurrentStep("confirmation")}
-                  onVideoAccepted={() => {
-                    queryClient.invalidateQueries({
-                      queryKey: ["/api/projects"],
-                    });
-                    toast({
-                      title: "Video Accepted!",
-                      description:
-                        "Thank you for your feedback. The project is now complete.",
-                    });
-                    setSelectedProject(null);
-                    setCurrentStep("upload");
-                  }}
-                  onRevisionRequested={() => {
-                    queryClient.invalidateQueries({
-                      queryKey: ["/api/projects"],
-                    });
-                    setCurrentStep("confirmation");
-                  }}
-                />
+                <ErrorBoundary>
+                  <VideoViewingStep
+                    project={selectedProject}
+                    onBack={() => setCurrentStep("confirmation")}
+                    onVideoAccepted={() => {
+                      queryClient.invalidateQueries({
+                        queryKey: ["/api/projects"],
+                      });
+                      toast({
+                        title: "Video Accepted!",
+                        description:
+                          "Thank you for your feedback. The project is now complete.",
+                      });
+                      setSelectedProject(null);
+                      setCurrentStep("upload");
+                    }}
+                    onRevisionRequested={() => {
+                      queryClient.invalidateQueries({
+                        queryKey: ["/api/projects"],
+                      });
+                      setCurrentStep("confirmation");
+                    }}
+                  />
+                </ErrorBoundary>
               ) : null}
             </div>
           )}
