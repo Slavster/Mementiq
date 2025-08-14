@@ -4057,19 +4057,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let projectFolderId = null;
         
         try {
-          // Step 1: Get or create user folder
+          // Step 1: Get or create user folder using the CORRECT method
           console.log(`📁 Step 1: Getting/creating user folder for user ${userId}`);
-          const userFolders = await frameioV4Service.getUserFolders(userId);
+          console.log(`🚨🚨🚨 USING getUserFolder() method to ensure correct hierarchy 🚨🚨🚨`);
           
-          if (userFolders && userFolders.length > 0) {
-            userFolderId = userFolders[0].id;
-            console.log(`✅ Found existing user folder: ${userFolderId}`);
-          } else {
-            console.log(`🆕 No user folder found, creating new one...`);
-            const userFolder = await frameioV4Service.createUserFolder(userId);
-            userFolderId = userFolder.id;
-            console.log(`✅ Created new user folder: ${userFolderId}`);
-          }
+          // Use getUserFolder() which properly manages the Mementiq > User structure
+          const userFolder = await frameioV4Service.getUserFolder(userId);
+          userFolderId = userFolder.id;
+          console.log(`✅ User folder ready: ${userFolderId} (${userFolder.name})`);
+          console.log(`🚨🚨🚨 USER FOLDER ID: ${userFolderId} - All project folders MUST be created under this! 🚨🚨🚨`);
 
           // Step 2: Get or create project subfolder within user folder using dynamic discovery
           console.log(`📁 Step 2: Getting/creating project folder for project ${projectId}`);
