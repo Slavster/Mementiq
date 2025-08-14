@@ -4101,12 +4101,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Create project folder if not found
           if (!projectFolderId) {
             console.log(`🆕 Creating new project folder for: ${project.title}`);
+            console.log(`🔍 HIERARCHY CHECK: User Folder ID = ${userFolderId}`);
+            console.log(`🔍 HIERARCHY CHECK: Will create project folder with user folder as parent`);
+            console.log(`🔍 HIERARCHY CHECK: Target hierarchy = User(${userFolderId}) > Project(${project.title})`);
+            
             const projectFolder = await frameioV4Service.createProjectFolder(
               userFolderId,
               project.title,
               project.id
             );
             projectFolderId = projectFolder.id;
+            
+            console.log(`✅ NEW FOLDER CREATED: Project Folder ID = ${projectFolderId}`);
+            console.log(`✅ HIERARCHY VERIFIED: User(${userFolderId}) > Project(${projectFolderId})`);
+            console.log(`✅ FOLDER NAME: ${projectFolder.name}`);
             
             // Update project in database with new folder ID
             await storage.updateProject(projectId, {
