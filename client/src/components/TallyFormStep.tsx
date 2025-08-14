@@ -22,6 +22,7 @@ interface TallyFormStepProps {
   projectId: number;
   userId: string;
   onFormComplete?: () => void;
+  backToUploadButton?: React.ReactNode;
 }
 
 interface TallySubmission {
@@ -43,6 +44,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   projectId,
   userId,
   onFormComplete,
+  backToUploadButton,
 }) => {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [submissionReceived, setSubmissionReceived] = useState(false);
@@ -194,7 +196,9 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   if (hasExistingSubmission && !isFormVisible) {
     return (
       <div className="space-y-4">
-        <div className="flex justify-end">
+        {/* Navigation buttons on same line */}
+        <div className="flex justify-between items-center">
+          {backToUploadButton}
           <Button
             variant="outline"
             onClick={onFormComplete}
