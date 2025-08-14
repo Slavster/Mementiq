@@ -1,19 +1,19 @@
-import React, { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  Upload, 
-  X, 
-  CheckCircle, 
-  AlertCircle, 
-  FileVideo, 
+import React, { useState, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Upload,
+  X,
+  CheckCircle,
+  AlertCircle,
+  FileVideo,
   Trash2,
-  RefreshCw 
-} from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+  RefreshCw,
+} from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface FrameioUploadInterfaceProps {
   project: {
@@ -39,7 +39,7 @@ interface UploadFile {
   file: File;
   id: string;
   progress: number;
-  status: 'pending' | 'uploading' | 'complete' | 'error';
+  status: "pending" | "uploading" | "complete" | "error";
   error?: string;
   frameioId?: string;
 }
@@ -48,37 +48,44 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
 const MAX_FILE_COUNT = 100; // Maximum 100 files per project
 const ALLOWED_TYPES = [
   // Video formats
-  'video/mp4',
-  'video/avi',
-  'video/mov',
-  'video/quicktime',
-  'video/x-msvideo',
-  'video/webm',
-  'video/mkv',
-  'video/x-matroska',
+  "video/mp4",
+  "video/avi",
+  "video/mov",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/webm",
+  "video/mkv",
+  "video/x-matroska",
   // Image formats
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/bmp',
-  'image/webp',
-  'image/tiff',
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/bmp",
+  "image/webp",
+  "image/tiff",
   // Audio formats
-  'audio/mpeg',
-  'audio/mp3',
-  'audio/wav',
-  'audio/aac',
-  'audio/ogg',
-  'audio/flac',
-  'audio/m4a',
-  'audio/x-wav'
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/aac",
+  "audio/ogg",
+  "audio/flac",
+  "audio/m4a",
+  "audio/x-wav",
 ];
 
-export function FrameioUploadInterface({ project, onUploadComplete, onCancel, onProjectStatusChange }: FrameioUploadInterfaceProps) {
+export function FrameioUploadInterface({
+  project,
+  onUploadComplete,
+  onCancel,
+  onProjectStatusChange,
+}: FrameioUploadInterfaceProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [folderSetupStatus, setFolderSetupStatus] = useState<'checking' | 'ready' | 'error'>('checking');
+  const [folderSetupStatus, setFolderSetupStatus] = useState<
+    "checking" | "ready" | "error"
+  >("checking");
   const [totalSize, setTotalSize] = useState(0);
   const [existingFiles, setExistingFiles] = useState<ExistingFile[]>([]);
   const [existingFileCount, setExistingFileCount] = useState(0);
@@ -87,65 +94,71 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
 
   // Format file size for display
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   // Check folder structure on component mount
   React.useEffect(() => {
-    console.log(`🟢 COMPONENT: FrameioUploadInterface mounted for project ${project.id}`);
-    console.log(`🟢 COMPONENT: Initial folder setup status: ${folderSetupStatus}`);
+    console.log(
+      `🟢 COMPONENT: FrameioUploadInterface mounted for project ${project.id}`,
+    );
+    console.log(
+      `🟢 COMPONENT: Initial folder setup status: ${folderSetupStatus}`,
+    );
     checkFolderStructure();
   }, [project.id]);
 
   const checkFolderStructure = async () => {
-    console.log(`🔵 CLIENT: Retry Setup button clicked for project ${project.id}`);
+    console.log(
+      `🔵 CLIENT: Retry Setup button clicked for project ${project.id}`,
+    );
     try {
       console.log(`🔵 CLIENT: Getting Supabase session...`);
       const session = await supabase.auth.getSession();
       if (!session.data.session?.access_token) {
         console.log(`🔴 CLIENT: No access token found`);
-        setFolderSetupStatus('error');
+        setFolderSetupStatus("error");
         return;
       }
       console.log(`🔵 CLIENT: Access token found, making API call...`);
 
       const url = `/api/projects/${project.id}/ensure-folder-structure`;
       console.log(`🔵 CLIENT: Calling ${url}`);
-      
+
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${session.data.session.access_token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.data.session.access_token}`,
+          "Content-Type": "application/json",
         },
       });
 
       console.log(`🔵 CLIENT: Response status: ${response.status}`);
       const result = await response.json();
       console.log(`🔵 CLIENT: Response data:`, result);
-      
+
       if (result.success && result.frameioConfigured) {
         console.log(`🟢 CLIENT: Folder setup successful`);
-        setFolderSetupStatus('ready');
+        setFolderSetupStatus("ready");
         setExistingFiles(result.existingFiles || []);
         setExistingFileCount(result.fileCount || 0);
         setExistingStorageUsed(result.totalStorageUsed || 0);
-        
+
         // Notify parent component that project status may have changed
         if (onProjectStatusChange) {
           onProjectStatusChange();
         }
       } else {
         console.log(`🔴 CLIENT: Folder setup failed:`, result);
-        setFolderSetupStatus('error');
+        setFolderSetupStatus("error");
       }
     } catch (error) {
-      console.error('🔴 CLIENT: Folder structure check failed:', error);
-      setFolderSetupStatus('error');
+      console.error("🔴 CLIENT: Folder structure check failed:", error);
+      setFolderSetupStatus("error");
     }
   };
 
@@ -153,75 +166,79 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
     if (file.size > MAX_FILE_SIZE) {
       return `File too large. Maximum size is ${formatFileSize(MAX_FILE_SIZE)}`;
     }
-    
+
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return 'Invalid file type. Please upload video, image, or audio files only.';
+      return "Invalid file type. Please upload video, image, or audio files only.";
     }
-    
+
     return null;
   };
 
-  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(event.target.files || []);
-    
-    // Check file count limit
-    const totalFileCount = existingFileCount + files.length + selectedFiles.length;
-    if (totalFileCount > MAX_FILE_COUNT) {
-      toast({
-        title: "File limit exceeded",
-        description: `Cannot upload ${selectedFiles.length} files. Project already has ${existingFileCount} files. Maximum allowed: ${MAX_FILE_COUNT} files total.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const newFiles: UploadFile[] = [];
-    let newTotalSize = totalSize;
-    
-    for (const file of selectedFiles) {
-      const validation = validateFile(file);
-      if (validation) {
+  const handleFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(event.target.files || []);
+
+      // Check file count limit
+      const totalFileCount =
+        existingFileCount + files.length + selectedFiles.length;
+      if (totalFileCount > MAX_FILE_COUNT) {
         toast({
-          title: "File validation error",
-          description: `${file.name}: ${validation}`,
+          title: "File limit exceeded",
+          description: `Cannot upload ${selectedFiles.length} files. Project already has ${existingFileCount} files. Maximum allowed: ${MAX_FILE_COUNT} files total.`,
           variant: "destructive",
         });
-        continue;
+        return;
       }
-      
-      if (newTotalSize + file.size > MAX_FILE_SIZE) {
-        toast({
-          title: "Storage limit exceeded",
-          description: `Adding ${file.name} would exceed the ${formatFileSize(MAX_FILE_SIZE)} limit`,
-          variant: "destructive",
+
+      const newFiles: UploadFile[] = [];
+      let newTotalSize = totalSize;
+
+      for (const file of selectedFiles) {
+        const validation = validateFile(file);
+        if (validation) {
+          toast({
+            title: "File validation error",
+            description: `${file.name}: ${validation}`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        if (newTotalSize + file.size > MAX_FILE_SIZE) {
+          toast({
+            title: "Storage limit exceeded",
+            description: `Adding ${file.name} would exceed the ${formatFileSize(MAX_FILE_SIZE)} limit`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        newFiles.push({
+          file,
+          id: `${Date.now()}-${Math.random()}`,
+          progress: 0,
+          status: "pending",
         });
-        continue;
+
+        newTotalSize += file.size;
       }
-      
-      newFiles.push({
-        file,
-        id: `${Date.now()}-${Math.random()}`,
-        progress: 0,
-        status: 'pending'
-      });
-      
-      newTotalSize += file.size;
-    }
-    
-    setFiles(prev => [...prev, ...newFiles]);
-    setTotalSize(newTotalSize);
-    
-    // Clear the input
-    event.target.value = '';
-  }, [totalSize, toast]);
+
+      setFiles((prev) => [...prev, ...newFiles]);
+      setTotalSize(newTotalSize);
+
+      // Clear the input
+      event.target.value = "";
+    },
+    [totalSize, toast],
+  );
 
   const removeFile = (fileId: string) => {
-    setFiles(prev => {
-      const fileToRemove = prev.find(f => f.id === fileId);
+    setFiles((prev) => {
+      const fileToRemove = prev.find((f) => f.id === fileId);
       if (fileToRemove) {
-        setTotalSize(current => current - fileToRemove.file.size);
+        setTotalSize((current) => current - fileToRemove.file.size);
       }
-      return prev.filter(f => f.id !== fileId);
+      return prev.filter((f) => f.id !== fileId);
     });
   };
 
@@ -229,36 +246,40 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
     try {
       const session = await supabase.auth.getSession();
       if (!session.data.session?.access_token) {
-        throw new Error('Authentication required');
+        throw new Error("Authentication required");
       }
 
       // Update file status to uploading
-      setFiles(prev => prev.map(f => 
-        f.id === uploadFile.id 
-          ? { ...f, status: 'uploading' as const, progress: 0 }
-          : f
-      ));
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === uploadFile.id
+            ? { ...f, status: "uploading" as const, progress: 0 }
+            : f,
+        ),
+      );
 
       // Create FormData for file upload
       const formData = new FormData();
-      formData.append('file', uploadFile.file);
-      formData.append('filename', uploadFile.file.name);
-      formData.append('projectId', project.id.toString());
+      formData.append("file", uploadFile.file);
+      formData.append("filename", uploadFile.file.name);
+      formData.append("projectId", project.id.toString());
 
       // Simulate progress updates
       const progressInterval = setInterval(() => {
-        setFiles(prev => prev.map(f => 
-          f.id === uploadFile.id && f.status === 'uploading'
-            ? { ...f, progress: Math.min(f.progress + 10, 90) }
-            : f
-        ));
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === uploadFile.id && f.status === "uploading"
+              ? { ...f, progress: Math.min(f.progress + 10, 90) }
+              : f,
+          ),
+        );
       }, 200);
 
       // Upload to Frame.io via our backend
-      const response = await fetch('/api/upload/frameio', {
-        method: 'POST',
+      const response = await fetch("/api/upload/frameio", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${session.data.session.access_token}`,
+          Authorization: `Bearer ${session.data.session.access_token}`,
         },
         body: formData,
       });
@@ -267,38 +288,42 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Upload failed');
+        throw new Error(errorData.message || "Upload failed");
       }
 
       const result = await response.json();
-      
+
       // Update file status to complete
-      setFiles(prev => prev.map(f => 
-        f.id === uploadFile.id 
-          ? { 
-              ...f, 
-              status: 'complete' as const, 
-              progress: 100,
-              frameioId: result.frameioId 
-            }
-          : f
-      ));
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === uploadFile.id
+            ? {
+                ...f,
+                status: "complete" as const,
+                progress: 100,
+                frameioId: result.frameioId,
+              }
+            : f,
+        ),
+      );
 
       return result;
     } catch (error) {
-      console.error('Upload error:', error);
-      
+      console.error("Upload error:", error);
+
       // Update file status to error
-      setFiles(prev => prev.map(f => 
-        f.id === uploadFile.id 
-          ? { 
-              ...f, 
-              status: 'error' as const, 
-              error: error instanceof Error ? error.message : 'Upload failed'
-            }
-          : f
-      ));
-      
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === uploadFile.id
+            ? {
+                ...f,
+                status: "error" as const,
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
+            : f,
+        ),
+      );
+
       throw error;
     }
   };
@@ -314,12 +339,12 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
     }
 
     setIsUploading(true);
-    
+
     try {
-      const pendingFiles = files.filter(f => f.status === 'pending');
+      const pendingFiles = files.filter((f) => f.status === "pending");
       let successCount = 0;
       let errorCount = 0;
-      
+
       // Upload files sequentially to avoid overwhelming the server
       for (const file of pendingFiles) {
         try {
@@ -331,13 +356,13 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
           // Continue with next file even if one fails
         }
       }
-      
+
       if (successCount > 0) {
         toast({
           title: "Upload complete",
-          description: `Successfully uploaded ${successCount} file(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+          description: `Successfully uploaded ${successCount} file(s)${errorCount > 0 ? `, ${errorCount} failed` : ""}`,
         });
-        
+
         // If at least some files uploaded successfully, proceed
         if (successCount === pendingFiles.length) {
           setTimeout(onUploadComplete, 1000);
@@ -345,11 +370,11 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
       } else {
         toast({
           title: "Upload failed",
-          description: "All files failed to upload. Please check your files and try again.",
+          description:
+            "All files failed to upload. Please check your files and try again.",
           variant: "destructive",
         });
       }
-      
     } catch (error) {
       toast({
         title: "Upload error",
@@ -361,8 +386,10 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
     }
   };
 
-  if (folderSetupStatus === 'checking') {
-    console.log(`🟡 UI: Showing "Setting up video project" screen for project ${project.id}`);
+  if (folderSetupStatus === "checking") {
+    console.log(
+      `🟡 UI: Showing "Setting up video project" screen for project ${project.id}`,
+    );
     return (
       <Card className="bg-yellow-500/10 border-yellow-500/30">
         <CardContent className="p-6 text-center">
@@ -378,8 +405,10 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
     );
   }
 
-  if (folderSetupStatus === 'error') {
-    console.log(`🔴 UI: Showing "Setup Error" screen for project ${project.id}`);
+  if (folderSetupStatus === "error") {
+    console.log(
+      `🔴 UI: Showing "Setup Error" screen for project ${project.id}`,
+    );
     return (
       <Card className="bg-red-500/10 border-red-500/30">
         <CardContent className="p-6 text-center">
@@ -414,7 +443,9 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
             Project Sent to Editor
           </h3>
           <p className="text-gray-400 mb-4">
-            This project has already been sent to the editor and no additional footage can be uploaded. You can only edit the project instructions at this point.
+            This project has already been sent to the editor and no additional
+            footage can be uploaded. You can only edit the project instructions
+            at this point.
           </p>
           <Button variant="ghost" onClick={onCancel}>
             Close
@@ -448,8 +479,10 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
                 {formatFileSize(existingStorageUsed + totalSize)} total
               </span>
             </div>
-            <Progress 
-              value={((existingFileCount + files.length) / MAX_FILE_COUNT) * 100} 
+            <Progress
+              value={
+                ((existingFileCount + files.length) / MAX_FILE_COUNT) * 100
+              }
               className="h-2"
             />
           </div>
@@ -457,7 +490,9 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
           {/* Existing files */}
           {existingFiles.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-white font-medium">Existing Files ({existingFiles.length})</h4>
+              <h4 className="text-white font-medium">
+                Existing Files ({existingFiles.length})
+              </h4>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {existingFiles.map((file) => (
                   <div
@@ -466,11 +501,10 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
                   >
                     <FileVideo className="h-5 w-5 text-green-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm truncate">
-                        {file.name}
-                      </p>
+                      <p className="text-white text-sm truncate">{file.name}</p>
                       <p className="text-gray-400 text-xs">
-                        {formatFileSize(file.filesize || file.file_size || 0)} • Uploaded
+                        {formatFileSize(file.filesize || file.file_size || 0)} •
+                        Uploaded
                       </p>
                     </div>
                     <CheckCircle className="h-4 w-4 text-green-400" />
@@ -497,10 +531,12 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
             >
               <Upload className="h-8 w-8 text-gray-400" />
               <span className="text-white font-medium">
-                Choose video, image, or audio files and drag them here
+                Click here to choose video, image, or audio files. You can also
+                drag them here instead.
               </span>
               <span className="text-sm text-gray-400">
-                Supports MP4, AVI, MOV, JPG, PNG, MP3, WAV and other formats (max {formatFileSize(MAX_FILE_SIZE)} per file)
+                Supports MP4, AVI, MOV, JPG, PNG, MP3, WAV and other formats
+                (max {formatFileSize(MAX_FILE_SIZE)} per file)
               </span>
               <span className="text-xs text-yellow-400">
                 {existingFileCount + files.length} / {MAX_FILE_COUNT} files used
@@ -511,7 +547,9 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
           {/* New files to upload */}
           {files.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-white font-medium">New Files to Upload ({files.length})</h4>
+              <h4 className="text-white font-medium">
+                New Files to Upload ({files.length})
+              </h4>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {files.map((file) => (
                   <div
@@ -526,21 +564,23 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
                       <p className="text-gray-400 text-xs">
                         {formatFileSize(file.file.size)}
                       </p>
-                      {file.status === 'uploading' && (
+                      {file.status === "uploading" && (
                         <Progress value={file.progress} className="h-1 mt-1" />
                       )}
-                      {file.status === 'error' && (
-                        <p className="text-red-400 text-xs mt-1">{file.error}</p>
+                      {file.status === "error" && (
+                        <p className="text-red-400 text-xs mt-1">
+                          {file.error}
+                        </p>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      {file.status === 'complete' && (
+                      {file.status === "complete" && (
                         <CheckCircle className="h-4 w-4 text-green-400" />
                       )}
-                      {file.status === 'error' && (
+                      {file.status === "error" && (
                         <AlertCircle className="h-4 w-4 text-red-400" />
                       )}
-                      {file.status === 'pending' && !isUploading && (
+                      {file.status === "pending" && !isUploading && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -570,12 +610,16 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
                 Continue to Next Step
               </Button>
             )}
-            
+
             {/* Upload button for new files */}
             <Button
               onClick={startUpload}
-              disabled={files.length === 0 || isUploading || files.every(f => f.status === 'complete')}
-              className={`${existingFiles.length > 0 ? 'flex-none' : 'flex-1'} bg-cyan-600 hover:bg-cyan-700`}
+              disabled={
+                files.length === 0 ||
+                isUploading ||
+                files.every((f) => f.status === "complete")
+              }
+              className={`${existingFiles.length > 0 ? "flex-none" : "flex-1"} bg-cyan-600 hover:bg-cyan-700`}
             >
               {isUploading ? (
                 <>
@@ -585,11 +629,13 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  {existingFiles.length > 0 ? 'Upload More Files' : 'Upload Files'}
+                  {existingFiles.length > 0
+                    ? "Upload More Files"
+                    : "Upload Files"}
                 </>
               )}
             </Button>
-            
+
             <Button variant="outline" onClick={onCancel} disabled={isUploading}>
               Cancel
             </Button>
@@ -600,16 +646,19 @@ export function FrameioUploadInterface({ project, onUploadComplete, onCancel, on
             <Alert className="bg-cyan-500/10 border-cyan-500/30">
               <CheckCircle className="h-4 w-4 text-cyan-400" />
               <AlertDescription className="text-cyan-400">
-                Your project already has {existingFiles.length} uploaded file{existingFiles.length > 1 ? 's' : ''}. You can continue to the next step or upload additional files.
+                Your project already has {existingFiles.length} uploaded file
+                {existingFiles.length > 1 ? "s" : ""}. You can continue to the
+                next step or upload additional files.
               </AlertDescription>
             </Alert>
           )}
-          
-          {files.some(f => f.status === 'complete') && (
+
+          {files.some((f) => f.status === "complete") && (
             <Alert className="bg-green-500/10 border-green-500/30">
               <CheckCircle className="h-4 w-4 text-green-400" />
               <AlertDescription className="text-green-400">
-                New files uploaded successfully! Click "Continue to Next Step" to proceed.
+                New files uploaded successfully! Click "Continue to Next Step"
+                to proceed.
               </AlertDescription>
             </Alert>
           )}

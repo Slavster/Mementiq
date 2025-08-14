@@ -211,14 +211,26 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
             </AlertDescription>
           </Alert>
 
-          <Button
-            onClick={() => setIsFormVisible(true)}
-            className="w-full flex items-center justify-center gap-2 bg-[#2abdee] hover:bg-cyan-600 text-white"
-            size="lg"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Update Instructions
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={onComplete}
+              className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+              size="lg"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Continue to Upload
+            </Button>
+            
+            <Button
+              onClick={() => setIsFormVisible(true)}
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2"
+              size="lg"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Update Instructions
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
