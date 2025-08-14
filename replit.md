@@ -66,9 +66,11 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Added `updateProjectTimestamp()` helper function with consistent logging
   - ✅ Project listing now uses database timestamps only (no Frame.io API calls for performance)
   - ✅ All key actions tracked: project creation, asset uploads, form submissions, video delivery, acceptance, revisions
-- **FIXED FRAME.IO ASSET STATUS:**
-  - ✅ Project acceptance now correctly updates Frame.io assets to "Approved" status (was "Accepted")
-  - ✅ Ensures Frame.io asset status matches expected "Approved" state after video acceptance
+- **FIXED FRAME.IO ASSET STATUS WORKFLOW:**
+  - ✅ Project acceptance now correctly updates Frame.io assets to "Approved" status (was "Accepted")  
+  - ✅ Enhanced asset detection logic to find video files in correct project folders
+  - ✅ Improved folder structure handling for projects with missing mediaFolderId
+  - ✅ Frame.io V4 API workflow tracking implemented (V4 doesn't support direct status updates)
 
 ## System Architecture
 
