@@ -892,8 +892,17 @@ export default function DashboardPage() {
                             }
                           }}
                         >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Manage & Upload Footage
+                          {project.status.toLowerCase() === "video is ready" ? (
+                            <>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Review Video
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Manage & Upload Footage
+                            </>
+                          )}
                         </Button>
                       )}
                     </div>
