@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -177,6 +177,9 @@ export default function DashboardPage() {
   const [revisionConfirmationOpen, setRevisionConfirmationOpen] = useState(false);
   const [revisionSessionId, setRevisionSessionId] = useState<string | null>(null);
   
+  // Track if URL parameters have been processed to prevent premature cleanup
+  const hasProcessedParams = useRef(false);
+  
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects - always fetch fresh data to show latest updates
@@ -267,9 +270,14 @@ export default function DashboardPage() {
         return; // Don't clean URL yet, let it retry when projectsData loads
       }
       
-      // Clean up URL parameters
-      window.history.replaceState({}, "", "/dashboard");
-      console.log("🧹 URL parameters cleaned up");
+      // Mark parameters as processed
+      hasProcessedParams.current = true;
+      
+      // Clean up URL parameters after a short delay to ensure modal opens
+      setTimeout(() => {
+        window.history.replaceState({}, "", "/dashboard");
+        console.log("🧹 URL parameters cleaned up after modal opened");
+      }, 1000);
     } else if (revisionPayment === "cancelled") {
       console.log("❌ Revision payment cancelled detected");
       toast({
