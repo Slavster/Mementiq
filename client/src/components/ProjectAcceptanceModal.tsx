@@ -55,17 +55,50 @@ export function ProjectAcceptanceModal({
         },
       );
       console.log("Revision payment response:", response);
-      return response;
+      
+      // Parse response if it's not already parsed
+      let data = response;
+      if (typeof response === 'string') {
+        try {
+          data = JSON.parse(response);
+        } catch (e) {
+          console.error("Failed to parse response:", e);
+          throw new Error("Invalid response format");
+        }
+      }
+      
+      return data;
     },
     onSuccess: (data) => {
+      console.log("Revision payment mutation success:", data);
       if (data.success && data.sessionUrl) {
         // Redirect to Stripe checkout
         window.location.href = data.sessionUrl;
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to create checkout session",
+          variant: "destructive",
+        });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating revision payment session:", error);
-      // You could add a toast notification here if you want to show the error to the user
+      
+      // Show user-friendly error message
+      let errorMessage = "Failed to create revision payment session";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Revision Request Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
 
@@ -316,48 +349,50 @@ export function ProjectAcceptanceModal({
               </CardContent>
             </Card>
 
-            {/* Request Revision Card */}
-            <Card className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border-2 border-orange-700/50 rounded-xl flex flex-col">
-              <CardContent className="p-6 text-center flex-1 flex flex-col">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Plus className="h-6 w-6 text-orange-400" />
-                  <h3 className="text-lg font-bold text-white">
-                    Request Revision
-                  </h3>
-                </div>
-                <p className="text-gray-300 text-sm mb-4">
-                  Need changes? Request revisions with detailed feedback.
-                </p>
-                <div className="text-2xl font-bold text-orange-400 mb-1">
-                  $5
-                </div>
-                <p className="text-xs text-gray-400 mb-4">
-                  per revision request
-                </p>
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-center text-sm text-gray-300">
-                    <Check className="h-4 w-4 text-orange-400 mr-2" />
-                    Minor tweaks & adjustments
+            {/* Request Revision Card - Only show for eligible statuses */}
+            {["video is ready", "delivered", "complete"].includes(project.status.toLowerCase()) && (
+              <Card className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border-2 border-orange-700/50 rounded-xl flex flex-col">
+                <CardContent className="p-6 text-center flex-1 flex flex-col">
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <Plus className="h-6 w-6 text-orange-400" />
+                    <h3 className="text-lg font-bold text-white">
+                      Request Revision
+                    </h3>
                   </div>
-                  <div className="flex items-center justify-center text-sm text-gray-300">
-                    <Check className="h-4 w-4 text-orange-400 mr-2" />
-                    48-hour turnaround
+                  <p className="text-gray-300 text-sm mb-4">
+                    Need changes? Request revisions with detailed feedback.
+                  </p>
+                  <div className="text-2xl font-bold text-orange-400 mb-1">
+                    $5
                   </div>
-                </div>
-                <div className="mt-auto">
-                  <Button
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3"
-                    onClick={() => revisionPaymentMutation.mutate(project.id)}
-                    disabled={revisionPaymentMutation.isPending}
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    {revisionPaymentMutation.isPending
-                      ? "Processing..."
-                      : "Request Paid Revision"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <p className="text-xs text-gray-400 mb-4">
+                    per revision request
+                  </p>
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-center text-sm text-gray-300">
+                      <Check className="h-4 w-4 text-orange-400 mr-2" />
+                      Minor tweaks & adjustments
+                    </div>
+                    <div className="flex items-center justify-center text-sm text-gray-300">
+                      <Check className="h-4 w-4 text-orange-400 mr-2" />
+                      48-hour turnaround
+                    </div>
+                  </div>
+                  <div className="mt-auto">
+                    <Button
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3"
+                      onClick={() => revisionPaymentMutation.mutate(project.id)}
+                      disabled={revisionPaymentMutation.isPending}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      {revisionPaymentMutation.isPending
+                        ? "Processing..."
+                        : "Request Paid Revision"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </DialogContent>
