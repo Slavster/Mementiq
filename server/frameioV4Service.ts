@@ -1114,135 +1114,39 @@ export class FrameioV4Service {
       console.log(`=== Frame.io V4 Share Creation ===`);
       console.log(`Asset ID: ${assetId}, Name: ${name}`);
 
-      console.log(`🔧 Getting account ID...`);
-      const accountId = await this.getAccountId();
-      console.log(`🔧 Account ID retrieved: ${accountId}`);
-      const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
-      console.log(`🔧 Project ID set: ${projectId}`);
+      // Use the review_links API endpoint which properly returns f.io short URLs
+      // This is what worked for Test 9 and is the correct V4 API for public shares
+      console.log(`📊 Creating V4 Asset Review Link (public share) for asset ${assetId}`);
+      
+      const shareData = await this.makeRequest('POST', `/assets/${assetId}/review_links`, {
+        name: name || 'Video Share',
+        allow_approvals: false,  // Not needed for viewing
+        allow_comments: enableComments,  // User preference
+        allow_download: true  // Always allow downloads
+      });
 
-      // Step 1: Check if asset is already in an existing share
-      console.log(`🔍 STARTING SHARE SEARCH for asset ${assetId}...`);
-      try {
-        const existingShare = await this.findExistingShareForAsset(accountId, projectId, assetId);
-        console.log(`🔍 SHARE SEARCH COMPLETED - Result:`, existingShare ? 'FOUND' : 'NOT FOUND');
-
-        if (existingShare) {
-          console.log(`✅ REUSING existing share: ${existingShare.id} with URL: ${existingShare.url}`);
-          return existingShare;
-        }
-
-        console.log(`❌ No existing share found for asset ${assetId}, creating new share...`);
-      } catch (searchError) {
-        console.error(`❌ SHARE SEARCH FAILED:`, searchError.message);
-        console.log(`Proceeding with new share creation...`);
-      }
-
-      // Based on Frame.io V4 documentation, try creating share without discriminator first
-      console.log('Creating share with minimal data...');
-
-      // Step 1: Create empty share first (Frame.io V4 may not accept name during creation)
-      let shareCreateResponse;
-      let shareId;
-
-      // Frame.io V4 requires correct schema with discriminator type "asset"
-      console.log('Creating Frame.io V4 share with correct schema...');
-      const expirationDate = new Date();
-      expirationDate.setDate(expirationDate.getDate() + 30); // 30 days from now
-
-      const shareRequestBody = {
-        data: {
-          type: "asset",
-          asset_ids: [assetId],
-          access: "public",
-          name: `Share for ${assetId}`,
-          expiration: expirationDate.toISOString(),
-          allow_comments: true,  // Always enable comments per user preference
-          allow_downloads: true             // ENABLE downloads
-        }
-      };
-
-      shareCreateResponse = await this.makeRequest(
-        'POST',
-        `/accounts/${accountId}/projects/${projectId}/shares`,
-        shareRequestBody
-      );
-
-      shareId = shareCreateResponse?.data?.id || shareCreateResponse?.id;
-
-      if (!shareId) {
-        throw new Error('No share ID returned from any creation method');
-      }
-
-      console.log(`✅ Share created with ID: ${shareId}`);
-
-      // Step 2: Add the asset to the share (Frame.io V4 expects single asset_id in data object)
-      console.log('Adding asset to share...');
-      try {
-        await this.makeRequest(
-          'POST',
-          `/accounts/${accountId}/shares/${shareId}/assets`,
-          { 
-            data: {
-              asset_id: assetId
-            }
-          }
-        );
-        console.log(`✅ Asset ${assetId} added to share`);
-      } catch (assetError) {
-        console.log(`Asset addition failed: ${assetError.message}, continuing...`);
-      }
-
-      // Step 3: Update share description (Frame.io V4 UpdateShareParams only supports basic fields)
-      console.log('Setting share description...');
-      try {
-        await this.makeRequest(
-          'PATCH',
-          `/accounts/${accountId}/shares/${shareId}`,
-          {
-            data: {
-              description: `Public share with downloads and comments enabled, expires in 30 days`
-            }
-          }
-        );
-        console.log(`✅ Share description updated`);
-      } catch (patchError) {
-        console.log(`Share description update failed: ${patchError.message}, continuing...`);
-      }
-
-      // Step 4: Get final share details
-      console.log('Fetching final share details...');
-      const finalShare = await this.makeRequest('GET', `/accounts/${accountId}/shares/${shareId}`);
-
-      // Extract public URL from Frame.io V4 response (prioritize short_url which is the actual public access URL)
-      const publicUrl = finalShare?.data?.short_url || 
-                       finalShare?.data?.public_url || 
-                       finalShare?.data?.url || 
-                       finalShare?.data?.share_url ||
-                       finalShare?.data?.link ||
-                       finalShare?.public_url ||
-                       finalShare?.url ||
-                       `https://share.frame.io/${shareId}`;
-
-      console.log(`✅ Public share URL: ${publicUrl}`);
-
+      console.log(`✅ V4 Asset review link created successfully`);
+      console.log(`📊 Share ID: ${shareData.id}`);
+      console.log(`📊 Short URL: ${shareData.short_url}`);
+      
+      // Return the proper f.io short URL
       return {
-        url: publicUrl,
-        id: shareId
+        url: shareData.short_url || `https://f.io/${shareData.id}`,
+        id: shareData.id
       };
 
     } catch (error) {
       console.error(`🚨 MAJOR ERROR IN createAssetShareLink:`, error);
       console.error(`🚨 Error message:`, error.message);
-      console.error(`🚨 Error stack:`, error.stack);
+      
+      // Try to extract useful error info
+      if (error.response) {
+        console.error(`🚨 Response status:`, error.response.status);
+        console.error(`🚨 Response data:`, JSON.stringify(error.response.data));
+      }
 
-      // Return Frame.io project view URL as fallback (this is the correct format)
-      const fallbackUrl = `https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/${assetId}`;
-      console.log(`Using fallback URL: ${fallbackUrl}`);
-
-      return {
-        url: fallbackUrl,
-        id: 'fallback'
-      };
+      // Don't return a fallback URL - throw the error so we can handle it properly
+      throw error;
     }
   }
 
