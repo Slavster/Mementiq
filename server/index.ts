@@ -45,6 +45,13 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
+  // Debug logging for dashboard requests with query parameters
+  if (path === '/dashboard' && req.query && Object.keys(req.query).length > 0) {
+    console.log(`🔍 Dashboard request with query params: ${req.url}`);
+    console.log('Query params:', req.query);
+    console.log('Headers:', req.headers);
+  }
+
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
@@ -53,6 +60,15 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
+    
+    // Log all dashboard requests
+    if (path === '/dashboard') {
+      console.log(`🏠 Dashboard ${req.method} ${req.url} ${res.statusCode} in ${duration}ms`);
+      if (res.statusCode >= 400) {
+        console.log('❌ Dashboard error response:', capturedJsonResponse);
+      }
+    }
+    
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
