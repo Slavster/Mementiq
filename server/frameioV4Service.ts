@@ -1125,11 +1125,12 @@ export class FrameioV4Service {
       // Step 1: Create the share with proper type discriminator
       const shareRequestBody = {
         data: {
-          type: 'folder',  // Required discriminator for V4 API
+          type: 'asset',  // Required discriminator for V4 API (must be 'asset' not 'folder')
           name: name || 'Video Share',
           access: 'public',  // Public share that doesn't require login
           allow_comments: enableComments,
-          allow_downloads: true
+          allow_downloads: true,
+          asset_ids: [assetId]  // Include the asset ID directly in the creation
         }
       };
       
