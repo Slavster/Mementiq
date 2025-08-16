@@ -158,6 +158,7 @@ export function VideoViewingStep({
       if (data.success && data.sessionUrl) {
         // Redirect to Stripe checkout
         console.log("Redirecting to Stripe checkout:", data.sessionUrl);
+        console.log("Expected success URL will be:", `${window.location.origin}/dashboard?revision_payment=success&session_id=[SESSION_ID]&project_id=${project.id}`);
         window.location.href = data.sessionUrl;
       } else {
         throw new Error(data.message || "Failed to create checkout session");
