@@ -1336,6 +1336,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Verify revision payment success and get project details
+  app.get("/api/stripe/verify-revision-payment/:sessionId", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user!.id;
+
+      // Get revision payment record
+      const payment = await storage.getRevisionPayment(sessionId);
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: "Payment session not found"
+        });
+      }
+
+      // Verify this payment belongs to the current user
+      if (payment.userId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied"
+        });
+      }
+
+      // Get the project details
+      const project = await storage.getProject(payment.projectId);
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found"
+        });
+      }
+
+      // Get the Stripe session to verify payment status
+      const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      res.json({
+        success: true,
+        payment: {
+          status: payment.paymentStatus,
+          amount: payment.paymentAmount,
+          currency: payment.currency,
+          stripeStatus: stripeSession.payment_status
+        },
+        project: {
+          id: project.id,
+          title: project.title,
+          status: project.status,
+          frameioReviewLink: project.frameioReviewLink
+        }
+      });
+    } catch (error) {
+      console.error("Error verifying revision payment:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to verify payment"
+      });
+    }
+  });
+
   // Legacy endpoint for backward compatibility  
   app.get("/api/projects/:id/video-stream/:assetId", requireAuth, async (req, res) => {
     try {

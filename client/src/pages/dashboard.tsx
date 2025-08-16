@@ -56,6 +56,7 @@ import {
 import TallyFormStep from "@/components/TallyFormStep";
 import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
 import { RevisionModal } from "@/components/RevisionModal";
+import { RevisionConfirmationModal } from "@/components/RevisionConfirmationModal";
 import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
@@ -171,23 +172,26 @@ export default function DashboardPage() {
   const [pendingProject, setPendingProject] = useState<Project | null>(null);
   const [sendToEditorConfirmationStep, setSendToEditorConfirmationStep] =
     useState<1 | 2>(1);
+  
+  // Revision Confirmation Modal state
+  const [revisionConfirmationOpen, setRevisionConfirmationOpen] = useState(false);
+  const [revisionSessionId, setRevisionSessionId] = useState<string | null>(null);
+  
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Handle revision payment success/failure from URL parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const revisionPayment = urlParams.get("revision_payment");
+    const sessionId = urlParams.get("session_id");
 
-    if (revisionPayment === "success") {
-      toast({
-        title: "Revision Payment Successful",
-        description:
-          "Your revision request has been submitted. We'll start working on it right away!",
-      });
+    if (revisionPayment === "success" && sessionId) {
+      // Open revision confirmation modal with session ID for payment verification
+      setRevisionSessionId(sessionId);
+      setRevisionConfirmationOpen(true);
+      
       // Clean up URL parameters
       window.history.replaceState({}, "", "/dashboard");
-      // Refresh project data to show updated status
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     } else if (revisionPayment === "cancelled") {
       toast({
         title: "Revision Payment Cancelled",
@@ -198,7 +202,7 @@ export default function DashboardPage() {
       // Clean up URL parameters
       window.history.replaceState({}, "", "/dashboard");
     }
-  }, [toast, queryClient]);
+  }, [toast]);
 
   // Get user projects - always fetch fresh data to show latest updates
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
@@ -329,6 +333,16 @@ export default function DashboardPage() {
       });
     },
   });
+
+  // Handle revision submission completion
+  const handleRevisionSubmitted = () => {
+    // Refresh project data to show updated status
+    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    
+    // Close the modal
+    setRevisionConfirmationOpen(false);
+    setRevisionSessionId(null);
+  };
 
   // Helper function to check if user can create projects
   const canCreateProject = () => {
@@ -1313,6 +1327,14 @@ export default function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Revision Confirmation Modal */}
+      <RevisionConfirmationModal
+        open={revisionConfirmationOpen}
+        onOpenChange={setRevisionConfirmationOpen}
+        sessionId={revisionSessionId}
+        onRevisionSubmitted={handleRevisionSubmitted}
+      />
     </div>
   );
 }
