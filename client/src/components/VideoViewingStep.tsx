@@ -132,22 +132,50 @@ export function VideoViewingStep({
   const handleRequestRevision = async () => {
     setIsRequestingRevision(true);
     try {
-      await apiRequest(`/api/projects/${project.id}/request-revision`, {
-        method: "POST",
-      });
-
+      console.log("Creating Stripe checkout session for revision payment");
+      
+      const response = await apiRequest(
+        "POST",
+        "/api/stripe/create-revision-session",
+        {
+          projectId: project.id,
+        },
+      );
+      
+      console.log("Stripe revision payment response:", response);
+      
+      // Parse response if it's not already parsed
+      let data = response;
+      if (typeof response === 'string') {
+        try {
+          data = JSON.parse(response);
+        } catch (e) {
+          console.error("Failed to parse response:", e);
+          throw new Error("Invalid response format");
+        }
+      }
+      
+      if (data.success && data.sessionUrl) {
+        // Redirect to Stripe checkout
+        console.log("Redirecting to Stripe checkout:", data.sessionUrl);
+        window.location.href = data.sessionUrl;
+      } else {
+        throw new Error(data.message || "Failed to create checkout session");
+      }
+    } catch (error: any) {
+      console.error("Failed to create revision payment session:", error);
+      
+      let errorMessage = "Failed to create revision payment session";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Revision Requested",
-        description:
-          "The editor has been notified about your revision request.",
-      });
-
-      onRevisionRequested();
-    } catch (error) {
-      console.error("Failed to request revision:", error);
-      toast({
-        title: "Error",
-        description: "Could not request revision. Please try again.",
+        title: "Revision Request Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
