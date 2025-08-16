@@ -2568,7 +2568,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ Stripe session created successfully:");
       console.log("- Session ID:", session.id);
       console.log("- Session URL:", session.url);
-      console.log("- Success URL will be:", `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id=${session.id}&project_id=${numericProjectId}`);
+      console.log("- Success URL template:", `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`);
+      console.log("- Actual success URL will replace {CHECKOUT_SESSION_ID} with:", session.id);
       
       res.json({
         success: true,
@@ -2585,12 +2586,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test endpoint to verify redirect mechanics
-  app.get("/api/test-redirect/:projectId", (req, res) => {
+  // Test endpoint to verify redirect mechanics - simulates Stripe return
+  app.get("/api/test-stripe-return/:projectId", (req, res) => {
     const projectId = req.params.projectId;
-    const testUrl = `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id=cs_test_fake_${Date.now()}&project_id=${projectId}`;
-    console.log("🧪 Test redirect URL:", testUrl);
-    res.redirect(testUrl);
+    const testSessionId = `cs_test_fake_${Date.now()}`;
+    const testUrl = `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id=${testSessionId}&project_id=${projectId}`;
+    console.log("🧪 Simulating Stripe return redirect to:", testUrl);
+    res.redirect(302, testUrl);
+  });
+
+  // Test endpoint to check URL parameter processing
+  app.get("/api/test-url-params", (req, res) => {
+    const url = `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id=cs_test_manual&project_id=16`;
+    res.send(`
+      <html>
+        <head>
+          <title>Test Stripe Return Flow</title>
+        </head>
+        <body>
+          <h2>🧪 Debug: Test Stripe Return Flow</h2>
+          <p>This simulates what happens when Stripe redirects users back to our site:</p>
+          <div style="margin: 20px 0; padding: 15px; background: #f0f8ff; border: 1px solid #0066cc;">
+            <h3>Manual Test URL:</h3>
+            <a href="${url}" target="_blank" style="color: blue; text-decoration: underline;">${url}</a>
+          </div>
+          
+          <div style="margin: 20px 0; padding: 15px; background: #fff0f0; border: 1px solid #cc0000;">
+            <h3>Auto-redirect Test (5 seconds):</h3>
+            <p id="countdown">Redirecting in 5 seconds...</p>
+            <button onclick="clearTimeout(redirectTimer); document.getElementById('countdown').innerHTML = 'Auto-redirect cancelled';">Cancel</button>
+          </div>
+          
+          <div style="margin: 20px 0; padding: 15px; background: #f0fff0; border: 1px solid #00cc00;">
+            <h3>Expected behavior:</h3>
+            <ul>
+              <li>✅ Dashboard should load with URL parameters</li>
+              <li>✅ Console should show debug logs starting with "🔄 Dashboard useEffect triggered"</li>
+              <li>✅ RevisionConfirmationModal should open automatically</li>
+              <li>✅ URL should be cleaned to just "/dashboard"</li>
+            </ul>
+          </div>
+          
+          <script>
+            console.log("🧪 Test page loaded - preparing to test Stripe return flow");
+            let countdown = 5;
+            const redirectTimer = setInterval(() => {
+              countdown--;
+              document.getElementById('countdown').innerHTML = 'Redirecting in ' + countdown + ' seconds...';
+              if (countdown <= 0) {
+                clearInterval(redirectTimer);
+                console.log("🚀 Auto-redirecting to test URL:", "${url}");
+                window.location.href = "${url}";
+              }
+            }, 1000);
+          </script>
+        </body>
+      </html>
+    `);
   });
 
   // Generate media platform review link and start revision process

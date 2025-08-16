@@ -189,18 +189,37 @@ export default function DashboardPage() {
 
   // Handle revision payment success/failure from URL parameters
   useEffect(() => {
+    console.log("🔄 Dashboard useEffect triggered");
+    console.log("📍 Current URL:", window.location.href);
+    console.log("🔍 URL search params:", window.location.search);
+    
     const urlParams = new URLSearchParams(window.location.search);
     const revisionPayment = urlParams.get("revision_payment");
     const sessionId = urlParams.get("session_id");
     const projectId = urlParams.get("project_id");
 
-    console.log("🔍 Dashboard URL params check:", { revisionPayment, sessionId, projectId });
-    console.log("📊 Projects data available:", !!projectsData, projectsData);
+    console.log("🔍 Dashboard URL params extracted:", { 
+      revisionPayment, 
+      sessionId: sessionId ? `${sessionId.substring(0, 20)}...` : null, 
+      projectId 
+    });
+    console.log("📊 Projects data state:", { 
+      hasData: !!projectsData, 
+      isLoading: projectsLoading,
+      dataKeys: projectsData ? Object.keys(projectsData) : null
+    });
+
+    // Always log what we're checking for
+    console.log("🎯 Checking conditions:");
+    console.log("- revisionPayment === 'success':", revisionPayment === "success");
+    console.log("- sessionId exists:", !!sessionId);
+    console.log("- Combined condition:", revisionPayment === "success" && sessionId);
 
     if (revisionPayment === "success" && sessionId) {
-      console.log("✅ Revision payment success detected, opening confirmation modal");
+      console.log("✅ REVISION PAYMENT SUCCESS DETECTED!");
       
       // Open revision confirmation modal with session ID for payment verification
+      console.log("🚀 Setting revision session ID and opening modal");
       setRevisionSessionId(sessionId);
       setRevisionConfirmationOpen(true);
       
@@ -209,7 +228,7 @@ export default function DashboardPage() {
         const targetProject = (projectsData as any).projects.find(
           (p: Project) => p.id === parseInt(projectId)
         );
-        console.log("🎯 Target project found:", targetProject);
+        console.log("🎯 Target project search result:", targetProject);
         if (targetProject) {
           setSelectedProject(targetProject);
           setCurrentStep("video-ready"); // Set to video-ready step to show the video viewing interface
@@ -222,9 +241,9 @@ export default function DashboardPage() {
       
       // Clean up URL parameters
       window.history.replaceState({}, "", "/dashboard");
-      console.log("🧹 URL parameters cleaned");
+      console.log("🧹 URL parameters cleaned up");
     } else if (revisionPayment === "cancelled") {
-      console.log("❌ Revision payment cancelled");
+      console.log("❌ Revision payment cancelled detected");
       toast({
         title: "Revision Payment Cancelled",
         description:
@@ -233,8 +252,10 @@ export default function DashboardPage() {
       });
       // Clean up URL parameters
       window.history.replaceState({}, "", "/dashboard");
+    } else {
+      console.log("ℹ️ No revision payment parameters detected");
     }
-  }, [toast, projectsData]);
+  }, [toast, projectsData, projectsLoading]);
 
   // Get subscription status
   const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
@@ -649,7 +670,21 @@ export default function DashboardPage() {
         {/* Projects Section */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-white">Your Projects</h2>
+            <div>
+              <h2 className="text-3xl font-bold text-white">Your Projects</h2>
+              {/* Debug button for testing revision modal */}
+              <button 
+                onClick={() => {
+                  setRevisionSessionId("cs_test_debug_manual");
+                  setRevisionConfirmationOpen(true);
+                  console.log("🧪 Debug: Manually opened revision confirmation modal");
+                }}
+                className="mt-1 text-xs bg-red-600 text-white px-2 py-1 rounded opacity-50"
+                title="Debug: Test revision confirmation modal"
+              >
+                [Debug] Test Modal
+              </button>
+            </div>
             <Button
               className={
                 subscription?.hasActiveSubscription &&
