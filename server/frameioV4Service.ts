@@ -1123,13 +1123,12 @@ export class FrameioV4Service {
       console.log(`📊 Creating V4 Project Share`);
       
       // Step 1: Create the share with proper type discriminator
+      // Note: The V4 API doesn't support allow_comments field, comments are controlled differently
       const shareRequestBody = {
         data: {
           type: 'asset',  // Required discriminator for V4 API (must be 'asset' not 'folder')
           name: name || 'Video Share',
           access: 'public',  // Public share that doesn't require login
-          allow_comments: enableComments,
-          allow_downloads: true,
           asset_ids: [assetId]  // Include the asset ID directly in the creation
         }
       };
