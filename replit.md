@@ -48,6 +48,13 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Share links stored at both file level AND project level simultaneously
   - ✅ "Download Final Video" button uses existing project-level share link (no new API calls)
   - ✅ Prevents duplicate share link creation and ensures consistency
+- **COMPLETED FRAME.IO V4 SHARE CREATION (August 16, 2025):**
+  - ✅ Fixed Frame.io V4 API share creation using correct `type: 'asset'` discriminator
+  - ✅ Removed unsupported fields (`allow_comments`, `allow_downloads`) from V4 API requests  
+  - ✅ Implemented proper 2-step process: create share + add asset to share
+  - ✅ Successfully generating f.io short URLs for public access without login
+  - ✅ Both share URL and share UUID stored in database for future reference without API calls
+  - ✅ Test 10 confirmed working with share link: https://f.io/BC9_Q8JH
 - **CRITICAL FOLDER MANAGEMENT RULES ENFORCED:**
   - ✅ Frame.io folders are ONLY created when "New Video Request" button is clicked (never during project listing or other operations)
   - ✅ Maximum 2-level folder hierarchy enforced: User → Project (no deeper nesting allowed)
