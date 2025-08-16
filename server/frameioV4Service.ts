@@ -1183,22 +1183,26 @@ export class FrameioV4Service {
       
       console.log(`📊 Final share details:`, JSON.stringify(shareDetails, null, 2));
       
-      // Extract the public URL (short_url is the f.io format)
-      const publicUrl = shareDetails?.data?.short_url ||
-                       shareDetails?.short_url ||
-                       initialUrl ||
-                       shareDetails?.data?.url ||
-                       shareDetails?.url;
+      // Extract both short URL (f.io format) and full URL for database storage
+      const shortUrl = shareDetails?.data?.short_url || shareDetails?.short_url;
+      const fullUrl = shareDetails?.data?.url || shareDetails?.url;
+      
+      // Prefer short URL for user-facing links, but store both
+      const publicUrl = shortUrl || fullUrl || initialUrl;
       
       if (!publicUrl) {
         throw new Error('No public URL found in share response');
       }
       
       console.log(`📊 Final Share ID: ${shareId}`);
-      console.log(`📊 Final Public URL: ${publicUrl}`);
+      console.log(`📊 Short URL (f.io): ${shortUrl}`);
+      console.log(`📊 Full URL: ${fullUrl}`);
+      console.log(`📊 Using Public URL: ${publicUrl}`);
       
       return {
-        url: publicUrl,
+        url: publicUrl,  // This is what gets stored in database and shown to user
+        shortUrl: shortUrl,  // f.io format
+        fullUrl: fullUrl,    // Full Frame.io format
         id: shareId
       };
 
