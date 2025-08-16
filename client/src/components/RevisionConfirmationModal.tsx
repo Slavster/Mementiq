@@ -167,7 +167,7 @@ export function RevisionConfirmationModal({
 
           <div className="flex justify-center">
             <Button onClick={handleClose} className="w-full">
-              Return to Dashboard
+              Return to Project
             </Button>
           </div>
         </DialogContent>
