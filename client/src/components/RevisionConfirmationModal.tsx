@@ -223,15 +223,15 @@ export function RevisionConfirmationModal({
                 <div className="flex items-start gap-3">
                   <ExternalLink className="h-5 w-5 text-purple-600 mt-1" />
                   <div className="flex-1">
-                    <h3 className="font-semibold text-purple-800 mb-2">Current Video Review</h3>
-                    <p className="text-sm text-gray-600 mb-3">
+                    <h4 className="font-semibold text-purple-800 mb-2">Current Video Review</h4>
+                    <p className="text-sm text-purple-700 mb-3">
                       Review your current video and leave specific comments about changes needed.
                     </p>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(paymentData.project.frameioReviewLink, "_blank")}
                       className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                      onClick={() => window.open(paymentData.project.frameioReviewLink, "_blank")}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Open Video Review
@@ -242,31 +242,31 @@ export function RevisionConfirmationModal({
             </Card>
           )}
 
-          {/* Instructions */}
-          <Card className="border-amber-200 bg-amber-50">
+          {/* Important Instructions */}
+          <Card className="border-orange-200 bg-orange-50">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600 mt-1" />
-                <div>
-                  <h3 className="font-semibold text-amber-800 mb-3">Important Instructions</h3>
-                  <div className="space-y-3 text-sm text-amber-700">
+                <AlertTriangle className="h-5 w-5 text-orange-600 mt-1" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-orange-800 mb-3">Important Instructions</h4>
+                  <div className="space-y-3 text-sm text-orange-700">
                     <div className="flex items-start gap-2">
-                      <Upload className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span>
+                      <Upload className="h-4 w-4 mt-0.5 text-orange-600" />
+                      <div>
                         <strong>Upload any new footage</strong> - If you have additional videos or photos to include, upload them to your project folder before submitting.
-                      </span>
+                      </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span>
+                      <MessageSquare className="h-4 w-4 mt-0.5 text-orange-600" />
+                      <div>
                         <strong>Add Frame.io comments</strong> - Click "Open Video Review" above and add specific comments with timestamps for each change you want made.
-                      </span>
+                      </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <ArrowRight className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span>
+                      <ArrowRight className="h-4 w-4 mt-0.5 text-orange-600" />
+                      <div>
                         <strong>Submit when ready</strong> - Once all new footage is uploaded and comments are added, click "Submit for Revision" below.
-                      </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -274,30 +274,32 @@ export function RevisionConfirmationModal({
             </CardContent>
           </Card>
 
-          {/* Submit Button */}
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-600 mb-4">
-              When you're ready to send your revision request to the editor, click the button below. 
-              The project status will be updated to "Revision in Progress".
-            </p>
-            <Button
-              onClick={handleSubmitRevision}
-              disabled={submitRevisionMutation.isPending}
-              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3"
-              size="lg"
-            >
-              {submitRevisionMutation.isPending ? (
-                <>
-                  <div className="animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full mr-3"></div>
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <ArrowRight className="mr-2 h-5 w-5" />
-                  Submit for Revision
-                </>
-              )}
-            </Button>
+          {/* Submit Section */}
+          <div className="border-t pt-6">
+            <div className="text-center space-y-4">
+              <p className="text-sm text-gray-600">
+                When you're ready to send your revision request to the editor, click the button below. 
+                The project status will be updated to "Revision in Progress".
+              </p>
+              <Button
+                onClick={handleSubmitRevision}
+                disabled={submitRevisionMutation.isPending}
+                className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-3 text-lg"
+                size="lg"
+              >
+                {submitRevisionMutation.isPending ? (
+                  <>
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="h-5 w-5 mr-2" />
+                    Submit for Revision
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

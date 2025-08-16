@@ -1509,16 +1509,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Request revision endpoint
-  app.post("/api/projects/:id/request-revision", requireAuth, async (req, res) => {
+  // Request revision endpoint (after payment)
+  app.post("/api/projects/:id/request-revision", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const userId = req.user.id;
+      const userId = req.user!.id;
+      
+      console.log(`🎬 Submitting revision request for project ${projectId} by user ${userId}`);
       
       // Verify project ownership
       const project = await storage.getProject(projectId);
       if (!project || project.userId !== userId) {
-        return res.status(404).json({ error: "Project not found" });
+        return res.status(404).json({ 
+          success: false, 
+          message: "Project not found" 
+        });
+      }
+      
+      // Verify project is in acceptable status for revision (after payment)
+      const validStatuses = ['video is ready', 'complete', 'awaiting revision instructions'];
+      if (!validStatuses.includes(project.status)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Project must be in one of these statuses: ${validStatuses.join(', ')}` 
+        });
       }
       
       // Update project status to revision in progress with timestamp tracking
@@ -1528,11 +1542,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       await updateProjectTimestamp(projectId, "revision requested");
       
+      console.log(`✅ Project ${projectId} status updated to "revision in progress"`);
+      
       // Log status change
       await storage.logProjectStatusChange(projectId, project.status, 'revision in progress');
       
       // Update Frame.io assets status to "Needs Review"
-      console.log(`🧪 TESTING: About to update Frame.io assets to "Needs Review" for project ${projectId}`);
+      console.log(`🧪 About to update Frame.io assets to "Needs Review" for project ${projectId}`);
       try {
         await frameioV4Service.updateProjectAssetsStatus(projectId, 'Needs Review');
         console.log(`✅ Frame.io assets updated to "Needs Review" for project ${projectId}`);
@@ -1541,10 +1557,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the request if Frame.io update fails
       }
       
-      res.json({ success: true, message: "Revision requested successfully" });
-    } catch (error) {
+      res.json({ 
+        success: true, 
+        message: "Revision request submitted successfully",
+        project: {
+          id: projectId,
+          status: "revision in progress"
+        }
+      });
+    } catch (error: any) {
       console.error("Failed to request revision:", error);
-      res.status(500).json({ error: "Failed to request revision" });
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || "Failed to request revision" 
+      });
     }
   });
 
