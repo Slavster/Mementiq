@@ -2612,8 +2612,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quantity: 1,
           },
         ],
-        success_url: `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`,
-        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=cancelled`,
+        success_url: `${process.env.CLIENT_URL || 'http://localhost:5000'}/stripe/revision-payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`,
+        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5000'}/stripe/revision-payment-cancel?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`,
         metadata: {
           projectId: numericProjectId.toString(),
           userId: req.user!.id,
@@ -2632,8 +2632,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ Stripe session created successfully:");
       console.log("- Session ID:", session.id);
       console.log("- Session URL:", session.url);
-      console.log("- Success URL template:", `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`);
-      console.log("- Actual success URL will replace {CHECKOUT_SESSION_ID} with:", session.id);
+      console.log("- Success URL:", `${process.env.CLIENT_URL || 'http://localhost:5000'}/stripe/revision-payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`);
+      console.log("- Cancel URL:", `${process.env.CLIENT_URL || 'http://localhost:5000'}/stripe/revision-payment-cancel?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`);
       
       res.json({
         success: true,
