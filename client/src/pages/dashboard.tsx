@@ -189,18 +189,38 @@ export default function DashboardPage() {
 
   // Handle revision payment success/failure from URL parameters
   useEffect(() => {
-    console.log("🔄 Dashboard useEffect triggered");
+    console.log("🔄 Dashboard useEffect triggered at:", new Date().toISOString());
     console.log("📍 Current URL:", window.location.href);
     console.log("🔍 URL search params:", window.location.search);
+    console.log("🔍 URL hash:", window.location.hash);
+    console.log("🔍 URL pathname:", window.location.pathname);
     
+    // Debug session storage data from redirect test
+    const debugSource = sessionStorage.getItem('debug_redirect_source');
+    const debugTarget = sessionStorage.getItem('debug_redirect_target');
+    const debugTime = sessionStorage.getItem('debug_redirect_time');
+    if (debugSource) {
+      console.log("🔍 Debug redirect data from session:");
+      console.log("- Source:", debugSource);
+      console.log("- Target:", debugTarget);
+      console.log("- Time:", debugTime);
+      // Clear debug data
+      sessionStorage.removeItem('debug_redirect_source');
+      sessionStorage.removeItem('debug_redirect_target');
+      sessionStorage.removeItem('debug_redirect_time');
+    }
+    
+    // Check both URL search params and hash (in case params are in hash)
     const urlParams = new URLSearchParams(window.location.search);
-    const revisionPayment = urlParams.get("revision_payment");
-    const sessionId = urlParams.get("session_id");
-    const projectId = urlParams.get("project_id");
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    
+    const revisionPayment = urlParams.get("revision_payment") || hashParams.get("revision_payment");
+    const sessionId = urlParams.get("session_id") || hashParams.get("session_id");
+    const projectId = urlParams.get("project_id") || hashParams.get("project_id");
 
     console.log("🔍 Dashboard URL params extracted:", { 
       revisionPayment, 
-      sessionId: sessionId ? `${sessionId.substring(0, 20)}...` : null, 
+      sessionId: sessionId ? `${sessionId.substring(0, 20)}...` : sessionId, 
       projectId 
     });
     console.log("📊 Projects data state:", { 
@@ -208,6 +228,13 @@ export default function DashboardPage() {
       isLoading: projectsLoading,
       dataKeys: projectsData ? Object.keys(projectsData) : null
     });
+
+    // Debug: log all possible URL parameter sources
+    console.log("🔍 ALL URL parameter sources:");
+    console.log("- URL search params:", Object.fromEntries(urlParams.entries()));
+    console.log("- URL hash params:", Object.fromEntries(hashParams.entries()));
+    console.log("- Raw search string:", window.location.search);
+    console.log("- Raw hash string:", window.location.hash);
 
     // Always log what we're checking for
     console.log("🎯 Checking conditions:");
