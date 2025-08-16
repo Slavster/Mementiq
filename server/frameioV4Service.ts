@@ -1118,17 +1118,18 @@ export class FrameioV4Service {
       const accountId = await this.getAccountId();
       const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a'; // Your Frame.io project
       
-      // Create a project-level share with the asset included
+      // Create a project-level share first (empty)
       // Frame.io V4 API: POST /accounts/{accountId}/projects/{projectId}/shares
-      console.log(`📊 Creating V4 Project Share for asset ${assetId}`);
+      console.log(`📊 Creating V4 Project Share`);
       
+      // Step 1: Create the share with proper type discriminator
       const shareRequestBody = {
         data: {
+          type: 'folder',  // Required discriminator for V4 API
           name: name || 'Video Share',
           access: 'public',  // Public share that doesn't require login
           allow_comments: enableComments,
-          allow_downloads: true,
-          asset_ids: [assetId]  // Include the specific asset in the share
+          allow_downloads: true
         }
       };
       
@@ -1142,32 +1143,59 @@ export class FrameioV4Service {
       console.log(`✅ V4 Share created successfully`);
       console.log(`📊 Full response:`, JSON.stringify(shareResponse, null, 2));
       
-      // Extract the share ID
+      // Extract the share ID and initial URL
       const shareId = shareResponse?.data?.id || shareResponse?.id;
+      const initialUrl = shareResponse?.data?.short_url || shareResponse?.data?.url;
+      
       if (!shareId) {
         throw new Error('No share ID returned from API');
       }
       
-      // Get the share details to find the public URL
-      console.log(`🔍 Getting share details for ID: ${shareId}`);
+      console.log(`📊 Share created with ID: ${shareId}`);
+      console.log(`📊 Initial URL: ${initialUrl}`);
+      
+      // Step 2: Add the asset to the share
+      console.log(`🔍 Adding asset ${assetId} to share ${shareId}`);
+      const addAssetBody = {
+        data: {
+          asset_id: assetId
+        }
+      };
+      
+      try {
+        await this.makeRequest(
+          'POST',
+          `/accounts/${accountId}/shares/${shareId}/assets`,
+          addAssetBody
+        );
+        console.log(`✅ Asset ${assetId} added to share ${shareId}`);
+      } catch (addError) {
+        console.error(`⚠️ Failed to add asset to share:`, addError.message);
+        // Continue anyway - share might still work
+      }
+      
+      // Step 3: Get the final share details to ensure we have the public URL
+      console.log(`🔍 Getting final share details for ID: ${shareId}`);
       const shareDetails = await this.makeRequest(
         'GET',
         `/accounts/${accountId}/shares/${shareId}`
       );
       
-      console.log(`📊 Share details response:`, JSON.stringify(shareDetails, null, 2));
+      console.log(`📊 Final share details:`, JSON.stringify(shareDetails, null, 2));
       
-      // Try to find the public URL in various possible fields
+      // Extract the public URL (short_url is the f.io format)
       const publicUrl = shareDetails?.data?.short_url ||
-                       shareDetails?.data?.public_url ||
-                       shareDetails?.data?.url ||
                        shareDetails?.short_url ||
-                       shareDetails?.public_url ||
-                       shareDetails?.url ||
-                       `https://f.io/${shareId}`;  // Fallback to standard f.io format
+                       initialUrl ||
+                       shareDetails?.data?.url ||
+                       shareDetails?.url;
       
-      console.log(`📊 Share ID: ${shareId}`);
-      console.log(`📊 Public URL: ${publicUrl}`);
+      if (!publicUrl) {
+        throw new Error('No public URL found in share response');
+      }
+      
+      console.log(`📊 Final Share ID: ${shareId}`);
+      console.log(`📊 Final Public URL: ${publicUrl}`);
       
       return {
         url: publicUrl,
