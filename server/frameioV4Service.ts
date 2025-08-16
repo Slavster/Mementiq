@@ -1114,25 +1114,64 @@ export class FrameioV4Service {
       console.log(`=== Frame.io V4 Share Creation ===`);
       console.log(`Asset ID: ${assetId}, Name: ${name}`);
 
-      // Use the review_links API endpoint which properly returns f.io short URLs
-      // This is what worked for Test 9 and is the correct V4 API for public shares
-      console.log(`📊 Creating V4 Asset Review Link (public share) for asset ${assetId}`);
+      // Get account ID for API calls
+      const accountId = await this.getAccountId();
+      const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a'; // Your Frame.io project
       
-      const shareData = await this.makeRequest('POST', `/assets/${assetId}/review_links`, {
-        name: name || 'Video Share',
-        allow_approvals: false,  // Not needed for viewing
-        allow_comments: enableComments,  // User preference
-        allow_download: true  // Always allow downloads
-      });
+      // Create a project-level share with the asset included
+      // Frame.io V4 API: POST /accounts/{accountId}/projects/{projectId}/shares
+      console.log(`📊 Creating V4 Project Share for asset ${assetId}`);
+      
+      const shareRequestBody = {
+        data: {
+          name: name || 'Video Share',
+          access: 'public',  // Public share that doesn't require login
+          allow_comments: enableComments,
+          allow_downloads: true,
+          asset_ids: [assetId]  // Include the specific asset in the share
+        }
+      };
+      
+      console.log(`🔍 Creating share via: POST /accounts/${accountId}/projects/${projectId}/shares`);
+      const shareResponse = await this.makeRequest(
+        'POST', 
+        `/accounts/${accountId}/projects/${projectId}/shares`,
+        shareRequestBody
+      );
 
-      console.log(`✅ V4 Asset review link created successfully`);
-      console.log(`📊 Share ID: ${shareData.id}`);
-      console.log(`📊 Short URL: ${shareData.short_url}`);
+      console.log(`✅ V4 Share created successfully`);
+      console.log(`📊 Full response:`, JSON.stringify(shareResponse, null, 2));
       
-      // Return the proper f.io short URL
+      // Extract the share ID
+      const shareId = shareResponse?.data?.id || shareResponse?.id;
+      if (!shareId) {
+        throw new Error('No share ID returned from API');
+      }
+      
+      // Get the share details to find the public URL
+      console.log(`🔍 Getting share details for ID: ${shareId}`);
+      const shareDetails = await this.makeRequest(
+        'GET',
+        `/accounts/${accountId}/shares/${shareId}`
+      );
+      
+      console.log(`📊 Share details response:`, JSON.stringify(shareDetails, null, 2));
+      
+      // Try to find the public URL in various possible fields
+      const publicUrl = shareDetails?.data?.short_url ||
+                       shareDetails?.data?.public_url ||
+                       shareDetails?.data?.url ||
+                       shareDetails?.short_url ||
+                       shareDetails?.public_url ||
+                       shareDetails?.url ||
+                       `https://f.io/${shareId}`;  // Fallback to standard f.io format
+      
+      console.log(`📊 Share ID: ${shareId}`);
+      console.log(`📊 Public URL: ${publicUrl}`);
+      
       return {
-        url: shareData.short_url || `https://f.io/${shareData.id}`,
-        id: shareData.id
+        url: publicUrl,
+        id: shareId
       };
 
     } catch (error) {
