@@ -179,16 +179,36 @@ export default function DashboardPage() {
   
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
+  // Get user projects - always fetch fresh data to show latest updates
+  const { data: projectsData, isLoading: projectsLoading } = useQuery({
+    queryKey: ["/api/projects"],
+    enabled: isAuthenticated,
+    staleTime: 0, // Always consider data stale to ensure fresh timestamps
+    gcTime: 0, // Don't cache old data
+  });
+
   // Handle revision payment success/failure from URL parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const revisionPayment = urlParams.get("revision_payment");
     const sessionId = urlParams.get("session_id");
+    const projectId = urlParams.get("project_id");
 
     if (revisionPayment === "success" && sessionId) {
       // Open revision confirmation modal with session ID for payment verification
       setRevisionSessionId(sessionId);
       setRevisionConfirmationOpen(true);
+      
+      // If project ID is provided, find and select that project to return to it after modal closes
+      if (projectId && projectsData?.success) {
+        const targetProject = (projectsData as any)?.projects?.find(
+          (p: Project) => p.id === parseInt(projectId)
+        );
+        if (targetProject) {
+          setSelectedProject(targetProject);
+          setCurrentStep("video-ready"); // Set to video-ready step to show the video viewing interface
+        }
+      }
       
       // Clean up URL parameters
       window.history.replaceState({}, "", "/dashboard");
@@ -202,15 +222,7 @@ export default function DashboardPage() {
       // Clean up URL parameters
       window.history.replaceState({}, "", "/dashboard");
     }
-  }, [toast]);
-
-  // Get user projects - always fetch fresh data to show latest updates
-  const { data: projectsData, isLoading: projectsLoading } = useQuery({
-    queryKey: ["/api/projects"],
-    enabled: isAuthenticated,
-    staleTime: 0, // Always consider data stale to ensure fresh timestamps
-    gcTime: 0, // Don't cache old data
-  });
+  }, [toast, projectsData]);
 
   // Get subscription status
   const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
@@ -342,6 +354,17 @@ export default function DashboardPage() {
     // Close the modal
     setRevisionConfirmationOpen(false);
     setRevisionSessionId(null);
+    
+    // Keep the selected project open so user returns to the project detail view
+    // The project status should now be "revision in progress"
+    if (selectedProject) {
+      // Update the selected project status locally for immediate feedback
+      setSelectedProject({
+        ...selectedProject,
+        status: "revision in progress",
+        updatedAt: new Date().toISOString()
+      });
+    }
   };
 
   // Helper function to check if user can create projects
