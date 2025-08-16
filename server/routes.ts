@@ -2624,6 +2624,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Stripe revision payment success/cancel endpoints - these are hit by Stripe after checkout
+  app.get("/stripe/revision-payment-success", async (req, res) => {
+    const sessionId = req.query.session_id as string;
+    const projectId = req.query.project_id as string;
+    
+    console.log("✅ Stripe revision payment success callback:", { sessionId, projectId });
+    
+    if (!sessionId || !projectId) {
+      console.log("⚠️ Missing sessionId or projectId, redirecting to dashboard");
+      return res.redirect("/dashboard");
+    }
+    
+    // Redirect to dashboard with parameters for React to handle
+    const redirectUrl = `/dashboard?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
+    console.log("🚀 Redirecting to dashboard with params:", redirectUrl);
+    res.redirect(redirectUrl);
+  });
+  
+  app.get("/stripe/revision-payment-cancel", async (req, res) => {
+    const sessionId = req.query.session_id as string;
+    const projectId = req.query.project_id as string;
+    
+    console.log("❌ Stripe revision payment cancelled:", { sessionId, projectId });
+    
+    if (!sessionId || !projectId) {
+      console.log("⚠️ Missing sessionId or projectId, redirecting to dashboard");
+      return res.redirect("/dashboard");
+    }
+    
+    // Redirect to dashboard with parameters for React to handle
+    const redirectUrl = `/dashboard?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
+    console.log("🚀 Redirecting to dashboard with params:", redirectUrl);
+    res.redirect(redirectUrl);
+  });
+
   // Test endpoint to verify redirect mechanics - simulates Stripe return
   app.get("/api/test-stripe-return/:projectId", (req, res) => {
     const projectId = req.params.projectId;
@@ -2730,9 +2765,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Test endpoint to check URL parameter processing
   app.get("/api/test-url-params", (req, res) => {
-    const baseUrl = process.env.CLIENT_URL || 'http://localhost:5000';
-    const url = `${baseUrl}/dashboard?revision_payment=success&session_id=cs_test_manual&project_id=16`;
-    console.log("🧪 Test page generating URL:", url);
+    // Use relative URL instead of absolute URL
+    const url = `/dashboard?revision_payment=success&session_id=cs_test_manual&project_id=16`;
+    console.log("🧪 Test page generating RELATIVE URL:", url);
     res.send(`
       <html>
         <head>
@@ -2742,8 +2777,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <h2>🧪 Debug: Test Stripe Return Flow</h2>
           <p>This simulates what happens when Stripe redirects users back to our site:</p>
           <div style="margin: 20px 0; padding: 15px; background: #f0f8ff; border: 1px solid #0066cc;">
-            <h3>Manual Test URL:</h3>
-            <a href="${url}" target="_blank" style="color: blue; text-decoration: underline;">${url}</a>
+            <h3>Manual Test URL (Relative):</h3>
+            <a href="${url}" style="color: blue; text-decoration: underline;">${url}</a>
+            <br><br>
+            <p>Clicking this link will navigate directly instead of opening a new window.</p>
           </div>
           
           <div style="margin: 20px 0; padding: 15px; background: #fff0f0; border: 1px solid #cc0000;">
@@ -2790,7 +2827,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               sessionStorage.setItem('debug_redirect_target', "${url}");
               sessionStorage.setItem('debug_redirect_time', new Date().toISOString());
               
-              window.location.href = "${url}";
+              // Try different redirect methods
+              log("🔄 Attempting window.location.assign with relative URL...");
+              window.location.assign("${url}");
             }
           </script>
         </body>
