@@ -194,25 +194,37 @@ export default function DashboardPage() {
     const sessionId = urlParams.get("session_id");
     const projectId = urlParams.get("project_id");
 
+    console.log("🔍 Dashboard URL params check:", { revisionPayment, sessionId, projectId });
+    console.log("📊 Projects data available:", !!projectsData, projectsData);
+
     if (revisionPayment === "success" && sessionId) {
+      console.log("✅ Revision payment success detected, opening confirmation modal");
+      
       // Open revision confirmation modal with session ID for payment verification
       setRevisionSessionId(sessionId);
       setRevisionConfirmationOpen(true);
       
-      // If project ID is provided, find and select that project to return to it after modal closes
-      if (projectId && projectsData?.success) {
-        const targetProject = (projectsData as any)?.projects?.find(
+      // If project ID is provided and projects data is loaded, find and select that project
+      if (projectId && projectsData && (projectsData as any)?.projects) {
+        const targetProject = (projectsData as any).projects.find(
           (p: Project) => p.id === parseInt(projectId)
         );
+        console.log("🎯 Target project found:", targetProject);
         if (targetProject) {
           setSelectedProject(targetProject);
           setCurrentStep("video-ready"); // Set to video-ready step to show the video viewing interface
+          console.log("📱 Project selected and step set to video-ready");
         }
+      } else if (projectId && !projectsData) {
+        console.log("⏳ Projects data not loaded yet, will retry when available");
+        return; // Don't clean URL yet, let it retry when projectsData loads
       }
       
       // Clean up URL parameters
       window.history.replaceState({}, "", "/dashboard");
+      console.log("🧹 URL parameters cleaned");
     } else if (revisionPayment === "cancelled") {
+      console.log("❌ Revision payment cancelled");
       toast({
         title: "Revision Payment Cancelled",
         description:
