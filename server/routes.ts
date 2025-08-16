@@ -2635,7 +2635,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Test endpoint to check URL parameter processing
   app.get("/api/test-url-params", (req, res) => {
-    const url = `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id=cs_test_manual&project_id=16`;
+    const baseUrl = process.env.CLIENT_URL || 'http://localhost:5000';
+    const url = `${baseUrl}/dashboard?revision_payment=success&session_id=cs_test_manual&project_id=16`;
+    console.log("🧪 Test page generating URL:", url);
     res.send(`
       <html>
         <head>
@@ -2650,9 +2652,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </div>
           
           <div style="margin: 20px 0; padding: 15px; background: #fff0f0; border: 1px solid #cc0000;">
-            <h3>Auto-redirect Test (5 seconds):</h3>
-            <p id="countdown">Redirecting in 5 seconds...</p>
-            <button onclick="clearTimeout(redirectTimer); document.getElementById('countdown').innerHTML = 'Auto-redirect cancelled';">Cancel</button>
+            <h3>Immediate Test:</h3>
+            <button onclick="testRedirect()" style="padding: 10px 20px; background: #cc0000; color: white; border: none; cursor: pointer;">Test Redirect Now</button>
+            <p id="status">Click button to test redirect</p>
+          </div>
+          
+          <div style="margin: 20px 0; padding: 15px; background: #f0f0f0; border: 1px solid #999;">
+            <h3>Debug Console Output:</h3>
+            <div id="debug-output" style="font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: scroll; background: #000; color: #0f0; padding: 10px;"></div>
           </div>
           
           <div style="margin: 20px 0; padding: 15px; background: #f0fff0; border: 1px solid #00cc00;">
@@ -2666,17 +2673,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </div>
           
           <script>
-            console.log("🧪 Test page loaded - preparing to test Stripe return flow");
-            let countdown = 5;
-            const redirectTimer = setInterval(() => {
-              countdown--;
-              document.getElementById('countdown').innerHTML = 'Redirecting in ' + countdown + ' seconds...';
-              if (countdown <= 0) {
-                clearInterval(redirectTimer);
-                console.log("🚀 Auto-redirecting to test URL:", "${url}");
-                window.location.href = "${url}";
+            const debugOutput = document.getElementById('debug-output');
+            function log(message) {
+              console.log(message);
+              if (debugOutput) {
+                debugOutput.innerHTML += message + '\\n';
+                debugOutput.scrollTop = debugOutput.scrollHeight;
               }
-            }, 1000);
+            }
+            
+            log("🧪 Test page loaded - preparing to test Stripe return flow");
+            log("🎯 Target URL: ${url}");
+            
+            function testRedirect() {
+              log("🚀 Manual redirect triggered");
+              log("🔍 Current location before redirect: " + window.location.href);
+              document.getElementById('status').innerHTML = 'Redirecting...';
+              
+              // Store URL in session storage for debugging
+              sessionStorage.setItem('debug_redirect_source', window.location.href);
+              sessionStorage.setItem('debug_redirect_target', "${url}");
+              sessionStorage.setItem('debug_redirect_time', new Date().toISOString());
+              
+              window.location.href = "${url}";
+            }
           </script>
         </body>
       </html>
