@@ -2565,6 +2565,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currency: 'usd',
       });
 
+      console.log("✅ Stripe session created successfully:");
+      console.log("- Session ID:", session.id);
+      console.log("- Session URL:", session.url);
+      console.log("- Success URL will be:", `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id=${session.id}&project_id=${numericProjectId}`);
+      
       res.json({
         success: true,
         sessionUrl: session.url,
@@ -2578,6 +2583,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Failed to create revision payment session",
       });
     }
+  });
+
+  // Test endpoint to verify redirect mechanics
+  app.get("/api/test-redirect/:projectId", (req, res) => {
+    const projectId = req.params.projectId;
+    const testUrl = `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id=cs_test_fake_${Date.now()}&project_id=${projectId}`;
+    console.log("🧪 Test redirect URL:", testUrl);
+    res.redirect(testUrl);
   });
 
   // Generate media platform review link and start revision process
