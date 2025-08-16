@@ -2633,6 +2633,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect(302, testUrl);
   });
 
+  // Test endpoint that serves dashboard HTML directly with embedded parameters
+  app.get("/api/test-dashboard-direct", async (req, res) => {
+    const testParams = {
+      revision_payment: 'success',
+      session_id: 'cs_test_direct_embed',
+      project_id: '16'
+    };
+    
+    console.log("🧪 Direct dashboard test with embedded parameters:", testParams);
+    
+    // Serve HTML with embedded script that immediately tests parameter detection
+    res.send(`
+      <!doctype html>
+      <html lang="en">
+        <head>
+          <title>Direct Dashboard Test</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+            .debug { background: #000; color: #0f0; padding: 15px; margin: 10px 0; font-family: monospace; }
+            .success { background: #0f5; color: #000; padding: 10px; margin: 10px 0; }
+            .error { background: #f50; color: #fff; padding: 10px; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>🧪 Direct Dashboard Parameter Test</h1>
+          <p>This tests parameter detection without authentication or router interference.</p>
+          
+          <div id="results"></div>
+          
+          <script>
+            const results = document.getElementById('results');
+            
+            function log(message, type = 'debug') {
+              const div = document.createElement('div');
+              div.className = type;
+              div.textContent = message;
+              results.appendChild(div);
+              console.log(message);
+            }
+            
+            // Test 1: Direct URL parameter injection
+            log("Test 1: Injecting URL parameters manually");
+            const testUrl = new URL(window.location.href);
+            testUrl.searchParams.set('revision_payment', '${testParams.revision_payment}');
+            testUrl.searchParams.set('session_id', '${testParams.session_id}');
+            testUrl.searchParams.set('project_id', '${testParams.project_id}');
+            
+            // Update browser URL without reloading
+            window.history.replaceState({}, '', testUrl.toString());
+            
+            log("Current URL: " + window.location.href);
+            log("Search params: " + window.location.search);
+            
+            // Test 2: Parameter extraction
+            const urlParams = new URLSearchParams(window.location.search);
+            const revisionPayment = urlParams.get("revision_payment");
+            const sessionId = urlParams.get("session_id");
+            const projectId = urlParams.get("project_id");
+            
+            log("Extracted parameters:");
+            log("- revision_payment: " + revisionPayment);
+            log("- session_id: " + sessionId);
+            log("- project_id: " + projectId);
+            
+            // Test 3: Condition checking
+            const isSuccess = revisionPayment === 'success';
+            const hasSession = !!sessionId;
+            const shouldTrigger = isSuccess && hasSession;
+            
+            log("Condition check:");
+            log("- revisionPayment === 'success': " + isSuccess);
+            log("- sessionId exists: " + hasSession);
+            log("- Combined condition: " + shouldTrigger);
+            
+            if (shouldTrigger) {
+              log("✅ SUCCESS: Parameters detected correctly!", 'success');
+              log("This means the React useEffect SHOULD trigger the RevisionConfirmationModal", 'success');
+            } else {
+              log("❌ FAILED: Parameter detection failed", 'error');
+              log("This explains why the modal doesn't open", 'error');
+            }
+            
+            // Test 4: Redirect to real dashboard with parameters
+            setTimeout(() => {
+              log("Redirecting to real dashboard in 3 seconds...");
+              setTimeout(() => {
+                window.location.href = '/dashboard?revision_payment=success&session_id=cs_test_direct_embed&project_id=16';
+              }, 3000);
+            }, 2000);
+          </script>
+        </body>
+      </html>
+    `);
+  });
+
   // Test endpoint to check URL parameter processing
   app.get("/api/test-url-params", (req, res) => {
     const baseUrl = process.env.CLIENT_URL || 'http://localhost:5000';

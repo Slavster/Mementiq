@@ -244,6 +244,7 @@ export default function DashboardPage() {
 
     if (revisionPayment === "success" && sessionId) {
       console.log("✅ REVISION PAYMENT SUCCESS DETECTED!");
+      console.log("🎉 TRIGGERING REVISION CONFIRMATION MODAL");
       
       // Open revision confirmation modal with session ID for payment verification
       console.log("🚀 Setting revision session ID and opening modal");
