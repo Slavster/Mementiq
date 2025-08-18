@@ -136,31 +136,17 @@ export function VideoViewingStep({
   };
 
   const handlePaymentComplete = async () => {
-    // Payment successful, close popup and proceed to revision form
+    // Payment successful, close popup and return to revision workflow
     setShowPaymentPopup(false);
     
-    // Update project status to revision in progress
-    try {
-      await apiRequest(
-        "POST",
-        `/api/projects/${project.id}/request-revision`
-      );
-      
-      toast({
-        title: "Revision Request Submitted",
-        description: "Your revision request has been sent to the editor.",
-      });
-      
-      // Trigger the parent callback
-      onRevisionRequested();
-    } catch (error) {
-      console.error("Failed to submit revision request:", error);
-      toast({
-        title: "Error",
-        description: "Payment successful but failed to submit revision request. Please contact support.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Payment Successful - Ready for Revision",
+      description: "You can now upload additional footage and submit for revision.",
+    });
+    
+    // Trigger revision workflow - this will take user back to project management
+    // but flag it as a revision request so Tally form gets skipped
+    onRevisionRequested();
   };
 
   const handleDownload = async (videoFile: VideoFile) => {
