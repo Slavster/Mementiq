@@ -192,26 +192,37 @@ export default function DashboardPage() {
 
   // Check for pending revision payments on mount
   useEffect(() => {
+    let pollCount = 0;
+    
     const checkPendingPayment = async () => {
       const pendingPaymentData = localStorage.getItem('pending_revision_payment');
-      if (!pendingPaymentData) return;
+      if (!pendingPaymentData) {
+        console.log("🔍 No pending payment found in localStorage");
+        return;
+      }
       
       try {
         const { sessionId, projectId, timestamp } = JSON.parse(pendingPaymentData);
         
         // Only check payments from the last 30 minutes
         if (Date.now() - timestamp > 30 * 60 * 1000) {
+          console.log("⏰ Pending payment expired, removing from storage");
           localStorage.removeItem('pending_revision_payment');
           return;
         }
         
-        console.log("🔍 Checking pending revision payment:", sessionId);
+        pollCount++;
+        console.log(`🔍 [Poll #${pollCount}] Checking pending revision payment:`, sessionId);
         
         // Check payment status with backend
         const response = await apiRequest(`/api/stripe/check-revision-payment?session_id=${sessionId}`);
         
+        console.log(`📊 [Poll #${pollCount}] Payment status response:`, response);
+        
         if (response.success && response.completed) {
-          console.log("✅ Pending payment completed! Opening confirmation modal");
+          console.log("✅ PAYMENT COMPLETED! Opening confirmation modal");
+          console.log("- Session ID:", sessionId);
+          console.log("- Project ID:", projectId);
           
           // Clear pending payment from storage
           localStorage.removeItem('pending_revision_payment');
@@ -222,31 +233,43 @@ export default function DashboardPage() {
               (p: Project) => p.id === parseInt(projectId)
             );
             if (targetProject) {
+              console.log("📂 Found target project:", targetProject.title);
               setSelectedProject(targetProject);
               setCurrentStep("video-ready");
+            } else {
+              console.log("⚠️ Could not find project with ID:", projectId);
             }
+          } else {
+            console.log("⚠️ Projects data not available yet");
           }
           
           // Open revision confirmation modal
+          console.log("🎉 Opening revision confirmation modal");
           setRevisionSessionId(sessionId);
           setRevisionConfirmationOpen(true);
+        } else {
+          console.log(`⏳ [Poll #${pollCount}] Payment not completed yet. Status:`, response.paymentStatus);
         }
       } catch (error) {
-        console.error("Error checking pending payment:", error);
+        console.error(`❌ [Poll #${pollCount}] Error checking pending payment:`, error);
       }
     };
     
     // Check immediately on mount
+    console.log("🚀 Starting payment status polling");
     checkPendingPayment();
     
-    // Poll every 5 seconds if there's a pending payment
+    // Poll every 3 seconds if there's a pending payment (more frequent for better UX)
     const intervalId = setInterval(() => {
       if (localStorage.getItem('pending_revision_payment')) {
         checkPendingPayment();
       }
-    }, 5000);
+    }, 3000);
     
-    return () => clearInterval(intervalId);
+    return () => {
+      console.log("🛑 Stopping payment status polling");
+      clearInterval(intervalId);
+    };
   }, [projectsData]);
 
   // Handle revision payment success/failure from URL parameters
@@ -778,6 +801,52 @@ export default function DashboardPage() {
                 title="Debug: Test revision confirmation modal"
               >
                 [Debug] Test Modal
+              </button>
+              {/* Manual payment check button */}
+              <button 
+                onClick={async () => {
+                  const pendingPaymentData = localStorage.getItem('pending_revision_payment');
+                  if (pendingPaymentData) {
+                    const { sessionId } = JSON.parse(pendingPaymentData);
+                    try {
+                      console.log("🔄 Manual payment check triggered");
+                      const response = await apiRequest(`/api/stripe/check-revision-payment?session_id=${sessionId}`);
+                      
+                      if (response.success && response.completed) {
+                        toast({
+                          title: "Payment Confirmed!",
+                          description: "Your revision payment has been processed successfully.",
+                        });
+                        // Clear pending payment
+                        localStorage.removeItem('pending_revision_payment');
+                        // Open modal
+                        setRevisionSessionId(sessionId);
+                        setRevisionConfirmationOpen(true);
+                      } else {
+                        toast({
+                          title: "Payment Pending",
+                          description: "Your payment is still being processed. Please complete the checkout.",
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Manual payment check error:", error);
+                      toast({
+                        title: "Check Failed",
+                        description: "Could not verify payment status. Please try again.",
+                        variant: "destructive"
+                      });
+                    }
+                  } else {
+                    toast({
+                      title: "No Pending Payment",
+                      description: "No revision payment is currently pending.",
+                    });
+                  }
+                }}
+                className="mt-1 ml-2 text-xs bg-cyan-600 text-white px-2 py-1 rounded opacity-75 hover:opacity-100"
+                title="Check if payment completed"
+              >
+                Check Payment Status
               </button>
             </div>
             <Button
