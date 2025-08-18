@@ -68,25 +68,21 @@ function RevisionVideoReviewStep({
   const { toast } = useToast();
 
   return (
-    <div className="space-y-8">
-      {/* Header - Revision specific */}
-      <div className="text-center space-y-4">
-        <div className="text-6xl">🎬</div>
-        <h1 className="text-3xl font-bold text-white">Review Your Video</h1>
-        <p className="text-gray-400">Leave detailed feedback for our editors</p>
+    <div className="space-y-6">
+      {/* Step header */}
+      <div className="text-center">
+        <h3 className="text-lg font-semibold text-white mb-2">
+          Step 1: Provide Revision Instructions
+        </h3>
+        <p className="text-gray-400 mb-4">
+          Review your video and provide detailed feedback for our editors.
+        </p>
       </div>
 
-      {/* Main Video Card - Similar to VideoViewingStep */}
+      {/* Main Video Review Card */}
       <Card className="bg-gray-900/50 border-gray-700">
         <CardContent className="p-8">
           <div className="text-center space-y-6">
-            {/* Video Title */}
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold text-white">
-                "{project.title}"
-              </h2>
-            </div>
-
             {/* Main Action Button - Reuse existing video share link */}
             <Button
               onClick={async () => {
@@ -131,7 +127,7 @@ function RevisionVideoReviewStep({
               Open Video for Review
             </Button>
 
-            {/* Instructions - Revision specific */}
+            {/* Instructions */}
             <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
               <div className="space-y-3 text-gray-300">
                 <p>
@@ -157,25 +153,21 @@ function RevisionVideoReviewStep({
       </Card>
 
       {/* Additional Instructions Section */}
-      <Card className="bg-gray-800/50 border-gray-600">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <Label htmlFor="additional-instructions" className="text-white text-lg">
-              Additional Instructions (Optional)
-            </Label>
-            <Textarea
-              id="additional-instructions"
-              placeholder="Add any general feedback or instructions that don't relate to specific timestamps..."
-              value={revisionInstructions}
-              onChange={(e) => onInstructionsChange(e.target.value)}
-              className="min-h-[120px] bg-gray-900/50 border-gray-600 text-white placeholder-gray-400"
-            />
-            <p className="text-sm text-gray-400">
-              Use the video review tool above for timestamp-specific feedback, and this field for general notes.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <Label htmlFor="additional-instructions" className="text-white">
+          Additional Instructions (Optional)
+        </Label>
+        <Textarea
+          id="additional-instructions"
+          placeholder="Add any general feedback or instructions that don't relate to specific timestamps..."
+          value={revisionInstructions}
+          onChange={(e) => onInstructionsChange(e.target.value)}
+          className="min-h-[120px] bg-gray-900/50 border-gray-600 text-white placeholder-gray-400"
+        />
+        <p className="text-sm text-gray-400">
+          Use the video review tool above for timestamp-specific feedback, and this field for general notes.
+        </p>
+      </div>
     </div>
   );
 }
@@ -458,76 +450,89 @@ export function RevisionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-700">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
+          <DialogTitle className="flex items-center text-white text-xl">
             Request Revisions: {project.title}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-400">
             Provide detailed feedback and instructions for your video revisions.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Progress Indicator */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="flex items-center space-x-4">
+        {/* Step Progress - Match main project workflow design */}
+        <div className="flex items-center gap-2 mb-6">
+          <div
+            className={`flex items-center gap-2 ${step === "instructions" ? "text-[#2abdee]" : step === "uploads" || step === "confirmation" ? "text-green-400" : "text-gray-400"}`}
+          >
             <div
-              className={`flex items-center ${step === "instructions" ? "text-cyan-600" : step === "uploads" || step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${step === "instructions" ? "bg-[#2abdee] text-white" : step === "uploads" || step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-600"}`}
             >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "instructions" ? "bg-cyan-600 text-white" : step === "uploads" || step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
-              >
-                1
-              </div>
-              <span className="ml-2 text-sm font-medium">Instructions</span>
+              {step === "uploads" || step === "confirmation" ? "✓" : "1"}
             </div>
-            <div className="w-8 h-px bg-gray-300"></div>
+            <span className="font-medium text-white">Instructions</span>
+          </div>
+          <div className="flex-1 h-px bg-gray-600 mx-2" />
+          <div
+            className={`flex items-center gap-2 ${step === "uploads" ? "text-[#2abdee]" : step === "confirmation" ? "text-green-400" : "text-gray-400"}`}
+          >
             <div
-              className={`flex items-center ${step === "uploads" ? "text-cyan-600" : step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${step === "uploads" ? "bg-[#2abdee] text-white" : step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-600"}`}
             >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "uploads" ? "bg-cyan-600 text-white" : step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
-              >
-                2
-              </div>
-              <span className="ml-2 text-sm font-medium">Assets</span>
+              {step === "confirmation" ? "✓" : "2"}
             </div>
-            <div className="w-8 h-px bg-gray-300"></div>
+            <span className="font-medium text-white">Assets</span>
+          </div>
+          <div className="flex-1 h-px bg-gray-600 mx-2" />
+          <div
+            className={`flex items-center gap-2 ${step === "confirmation" ? "text-[#2abdee]" : "text-gray-400"}`}
+          >
             <div
-              className={`flex items-center ${step === "confirmation" ? "text-cyan-600" : "text-gray-400"}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${step === "confirmation" ? "bg-[#2abdee] text-white" : "bg-gray-600"}`}
             >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "confirmation" ? "bg-cyan-600 text-white" : "bg-gray-200"}`}
-              >
-                3
-              </div>
-              <span className="ml-2 text-sm font-medium">Confirm</span>
+              3
             </div>
+            <span className="font-medium text-white">Confirm</span>
           </div>
         </div>
 
         {/* Step Content */}
         {renderStepContent()}
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between pt-6 border-t">
+        {/* Navigation Buttons - Match main workflow style */}
+        <div className="flex justify-between pt-6 border-t border-gray-700">
           <Button
             variant="outline"
             onClick={handleBack}
             disabled={step === "instructions"}
+            className="text-white border-gray-600 hover:bg-gray-700"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
 
-          {step !== "confirmation" && (
+          {step === "confirmation" ? (
+            <Button
+              onClick={handleSubmit}
+              disabled={submitRevisionMutation.isPending}
+              className="bg-[#2abdee] hover:bg-cyan-600"
+            >
+              {submitRevisionMutation.isPending ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting Instructions...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Submit Revision Instructions
+                </>
+              )}
+            </Button>
+          ) : (
             <Button
               onClick={handleNext}
-              disabled={
-                step === "instructions" &&
-                !reviewLink &&
-                !project.mediaReviewLink
-              }
+              className="bg-[#2abdee] hover:bg-cyan-600"
             >
               Next
               <ArrowRight className="h-4 w-4 ml-2" />
