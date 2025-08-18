@@ -67,7 +67,6 @@ export function RevisionModal({
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<RevisionStep>("video-review");
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [showUploadInterface, setShowUploadInterface] = useState(false);
   const [videoFiles, setVideoFiles] = useState<any[]>([]);
   const [videoLoading, setVideoLoading] = useState(true);
 
@@ -76,7 +75,6 @@ export function RevisionModal({
     if (open) {
       setCurrentStep("video-review");
       setIsSubmitted(false);
-      setShowUploadInterface(false);
       setVideoLoading(true);
     }
   }, [open]);
@@ -350,51 +348,21 @@ export function RevisionModal({
               </p>
             </div>
 
-            {/* Upload Interface */}
-            {!showUploadInterface ? (
-              <Card className="bg-gray-900/50 border-gray-700">
-                <CardContent className="p-8">
-                  <div className="text-center space-y-6">
-                    <p className="text-gray-400">
-                      Do you need to upload additional footage for your revisions?
-                    </p>
-                    <div className="flex gap-4 justify-center">
-                      <Button
-                        onClick={() => setShowUploadInterface(true)}
-                        size="lg"
-                        className="bg-purple-600 hover:bg-purple-700"
-                      >
-                        <Upload className="h-5 w-5 mr-2" />
-                        Yes, Upload Footage
-                      </Button>
-                      <Button
-                        onClick={handleNext}
-                        size="lg"
-                        variant="outline"
-                        className="text-gray-400 hover:text-white border-gray-600"
-                      >
-                        No, Continue
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <FrameioUploadInterface
-                project={project}
-                onUploadComplete={() => {
-                  toast({
-                    title: "Upload Complete",
-                    description: "Your additional footage has been uploaded successfully.",
-                  });
-                  setShowUploadInterface(false);
-                }}
-                onCancel={() => setShowUploadInterface(false)}
-                onProjectStatusChange={() => {
-                  // Optional callback for project status changes
-                }}
-              />
-            )}
+            {/* Direct Upload Interface - same as first video request */}
+            <FrameioUploadInterface
+              project={project}
+              onUploadComplete={() => {
+                toast({
+                  title: "Upload Complete",
+                  description: "Your additional footage has been uploaded successfully.",
+                });
+                handleNext();
+              }}
+              onCancel={() => handleNext()}
+              onProjectStatusChange={() => {
+                // Optional callback for project status changes
+              }}
+            />
           </div>
         );
 
