@@ -580,6 +580,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!project) {
         return res.status(404).json({ error: 'Project not found' });
       }
+
+      // FIRST: Check if we already have a project-level share link stored
+      if (project.frameioReviewLink) {
+        console.log(`✅ Found existing project-level share link: ${project.frameioReviewLink}`);
+        return res.json({
+          shareUrl: project.frameioReviewLink,
+          shareId: project.frameioReviewShareId || 'project-cached',
+          filename: project.title,
+          isPublicShare: true,
+          note: 'Using existing project share link',
+          features: {
+            publicAccess: true,
+            commentsEnabled: true,
+            downloadsEnabled: true
+          }
+        });
+      }
       
       // Get the completed video file - for "video is ready" projects, use Frame.io assets directly
       let videoFile = null;
