@@ -1414,12 +1414,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the Stripe session to verify payment status
       const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
       
+      // If payment is completed and not already recorded, update the database
+      if (stripeSession.payment_status === 'paid' && payment.paymentStatus !== 'completed') {
+        console.log(`💳 Recording completed payment for session: ${sessionId}`);
+        
+        // Update the revision payment record
+        await storage.updateRevisionPayment(sessionId, {
+          paymentStatus: 'completed',
+          paidAt: new Date(),
+          stripePaymentIntentId: stripeSession.payment_intent as string
+        });
+        
+        // Increment the project's revision count
+        await storage.incrementProjectRevisionCount(payment.projectId);
+        console.log(`📊 Incremented revision count for project ${payment.projectId}`);
+        
+        // Log the revision for accounting/tracking
+        console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
+      }
+      
       console.log(`✅ Payment verification successful for session: ${sessionId}`);
       
       res.json({
         success: true,
         payment: {
-          status: payment.paymentStatus,
+          status: stripeSession.payment_status === 'paid' ? 'completed' : payment.paymentStatus,
           amount: payment.paymentAmount,
           currency: payment.currency,
           stripeStatus: stripeSession.payment_status

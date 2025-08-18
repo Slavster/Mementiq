@@ -241,7 +241,7 @@ export default function DashboardPage() {
               console.log("📂 Found target project for revision workflow:", targetProject.title);
               setSelectedProject(targetProject);
               setIsRevisionWorkflow(true); // Enable revision workflow
-              setCurrentStep("upload"); // Go to upload step (step 3)
+              setCurrentStep("confirmation"); // Go to confirmation step first to show revision instructions
               console.log("✅ Starting revision workflow - going to upload step");
             } else {
               console.log("⚠️ Could not find project with ID:", projectId);
@@ -341,8 +341,8 @@ export default function DashboardPage() {
         console.log("🎯 Target project search result:", targetProject);
         if (targetProject) {
           setSelectedProject(targetProject);
-          setIsRevisionWorkflow(true); // Enable revision workflow
-          setCurrentStep("upload"); // Go to upload step (step 3)
+          setIsRevisionWorkflow(true); // Enable revision workflow  
+          setCurrentStep("confirmation"); // Go to confirmation step first to show revision instructions
           console.log("✅ Starting revision workflow from URL redirect - going to upload step");
         }
       } else if (projectId && !projectsData) {

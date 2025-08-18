@@ -26,7 +26,14 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Submit button changes to "Submit for Revision" instead of "Send to Editor" for revision workflows
   - ✅ COMPLETELY ELIMINATED SUCCESS SCREEN MODALS after payment completion
   - ✅ Both URL redirect handler and payment polling handler now go directly to revision workflow (step 3)
-  - ✅ Payment completion immediately enables revision workflow flag and sets current step to "upload"
+  - ✅ Payment completion immediately enables revision workflow flag and sets current step to "confirmation"
+  - ✅ IMPLEMENTED COMPREHENSIVE REVISION PAYMENT TRACKING (August 18, 2025):
+    - ✅ Added `revision_count` field to projects table to track number of revisions per project
+    - ✅ Added `updateRevisionPayment()` and `incrementProjectRevisionCount()` storage methods
+    - ✅ Payment verification endpoint now records completed payments and increments revision count
+    - ✅ All revision payments tracked in `revision_payments` table with Stripe session IDs for accounting reconciliation
+    - ✅ Database automatically increments project revision count when payment is verified as completed
+    - ✅ Proper accounting logs show project ID, amount, and session ID for financial tracking
 
 ## Earlier Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup

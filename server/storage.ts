@@ -31,7 +31,7 @@ import {
   type InsertRevisionPayment
 } from "../shared/schema";
 import { db } from "./db";
-import { eq, and, desc, inArray, lt } from "drizzle-orm";
+import { eq, and, desc, inArray, lt, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 export interface IStorage {
@@ -770,6 +770,24 @@ export class DatabaseStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     // Use simple select to avoid schema issues with missing columns
     return await this.db.select().from(users);
+  }
+
+  // Revision payment methods
+  async updateRevisionPayment(sessionId: string, data: { paymentStatus?: string; paidAt?: Date; stripePaymentIntentId?: string }): Promise<void> {
+    await this.db
+      .update(revisionPayments)
+      .set(data)
+      .where(eq(revisionPayments.stripeCheckoutSessionId, sessionId));
+  }
+
+  async incrementProjectRevisionCount(projectId: number): Promise<void> {
+    await this.db
+      .update(projects)
+      .set({ 
+        revisionCount: sql`${projects.revisionCount} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(projects.id, projectId));
   }
 }
 
