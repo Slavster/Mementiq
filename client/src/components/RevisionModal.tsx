@@ -145,62 +145,43 @@ export function RevisionModal({
     switch (currentStep) {
       case "video-review":
         return (
-          <div className="space-y-6">
-            {/* Step Title */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">
-                Step 1: Review Your Video
-              </h2>
-              <p className="text-gray-400">
-                Review your video and add revision comments directly in Frame.io
-              </p>
+          <div className="space-y-8">
+            {/* Excitement Header - identical to VideoViewingStep */}
+            <div className="text-center space-y-4">
+              <div className="text-6xl">🎬</div>
+              <h1 className="text-3xl font-bold text-white">Review Your Video for Revisions</h1>
             </div>
 
-            {/* Main content - identical to video viewing stage */}
+            {/* Main Video Card - identical structure to VideoViewingStep */}
             <Card className="bg-gray-900/50 border-gray-700">
               <CardContent className="p-8">
                 <div className="text-center space-y-6">
-                  {/* Main Action Button */}
+                  {/* Main Action Button - uses existing media review link */}
                   <Button
-                    onClick={async () => {
-                      try {
+                    onClick={() => {
+                      if (project.mediaReviewLink) {
+                        window.open(project.mediaReviewLink, "_blank");
                         toast({
-                          title: "Creating Share Link",
-                          description: "Generating public Frame.io share...",
+                          title: "Opening Frame.io",
+                          description: "Your video is opening in Frame.io where you can add revision comments",
                         });
-
-                        const response = await apiRequest(
-                          "GET",
-                          `/api/projects/${project.id}/video-share-link`,
-                        );
-                        const data = await response.json();
-
-                        if (data.shareUrl) {
-                          window.open(data.shareUrl, "_blank");
-                          toast({
-                            title: "Share Link Created!",
-                            description: "Opening your video in a public Frame.io share",
-                          });
-                        } else {
-                          throw new Error("No share URL returned");
-                        }
-                      } catch (error) {
-                        console.error("Failed to create share link:", error);
+                      } else {
                         toast({
-                          title: "Failed to create share link",
-                          description: "Could not generate a public share link. Please try again.",
+                          title: "Share link not available",
+                          description: "The share link for this project is not available. Please contact support.",
                           variant: "destructive",
                         });
                       }
                     }}
                     size="lg"
                     className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-6 text-lg"
+                    disabled={!project.mediaReviewLink}
                   >
                     <ExternalLink className="h-5 w-5 mr-3" />
                     Open Video in Frame.io to Add Comments
                   </Button>
 
-                  {/* Instructions text */}
+                  {/* Instructions text - matching VideoViewingStep style */}
                   <div className="text-gray-400 space-y-4 max-w-2xl mx-auto">
                     <p>
                       Click the button above to open your video in Frame.io. Add comments directly on the timeline to indicate what changes you'd like.
@@ -435,80 +416,58 @@ export function RevisionModal({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Progress Indicator */}
-        <div className="flex items-center justify-between mb-6 px-4">
-          {/* Step 1 */}
-          <div 
-            className={`flex items-center gap-2 ${
-              currentStep === "video-review" ? "text-cyan-500" : 
-              ["upload-footage", "submit-to-editor", "video-ready"].includes(currentStep) ? "text-green-500" : 
-              "text-gray-500"
-            }`}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-              currentStep === "video-review" ? "bg-cyan-600 text-white" :
-              ["upload-footage", "submit-to-editor", "video-ready"].includes(currentStep) ? "bg-green-600 text-white" :
-              "bg-gray-600 text-gray-300"
+        {/* Progress Indicator - matching existing project stages styling */}
+        <div className="flex items-center justify-between mb-8">
+          {/* Step 1 - Video Review */}
+          <div className="flex flex-col items-center">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+              currentStep === "video-review" ? "bg-cyan-600" :
+              ["upload-footage", "submit-to-editor", "video-ready"].includes(currentStep) ? "bg-green-600" :
+              "bg-gray-600"
             }`}>
               {["upload-footage", "submit-to-editor", "video-ready"].includes(currentStep) ? "✓" : "1"}
             </div>
-            <span className="text-sm font-medium">Video Review</span>
+            <span className="mt-2 text-xs text-gray-400">Video<br/>Review</span>
           </div>
 
-          <div className="flex-1 h-px bg-gray-600 mx-2" />
+          <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
 
-          {/* Step 2 */}
-          <div 
-            className={`flex items-center gap-2 ${
-              currentStep === "upload-footage" ? "text-cyan-500" :
-              ["submit-to-editor", "video-ready"].includes(currentStep) ? "text-green-500" :
-              "text-gray-500"
-            }`}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-              currentStep === "upload-footage" ? "bg-cyan-600 text-white" :
-              ["submit-to-editor", "video-ready"].includes(currentStep) ? "bg-green-600 text-white" :
-              "bg-gray-600 text-gray-300"
+          {/* Step 2 - Upload Footage */}
+          <div className="flex flex-col items-center">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+              currentStep === "upload-footage" ? "bg-cyan-600" :
+              ["submit-to-editor", "video-ready"].includes(currentStep) ? "bg-green-600" :
+              "bg-gray-600"
             }`}>
               {["submit-to-editor", "video-ready"].includes(currentStep) ? "✓" : "2"}
             </div>
-            <span className="text-sm font-medium">Upload Footage</span>
+            <span className="mt-2 text-xs text-gray-400">Upload<br/>Footage</span>
           </div>
 
-          <div className="flex-1 h-px bg-gray-600 mx-2" />
+          <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
 
-          {/* Step 3 */}
-          <div 
-            className={`flex items-center gap-2 ${
-              currentStep === "submit-to-editor" ? "text-cyan-500" :
-              currentStep === "video-ready" ? "text-green-500" :
-              "text-gray-500"
-            }`}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-              currentStep === "submit-to-editor" ? (isSubmitted ? "bg-green-600 text-white" : "bg-cyan-600 text-white") :
-              currentStep === "video-ready" ? "bg-green-600 text-white" :
-              "bg-gray-600 text-gray-300"
+          {/* Step 3 - Submit to Editor */}
+          <div className="flex flex-col items-center">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+              currentStep === "submit-to-editor" && !isSubmitted ? "bg-cyan-600" :
+              (currentStep === "submit-to-editor" && isSubmitted) || currentStep === "video-ready" ? "bg-green-600" :
+              "bg-gray-600"
             }`}>
-              {currentStep === "video-ready" || isSubmitted ? "✓" : "3"}
+              {isSubmitted || currentStep === "video-ready" ? "✓" : "3"}
             </div>
-            <span className="text-sm font-medium">Submit to Editor</span>
+            <span className="mt-2 text-xs text-gray-400">Submit to<br/>Editor</span>
           </div>
 
-          <div className="flex-1 h-px bg-gray-600 mx-2" />
+          <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
 
-          {/* Step 4 */}
-          <div 
-            className={`flex items-center gap-2 ${
-              currentStep === "video-ready" ? "text-cyan-500" : "text-gray-500"
-            }`}
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-              currentStep === "video-ready" ? "bg-cyan-600 text-white" : "bg-gray-600 text-gray-300"
+          {/* Step 4 - Video Ready */}
+          <div className="flex flex-col items-center">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+              currentStep === "video-ready" ? "bg-cyan-600" : "bg-gray-600"
             }`}>
               4
             </div>
-            <span className="text-sm font-medium">Video Ready</span>
+            <span className="mt-2 text-xs text-gray-400">Video is Ready!</span>
           </div>
         </div>
 
