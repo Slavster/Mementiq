@@ -832,64 +832,6 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-3xl font-bold text-white">Your Projects</h2>
-              {/* Debug button for testing revision modal */}
-              <button 
-                onClick={() => {
-                  setRevisionSessionId("cs_test_debug_manual");
-                  setRevisionConfirmationOpen(true);
-                  console.log("🧪 Debug: Manually opened revision confirmation modal");
-                }}
-                className="mt-1 text-xs bg-red-600 text-white px-2 py-1 rounded opacity-50"
-                title="Debug: Test revision confirmation modal"
-              >
-                [Debug] Test Modal
-              </button>
-              {/* Manual payment check button */}
-              <button 
-                onClick={async () => {
-                  const pendingPaymentData = localStorage.getItem('pending_revision_payment');
-                  if (pendingPaymentData) {
-                    const { sessionId } = JSON.parse(pendingPaymentData);
-                    try {
-                      console.log("🔄 Manual payment check triggered");
-                      const response = await apiRequest(`/api/stripe/check-revision-payment?session_id=${sessionId}`);
-                      
-                      if (response.success && response.completed) {
-                        toast({
-                          title: "Payment Confirmed!",
-                          description: "Your revision payment has been processed successfully.",
-                        });
-                        // Clear pending payment
-                        localStorage.removeItem('pending_revision_payment');
-                        // Open modal
-                        setRevisionSessionId(sessionId);
-                        setRevisionConfirmationOpen(true);
-                      } else {
-                        toast({
-                          title: "Payment Pending",
-                          description: "Your payment is still being processed. Please complete the checkout.",
-                        });
-                      }
-                    } catch (error) {
-                      console.error("Manual payment check error:", error);
-                      toast({
-                        title: "Check Failed",
-                        description: "Could not verify payment status. Please try again.",
-                        variant: "destructive"
-                      });
-                    }
-                  } else {
-                    toast({
-                      title: "No Pending Payment",
-                      description: "No revision payment is currently pending.",
-                    });
-                  }
-                }}
-                className="mt-1 ml-2 text-xs bg-cyan-600 text-white px-2 py-1 rounded opacity-75 hover:opacity-100"
-                title="Check if payment completed"
-              >
-                Check Payment Status
-              </button>
             </div>
             <Button
               className={
