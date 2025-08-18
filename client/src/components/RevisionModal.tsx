@@ -333,14 +333,16 @@ export function RevisionModal({
                           </span>
                         </li>
                       </ul>
-
-                      <p className="text-sm text-gray-400 mt-4">
-                        Make sure you're done commenting before moving on.
-                      </p>
-                      <p className="text-sm text-gray-400 mt-2">
-                        The next step will allow you to upload additional
-                        footage if needed.
-                      </p>
+                      
+                      <div className="mt-4 space-y-1">
+                        <p className="text-sm text-gray-400">
+                          Make sure you're done commenting before moving on.
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          The next step will allow you to upload additional
+                          footage if needed.
+                        </p>
+                      </div>
                     </div>
                   </div>
 
