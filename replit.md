@@ -8,7 +8,17 @@ Preferred communication style: Simple, everyday language.
 Frame.io Account: V4 account with OAuth authentication successfully configured via Adobe Developer Console.
 Design Standard: NEVER use blue colors anywhere in the app - all blue instances must be cyan (hsl(180, 85%, 55%)). This is a permanent design requirement.
 
-## Recent Changes (August 14, 2025)
+## Recent Changes (August 18, 2025)
+- **FIXED STRIPE REVISION PAYMENT REDIRECT ISSUE:**
+  - ✅ Corrected Stripe session redirect URLs to use proper endpoints (`/stripe/revision-payment-success` instead of direct dashboard URLs)
+  - ✅ Added payment status verification in redirect handler to ensure payment completion
+  - ✅ Implemented fallback polling mechanism to check payment status every 5 seconds
+  - ✅ Payment session stored in localStorage to survive page refreshes during Stripe checkout
+  - ✅ Added `/api/stripe/check-revision-payment` endpoint for status verification
+  - ✅ Enhanced webhook logging to track revision payment processing
+  - ✅ Dual approach ensures payment confirmation modal opens even if Stripe redirect fails
+
+## Earlier Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup
 - **IMPLEMENTED AUTOMATIC VIDEO ASSET DETECTION SERVICE:**
   - ✅ Created automatic background service that checks for new video uploads every 5 minutes
