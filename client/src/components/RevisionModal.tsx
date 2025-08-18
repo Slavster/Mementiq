@@ -125,46 +125,20 @@ export function RevisionModal({
     };
   }, [open, project, toast]);
 
-  // Submit revision request mutation
-  const submitRevisionMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest(
-        "POST",
-        `/api/projects/${project!.id}/request-revision`,
-        {},
-      );
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        setIsSubmitted(true);
-        toast({
-          title: "Revision Request Submitted",
-          description:
-            "Your revision instructions have been submitted. We'll start working on them right away!",
-        });
-        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+  // Submit revision request (local state only)
+  const handleSubmitRevision = () => {
+    setIsSubmitted(true);
+    toast({
+      title: "Revision Request Submitted",
+      description:
+        "Your revision instructions have been submitted. We'll start working on them right away!",
+    });
 
-        // After a short delay, close the modal
-        setTimeout(() => {
-          onOpenChange(false);
-        }, 3000);
-      } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to submit revision request",
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to submit revision request. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+    // After a short delay, close the modal
+    setTimeout(() => {
+      onOpenChange(false);
+    }, 3000);
+  };
 
   const handleNext = () => {
     if (currentStep === "video-review") {
@@ -185,7 +159,7 @@ export function RevisionModal({
   };
 
   const handleSubmit = () => {
-    submitRevisionMutation.mutate();
+    handleSubmitRevision();
   };
 
   if (!project) return null;
@@ -478,21 +452,11 @@ export function RevisionModal({
                       {/* Submit Button */}
                       <Button
                         onClick={handleSubmit}
-                        disabled={submitRevisionMutation.isPending}
                         className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
                         size="lg"
                       >
-                        {submitRevisionMutation.isPending ? (
-                          <>
-                            <Clock className="h-5 w-5 mr-2 animate-spin" />
-                            Submitting to Editor...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-5 w-5 mr-2" />
-                            Submit to Editor
-                          </>
-                        )}
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Submit to Editor
                       </Button>
                     </div>
                   </CardContent>
