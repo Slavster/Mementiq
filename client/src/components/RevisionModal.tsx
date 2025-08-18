@@ -130,20 +130,11 @@ export function RevisionModal({
     mutationFn: async () => {
       console.log("🔍 Making revision request...");
       try {
-        const response = await apiRequest(
+        const data = await apiRequest(
           "POST",
           `/api/projects/${project!.id}/request-revision`,
           {},
         );
-        console.log("🔍 Response status:", response.status);
-        console.log("🔍 Response ok:", response.ok);
-        
-        if (!response.ok) {
-          console.error("❌ Response not ok:", response.status, response.statusText);
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
         console.log("🔍 Response data:", data);
         return data;
       } catch (error) {
