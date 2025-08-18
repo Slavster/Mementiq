@@ -24,6 +24,9 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Tally form step automatically skipped for revision requests - goes directly from upload to submission
   - ✅ Revision workflow clearly marked with "Instructions (Skipped for Revision)" in progress indicator
   - ✅ Submit button changes to "Submit for Revision" instead of "Send to Editor" for revision workflows
+  - ✅ COMPLETELY ELIMINATED SUCCESS SCREEN MODALS after payment completion
+  - ✅ Both URL redirect handler and payment polling handler now go directly to revision workflow (step 3)
+  - ✅ Payment completion immediately enables revision workflow flag and sets current step to "upload"
 
 ## Earlier Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup
