@@ -1227,8 +1227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Project not found" });
       }
       
-      // For projects in "video is ready" status, return Frame.io assets directly
-      if (project.status.toLowerCase() === "video is ready" && project.mediaFolderId) {
+      // For projects in "video is ready" or revision status, return Frame.io assets directly
+      if ((project.status.toLowerCase() === "video is ready" || 
+           project.status.toLowerCase() === "awaiting revision instructions" ||
+           project.status.toLowerCase() === "revision in progress") && 
+          project.mediaFolderId) {
         try {
           await frameioV4Service.loadServiceAccountToken();
           const accountId = await frameioV4Service.getAccountId();
@@ -1251,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (videoAssets.length > 0) {
               const latestVideo = videoAssets[0];
-              console.log(`📁 For project ${projectId} in "video is ready" status, returning Frame.io asset: ${latestVideo.name}`);
+              console.log(`📁 For project ${projectId} (status: ${project.status}), returning Frame.io asset: ${latestVideo.name}`);
               
               // Return in the format expected by VideoViewingStep
               const frameioFileFormat = [{
