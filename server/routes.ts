@@ -1241,13 +1241,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           
           if (response && response.data) {
-            // Filter for video files uploaded after submission timestamp
-            const videoAssets = response.data.filter((asset: any) => 
-              asset.media_type && 
-              asset.media_type.startsWith('video/') && 
-              project.submittedToEditorAt && 
-              new Date(asset.created_at) > new Date(project.submittedToEditorAt)
-            );
+            console.log(`🔍 Found ${response.data.length} total assets in Frame.io folder for project ${projectId}`);
+            
+            let videoAssets = [];
+            
+            // For revision projects, get ALL video files (not filtered by submission time)
+            if (project.status.toLowerCase() === 'awaiting revision instructions' || 
+                project.status.toLowerCase() === 'revision in progress') {
+              console.log(`📹 Getting ALL videos for revision project (status: ${project.status})`);
+              videoAssets = response.data.filter((asset: any) => 
+                asset.media_type && asset.media_type.startsWith('video/')
+              );
+              console.log(`📹 Found ${videoAssets.length} total video assets for revision`);
+            } else {
+              // For "video is ready" status, filter by submission timestamp
+              videoAssets = response.data.filter((asset: any) => 
+                asset.media_type && 
+                asset.media_type.startsWith('video/') && 
+                project.submittedToEditorAt && 
+                new Date(asset.created_at) > new Date(project.submittedToEditorAt)
+              );
+              console.log(`🎬 Found ${videoAssets.length} video assets after submission timestamp`);
+              console.log(`⏰ Submission timestamp: ${project.submittedToEditorAt}`);
+            }
             
             // Sort by creation date and take the most recent
             videoAssets.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -1255,6 +1271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (videoAssets.length > 0) {
               const latestVideo = videoAssets[0];
               console.log(`📁 For project ${projectId} (status: ${project.status}), returning Frame.io asset: ${latestVideo.name}`);
+              console.log(`📏 Frame.io file size: ${latestVideo.file_size} bytes (${(latestVideo.file_size / 1024 / 1024).toFixed(2)} MB)`);
               
               // Return in the format expected by VideoViewingStep
               const frameioFileFormat = [{
@@ -1271,6 +1288,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }];
               
               return res.json(frameioFileFormat);
+            } else {
+              console.log(`⚠️ No video assets found in Frame.io folder, falling back to database`);
             }
           }
         } catch (frameioError) {
@@ -1280,7 +1299,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Default: return database files
+      console.log(`⚠️ Falling back to database files for project ${projectId} (status: ${project.status})`);
       const projectFiles = await storage.getProjectFilesByProjectId(projectId);
+      console.log(`📊 Database files returned: ${projectFiles.length} files`);
+      if (projectFiles.length > 0) {
+        console.log(`📏 First file size from DB: ${projectFiles[0].fileSize} bytes (${(projectFiles[0].fileSize / 1024 / 1024).toFixed(2)} MB)`);
+      }
       res.json(projectFiles);
     } catch (error) {
       console.error("Failed to get project files:", error);
