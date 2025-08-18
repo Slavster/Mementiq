@@ -464,7 +464,7 @@ export function RevisionModal({
                       </div>
 
                       {/* Warning */}
-                      <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-4 mb-6">
+                      <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
                         <div className="flex items-start">
                           <AlertTriangle className="h-5 w-5 text-orange-400 mr-2 mt-0.5" />
                           <div className="text-left">
