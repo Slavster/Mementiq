@@ -18,6 +18,8 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Users can manually retry opening payment window if popup is blocked
   - ✅ Automatic payment status monitoring every 2 seconds while popup is open
   - ✅ Clear screen change ensures users know payment is in progress even if popup blocked
+  - ✅ Hidden "Need Changes" and "Next Steps" sections during payment popup for better visibility
+  - ✅ Made payment dialog static (removed distracting "checking" status changes) for smoother UX
 
 ## Earlier Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup

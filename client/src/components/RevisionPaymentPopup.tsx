@@ -159,7 +159,7 @@ export function RevisionPaymentPopup({
   const checkPaymentStatus = async () => {
     if (!sessionId || paymentStatus === "completed") return;
 
-    setPaymentStatus("checking");
+    // Don't change visual status to "checking" - keep it static
     try {
       const response = await apiRequest(`/api/stripe/check-revision-payment`);
 
@@ -184,12 +184,11 @@ export function RevisionPaymentPopup({
         setTimeout(() => {
           onPaymentComplete();
         }, 1500);
-      } else {
-        setPaymentStatus("pending");
       }
+      // Don't change status back to "pending" - keep it static
     } catch (error) {
       console.error("Failed to check payment status:", error);
-      setPaymentStatus("pending");
+      // Don't change status on error - keep it static
     }
   };
 
@@ -238,7 +237,7 @@ export function RevisionPaymentPopup({
             <p className="text-sm text-gray-300 mt-1">One-time payment for revision request</p>
           </div>
 
-          {/* Status message */}
+          {/* Status message - static display */}
           <div className="space-y-4">
             {paymentStatus === "completed" ? (
               <div className="flex items-center gap-3 text-green-400">
@@ -246,14 +245,6 @@ export function RevisionPaymentPopup({
                 <div>
                   <p className="font-semibold">Payment Successful!</p>
                   <p className="text-sm text-gray-400">Redirecting to revision form...</p>
-                </div>
-              </div>
-            ) : paymentStatus === "checking" ? (
-              <div className="flex items-center gap-3 text-cyan-400">
-                <Loader2 className="w-6 h-6 animate-spin" />
-                <div>
-                  <p className="font-semibold">Checking payment status...</p>
-                  <p className="text-sm text-gray-400">Please complete payment in the popup window</p>
                 </div>
               </div>
             ) : (
@@ -290,7 +281,7 @@ export function RevisionPaymentPopup({
               <>
                 <Button
                   onClick={openCheckoutPopup}
-                  disabled={isCreatingSession || paymentStatus === "checking"}
+                  disabled={isCreatingSession}
                   className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
                 >
                   {isCreatingSession ? (
@@ -307,7 +298,7 @@ export function RevisionPaymentPopup({
                 </Button>
                 <Button
                   onClick={checkPaymentStatus}
-                  disabled={!sessionId || paymentStatus === "checking"}
+                  disabled={!sessionId}
                   variant="outline"
                   className="border-gray-700 hover:bg-gray-800"
                 >
