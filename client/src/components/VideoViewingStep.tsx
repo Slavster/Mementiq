@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { FrameVideo } from "./FrameVideo";
 import Confetti from "react-confetti";
+import { RevisionPaymentPopup } from "./RevisionPaymentPopup";
 
 interface VideoViewingStepProps {
   project: any;
@@ -31,7 +32,7 @@ export function VideoViewingStep({
 }: VideoViewingStepProps) {
   const { toast } = useToast();
   const [isAccepting, setIsAccepting] = useState(false);
-  const [isRequestingRevision, setIsRequestingRevision] = useState(false);
+  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [videoFiles, setVideoFiles] = React.useState<VideoFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -129,67 +130,36 @@ export function VideoViewingStep({
     }
   };
 
-  const handleRequestRevision = async () => {
-    setIsRequestingRevision(true);
+  const handleRequestRevision = () => {
+    // Show the payment popup
+    setShowPaymentPopup(true);
+  };
+
+  const handlePaymentComplete = async () => {
+    // Payment successful, close popup and proceed to revision form
+    setShowPaymentPopup(false);
+    
+    // Update project status to revision in progress
     try {
-      console.log("Creating Stripe checkout session for revision payment");
-      
-      const response = await apiRequest(
+      await apiRequest(
         "POST",
-        "/api/stripe/create-revision-session",
-        {
-          projectId: project.id,
-        },
+        `/api/projects/${project.id}/request-revision`
       );
       
-      console.log("Stripe revision payment response:", response);
-      
-      // Parse response if it's not already parsed
-      let data = response;
-      if (typeof response === 'string') {
-        try {
-          data = JSON.parse(response);
-        } catch (e) {
-          console.error("Failed to parse response:", e);
-          throw new Error("Invalid response format");
-        }
-      }
-      
-      if (data.success && data.sessionUrl) {
-        // Store session ID in localStorage for fallback polling
-        if (data.sessionId) {
-          localStorage.setItem('pending_revision_payment', JSON.stringify({
-            sessionId: data.sessionId,
-            projectId: project.id,
-            timestamp: Date.now()
-          }));
-          console.log("✅ Stored pending payment in localStorage:", data.sessionId);
-        }
-        
-        // Simple redirect like the subscription flow that works
-        console.log("Redirecting to Stripe checkout:", data.sessionUrl);
-        window.location.href = data.sessionUrl;
-      } else {
-        throw new Error(data.message || "Failed to create checkout session");
-      }
-    } catch (error: any) {
-      console.error("Failed to create revision payment session:", error);
-      
-      let errorMessage = "Failed to create revision payment session";
-      
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
       toast({
-        title: "Revision Request Failed",
-        description: errorMessage,
+        title: "Revision Request Submitted",
+        description: "Your revision request has been sent to the editor.",
+      });
+      
+      // Trigger the parent callback
+      onRevisionRequested();
+    } catch (error) {
+      console.error("Failed to submit revision request:", error);
+      toast({
+        title: "Error",
+        description: "Payment successful but failed to submit revision request. Please contact support.",
         variant: "destructive",
       });
-    } finally {
-      setIsRequestingRevision(false);
     }
   };
 
@@ -435,16 +405,9 @@ export function VideoViewingStep({
           variant="outline"
           className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white font-bold text-lg h-16"
           onClick={handleRequestRevision}
-          disabled={isRequestingRevision}
         >
-          {isRequestingRevision ? (
-            <div className="animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full mr-3"></div>
-          ) : (
-            <RotateCcw className="h-6 w-6 mr-3" />
-          )}{" "}
-          {isRequestingRevision
-            ? "Requesting Revision..."
-            : "Request Revisions ($5)"}
+          <RotateCcw className="h-6 w-6 mr-3" />
+          Request Revisions ($5)
         </Button>
       </div>
 
@@ -489,6 +452,15 @@ export function VideoViewingStep({
           ← Back to Dashboard
         </Button>
       </div>
+
+      {/* Payment Popup */}
+      {showPaymentPopup && (
+        <RevisionPaymentPopup
+          project={project}
+          onPaymentComplete={handlePaymentComplete}
+          onCancel={() => setShowPaymentPopup(false)}
+        />
+      )}
     </div>
   );
 }
