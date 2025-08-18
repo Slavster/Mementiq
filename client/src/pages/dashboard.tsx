@@ -62,7 +62,7 @@ import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { EditorWorkingScreen } from "@/components/EditorWorkingScreen";
+
 
 interface User {
   id: number;
@@ -178,7 +178,6 @@ export default function DashboardPage() {
   // Revision Confirmation Modal state
   const [revisionConfirmationOpen, setRevisionConfirmationOpen] = useState(false);
   const [revisionSessionId, setRevisionSessionId] = useState<string | null>(null);
-  const [showEditorWorking, setShowEditorWorking] = useState<any>(null);
   
   // Track if URL parameters have been processed to prevent premature cleanup
   const hasProcessedParams = useRef(false);
@@ -653,43 +652,7 @@ export default function DashboardPage() {
     verified: user.email_confirmed_at !== null,
   };
 
-  // Show editor working screen if a project in revision is selected
-  if (showEditorWorking) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary">
-        {/* Header */}
-        <nav className="bg-black/20 backdrop-blur-xl border-b border-gray-800/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <h1 className="text-[#2abdee] text-2xl font-bold">Mementiq</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-white">
-                  Welcome, {mappedUser.firstName}
-                </span>
-                <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  className="border-2 border-accent text-accent px-6 py-2 font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            </div>
-          </div>
-        </nav>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <EditorWorkingScreen
-            project={showEditorWorking}
-            onBack={() => setShowEditorWorking(null)}
-          />
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary">
@@ -970,7 +933,9 @@ export default function DashboardPage() {
                           className="w-full bg-orange-600 hover:bg-orange-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setShowEditorWorking(project);
+                            // Open revision modal in submitted/confirmation state
+                            setRevisionProject(project);
+                            setRevisionModalOpen(true);
                           }}
                         >
                           <Clock className="h-4 w-4 mr-2" />
