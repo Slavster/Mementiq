@@ -222,8 +222,8 @@ export function RevisionPaymentPopup({
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg bg-gray-900 border-gray-800">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-lg bg-gray-900 border-2 border-cyan-500/50 shadow-2xl shadow-cyan-500/20 animate-in zoom-in-95 fade-in duration-300">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-cyan-500" />
@@ -232,10 +232,10 @@ export function RevisionPaymentPopup({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Payment amount */}
-          <div className="bg-gray-800 rounded-lg p-4">
-            <p className="text-gray-400 mb-2">Amount to pay:</p>
-            <p className="text-3xl font-bold text-white">$5.00</p>
-            <p className="text-sm text-gray-400 mt-1">One-time payment for revision request</p>
+          <div className="bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 rounded-lg p-4">
+            <p className="text-gray-300 mb-2 font-medium">Amount to pay:</p>
+            <p className="text-4xl font-bold text-cyan-400 animate-pulse">$5.00</p>
+            <p className="text-sm text-gray-300 mt-1">One-time payment for revision request</p>
           </div>
 
           {/* Status message */}
@@ -269,13 +269,16 @@ export function RevisionPaymentPopup({
                 </div>
 
                 {/* Instructions */}
-                <div className="bg-gray-800 rounded-lg p-4 space-y-2">
-                  <p className="text-sm text-gray-300 font-semibold">Instructions:</p>
-                  <ol className="text-sm text-gray-400 space-y-1 list-decimal list-inside">
-                    <li>Complete payment in the popup window</li>
-                    <li>Wait for confirmation</li>
-                    <li>You'll automatically proceed to the revision form</li>
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4 space-y-2">
+                  <p className="text-sm text-cyan-400 font-semibold">💡 What's happening:</p>
+                  <ol className="text-sm text-gray-300 space-y-1 list-decimal list-inside">
+                    <li>A payment window opened in a new tab</li>
+                    <li>Complete your $5 payment there</li>
+                    <li>This screen will update automatically when done</li>
                   </ol>
+                  <p className="text-xs text-gray-400 mt-3">
+                    <strong>Popup blocked?</strong> Click "Open Payment Window" above to try again.
+                  </p>
                 </div>
               </div>
             )}

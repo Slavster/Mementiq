@@ -9,14 +9,15 @@ Frame.io Account: V4 account with OAuth authentication successfully configured v
 Design Standard: NEVER use blue colors anywhere in the app - all blue instances must be cyan (hsl(180, 85%, 55%)). This is a permanent design requirement.
 
 ## Recent Changes (August 18, 2025)
-- **FIXED STRIPE REVISION PAYMENT REDIRECT ISSUE:**
-  - ✅ Corrected Stripe session redirect URLs to use proper endpoints (`/stripe/revision-payment-success` instead of direct dashboard URLs)
-  - ✅ Added payment status verification in redirect handler to ensure payment completion
-  - ✅ Implemented fallback polling mechanism to check payment status every 5 seconds
-  - ✅ Payment session stored in localStorage to survive page refreshes during Stripe checkout
-  - ✅ Added `/api/stripe/check-revision-payment` endpoint for status verification
-  - ✅ Enhanced webhook logging to track revision payment processing
-  - ✅ Dual approach ensures payment confirmation modal opens even if Stripe redirect fails
+- **ENHANCED REVISION PAYMENT FLOW WITH POPUP APPROACH:**
+  - ✅ Implemented popup-based payment flow instead of redirect approach (better UX in Replit environment)
+  - ✅ Created prominent RevisionPaymentPopup component with clear visual feedback
+  - ✅ Added "Editor is on it" screen (EditorWorkingScreen) shown after successful payment
+  - ✅ Projects in "revision in progress" status show dedicated "View Revision Status" button
+  - ✅ Enhanced popup modal with glowing border, pulsing payment amount, and clear instructions
+  - ✅ Users can manually retry opening payment window if popup is blocked
+  - ✅ Automatic payment status monitoring every 2 seconds while popup is open
+  - ✅ Clear screen change ensures users know payment is in progress even if popup blocked
 
 ## Earlier Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup
