@@ -145,17 +145,8 @@ export function RevisionModal({
     onSuccess: (data) => {
       if (data.success) {
         setIsSubmitted(true);
-        toast({
-          title: "Revision Request Submitted",
-          description:
-            "Your revision instructions have been submitted. We'll start working on them right away!",
-        });
+        setCurrentStep("video-ready"); // Show confirmation screen immediately
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-
-        // After a short delay, close the modal
-        setTimeout(() => {
-          onOpenChange(false);
-        }, 3000);
       } else {
         toast({
           title: "Error",
