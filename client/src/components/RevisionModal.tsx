@@ -31,7 +31,6 @@ import {
   Clock,
 } from "lucide-react";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
-import { VideoViewingStep } from "@/components/VideoViewingStep";
 
 interface Project {
   id: number;
@@ -48,128 +47,6 @@ interface RevisionModalProps {
   project: Project | null;
   step: "instructions" | "uploads" | "confirmation";
   onStepChange: (step: "instructions" | "uploads" | "confirmation") => void;
-}
-
-interface RevisionVideoReviewStepProps {
-  project: Project;
-  revisionInstructions: string;
-  onInstructionsChange: (instructions: string) => void;
-  onBack: () => void;
-  onVideoAccepted: () => void;
-  onRevisionRequested: () => void;
-}
-
-// Component that reuses VideoViewingStep layout but for revision instructions
-function RevisionVideoReviewStep({
-  project,
-  revisionInstructions,
-  onInstructionsChange,
-}: RevisionVideoReviewStepProps) {
-  const { toast } = useToast();
-
-  return (
-    <div className="space-y-6">
-      {/* Step header */}
-      <div className="text-center">
-        <h3 className="text-lg font-semibold text-white mb-2">
-          Step 1: Provide Revision Instructions
-        </h3>
-        <p className="text-gray-400 mb-4">
-          Review your video and provide detailed feedback for our editors.
-        </p>
-      </div>
-
-      {/* Main Video Review Card */}
-      <Card className="bg-gray-900/50 border-gray-700">
-        <CardContent className="p-8">
-          <div className="text-center space-y-6">
-            {/* Main Action Button - Reuse existing video share link */}
-            <Button
-              onClick={async () => {
-                try {
-                  toast({
-                    title: "Opening Review Link",
-                    description: "Loading your video for review...",
-                  });
-
-                  const response = await apiRequest(
-                    `/api/projects/${project.id}/video-share-link`,
-                  );
-
-                  if (response.shareUrl) {
-                    console.log(
-                      "Opening Frame.io review share:",
-                      response.shareUrl,
-                    );
-                    window.open(response.shareUrl, "_blank");
-
-                    toast({
-                      title: "Review Link Opened!",
-                      description:
-                        "You can now review and comment directly on your video",
-                    });
-                  } else {
-                    throw new Error("No share URL returned");
-                  }
-                } catch (error) {
-                  console.error("Failed to create share link:", error);
-                  toast({
-                    title: "Error",
-                    description:
-                      "Could not open review link. Please try again.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg px-8 py-4 h-auto"
-            >
-              <ExternalLink className="w-6 h-6 mr-3" />
-              Open Video for Review
-            </Button>
-
-            {/* Instructions */}
-            <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
-              <div className="space-y-3 text-gray-300">
-                <p>
-                  ✨ Click above to open your video in review mode where you can{" "}
-                  <strong>comment directly on the timeline</strong>.
-                </p>
-
-                <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
-                  <p className="font-semibold text-white">
-                    🎨 How to Leave Effective Revision Feedback:
-                  </p>
-                  <ul className="text-gray-300 text-sm space-y-1">
-                    <li>• Click anywhere on the video timeline to add timestamp-specific comments</li>
-                    <li>• Be specific about what needs to change (text, music, transitions, pacing)</li>
-                    <li>• Highlight sections that need adjustments</li>
-                    <li>• Add reference links or examples if helpful</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Additional Instructions Section */}
-      <div className="space-y-2">
-        <Label htmlFor="additional-instructions" className="text-white">
-          Additional Instructions (Optional)
-        </Label>
-        <Textarea
-          id="additional-instructions"
-          placeholder="Add any general feedback or instructions that don't relate to specific timestamps..."
-          value={revisionInstructions}
-          onChange={(e) => onInstructionsChange(e.target.value)}
-          className="min-h-[120px] bg-gray-900/50 border-gray-600 text-white placeholder-gray-400"
-        />
-        <p className="text-sm text-gray-400">
-          Use the video review tool above for timestamp-specific feedback, and this field for general notes.
-        </p>
-      </div>
-    </div>
-  );
 }
 
 export function RevisionModal({
@@ -295,16 +172,123 @@ export function RevisionModal({
   const renderStepContent = () => {
     switch (step) {
       case "instructions":
-        // Reuse VideoViewingStep interface but with revision-specific content
         return (
-          <RevisionVideoReviewStep
-            project={project}
-            revisionInstructions={revisionInstructions}
-            onInstructionsChange={setRevisionInstructions}
-            onBack={() => {}}
-            onVideoAccepted={() => {}}
-            onRevisionRequested={() => {}}
-          />
+          <div className="space-y-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-2">
+                Step 1: Provide Revision Instructions
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Review your video and provide detailed feedback for our editors.
+              </p>
+            </div>
+
+            {reviewLink || project.mediaReviewLink ? (
+              <>
+                <Card className="border-green-200 bg-green-50">
+                  <CardHeader>
+                    <CardTitle className="text-green-800 flex items-center">
+                      <CheckCircle className="h-5 w-5 mr-2" />
+                      Review Your Video
+                    </CardTitle>
+                    <CardDescription className="text-green-700">
+                      Click the link below to watch your video in review mode,
+                      highlight and leave comments on anything you want changed.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      onClick={() =>
+                        window.open(
+                          reviewLink || project.mediaReviewLink,
+                          "_blank",
+                        )
+                      }
+                      className="w-full bg-cyan-600 hover:bg-cyan-700"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open Video in Review Mode
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-cyan-800 mb-2">
+                    💡 How to Leave Effective Feedback:
+                  </h4>
+                  <ul className="text-cyan-700 text-sm space-y-1">
+                    <li>
+                      • Click anywhere on the video timeline to leave
+                      timestamp-specific comments
+                    </li>
+                    <li>
+                      • Be as detailed as possible about what needs to be
+                      changed
+                    </li>
+                    <li>
+                      • Mention specific elements like text, music, transitions,
+                      or pacing
+                    </li>
+                    <li>
+                      • If you have new assets, you can upload them in the next
+                      step
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="instructions">
+                    Additional Instructions (Optional)
+                  </Label>
+                  <Textarea
+                    id="instructions"
+                    placeholder="Add any general feedback or instructions that don't relate to specific timestamps..."
+                    value={revisionInstructions}
+                    onChange={(e) => setRevisionInstructions(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  <p className="text-sm text-gray-600">
+                    You can leave detailed timestamp comments on the media platform and use
+                    this field for general notes.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <Card className="border-orange-200 bg-orange-50">
+                <CardHeader>
+                  <CardTitle className="text-orange-800 flex items-center">
+                    <AlertTriangle className="h-5 w-5 mr-2" />
+                    Review Link Needed
+                  </CardTitle>
+                  <CardDescription className="text-orange-700">
+                    We couldn't automatically generate your review link. Please
+                    click below to create it manually.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={handleGenerateLink}
+                    disabled={
+                      generateLinkMutation.isPending || isGeneratingLink
+                    }
+                    className="w-full bg-orange-600 hover:bg-orange-700"
+                  >
+                    {generateLinkMutation.isPending ? (
+                      <>
+                        <Clock className="h-4 w-4 mr-2 animate-spin" />
+                        Generating Review Link...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Generate Review Link
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         );
 
       case "uploads":
@@ -450,89 +434,76 @@ export function RevisionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-700">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center text-white text-xl">
+          <DialogTitle className="flex items-center">
             Request Revisions: {project.title}
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription>
             Provide detailed feedback and instructions for your video revisions.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step Progress - Match main project workflow design */}
-        <div className="flex items-center gap-2 mb-6">
-          <div
-            className={`flex items-center gap-2 ${step === "instructions" ? "text-[#2abdee]" : step === "uploads" || step === "confirmation" ? "text-green-400" : "text-gray-400"}`}
-          >
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center space-x-4">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${step === "instructions" ? "bg-[#2abdee] text-white" : step === "uploads" || step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+              className={`flex items-center ${step === "instructions" ? "text-cyan-600" : step === "uploads" || step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
             >
-              {step === "uploads" || step === "confirmation" ? "✓" : "1"}
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "instructions" ? "bg-cyan-600 text-white" : step === "uploads" || step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+              >
+                1
+              </div>
+              <span className="ml-2 text-sm font-medium">Instructions</span>
             </div>
-            <span className="font-medium text-white">Instructions</span>
-          </div>
-          <div className="flex-1 h-px bg-gray-600 mx-2" />
-          <div
-            className={`flex items-center gap-2 ${step === "uploads" ? "text-[#2abdee]" : step === "confirmation" ? "text-green-400" : "text-gray-400"}`}
-          >
+            <div className="w-8 h-px bg-gray-300"></div>
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${step === "uploads" ? "bg-[#2abdee] text-white" : step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+              className={`flex items-center ${step === "uploads" ? "text-cyan-600" : step === "confirmation" ? "text-green-600" : "text-gray-400"}`}
             >
-              {step === "confirmation" ? "✓" : "2"}
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "uploads" ? "bg-cyan-600 text-white" : step === "confirmation" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+              >
+                2
+              </div>
+              <span className="ml-2 text-sm font-medium">Assets</span>
             </div>
-            <span className="font-medium text-white">Assets</span>
-          </div>
-          <div className="flex-1 h-px bg-gray-600 mx-2" />
-          <div
-            className={`flex items-center gap-2 ${step === "confirmation" ? "text-[#2abdee]" : "text-gray-400"}`}
-          >
+            <div className="w-8 h-px bg-gray-300"></div>
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${step === "confirmation" ? "bg-[#2abdee] text-white" : "bg-gray-600"}`}
+              className={`flex items-center ${step === "confirmation" ? "text-cyan-600" : "text-gray-400"}`}
             >
-              3
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === "confirmation" ? "bg-cyan-600 text-white" : "bg-gray-200"}`}
+              >
+                3
+              </div>
+              <span className="ml-2 text-sm font-medium">Confirm</span>
             </div>
-            <span className="font-medium text-white">Confirm</span>
           </div>
         </div>
 
         {/* Step Content */}
         {renderStepContent()}
 
-        {/* Navigation Buttons - Match main workflow style */}
-        <div className="flex justify-between pt-6 border-t border-gray-700">
+        {/* Navigation Buttons */}
+        <div className="flex justify-between pt-6 border-t">
           <Button
             variant="outline"
             onClick={handleBack}
             disabled={step === "instructions"}
-            className="text-white border-gray-600 hover:bg-gray-700"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
 
-          {step === "confirmation" ? (
-            <Button
-              onClick={handleSubmit}
-              disabled={submitRevisionMutation.isPending}
-              className="bg-[#2abdee] hover:bg-cyan-600"
-            >
-              {submitRevisionMutation.isPending ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting Instructions...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Submit Revision Instructions
-                </>
-              )}
-            </Button>
-          ) : (
+          {step !== "confirmation" && (
             <Button
               onClick={handleNext}
-              className="bg-[#2abdee] hover:bg-cyan-600"
+              disabled={
+                step === "instructions" &&
+                !reviewLink &&
+                !project.mediaReviewLink
+              }
             >
               Next
               <ArrowRight className="h-4 w-4 ml-2" />
