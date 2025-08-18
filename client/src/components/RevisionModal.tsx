@@ -46,7 +46,11 @@ interface Project {
   mediaReviewLink?: string;
 }
 
-type RevisionStep = "video-review" | "upload-footage" | "submit-to-editor" | "video-ready";
+type RevisionStep =
+  | "video-review"
+  | "upload-footage"
+  | "submit-to-editor"
+  | "video-ready";
 
 interface RevisionModalProps {
   open: boolean;
@@ -82,15 +86,15 @@ export function RevisionModal({
   // Fetch video files for this project - EXACT from VideoViewingStep
   useEffect(() => {
     let mounted = true;
-    
+
     const fetchVideoFiles = async () => {
       if (!project) return;
-      
+
       try {
         const files = await apiRequest(`/api/projects/${project.id}/files`);
-        
+
         if (!mounted) return;
-        
+
         // Filter for video files only
         const videos = files.filter(
           (file: any) => file.fileType && file.fileType.startsWith("video/"),
@@ -98,7 +102,7 @@ export function RevisionModal({
         setVideoFiles(videos);
       } catch (error) {
         if (!mounted) return;
-        
+
         console.error("Failed to fetch video files:", error);
         toast({
           title: "Error",
@@ -115,7 +119,7 @@ export function RevisionModal({
     if (open && project) {
       fetchVideoFiles();
     }
-    
+
     return () => {
       mounted = false;
     };
@@ -138,10 +142,11 @@ export function RevisionModal({
         setIsSubmitted(true);
         toast({
           title: "Revision Request Submitted",
-          description: "Your revision instructions have been submitted. We'll start working on them right away!",
+          description:
+            "Your revision instructions have been submitted. We'll start working on them right away!",
         });
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-        
+
         // After a short delay, close the modal
         setTimeout(() => {
           onOpenChange(false);
@@ -206,7 +211,9 @@ export function RevisionModal({
             {/* Revision Header */}
             <div className="text-center space-y-4">
               <Edit3 className="text-6xl w-16 h-16 mx-auto text-cyan-400" />
-              <h1 className="text-3xl font-bold text-white">Let us know what needs changing</h1>
+              <h1 className="text-3xl font-bold text-white">
+                Let us know what needs changing
+              </h1>
             </div>
 
             {/* Main Video Card - EXACT from VideoViewingStep */}
@@ -265,12 +272,18 @@ export function RevisionModal({
                     <div className="space-y-3 text-gray-300">
                       <p className="flex items-start">
                         <MessageCircle className="w-5 h-5 text-cyan-400 mr-2 mt-0.5 flex-shrink-0" />
-                        Clicking the button above will open a new tab where you can review your video. Use comments and annotations to tell us precisely what you want changed.
+                        Clicking the button above will open a new tab where you
+                        can review your video. Use comments and annotations to
+                        tell us precisely what you want changed.
                       </p>
 
                       <p className="flex items-start">
                         <Info className="w-5 h-5 text-orange-400 mr-2 mt-0.5 flex-shrink-0" />
-                        <strong>Important:</strong> This link will only be available for 30 days, so make sure to submit your revision instructions before then!
+                        <span>
+                          <strong>Important:</strong> This link will only be
+                          available for 30 days, so make sure to submit your
+                          revision instructions before then!
+                        </span>
                       </p>
 
                       <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
@@ -296,24 +309,37 @@ export function RevisionModal({
                   <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-6 text-left">
                     <div className="text-gray-300 space-y-3">
                       <p className="font-semibold text-white">
-                        All revision instructions must be left as comments within Frame.io:
+                        All revision instructions must be left as comments
+                        within Frame.io:
                       </p>
                       <ul className="space-y-2 text-sm">
                         <li className="flex items-start">
                           <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
-                          <span>Click directly on the video timeline to add precise comments</span>
+                          <span>
+                            Click directly on the video timeline to add precise
+                            comments
+                          </span>
                         </li>
                         <li className="flex items-start">
                           <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
-                          <span>Use drawing tools to highlight specific areas</span>
+                          <span>
+                            Use drawing tools to highlight specific areas
+                          </span>
                         </li>
                         <li className="flex items-start">
                           <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
-                          <span>Be specific about what changes you want made</span>
+                          <span>
+                            Be specific about what changes you want made
+                          </span>
                         </li>
                       </ul>
+
                       <p className="text-sm text-gray-400 mt-4">
-                        Make sure all changes are documented before moving to the next stage. The next step will allow you to upload additional footage if needed.
+                        Make sure you're done commenting before moving on.
+                      </p>
+                      <p className="text-sm text-gray-400 mt-2">
+                        The next step will allow you to upload additional
+                        footage if needed.
                       </p>
                     </div>
                   </div>
@@ -344,7 +370,8 @@ export function RevisionModal({
                 Step 2: Upload Additional Footage (Optional)
               </h2>
               <p className="text-gray-400">
-                If you need to add new footage for your revisions, upload it here
+                If you need to add new footage for your revisions, upload it
+                here
               </p>
             </div>
 
@@ -354,7 +381,8 @@ export function RevisionModal({
               onUploadComplete={() => {
                 toast({
                   title: "Upload Complete",
-                  description: "Your additional footage has been uploaded successfully.",
+                  description:
+                    "Your additional footage has been uploaded successfully.",
                 });
                 handleNext();
               }}
@@ -388,18 +416,24 @@ export function RevisionModal({
                       <h3 className="text-lg font-semibold text-white mb-4">
                         Ready to Submit Your Revision Request?
                       </h3>
-                      
+
                       {/* Checklist */}
                       <div className="bg-gray-800/50 rounded-lg p-6 text-left space-y-3 max-w-2xl mx-auto mb-6">
-                        <p className="font-semibold text-white">Before submitting, please confirm:</p>
+                        <p className="font-semibold text-white">
+                          Before submitting, please confirm:
+                        </p>
                         <ul className="space-y-2 text-sm text-gray-400">
                           <li className="flex items-start">
                             <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
-                            <span>All revision comments have been added in Frame.io</span>
+                            <span>
+                              All revision comments have been added in Frame.io
+                            </span>
                           </li>
                           <li className="flex items-start">
                             <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
-                            <span>Any additional footage has been uploaded</span>
+                            <span>
+                              Any additional footage has been uploaded
+                            </span>
                           </li>
                           <li className="flex items-start">
                             <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
@@ -414,8 +448,10 @@ export function RevisionModal({
                           <AlertTriangle className="h-5 w-5 text-orange-400 mr-2 mt-0.5" />
                           <div className="text-left">
                             <p className="text-orange-400 text-sm">
-                              <strong>Important:</strong> Once you submit, this action cannot be undone. 
-                              Make sure all your revision instructions and footage are complete.
+                              <strong>Important:</strong>
+                              Make sure all your revision instructions and
+                              footage are final. Once you submit, you won't be
+                              able to add more comments or footage.
                             </p>
                           </div>
                         </div>
@@ -456,11 +492,15 @@ export function RevisionModal({
                       Editor is on it!
                     </h2>
                     <p className="text-gray-400 text-lg max-w-md mx-auto">
-                      Your revision request has been submitted successfully. Our editors are now working on your changes.
+                      Your revision request has been submitted successfully. Our
+                      editors are now working on your changes.
                     </p>
                     <div className="bg-gray-800/50 rounded-lg p-4">
                       <p className="text-sm text-gray-400">
-                        Project Status: <Badge className="ml-2 bg-yellow-600">Revision in Progress</Badge>
+                        Project Status:{" "}
+                        <Badge className="ml-2 bg-yellow-600">
+                          Revision in Progress
+                        </Badge>
                       </p>
                     </div>
                   </div>
@@ -514,51 +554,88 @@ export function RevisionModal({
         <div className="flex items-center justify-between mb-8">
           {/* Step 1 - Video Review */}
           <div className="flex flex-col items-center">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
-              currentStep === "video-review" ? "bg-cyan-600" :
-              ["upload-footage", "submit-to-editor", "video-ready"].includes(currentStep) ? "bg-green-600" :
-              "bg-gray-600"
-            }`}>
-              {["upload-footage", "submit-to-editor", "video-ready"].includes(currentStep) ? "✓" : "1"}
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                currentStep === "video-review"
+                  ? "bg-cyan-600"
+                  : [
+                        "upload-footage",
+                        "submit-to-editor",
+                        "video-ready",
+                      ].includes(currentStep)
+                    ? "bg-green-600"
+                    : "bg-gray-600"
+              }`}
+            >
+              {["upload-footage", "submit-to-editor", "video-ready"].includes(
+                currentStep,
+              )
+                ? "✓"
+                : "1"}
             </div>
-            <span className="mt-2 text-xs text-gray-400">Video<br/>Review</span>
+            <span className="mt-2 text-xs text-gray-400">
+              Video
+              <br />
+              Review
+            </span>
           </div>
 
           <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
 
           {/* Step 2 - Upload Footage */}
           <div className="flex flex-col items-center">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
-              currentStep === "upload-footage" ? "bg-cyan-600" :
-              ["submit-to-editor", "video-ready"].includes(currentStep) ? "bg-green-600" :
-              "bg-gray-600"
-            }`}>
-              {["submit-to-editor", "video-ready"].includes(currentStep) ? "✓" : "2"}
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                currentStep === "upload-footage"
+                  ? "bg-cyan-600"
+                  : ["submit-to-editor", "video-ready"].includes(currentStep)
+                    ? "bg-green-600"
+                    : "bg-gray-600"
+              }`}
+            >
+              {["submit-to-editor", "video-ready"].includes(currentStep)
+                ? "✓"
+                : "2"}
             </div>
-            <span className="mt-2 text-xs text-gray-400">Upload<br/>Footage</span>
+            <span className="mt-2 text-xs text-gray-400">
+              Upload
+              <br />
+              Footage
+            </span>
           </div>
 
           <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
 
           {/* Step 3 - Submit to Editor */}
           <div className="flex flex-col items-center">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
-              currentStep === "submit-to-editor" && !isSubmitted ? "bg-cyan-600" :
-              (currentStep === "submit-to-editor" && isSubmitted) || currentStep === "video-ready" ? "bg-green-600" :
-              "bg-gray-600"
-            }`}>
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                currentStep === "submit-to-editor" && !isSubmitted
+                  ? "bg-cyan-600"
+                  : (currentStep === "submit-to-editor" && isSubmitted) ||
+                      currentStep === "video-ready"
+                    ? "bg-green-600"
+                    : "bg-gray-600"
+              }`}
+            >
               {isSubmitted || currentStep === "video-ready" ? "✓" : "3"}
             </div>
-            <span className="mt-2 text-xs text-gray-400">Submit to<br/>Editor</span>
+            <span className="mt-2 text-xs text-gray-400">
+              Submit to
+              <br />
+              Editor
+            </span>
           </div>
 
           <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
 
           {/* Step 4 - Video Ready */}
           <div className="flex flex-col items-center">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
-              currentStep === "video-ready" ? "bg-cyan-600" : "bg-gray-600"
-            }`}>
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                currentStep === "video-ready" ? "bg-cyan-600" : "bg-gray-600"
+              }`}
+            >
               4
             </div>
             <span className="mt-2 text-xs text-gray-400">Video is Ready!</span>
@@ -567,10 +644,6 @@ export function RevisionModal({
 
         {/* Step Content */}
         {renderStepContent()}
-
-
-
-
       </DialogContent>
     </Dialog>
   );
