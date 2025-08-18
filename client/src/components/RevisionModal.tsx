@@ -333,7 +333,7 @@ export function RevisionModal({
                           </span>
                         </li>
                       </ul>
-                      
+
                       <div className="mt-4 space-y-1">
                         <p className="text-sm text-gray-400">
                           Make sure you're done commenting before moving on.
@@ -467,10 +467,9 @@ export function RevisionModal({
                           <AlertTriangle className="h-5 w-5 text-orange-400 mr-2 mt-0.5" />
                           <div className="text-left">
                             <p className="text-orange-400 text-sm">
-                              <strong>Important:</strong>
-                              Make sure all your revision instructions and
-                              footage are final. Once you submit, you won't be
-                              able to add more comments or footage.
+                              <strong>Important: </strong>
+                              Once you submit, you won't be able to add more
+                              comments or footage.
                             </p>
                           </div>
                         </div>
@@ -569,20 +568,28 @@ export function RevisionModal({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Progress Indicator - matching existing project stages styling */}
-        <div className="flex items-center justify-between mb-8">
+        {/* Step Progress - matching upload modal styling */}
+        <div className="flex items-center gap-2 mb-6">
           {/* Step 1 - Video Review */}
-          <div className="flex flex-col items-center">
+          <div
+            className={`flex items-center gap-2 ${
+              currentStep === "video-review"
+                ? "text-[#2abdee]"
+                : ["upload-footage", "submit-to-editor", "video-ready"].includes(
+                      currentStep,
+                    )
+                  ? "text-green-400"
+                  : "text-gray-400"
+            }`}
+          >
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                 currentStep === "video-review"
-                  ? "bg-cyan-600"
-                  : [
-                        "upload-footage",
-                        "submit-to-editor",
-                        "video-ready",
-                      ].includes(currentStep)
-                    ? "bg-green-600"
+                  ? "bg-[#2abdee] text-white"
+                  : ["upload-footage", "submit-to-editor", "video-ready"].includes(
+                        currentStep,
+                      )
+                    ? "bg-green-600 text-white"
                     : "bg-gray-600"
               }`}
             >
@@ -592,23 +599,27 @@ export function RevisionModal({
                 ? "✓"
                 : "1"}
             </div>
-            <span className="mt-2 text-xs text-gray-400">
-              Video
-              <br />
-              Review
-            </span>
+            <span className="font-medium">Video Review</span>
           </div>
 
-          <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
+          <div className="flex-1 h-px bg-gray-600 mx-2" />
 
           {/* Step 2 - Upload Footage */}
-          <div className="flex flex-col items-center">
+          <div
+            className={`flex items-center gap-2 ${
+              currentStep === "upload-footage"
+                ? "text-[#2abdee]"
+                : ["submit-to-editor", "video-ready"].includes(currentStep)
+                  ? "text-green-400"
+                  : "text-gray-400"
+            }`}
+          >
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                 currentStep === "upload-footage"
-                  ? "bg-cyan-600"
+                  ? "bg-[#2abdee] text-white"
                   : ["submit-to-editor", "video-ready"].includes(currentStep)
-                    ? "bg-green-600"
+                    ? "bg-green-600 text-white"
                     : "bg-gray-600"
               }`}
             >
@@ -616,48 +627,55 @@ export function RevisionModal({
                 ? "✓"
                 : "2"}
             </div>
-            <span className="mt-2 text-xs text-gray-400">
-              Upload
-              <br />
-              Footage
-            </span>
+            <span className="font-medium">Upload Footage</span>
           </div>
 
-          <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
+          <div className="flex-1 h-px bg-gray-600 mx-2" />
 
           {/* Step 3 - Submit to Editor */}
-          <div className="flex flex-col items-center">
+          <div
+            className={`flex items-center gap-2 ${
+              currentStep === "submit-to-editor" && !isSubmitted
+                ? "text-[#2abdee]"
+                : (currentStep === "submit-to-editor" && isSubmitted) ||
+                    currentStep === "video-ready"
+                  ? "text-green-400"
+                  : "text-gray-400"
+            }`}
+          >
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                 currentStep === "submit-to-editor" && !isSubmitted
-                  ? "bg-cyan-600"
+                  ? "bg-[#2abdee] text-white"
                   : (currentStep === "submit-to-editor" && isSubmitted) ||
                       currentStep === "video-ready"
-                    ? "bg-green-600"
+                    ? "bg-green-600 text-white"
                     : "bg-gray-600"
               }`}
             >
               {isSubmitted || currentStep === "video-ready" ? "✓" : "3"}
             </div>
-            <span className="mt-2 text-xs text-gray-400">
-              Submit to
-              <br />
-              Editor
-            </span>
+            <span className="font-medium">Submit to Editor</span>
           </div>
 
-          <div className="flex-1 h-0.5 bg-gray-600 mx-2 mt-[-1.5rem]" />
+          <div className="flex-1 h-px bg-gray-600 mx-2" />
 
           {/* Step 4 - Video Ready */}
-          <div className="flex flex-col items-center">
+          <div
+            className={`flex items-center gap-2 ${
+              currentStep === "video-ready" ? "text-[#2abdee]" : "text-gray-400"
+            }`}
+          >
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
-                currentStep === "video-ready" ? "bg-cyan-600" : "bg-gray-600"
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                currentStep === "video-ready"
+                  ? "bg-[#2abdee] text-white"
+                  : "bg-gray-600"
               }`}
             >
               4
             </div>
-            <span className="mt-2 text-xs text-gray-400">Video is Ready!</span>
+            <span className="font-medium">Video is Ready!</span>
           </div>
         </div>
 
