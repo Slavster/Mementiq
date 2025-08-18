@@ -392,11 +392,6 @@ export function RevisionModal({
             <FrameioUploadInterface
               project={project}
               onUploadComplete={() => {
-                toast({
-                  title: "Upload Complete",
-                  description:
-                    "Your additional footage has been uploaded successfully.",
-                });
                 handleNext();
               }}
               onCancel={() => handleNext()}
