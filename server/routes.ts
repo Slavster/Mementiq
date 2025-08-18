@@ -1621,16 +1621,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log status change
       await storage.logProjectStatusChange(projectId, project.status, 'revision in progress');
       
-      // Update Frame.io assets status to "Needs Review"
-      console.log(`🧪 About to update Frame.io assets to "Needs Review" for project ${projectId}`);
-      try {
-        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Needs Review');
-        console.log(`✅ Frame.io assets updated to "Needs Review" for project ${projectId}`);
-      } catch (frameioError) {
-        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
-        // Don't fail the request if Frame.io update fails
-      }
-      
       res.json({ 
         success: true, 
         message: "Revision request submitted successfully",
