@@ -368,9 +368,20 @@ export function RevisionModal({
           <div className="space-y-6">
             {/* Step Title */}
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">
-                Step 2: Upload Additional Footage (Optional)
-              </h2>
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-2xl font-bold text-white">
+                  Step 2: Upload Additional Footage (Optional)
+                </h2>
+                <Button
+                  onClick={() => setCurrentStep("video-review")}
+                  variant="outline"
+                  size="sm"
+                  className="bg-black text-white border-gray-600 hover:bg-gray-800"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+              </div>
               <p className="text-gray-400">
                 If you need to add new footage for your revisions, upload it
                 here
@@ -403,9 +414,20 @@ export function RevisionModal({
               <>
                 {/* Step Title */}
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2">
-                    Step 3: Submit to Editor
-                  </h2>
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 className="text-2xl font-bold text-white">
+                      Step 3: Submit to Editor
+                    </h2>
+                    <Button
+                      onClick={() => setCurrentStep("upload-footage")}
+                      variant="outline"
+                      size="sm"
+                      className="bg-black text-white border-gray-600 hover:bg-gray-800"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                  </div>
                   <p className="text-gray-400">
                     Review and confirm your revision request
                   </p>
