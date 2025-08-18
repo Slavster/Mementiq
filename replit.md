@@ -51,6 +51,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   Navigation allows back/forward until submission, after which "Editor is on it" screen displays and status updates to "revision in progress".
 
 ## Recent Changes
+- **2025-08-18**: Revised revision modal UI - replaced emojis with appropriate icons (Edit3, MessageCircle, Info), updated all text content per user requirements, added Frame.io instructions section emphasizing comments must be left within Frame.io, made modal scrollable, and removed all unnecessary navigation buttons at bottom
 - **2025-08-18**: Fixed revision workflow share link retrieval - API endpoint now checks project-level frameioReviewLink FIRST before any Frame.io operations, ensuring NO new share links can be created during revision process
 - **2025-08-18**: Removed misleading toast notifications about "Share Link Created!" in revision workflow - links are only retrieved, never created
 - **2025-08-18**: Updated database with correct share link (https://f.io/BC9_Q8JH) and video filename (Me - tu lan cave.mp4) for project 16

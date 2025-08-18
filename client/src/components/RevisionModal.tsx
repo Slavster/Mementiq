@@ -600,61 +600,9 @@ export function RevisionModal({
         {/* Step Content */}
         {renderStepContent()}
 
-        {/* Navigation Buttons */}
-        {!isSubmitted && currentStep !== "submit-to-editor" && (
-          <div className="flex justify-between pt-6 border-t border-gray-700">
-            {currentStep === "video-review" ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  className="text-gray-400 hover:text-white border-gray-600"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleNext}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  Continue to Next Step
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </>
-            ) : currentStep === "upload-footage" ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  className="text-gray-400 hover:text-white border-gray-600"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Video Review
-                </Button>
-                <Button
-                  onClick={handleNext}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  Continue to Confirmation
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </>
-            ) : null}
-          </div>
-        )}
 
-        {/* Navigation for submit-to-editor step (before submission) */}
-        {!isSubmitted && currentStep === "submit-to-editor" && (
-          <div className="flex justify-between pt-6 border-t border-gray-700">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              className="text-gray-400 hover:text-white border-gray-600"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </div>
-        )}
+
+
       </DialogContent>
     </Dialog>
   );
