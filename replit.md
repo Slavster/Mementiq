@@ -42,7 +42,8 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **Video Delivery Detection**: Automatic background service detects new video uploads, transitions projects to "Video is Ready", and sends notifications. Asset detection filters by submission timestamp to avoid false positives.
 - **Public Share Creation**: Implementation of Frame.io V4 public share system with proper API schema compliance, including intelligent share reuse and project-level security. Share links are stored at both file and project level.
 - **Email Capture**: Persistent storage for email signups.
-- **Revision Payment Flow**: Implemented a popup-based payment flow for revisions with immediate UI feedback, automatic payment status monitoring, and comprehensive payment tracking including `revision_count` per project.
+- **Revision Payment Flow**: Implemented a popup-based payment flow for revisions with immediate UI feedback, automatic payment status monitoring, and comprehensive payment tracking including `revision_count` per project. Projects automatically update to "awaiting revision instructions" status after successful payment.
+- **Revision Instructions Interface**: Redesigned revision modal to match project workflow stages with numbered cyan/green progress indicators (4 stages: footage upload, instructions, confirmation/video review, edit in progress). Interface mirrors video viewing screen with identical Frame.io link button and instructions. Bottom section includes warning text about double-checking footage/instructions before single "Submit to Editor" button.
 
 ## External Dependencies
 
