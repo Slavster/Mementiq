@@ -51,6 +51,8 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   Navigation allows back/forward until submission, after which "Editor is on it" screen displays and status updates to "revision in progress".
 
 ## Recent Changes
+- **2025-08-18**: Fixed revision submission flow - corrected apiRequest handling in RevisionModal.tsx to properly handle returned JSON data instead of treating it as Response object, resolving "undefined" errors during submission
+- **2025-08-18**: Improved revision workflow UX - step 3 ("Submit to Editor") now transforms in-place to show "Editor is on it!" confirmation screen without changing steps, then auto-closes after 3 seconds for seamless user experience
 - **2025-08-18**: Fixed revision submission errors - removed unnecessary Frame.io API calls from revision request endpoint that were causing submission failures. Revision submission now only updates project status and logs changes without external API dependencies
 - **2025-08-18**: Completed revision modal UI consistency - step tracker now matches upload modal styling with w-8 h-8 circles, cyan color scheme, and proper back button behavior (disappears after submission)
 - **2025-08-18**: Revised revision modal UI - replaced emojis with appropriate icons (Edit3, MessageCircle, Info), updated all text content per user requirements, added Frame.io instructions section emphasizing comments must be left within Frame.io, made modal scrollable, and removed all unnecessary navigation buttons at bottom

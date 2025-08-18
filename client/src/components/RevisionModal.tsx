@@ -144,9 +144,13 @@ export function RevisionModal({
     },
     onSuccess: (data) => {
       if (data.success) {
-        setIsSubmitted(true);
-        setCurrentStep("video-ready"); // Show confirmation screen immediately
+        setIsSubmitted(true); // This will transform the submit-to-editor step
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+        
+        // Auto-close modal after showing confirmation
+        setTimeout(() => {
+          onOpenChange(false);
+        }, 3000);
       } else {
         toast({
           title: "Error",
