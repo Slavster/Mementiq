@@ -128,19 +128,14 @@ export function RevisionModal({
   // Submit revision request mutation
   const submitRevisionMutation = useMutation({
     mutationFn: async () => {
-      console.log("🔍 Making revision request...");
       const response = await apiRequest(
         "POST",
         `/api/projects/${project!.id}/request-revision`,
         {},
       );
-      console.log("🔍 Response status:", response.status);
-      const data = await response.json();
-      console.log("🔍 Response data:", data);
-      return data;
+      return response.json();
     },
     onSuccess: (data) => {
-      console.log("✅ Mutation onSuccess called with:", data);
       if (data.success) {
         setIsSubmitted(true);
         toast({
@@ -155,7 +150,6 @@ export function RevisionModal({
           onOpenChange(false);
         }, 3000);
       } else {
-        console.error("❌ Server returned success=false:", data);
         toast({
           title: "Error",
           description: data.message || "Failed to submit revision request",
@@ -164,7 +158,6 @@ export function RevisionModal({
       }
     },
     onError: (error) => {
-      console.error("❌ Mutation onError called with:", error);
       toast({
         title: "Error",
         description: "Failed to submit revision request. Please try again.",
