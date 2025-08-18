@@ -225,19 +225,41 @@ export function RevisionModal({
                     </div>
                   )}
 
-                  {/* Main Action Button - EXACT from VideoViewingStep but using existing link */}
+                  {/* Main Action Button - EXACT from VideoViewingStep */}
                   <Button
-                    onClick={() => {
-                      if (project.mediaReviewLink) {
-                        window.open(project.mediaReviewLink, "_blank");
+                    onClick={async () => {
+                      try {
                         toast({
-                          title: "Share Link Created!",
-                          description: "Opening your video in a public Frame.io share (no login required)",
+                          title: "Creating Share Link",
+                          description: "Generating public Frame.io share...",
                         });
-                      } else {
+
+                        const response = await apiRequest(
+                          `/api/projects/${project.id}/video-share-link`,
+                        );
+
+                        if (response.shareUrl) {
+                          console.log(
+                            "Opening Frame.io public share:",
+                            response.shareUrl,
+                          );
+                          window.open(response.shareUrl, "_blank");
+
+                          toast({
+                            title: "Share Link Created!",
+                            description:
+                              "Opening your video in a public Frame.io share (no login required)",
+                          });
+                        } else {
+                          throw new Error("No share URL returned");
+                        }
+                      } catch (error) {
+                        console.error("Failed to create share link:", error);
+
                         toast({
                           title: "Error",
-                          description: "Could not open share link. Please try again.",
+                          description:
+                            "Could not create share link. Please try again.",
                           variant: "destructive",
                         });
                       }
