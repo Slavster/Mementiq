@@ -413,15 +413,17 @@ export function RevisionModal({
                     <h2 className="text-2xl font-bold text-white">
                       Step 3: Submit to Editor
                     </h2>
-                    <Button
-                      onClick={() => setCurrentStep("upload-footage")}
-                      variant="outline"
-                      size="sm"
-                      className="bg-black text-white border-gray-600 hover:bg-gray-800"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </Button>
+                    {!isSubmitted && (
+                      <Button
+                        onClick={() => setCurrentStep("upload-footage")}
+                        variant="outline"
+                        size="sm"
+                        className="bg-black text-white border-gray-600 hover:bg-gray-800"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                      </Button>
+                    )}
                   </div>
                   <p className="text-gray-400">
                     Review and confirm your revision request
@@ -500,30 +502,45 @@ export function RevisionModal({
               </>
             ) : (
               // "Editor is on it" screen after submission
-              <Card className="bg-gray-900/50 border-gray-700">
-                <CardContent className="p-12">
-                  <div className="text-center space-y-6">
-                    <div className="mx-auto w-20 h-20 bg-green-600 rounded-full flex items-center justify-center">
-                      <CheckCircle className="h-10 w-10 text-white" />
-                    </div>
-                    <h2 className="text-3xl font-bold text-white">
-                      Editor is on it!
-                    </h2>
-                    <p className="text-gray-400 text-lg max-w-md mx-auto">
-                      Your revision request has been submitted successfully. Our
-                      editors are now working on your changes.
-                    </p>
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <p className="text-sm text-gray-400">
-                        Project Status:{" "}
-                        <Badge className="ml-2 bg-yellow-600">
-                          Revision in Progress
-                        </Badge>
+              <div className="space-y-6">
+                {/* Step Title - without back button */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    Step 3: Submit to Editor
+                  </h2>
+                  <p className="text-gray-400">
+                    Your revision has been submitted
+                  </p>
+                </div>
+
+                <Card className="bg-green-500/10 border-green-500/30">
+                  <CardContent className="p-12">
+                    <div className="text-center space-y-6">
+                      <div className="mx-auto w-20 h-20 bg-green-600 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-10 w-10 text-white" />
+                      </div>
+                      <h2 className="text-3xl font-bold text-green-400">
+                        Editor is on it! 🎬
+                      </h2>
+                      <p className="text-gray-300 text-lg max-w-md mx-auto">
+                        Your revision request has been submitted successfully. Our
+                        editors are now working on implementing your changes.
+                      </p>
+                      <div className="bg-black/20 rounded-lg p-4 inline-block">
+                        <p className="text-sm text-gray-400">
+                          Project Status:{" "}
+                          <Badge className="ml-2 bg-yellow-600 text-white">
+                            Revision in Progress
+                          </Badge>
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-500 italic">
+                        This window will close automatically...
                       </p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         );
