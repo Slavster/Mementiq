@@ -43,7 +43,12 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **Public Share Creation**: Implementation of Frame.io V4 public share system with proper API schema compliance, including intelligent share reuse and project-level security. Share links are stored at both file and project level.
 - **Email Capture**: Persistent storage for email signups.
 - **Revision Payment Flow**: Implemented a popup-based payment flow for revisions with immediate UI feedback, automatic payment status monitoring, and comprehensive payment tracking including `revision_count` per project. Projects automatically update to "awaiting revision instructions" status after successful payment.
-- **Revision Instructions Interface**: Redesigned revision modal to match project workflow stages with numbered cyan/green progress indicators (4 stages: footage upload, instructions, confirmation/video review, edit in progress). Interface mirrors video viewing screen with identical Frame.io link button and instructions. Bottom section includes warning text about double-checking footage/instructions before single "Submit to Editor" button.
+- **Revision Instructions Interface**: Complete 4-step revision workflow redesigned as extension of video viewing stage:
+  - Step 1: Video Review - Identical to video viewing screen with Frame.io link button, revision comments added directly on timeline
+  - Step 2: Upload Footage (Optional) - Reuses existing upload interface with folder asset checking
+  - Step 3: Submit to Editor - Confirmation screen with warning text, checklist, and irreversible submission
+  - Step 4: Video Ready (Placeholder) - For future implementation
+  Navigation allows back/forward until submission, after which "Editor is on it" screen displays and status updates to "revision in progress".
 
 ## External Dependencies
 
