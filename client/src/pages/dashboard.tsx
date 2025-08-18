@@ -362,6 +362,11 @@ export default function DashboardPage() {
       }, 1000);
     } else if (revisionPayment === "cancelled") {
       console.log("❌ Revision payment cancelled detected");
+      
+      // Clear any pending payment from localStorage
+      localStorage.removeItem('pending_revision_payment');
+      console.log("🧹 Cleared pending payment from localStorage");
+      
       toast({
         title: "Revision Payment Cancelled",
         description:

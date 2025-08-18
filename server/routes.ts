@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
+import path from "path";
 import { storage } from "./storage";
 import {
   insertEmailSignupSchema,
@@ -2705,7 +2706,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     console.log("✅ STRIPE REVISION PAYMENT SUCCESS ENDPOINT HIT!");
     console.log("📍 Full URL:", req.url);
+    console.log("📍 Full path:", req.path);
     console.log("📍 Query params:", req.query);
+    console.log("📍 Headers:", req.headers);
     console.log("✅ Stripe revision payment success callback:", { sessionId, projectId });
     
     if (!sessionId || !projectId) {
@@ -2728,6 +2731,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("⚠️ Payment not completed, status:", session.payment_status);
         return res.redirect(`/dashboard?revision_payment=pending&session_id=${sessionId}&project_id=${projectId}`);
       }
+      
+      // Update project status to "revision in progress" after successful payment
+      const numericProjectId = parseInt(projectId);
+      if (!isNaN(numericProjectId)) {
+        try {
+          await storage.updateProject(numericProjectId, {
+            status: 'revision in progress',
+            updatedAt: new Date(),
+          });
+          await updateProjectTimestamp(numericProjectId, "revision payment completed");
+          console.log("✅ Updated project status to 'revision in progress'");
+        } catch (err) {
+          console.error("Failed to update project status:", err);
+        }
+      }
     } catch (error) {
       console.error("Failed to verify Stripe session:", error);
       // Continue with redirect anyway - payment can be verified client-side
@@ -2735,8 +2753,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Redirect to dashboard with parameters for React to handle
     const redirectUrl = `/dashboard?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
-    console.log("🚀 Redirecting to dashboard with params:", redirectUrl);
-    res.redirect(redirectUrl);
+    console.log("🚀 PERFORMING REDIRECT TO:", redirectUrl);
+    console.log("🚀 Using res.redirect with 302 status");
+    
+    // Use explicit 302 redirect to ensure browser follows it
+    res.redirect(302, redirectUrl);
   });
   
   app.get("/stripe/revision-payment-cancel", async (req, res) => {
@@ -2745,7 +2766,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     console.log("❌ STRIPE REVISION PAYMENT CANCEL ENDPOINT HIT!");
     console.log("📍 Full URL:", req.url);
+    console.log("📍 Full path:", req.path);
     console.log("📍 Query params:", req.query);
+    console.log("📍 Headers:", req.headers);
     console.log("❌ Stripe revision payment cancelled:", { sessionId, projectId });
     
     if (!sessionId || !projectId) {
@@ -2753,10 +2776,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.redirect("/dashboard");
     }
     
+    // Clear any pending payment from localStorage via cookie
+    // We can't directly clear localStorage from server, but can send a signal
+    
     // Redirect to dashboard with parameters for React to handle
     const redirectUrl = `/dashboard?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
-    console.log("🚀 Redirecting to dashboard with params:", redirectUrl);
-    res.redirect(redirectUrl);
+    console.log("🚀 PERFORMING REDIRECT TO:", redirectUrl);
+    console.log("🚀 Using res.redirect with 302 status");
+    
+    // Use explicit 302 redirect to ensure browser follows it
+    res.redirect(302, redirectUrl);
   });
 
   // Test endpoint to verify redirect mechanics - simulates Stripe return
@@ -2861,6 +2890,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </body>
       </html>
     `);
+  });
+
+  // Serve test HTML page
+  app.get("/test-stripe-redirect", (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'test_stripe_redirect.html'));
   });
 
   // Test endpoint to check URL parameter processing
