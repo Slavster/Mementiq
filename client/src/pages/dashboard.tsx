@@ -51,6 +51,7 @@ import {
   Play,
   Eye,
   ExternalLink,
+  RotateCcw,
 } from "lucide-react";
 
 import TallyFormStep from "@/components/TallyFormStep";
@@ -1180,14 +1181,21 @@ export default function DashboardPage() {
                             setSelectedProject(project);
                             
                             // Check if this project has completed revision payments
-                            const hasCompletedRevisions = project.revision_count && project.revision_count > 0;
+                            const hasCompletedRevisions = project.revisionCount && project.revisionCount > 0;
                             
                             // Set the appropriate step based on project status AND revision payments
                             if (
+                              project.status.toLowerCase() === "awaiting revision instructions"
+                            ) {
+                              // Project is awaiting revision instructions = start revision workflow automatically
+                              console.log(`🔄 Project ${project.title} is awaiting revision instructions - starting revision workflow`);
+                              setIsRevisionWorkflow(true);
+                              setCurrentStep("upload"); // Start revision workflow with upload step
+                            } else if (
                               project.status.toLowerCase() === "video is ready" && hasCompletedRevisions
                             ) {
                               // Project has video ready AND completed revision payments = start revision workflow
-                              console.log(`🔄 Project ${project.title} has ${project.revision_count} completed revision payments - starting revision workflow`);
+                              console.log(`🔄 Project ${project.title} has ${project.revisionCount} completed revision payments - starting revision workflow`);
                               setIsRevisionWorkflow(true);
                               setCurrentStep("upload"); // Start revision workflow with upload step
                             } else if (
@@ -1206,7 +1214,12 @@ export default function DashboardPage() {
                             }
                           }}
                         >
-                          {project.status.toLowerCase() === "video is ready" && project.revision_count && project.revision_count > 0 ? (
+                          {project.status.toLowerCase() === "awaiting revision instructions" ? (
+                            <>
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Submit Revision Instructions
+                            </>
+                          ) : project.status.toLowerCase() === "video is ready" && project.revisionCount && project.revisionCount > 0 ? (
                             <>
                               <RotateCcw className="h-4 w-4 mr-2" />
                               Submit Revision Instructions
