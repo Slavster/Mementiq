@@ -324,7 +324,7 @@ export function RevisionModal({
                   <div className="text-center pt-4">
                     <Button
                       onClick={handleNext}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3"
+                      className="bg-cyan-500 hover:bg-cyan-400 text-black px-8 py-3"
                       size="lg"
                     >
                       Next: Upload Additional Footage
