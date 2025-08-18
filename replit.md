@@ -54,6 +54,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **2025-08-18**: Fixed revision workflow share link retrieval - API endpoint now checks project-level frameioReviewLink FIRST before any Frame.io operations, ensuring NO new share links can be created during revision process
 - **2025-08-18**: Removed misleading toast notifications about "Share Link Created!" in revision workflow - links are only retrieved, never created
 - **2025-08-18**: Updated database with correct share link (https://f.io/BC9_Q8JH) and video filename (Me - tu lan cave.mp4) for project 16
+- **2025-08-18**: Fixed file size display - API now fetches real-time Frame.io asset data for revision projects to show accurate file sizes instead of cached database values
 
 ## External Dependencies
 
