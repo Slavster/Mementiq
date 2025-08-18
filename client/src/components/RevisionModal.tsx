@@ -534,6 +534,55 @@ export function RevisionModal({
                         editors are now working on implementing your changes.
                       </p>
 
+                      {/* Payment Confirmed Section */}
+                      <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-6 max-w-2xl mx-auto text-left">
+                        <div className="flex items-center mb-3">
+                          <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center mr-3">
+                            <CheckCircle className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-white font-semibold text-lg">Payment Confirmed</h3>
+                            <p className="text-green-400 text-sm">$5.00 revision fee has been processed</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* What happens next section */}
+                      <div className="bg-gray-800/50 rounded-lg p-6 max-w-2xl mx-auto text-left">
+                        <div className="flex items-center mb-4">
+                          <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center mr-3">
+                            <Info className="h-5 w-5 text-white" />
+                          </div>
+                          <h3 className="text-white font-semibold text-lg">What happens next?</h3>
+                        </div>
+                        <ul className="space-y-3 text-gray-300">
+                          <li className="flex items-start">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
+                            <span>The editor will review all your Frame.io comments and highlights</span>
+                          </li>
+                          <li className="flex items-start">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
+                            <span>They'll implement the requested changes to your video</span>
+                          </li>
+                          <li className="flex items-start">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
+                            <span>You'll receive an email when the revised video is ready</span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Timeline section */}
+                      <div className="bg-gray-800/50 rounded-lg p-6 max-w-2xl mx-auto text-left">
+                        <div className="flex items-center mb-4">
+                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                            <Clock className="h-5 w-5 text-white" />
+                          </div>
+                          <h3 className="text-white font-semibold text-lg">Timeline</h3>
+                        </div>
+                        <p className="text-gray-300">
+                          Revisions typically take <span className="text-white font-semibold">24-48 hours</span> to complete, depending on the complexity of changes requested.
+                        </p>
+                      </div>
 
                     </div>
                   </CardContent>
