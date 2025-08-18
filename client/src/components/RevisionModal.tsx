@@ -229,11 +229,6 @@ export function RevisionModal({
                   <Button
                     onClick={async () => {
                       try {
-                        toast({
-                          title: "Creating Share Link",
-                          description: "Generating public Frame.io share...",
-                        });
-
                         const response = await apiRequest(
                           `/api/projects/${project.id}/video-share-link`,
                         );
@@ -244,22 +239,16 @@ export function RevisionModal({
                             response.shareUrl,
                           );
                           window.open(response.shareUrl, "_blank");
-
-                          toast({
-                            title: "Share Link Created!",
-                            description:
-                              "Opening your video in a public Frame.io share (no login required)",
-                          });
                         } else {
                           throw new Error("No share URL returned");
                         }
                       } catch (error) {
-                        console.error("Failed to create share link:", error);
+                        console.error("Failed to retrieve share link:", error);
 
                         toast({
                           title: "Error",
                           description:
-                            "Could not create share link. Please try again.",
+                            "Could not retrieve share link. Please try again.",
                           variant: "destructive",
                         });
                       }
