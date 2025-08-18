@@ -541,9 +541,7 @@ export function RevisionModal({
                           </Badge>
                         </p>
                       </div>
-                      <p className="text-sm text-gray-500 italic">
-                        This window will close automatically...
-                      </p>
+
                     </div>
                   </CardContent>
                 </Card>
