@@ -130,10 +130,8 @@ export function RevisionModal({
     mutationFn: async () => {
       const response = await apiRequest(
         "POST",
-        `/api/projects/${project!.id}/update-status`,
-        {
-          status: "revision in progress",
-        },
+        `/api/projects/${project!.id}/request-revision`,
+        {},
       );
       return response.json();
     },
