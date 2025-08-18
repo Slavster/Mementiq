@@ -232,26 +232,23 @@ export default function DashboardPage() {
           // Clear pending payment from storage
           localStorage.removeItem('pending_revision_payment');
           
-          // Find and select the project
+          // Find and select the project for revision workflow
           if (projectsData && (projectsData as any)?.projects) {
             const targetProject = (projectsData as any).projects.find(
               (p: Project) => p.id === parseInt(projectId)
             );
             if (targetProject) {
-              console.log("📂 Found target project:", targetProject.title);
+              console.log("📂 Found target project for revision workflow:", targetProject.title);
               setSelectedProject(targetProject);
-              setCurrentStep("video-ready");
+              setIsRevisionWorkflow(true); // Enable revision workflow
+              setCurrentStep("upload"); // Go to upload step (step 3)
+              console.log("✅ Starting revision workflow - going to upload step");
             } else {
               console.log("⚠️ Could not find project with ID:", projectId);
             }
           } else {
             console.log("⚠️ Projects data not available yet");
           }
-          
-          // Open revision confirmation modal
-          console.log("🎉 Opening revision confirmation modal");
-          setRevisionSessionId(sessionId);
-          setRevisionConfirmationOpen(true);
         } else {
           console.log(`⏳ [Poll #${pollCount}] Payment not completed yet. Status:`, response.paymentStatus);
         }
@@ -334,14 +331,9 @@ export default function DashboardPage() {
 
     if (revisionPayment === "success" && sessionId) {
       console.log("✅ REVISION PAYMENT SUCCESS DETECTED!");
-      console.log("🎉 TRIGGERING REVISION CONFIRMATION MODAL");
+      console.log("🎉 STARTING REVISION WORKFLOW");
       
-      // Open revision confirmation modal with session ID for payment verification
-      console.log("🚀 Setting revision session ID and opening modal");
-      setRevisionSessionId(sessionId);
-      setRevisionConfirmationOpen(true);
-      
-      // If project ID is provided and projects data is loaded, find and select that project
+      // If project ID is provided and projects data is loaded, start revision workflow
       if (projectId && projectsData && (projectsData as any)?.projects) {
         const targetProject = (projectsData as any).projects.find(
           (p: Project) => p.id === parseInt(projectId)
@@ -349,8 +341,9 @@ export default function DashboardPage() {
         console.log("🎯 Target project search result:", targetProject);
         if (targetProject) {
           setSelectedProject(targetProject);
-          setCurrentStep("video-ready"); // Set to video-ready step to show the video viewing interface
-          console.log("📱 Project selected and step set to video-ready");
+          setIsRevisionWorkflow(true); // Enable revision workflow
+          setCurrentStep("upload"); // Go to upload step (step 3)
+          console.log("✅ Starting revision workflow from URL redirect - going to upload step");
         }
       } else if (projectId && !projectsData) {
         console.log("⏳ Projects data not loaded yet, will retry when available");
