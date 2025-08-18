@@ -190,6 +190,65 @@ export default function DashboardPage() {
     gcTime: 0, // Don't cache old data
   });
 
+  // Check for pending revision payments on mount
+  useEffect(() => {
+    const checkPendingPayment = async () => {
+      const pendingPaymentData = localStorage.getItem('pending_revision_payment');
+      if (!pendingPaymentData) return;
+      
+      try {
+        const { sessionId, projectId, timestamp } = JSON.parse(pendingPaymentData);
+        
+        // Only check payments from the last 30 minutes
+        if (Date.now() - timestamp > 30 * 60 * 1000) {
+          localStorage.removeItem('pending_revision_payment');
+          return;
+        }
+        
+        console.log("🔍 Checking pending revision payment:", sessionId);
+        
+        // Check payment status with backend
+        const response = await apiRequest(`/api/stripe/check-revision-payment?session_id=${sessionId}`);
+        
+        if (response.success && response.completed) {
+          console.log("✅ Pending payment completed! Opening confirmation modal");
+          
+          // Clear pending payment from storage
+          localStorage.removeItem('pending_revision_payment');
+          
+          // Find and select the project
+          if (projectsData && (projectsData as any)?.projects) {
+            const targetProject = (projectsData as any).projects.find(
+              (p: Project) => p.id === parseInt(projectId)
+            );
+            if (targetProject) {
+              setSelectedProject(targetProject);
+              setCurrentStep("video-ready");
+            }
+          }
+          
+          // Open revision confirmation modal
+          setRevisionSessionId(sessionId);
+          setRevisionConfirmationOpen(true);
+        }
+      } catch (error) {
+        console.error("Error checking pending payment:", error);
+      }
+    };
+    
+    // Check immediately on mount
+    checkPendingPayment();
+    
+    // Poll every 5 seconds if there's a pending payment
+    const intervalId = setInterval(() => {
+      if (localStorage.getItem('pending_revision_payment')) {
+        checkPendingPayment();
+      }
+    }, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [projectsData]);
+
   // Handle revision payment success/failure from URL parameters
   useEffect(() => {
     console.log("🔄 Dashboard useEffect triggered at:", new Date().toISOString());

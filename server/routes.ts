@@ -319,6 +319,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Handle revision payments
             if (session.metadata?.type === 'revision_payment') {
+              console.log("🎯 WEBHOOK: Processing revision payment completion");
+              console.log("🎯 Session metadata:", session.metadata);
+              console.log("🎯 Payment status:", session.payment_status);
+              
               try {
                 const projectId = parseInt(session.metadata.projectId);
                 
@@ -329,6 +333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   session.payment_intent as string,
                   new Date()
                 );
+                
+                console.log(`✅ WEBHOOK: Revision payment completed for project ${projectId}`);
 
                 // Update project status to "awaiting revision instructions"
                 await storage.updateProject(projectId, {
@@ -2650,16 +2656,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API endpoint to check revision payment status
+  app.get("/api/stripe/check-revision-payment", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const sessionId = req.query.session_id as string;
+      
+      if (!sessionId) {
+        return res.status(400).json({
+          success: false,
+          message: "Session ID is required",
+        });
+      }
+      
+      // Retrieve session from Stripe
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      // Check if payment is completed
+      const isCompleted = session.payment_status === 'paid' && session.status === 'complete';
+      
+      console.log("🔍 Payment status check:", {
+        sessionId: session.id,
+        paymentStatus: session.payment_status,
+        status: session.status,
+        isCompleted
+      });
+      
+      res.json({
+        success: true,
+        completed: isCompleted,
+        sessionId: session.id,
+        projectId: session.metadata?.projectId,
+        paymentStatus: session.payment_status,
+        status: session.status
+      });
+    } catch (error) {
+      console.error("Error checking payment status:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to check payment status",
+      });
+    }
+  });
+
   // Stripe revision payment success/cancel endpoints - these are hit by Stripe after checkout
   app.get("/stripe/revision-payment-success", async (req, res) => {
     const sessionId = req.query.session_id as string;
     const projectId = req.query.project_id as string;
     
+    console.log("✅ STRIPE REVISION PAYMENT SUCCESS ENDPOINT HIT!");
+    console.log("📍 Full URL:", req.url);
+    console.log("📍 Query params:", req.query);
     console.log("✅ Stripe revision payment success callback:", { sessionId, projectId });
     
     if (!sessionId || !projectId) {
       console.log("⚠️ Missing sessionId or projectId, redirecting to dashboard");
       return res.redirect("/dashboard");
+    }
+    
+    // Verify the session with Stripe to ensure it's legitimate
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      console.log("🔍 Stripe session verification:", {
+        id: session.id,
+        payment_status: session.payment_status,
+        status: session.status,
+        amount_total: session.amount_total,
+        metadata: session.metadata
+      });
+      
+      if (session.payment_status !== 'paid') {
+        console.log("⚠️ Payment not completed, status:", session.payment_status);
+        return res.redirect(`/dashboard?revision_payment=pending&session_id=${sessionId}&project_id=${projectId}`);
+      }
+    } catch (error) {
+      console.error("Failed to verify Stripe session:", error);
+      // Continue with redirect anyway - payment can be verified client-side
     }
     
     // Redirect to dashboard with parameters for React to handle
@@ -2672,6 +2743,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const sessionId = req.query.session_id as string;
     const projectId = req.query.project_id as string;
     
+    console.log("❌ STRIPE REVISION PAYMENT CANCEL ENDPOINT HIT!");
+    console.log("📍 Full URL:", req.url);
+    console.log("📍 Query params:", req.query);
     console.log("❌ Stripe revision payment cancelled:", { sessionId, projectId });
     
     if (!sessionId || !projectId) {

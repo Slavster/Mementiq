@@ -156,9 +156,18 @@ export function VideoViewingStep({
       }
       
       if (data.success && data.sessionUrl) {
+        // Store session ID in localStorage for fallback polling
+        if (data.sessionId) {
+          localStorage.setItem('pending_revision_payment', JSON.stringify({
+            sessionId: data.sessionId,
+            projectId: project.id,
+            timestamp: Date.now()
+          }));
+        }
+        
         // Redirect to Stripe checkout
         console.log("Redirecting to Stripe checkout:", data.sessionUrl);
-        console.log("Expected success URL will be:", `${window.location.origin}/dashboard?revision_payment=success&session_id=[SESSION_ID]&project_id=${project.id}`);
+        console.log("Expected success URL will be:", `${window.location.origin}/stripe/revision-payment-success?session_id=[SESSION_ID]&project_id=${project.id}`);
         window.location.href = data.sessionUrl;
       } else {
         throw new Error(data.message || "Failed to create checkout session");
