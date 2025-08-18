@@ -305,111 +305,117 @@ export function VideoViewingStep({
               Open Video Link
             </Button>
 
-            {/* Instructions */}
-            <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
-              <div className="space-y-3 text-gray-300">
-                <p>
-                  ✨ Clicking the button above will open a new tab where you can{" "}
-                  <strong>view</strong> and <strong>download</strong> your
-                  video.
-                </p>
-
-                <p>
-                  ⏰ <strong>Important:</strong> This link will only be
-                  available for <strong>30 days</strong>, so make sure to
-                  download your video before then!
-                </p>
-
-                <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
-                  <p className="font-semibold text-white">
-                    🎨 Need Changes? We Makes It Easy!
-                  </p>
+            {/* Instructions - only show when payment popup is NOT visible */}
+            {!showPaymentPopup && (
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
+                <div className="space-y-3 text-gray-300">
                   <p>
-                    Comment right on the video! Frame-accurate notes,
-                    highlights, and annotations. Add links if helpful.
+                    ✨ Clicking the button above will open a new tab where you can{" "}
+                    <strong>view</strong> and <strong>download</strong> your
+                    video.
                   </p>
-                  <a
-                    href="https://support.frame.io/en/articles/1161479-review-links-explained-for-clients"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-cyan-400 hover:text-cyan-300 underline"
-                  >
-                    📖 Quick primer on Frame.io review tool
-                    <ExternalLink className="w-4 h-4 ml-1" />
-                  </a>
+
+                  <p>
+                    ⏰ <strong>Important:</strong> This link will only be
+                    available for <strong>30 days</strong>, so make sure to
+                    download your video before then!
+                  </p>
+
+                  <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                    <p className="font-semibold text-white">
+                      🎨 Need Changes? We Makes It Easy!
+                    </p>
+                    <p>
+                      Comment right on the video! Frame-accurate notes,
+                      highlights, and annotations. Add links if helpful.
+                    </p>
+                    <a
+                      href="https://support.frame.io/en/articles/1161479-review-links-explained-for-clients"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-cyan-400 hover:text-cyan-300 underline"
+                    >
+                      📖 Quick primer on Frame.io review tool
+                      <ExternalLink className="w-4 h-4 ml-1" />
+                    </a>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Next Steps Section */}
-      <Card className="bg-gray-800/50 border-gray-600">
-        <CardContent className="p-6">
-          <h3 className="text-xl font-semibold text-white mb-4 text-center">
-            🚀 Next Steps
-          </h3>
+      {/* Next Steps Section - only show when payment popup is NOT visible */}
+      {!showPaymentPopup && (
+        <>
+          <Card className="bg-gray-800/50 border-gray-600">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold text-white mb-4 text-center">
+                🚀 Next Steps
+              </h3>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Accept Option */}
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-green-400">
+                    <Check className="h-5 w-5" />
+                    <span className="font-semibold">Option 1: Accept Video</span>
+                  </div>
+                  <p className="text-gray-300 text-sm">
+                    Love your video? Click accept to mark the project as finished.
+                    <strong className="block mt-1">
+                      No changes can be made after this point.
+                    </strong>
+                  </p>
+                </div>
+
+                {/* Revision Option */}
+                <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-orange-400">
+                    <RotateCcw className="h-5 w-5" />
+                    <span className="font-semibold">
+                      Option 2: Paid Revision Request
+                    </span>
+                  </div>
+                  <p className="text-gray-300 text-sm">
+                    Need changes? The editor will review all your comments and
+                    highlights and make updates. You'll be able to upload new
+                    footage too, if needed. <strong> Each round costs $5.</strong>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Accept Option */}
-            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-3">
-              <div className="flex items-center gap-2 text-green-400">
-                <Check className="h-5 w-5" />
-                <span className="font-semibold">Option 1: Accept Video</span>
-              </div>
-              <p className="text-gray-300 text-sm">
-                Love your video? Click accept to mark the project as finished.
-                <strong className="block mt-1">
-                  No changes can be made after this point.
-                </strong>
-              </p>
-            </div>
+            {/* Accept Button */}
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white font-bold text-lg h-16"
+              onClick={handleAcceptVideo}
+              disabled={isAccepting}
+            >
+              {isAccepting ? (
+                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"></div>
+              ) : (
+                <Check className="h-6 w-6 mr-3" />
+              )}
+              {isAccepting ? "Accepting Video..." : "Accept Video"}
+            </Button>
 
-            {/* Revision Option */}
-            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 space-y-3">
-              <div className="flex items-center gap-2 text-orange-400">
-                <RotateCcw className="h-5 w-5" />
-                <span className="font-semibold">
-                  Option 2: Paid Revision Request
-                </span>
-              </div>
-              <p className="text-gray-300 text-sm">
-                Need changes? The editor will review all your comments and
-                highlights and make updates. You'll be able to upload new
-                footage too, if needed. <strong> Each round costs $5.</strong>
-              </p>
-            </div>
+            {/* Request Revision Button */}
+            <Button
+              variant="outline"
+              className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white font-bold text-lg h-16"
+              onClick={handleRequestRevision}
+            >
+              <RotateCcw className="h-6 w-6 mr-3" />
+              Request Revisions ($5)
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Accept Button */}
-        <Button
-          className="bg-green-600 hover:bg-green-700 text-white font-bold text-lg h-16"
-          onClick={handleAcceptVideo}
-          disabled={isAccepting}
-        >
-          {isAccepting ? (
-            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"></div>
-          ) : (
-            <Check className="h-6 w-6 mr-3" />
-          )}
-          {isAccepting ? "Accepting Video..." : "Accept Video"}
-        </Button>
-
-        {/* Request Revision Button */}
-        <Button
-          variant="outline"
-          className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white font-bold text-lg h-16"
-          onClick={handleRequestRevision}
-        >
-          <RotateCcw className="h-6 w-6 mr-3" />
-          Request Revisions ($5)
-        </Button>
-      </div>
+        </>
+      )}
 
       {/* Additional Video Files (if any) */}
       {videoFiles.length > 1 && (
