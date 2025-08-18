@@ -2699,6 +2699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // IMPORTANT: These routes MUST be defined before Vite middleware to ensure they work
   // Stripe revision payment success/cancel endpoints - these are hit by Stripe after checkout
   app.get("/stripe/revision-payment-success", async (req, res) => {
     const sessionId = req.query.session_id as string;
@@ -2751,13 +2752,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Continue with redirect anyway - payment can be verified client-side
     }
     
-    // Redirect to dashboard with parameters for React to handle
+    // Instead of Express redirect, send HTML with client-side redirect
+    // This approach works better in development environments like Replit
     const redirectUrl = `/dashboard?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
-    console.log("🚀 PERFORMING REDIRECT TO:", redirectUrl);
-    console.log("🚀 Using res.redirect with 302 status");
+    console.log("🚀 Sending HTML redirect page to:", redirectUrl);
     
-    // Use explicit 302 redirect to ensure browser follows it
-    res.redirect(302, redirectUrl);
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Payment Success - Redirecting...</title>
+        <meta charset="utf-8">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+          }
+          .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+          }
+          .success-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .checkmark {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 50;
+            stroke-dashoffset: 0;
+            animation: checkmark 0.4s ease-in-out forwards;
+          }
+          @keyframes checkmark {
+            from { stroke-dashoffset: 50; }
+            to { stroke-dashoffset: 0; }
+          }
+          h1 { color: #1f2937; margin-bottom: 10px; font-size: 24px; }
+          p { color: #6b7280; margin-bottom: 20px; }
+          .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #06b6d4;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="success-icon">
+            <svg class="checkmark" viewBox="0 0 52 52">
+              <path d="M14 27l10 10 20-20" />
+            </svg>
+          </div>
+          <h1>Payment Successful!</h1>
+          <p>Your $5 revision payment has been processed.</p>
+          <div class="spinner"></div>
+          <p style="font-size: 14px; color: #9ca3af;">Redirecting to your dashboard...</p>
+        </div>
+        <script>
+          // Store payment info in localStorage for backup
+          const paymentInfo = {
+            sessionId: '${sessionId}',
+            projectId: '${projectId}',
+            timestamp: Date.now()
+          };
+          localStorage.setItem('stripe_revision_payment', JSON.stringify(paymentInfo));
+          console.log('Stored payment info in localStorage:', paymentInfo);
+          
+          // Redirect to dashboard with parameters
+          const redirectUrl = '${redirectUrl}';
+          console.log('Redirecting to:', redirectUrl);
+          
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 1000);
+        </script>
+      </body>
+      </html>
+    `);
   });
   
   app.get("/stripe/revision-payment-cancel", async (req, res) => {
@@ -2779,13 +2876,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Clear any pending payment from localStorage via cookie
     // We can't directly clear localStorage from server, but can send a signal
     
-    // Redirect to dashboard with parameters for React to handle
+    // Send HTML with client-side redirect for better reliability
     const redirectUrl = `/dashboard?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
-    console.log("🚀 PERFORMING REDIRECT TO:", redirectUrl);
-    console.log("🚀 Using res.redirect with 302 status");
+    console.log("🚀 Sending HTML redirect page to:", redirectUrl);
     
-    // Use explicit 302 redirect to ensure browser follows it
-    res.redirect(302, redirectUrl);
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Payment Cancelled - Redirecting...</title>
+        <meta charset="utf-8">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+          }
+          .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+          }
+          .cancel-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .cross {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            stroke-width: 3;
+            fill: none;
+          }
+          h1 { color: #1f2937; margin-bottom: 10px; font-size: 24px; }
+          p { color: #6b7280; margin-bottom: 20px; }
+          .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #f59e0b;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="cancel-icon">
+            <svg class="cross" viewBox="0 0 52 52">
+              <path d="M16 16l20 20M36 16l-20 20" />
+            </svg>
+          </div>
+          <h1>Payment Cancelled</h1>
+          <p>Your revision payment was cancelled.</p>
+          <div class="spinner"></div>
+          <p style="font-size: 14px; color: #9ca3af;">Returning to dashboard...</p>
+        </div>
+        <script>
+          // Clear any stored payment info
+          localStorage.removeItem('stripe_revision_payment');
+          
+          // Redirect to dashboard
+          const redirectUrl = '${redirectUrl}';
+          console.log('Redirecting to:', redirectUrl);
+          
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 1000);
+        </script>
+      </body>
+      </html>
+    `);
   });
 
   // Test endpoint to verify redirect mechanics - simulates Stripe return
