@@ -74,14 +74,21 @@ export function RevisionModal({
   const [videoFiles, setVideoFiles] = useState<any[]>([]);
   const [videoLoading, setVideoLoading] = useState(true);
 
-  // Reset state when modal opens
+  // Reset state when modal opens, or show confirmation if already in progress
   useEffect(() => {
-    if (open) {
-      setCurrentStep("video-review");
-      setIsSubmitted(false);
+    if (open && project) {
+      if (project.status.toLowerCase() === "revision in progress") {
+        console.log("🎯 Project already in revision progress, showing confirmation screen");
+        setCurrentStep("submit-to-editor");
+        setIsSubmitted(true); // Show confirmation state
+      } else {
+        console.log("🎯 Starting new revision workflow");
+        setCurrentStep("video-review");
+        setIsSubmitted(false);
+      }
       setVideoLoading(true);
     }
-  }, [open]);
+  }, [open, project]);
 
   // Fetch video files for this project - EXACT from VideoViewingStep
   useEffect(() => {
