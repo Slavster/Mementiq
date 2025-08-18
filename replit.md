@@ -20,6 +20,10 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - ✅ Clear screen change ensures users know payment is in progress even if popup blocked
   - ✅ Hidden "Need Changes" and "Next Steps" sections during payment popup for better visibility
   - ✅ Made payment dialog static (removed distracting "checking" status changes) for smoother UX
+  - ✅ After successful payment, users return to normal revision workflow (stage 3) instead of success screen
+  - ✅ Tally form step automatically skipped for revision requests - goes directly from upload to submission
+  - ✅ Revision workflow clearly marked with "Instructions (Skipped for Revision)" in progress indicator
+  - ✅ Submit button changes to "Submit for Revision" instead of "Send to Editor" for revision workflows
 
 ## Earlier Changes (August 14, 2025)
 - Fixed corrupted database configuration that was preventing app startup

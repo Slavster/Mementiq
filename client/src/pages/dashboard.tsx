@@ -182,6 +182,9 @@ export default function DashboardPage() {
   // Track if URL parameters have been processed to prevent premature cleanup
   const hasProcessedParams = useRef(false);
   
+  // Track if current workflow is a revision request (to skip Tally form)
+  const [isRevisionWorkflow, setIsRevisionWorkflow] = useState(false);
+  
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects - always fetch fresh data to show latest updates
@@ -1226,6 +1229,7 @@ export default function DashboardPage() {
         onOpenChange={() => {
           setSelectedProject(null);
           setCurrentStep("upload");
+          setIsRevisionWorkflow(false); // Reset revision workflow flag
         }}
       >
         <DialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -1277,18 +1281,21 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
-                  className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "text-green-400" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 ${currentStep === "form" && !isRevisionWorkflow ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" || isRevisionWorkflow ? "text-green-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" && !isRevisionWorkflow ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" || isRevisionWorkflow ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
                     {currentStep === "confirmation" ||
                     selectedProject.status.toLowerCase() === "edit in progress" ||
-                    selectedProject.status.toLowerCase() === "video is ready"
+                    selectedProject.status.toLowerCase() === "video is ready" ||
+                    isRevisionWorkflow
                       ? "✓"
                       : "2"}
                   </div>
-                  <span className="font-medium">Describe Your Dream Edit</span>
+                  <span className="font-medium">
+                    {isRevisionWorkflow ? "Instructions (Skipped for Revision)" : "Describe Your Dream Edit"}
+                  </span>
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
@@ -1325,7 +1332,12 @@ export default function DashboardPage() {
                     queryClient.invalidateQueries({
                       queryKey: ["/api/projects"],
                     });
-                    setCurrentStep("form");
+                    // Skip Tally form for revision workflows, go directly to confirmation
+                    if (isRevisionWorkflow) {
+                      setCurrentStep("confirmation");
+                    } else {
+                      setCurrentStep("form");
+                    }
                   }}
                   onCancel={() => {
                     setSelectedProject(null);
@@ -1404,7 +1416,7 @@ export default function DashboardPage() {
                               }}
                               className="bg-green-600 hover:bg-green-700 text-white"
                             >
-                              Send to Editor
+                              {isRevisionWorkflow ? "Submit for Revision" : "Send to Editor"}
                             </Button>
                           </>
                         )}
@@ -1433,7 +1445,9 @@ export default function DashboardPage() {
                       queryClient.invalidateQueries({
                         queryKey: ["/api/projects"],
                       });
-                      setCurrentStep("confirmation");
+                      // Set revision workflow flag and go to upload step for revision
+                      setIsRevisionWorkflow(true);
+                      setCurrentStep("upload");
                     }}
                   />
                 </ErrorBoundary>
