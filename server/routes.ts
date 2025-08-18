@@ -2731,6 +2731,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.incrementProjectRevisionCount(payment.projectId);
         console.log(`📊 Incremented revision count for project ${payment.projectId}`);
         
+        // Update project status to "awaiting revision instructions"
+        await storage.updateProject(payment.projectId, { 
+          status: 'awaiting revision instructions',
+          updatedAt: new Date()
+        });
+        console.log(`🔄 Updated project ${payment.projectId} status to "awaiting revision instructions"`);
+        
         // Log the revision for accounting/tracking
         console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
       }
@@ -2793,16 +2800,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect(`/dashboard?revision_payment=pending&session_id=${sessionId}&project_id=${projectId}`);
       }
       
-      // Update project status to "revision in progress" after successful payment
+      // Update project status to "awaiting revision instructions" after successful payment
       const numericProjectId = parseInt(projectId);
       if (!isNaN(numericProjectId)) {
         try {
           await storage.updateProject(numericProjectId, {
-            status: 'revision in progress',
+            status: 'awaiting revision instructions',
             updatedAt: new Date(),
           });
           await updateProjectTimestamp(numericProjectId, "revision payment completed");
-          console.log("✅ Updated project status to 'revision in progress'");
+          console.log("✅ Updated project status to 'awaiting revision instructions'");
         } catch (err) {
           console.error("Failed to update project status:", err);
         }
