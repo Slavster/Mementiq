@@ -31,6 +31,9 @@ import {
   Clock,
   X,
   Check,
+  Edit3,
+  MessageCircle,
+  Info,
 } from "lucide-react";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 
@@ -202,10 +205,10 @@ export function RevisionModal({
       case "video-review":
         return (
           <div className="space-y-8">
-            {/* Excitement Header - EXACT from VideoViewingStep */}
+            {/* Revision Header */}
             <div className="text-center space-y-4">
-              <div className="text-6xl">🎉</div>
-              <h1 className="text-3xl font-bold text-white">Your Video is Ready!</h1>
+              <Edit3 className="text-6xl w-16 h-16 mx-auto text-cyan-400" />
+              <h1 className="text-3xl font-bold text-white">Let us know what needs changing</h1>
             </div>
 
             {/* Main Video Card - EXACT from VideoViewingStep */}
@@ -259,25 +262,20 @@ export function RevisionModal({
                     Open Video Link
                   </Button>
 
-                  {/* Instructions - EXACT from VideoViewingStep */}
+                  {/* Instructions */}
                   <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
                     <div className="space-y-3 text-gray-300">
-                      <p>
-                        ✨ Clicking the button above will open a new tab where you can{" "}
-                        <strong>view</strong> and <strong>download</strong> your
-                        video.
+                      <p className="flex items-start">
+                        <MessageCircle className="w-5 h-5 text-cyan-400 mr-2 mt-0.5 flex-shrink-0" />
+                        Clicking the button above will open a new tab where you can review your video. Use comments and annotations to tell us precisely what you want changed.
                       </p>
 
-                      <p>
-                        ⏰ <strong>Important:</strong> This link will only be
-                        available for <strong>30 days</strong>, so make sure to
-                        download your video before then!
+                      <p className="flex items-start">
+                        <Info className="w-5 h-5 text-orange-400 mr-2 mt-0.5 flex-shrink-0" />
+                        <strong>Important:</strong> This link will only be available for 30 days, so make sure to submit your revision instructions before then!
                       </p>
 
-                      <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
-                        <p className="font-semibold text-white">
-                          🎨 Need Changes? We Makes It Easy!
-                        </p>
+                      <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
                         <p>
                           Comment right on the video! Frame-accurate notes,
                           highlights, and annotations. Add links if helpful.
@@ -288,11 +286,50 @@ export function RevisionModal({
                           rel="noopener noreferrer"
                           className="inline-flex items-center text-cyan-400 hover:text-cyan-300 underline"
                         >
-                          📖 Quick primer on Frame.io review tool
+                          <Eye className="w-4 h-4 mr-1" />
+                          Quick primer on Frame.io review tool
                           <ExternalLink className="w-4 h-4 ml-1" />
                         </a>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Frame.io Instructions */}
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-6 text-left">
+                    <div className="text-gray-300 space-y-3">
+                      <p className="font-semibold text-white">
+                        All revision instructions must be left as comments within Frame.io:
+                      </p>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-start">
+                          <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
+                          <span>Click directly on the video timeline to add precise comments</span>
+                        </li>
+                        <li className="flex items-start">
+                          <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
+                          <span>Use drawing tools to highlight specific areas</span>
+                        </li>
+                        <li className="flex items-start">
+                          <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
+                          <span>Be specific about what changes you want made</span>
+                        </li>
+                      </ul>
+                      <p className="text-sm text-gray-400 mt-4">
+                        Make sure all changes are documented before moving to the next stage. The next step will allow you to upload additional footage if needed.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Next Step Button */}
+                  <div className="text-center pt-4">
+                    <Button
+                      onClick={handleNext}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3"
+                      size="lg"
+                    >
+                      Next: Upload Additional Footage
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -345,7 +382,7 @@ export function RevisionModal({
             ) : (
               <FrameioUploadInterface
                 project={project}
-                onComplete={() => {
+                onUploadComplete={() => {
                   toast({
                     title: "Upload Complete",
                     description: "Your additional footage has been uploaded successfully.",
@@ -353,6 +390,9 @@ export function RevisionModal({
                   setShowUploadInterface(false);
                 }}
                 onCancel={() => setShowUploadInterface(false)}
+                onProjectStatusChange={() => {
+                  // Optional callback for project status changes
+                }}
               />
             )}
           </div>
@@ -495,7 +535,7 @@ export function RevisionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl bg-gray-900 text-white border-gray-700">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900 text-white border-gray-700">
         <DialogHeader>
           <DialogTitle className="text-2xl text-white">
             Revision Request for {project?.title}
