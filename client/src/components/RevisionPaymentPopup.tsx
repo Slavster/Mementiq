@@ -161,9 +161,9 @@ export function RevisionPaymentPopup({
 
     // Don't change visual status to "checking" - keep it static
     try {
-      const response = await apiRequest(`/api/stripe/check-revision-payment`);
+      const response = await apiRequest(`/api/stripe/verify-revision-payment/${sessionId}`);
 
-      if (response.completed) {
+      if (response.success && response.payment.stripeStatus === 'paid') {
         setPaymentStatus("completed");
         stopPaymentMonitoring();
         

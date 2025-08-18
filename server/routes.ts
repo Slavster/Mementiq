@@ -14,6 +14,9 @@ import {
   insertPhotoFileSchema,
   insertRevisionPaymentSchema,
 } from "../shared/schema";
+import { db } from "./db";
+import { revisionPayments } from "../shared/schema";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
@@ -1458,6 +1461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
 
   // Legacy endpoint for backward compatibility  
   app.get("/api/projects/:id/video-stream/:assetId", requireAuth, async (req, res) => {
