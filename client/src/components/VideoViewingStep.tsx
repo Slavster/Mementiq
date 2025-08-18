@@ -163,12 +163,45 @@ export function VideoViewingStep({
             projectId: project.id,
             timestamp: Date.now()
           }));
+          console.log("✅ Stored pending payment in localStorage:", data.sessionId);
         }
         
         // Redirect to Stripe checkout
-        console.log("Redirecting to Stripe checkout:", data.sessionUrl);
-        console.log("Expected success URL will be:", `${window.location.origin}/stripe/revision-payment-success?session_id=[SESSION_ID]&project_id=${project.id}`);
-        window.location.href = data.sessionUrl;
+        console.log("🚀 ATTEMPTING REDIRECT TO STRIPE");
+        console.log("Stripe URL:", data.sessionUrl);
+        console.log("Session ID:", data.sessionId);
+        
+        // Try multiple redirect methods
+        try {
+          // Method 1: Direct assignment
+          window.location.href = data.sessionUrl;
+          
+          // Method 2: If first method doesn't work immediately, try replace
+          setTimeout(() => {
+            if (window.location.href.includes('localhost') || window.location.href.includes('dashboard')) {
+              console.log("⚠️ First redirect didn't work, trying location.replace");
+              window.location.replace(data.sessionUrl);
+            }
+          }, 100);
+          
+          // Method 3: As last resort, open in new tab
+          setTimeout(() => {
+            if (window.location.href.includes('localhost') || window.location.href.includes('dashboard')) {
+              console.log("⚠️ Redirect failed, opening in new tab");
+              window.open(data.sessionUrl, '_blank');
+              
+              // Start polling immediately since redirect failed
+              toast({
+                title: "Payment Window Opened",
+                description: "Complete your payment in the new tab. This page will update automatically when payment is complete.",
+              });
+            }
+          }, 500);
+        } catch (error) {
+          console.error("Redirect error:", error);
+          // Fallback: open in new tab
+          window.open(data.sessionUrl, '_blank');
+        }
       } else {
         throw new Error(data.message || "Failed to create checkout session");
       }
