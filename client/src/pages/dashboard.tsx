@@ -1178,10 +1178,22 @@ export default function DashboardPage() {
 
                             // Continue with normal flow regardless of folder setup result
                             setSelectedProject(project);
-                            // Set the appropriate step based on project status
+                            
+                            // Check if this project has completed revision payments
+                            const hasCompletedRevisions = project.revision_count && project.revision_count > 0;
+                            
+                            // Set the appropriate step based on project status AND revision payments
                             if (
+                              project.status.toLowerCase() === "video is ready" && hasCompletedRevisions
+                            ) {
+                              // Project has video ready AND completed revision payments = start revision workflow
+                              console.log(`🔄 Project ${project.title} has ${project.revision_count} completed revision payments - starting revision workflow`);
+                              setIsRevisionWorkflow(true);
+                              setCurrentStep("upload"); // Start revision workflow with upload step
+                            } else if (
                               project.status.toLowerCase() === "video is ready"
                             ) {
+                              // Project has video ready but no completed revisions = normal video viewing
                               setCurrentStep("video-ready");
                             } else if (
                               project.status.toLowerCase() ===
@@ -1194,7 +1206,12 @@ export default function DashboardPage() {
                             }
                           }}
                         >
-                          {project.status.toLowerCase() === "video is ready" ? (
+                          {project.status.toLowerCase() === "video is ready" && project.revision_count && project.revision_count > 0 ? (
+                            <>
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Submit Revision Instructions
+                            </>
+                          ) : project.status.toLowerCase() === "video is ready" ? (
                             <>
                               <Eye className="h-4 w-4 mr-2" />
                               Review Video
