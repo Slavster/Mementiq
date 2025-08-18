@@ -2680,10 +2680,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API endpoint to check revision payment status
+  // API endpoint to check revision payment status - UPDATED TO INCLUDE DATABASE UPDATES
   app.get("/api/stripe/check-revision-payment", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const sessionId = req.query.session_id as string;
+      const userId = req.user!.id;
       
       if (!sessionId) {
         return res.status(400).json({
@@ -2692,11 +2693,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Get revision payment record from database
+      const payment = await storage.getRevisionPayment(sessionId);
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: "Payment session not found in database"
+        });
+      }
+
+      // Verify this payment belongs to the current user
+      if (payment.userId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied"
+        });
+      }
+      
       // Retrieve session from Stripe
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       
       // Check if payment is completed
       const isCompleted = session.payment_status === 'paid' && session.status === 'complete';
+      
+      // If payment is completed and not already recorded, update the database
+      if (isCompleted && payment.paymentStatus !== 'completed') {
+        console.log(`💳 Recording completed payment for session: ${sessionId}`);
+        
+        // Update the revision payment record
+        await storage.updateRevisionPayment(sessionId, {
+          paymentStatus: 'completed',
+          paidAt: new Date(),
+          stripePaymentIntentId: session.payment_intent as string
+        });
+        
+        // Increment the project's revision count
+        await storage.incrementProjectRevisionCount(payment.projectId);
+        console.log(`📊 Incremented revision count for project ${payment.projectId}`);
+        
+        // Log the revision for accounting/tracking
+        console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
+      }
       
       console.log("🔍 Payment status check:", {
         sessionId: session.id,
@@ -2709,7 +2746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         completed: isCompleted,
         sessionId: session.id,
-        projectId: session.metadata?.projectId,
+        projectId: session.metadata?.projectId || payment.projectId,
         paymentStatus: session.payment_status,
         status: session.status
       });
