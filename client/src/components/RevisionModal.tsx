@@ -31,6 +31,7 @@ import {
   Clock,
 } from "lucide-react";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
+import { VideoViewingStep } from "@/components/VideoViewingStep";
 
 interface Project {
   id: number;
@@ -47,6 +48,136 @@ interface RevisionModalProps {
   project: Project | null;
   step: "instructions" | "uploads" | "confirmation";
   onStepChange: (step: "instructions" | "uploads" | "confirmation") => void;
+}
+
+interface RevisionVideoReviewStepProps {
+  project: Project;
+  revisionInstructions: string;
+  onInstructionsChange: (instructions: string) => void;
+  onBack: () => void;
+  onVideoAccepted: () => void;
+  onRevisionRequested: () => void;
+}
+
+// Component that reuses VideoViewingStep layout but for revision instructions
+function RevisionVideoReviewStep({
+  project,
+  revisionInstructions,
+  onInstructionsChange,
+}: RevisionVideoReviewStepProps) {
+  const { toast } = useToast();
+
+  return (
+    <div className="space-y-8">
+      {/* Header - Revision specific */}
+      <div className="text-center space-y-4">
+        <div className="text-6xl">🎬</div>
+        <h1 className="text-3xl font-bold text-white">Review Your Video</h1>
+        <p className="text-gray-400">Leave detailed feedback for our editors</p>
+      </div>
+
+      {/* Main Video Card - Similar to VideoViewingStep */}
+      <Card className="bg-gray-900/50 border-gray-700">
+        <CardContent className="p-8">
+          <div className="text-center space-y-6">
+            {/* Video Title */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold text-white">
+                "{project.title}"
+              </h2>
+            </div>
+
+            {/* Main Action Button - Reuse existing video share link */}
+            <Button
+              onClick={async () => {
+                try {
+                  toast({
+                    title: "Opening Review Link",
+                    description: "Loading your video for review...",
+                  });
+
+                  const response = await apiRequest(
+                    `/api/projects/${project.id}/video-share-link`,
+                  );
+
+                  if (response.shareUrl) {
+                    console.log(
+                      "Opening Frame.io review share:",
+                      response.shareUrl,
+                    );
+                    window.open(response.shareUrl, "_blank");
+
+                    toast({
+                      title: "Review Link Opened!",
+                      description:
+                        "You can now review and comment directly on your video",
+                    });
+                  } else {
+                    throw new Error("No share URL returned");
+                  }
+                } catch (error) {
+                  console.error("Failed to create share link:", error);
+                  toast({
+                    title: "Error",
+                    description:
+                      "Could not open review link. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg px-8 py-4 h-auto"
+            >
+              <ExternalLink className="w-6 h-6 mr-3" />
+              Open Video for Review
+            </Button>
+
+            {/* Instructions - Revision specific */}
+            <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
+              <div className="space-y-3 text-gray-300">
+                <p>
+                  ✨ Click above to open your video in review mode where you can{" "}
+                  <strong>comment directly on the timeline</strong>.
+                </p>
+
+                <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                  <p className="font-semibold text-white">
+                    🎨 How to Leave Effective Revision Feedback:
+                  </p>
+                  <ul className="text-gray-300 text-sm space-y-1">
+                    <li>• Click anywhere on the video timeline to add timestamp-specific comments</li>
+                    <li>• Be specific about what needs to change (text, music, transitions, pacing)</li>
+                    <li>• Highlight sections that need adjustments</li>
+                    <li>• Add reference links or examples if helpful</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Additional Instructions Section */}
+      <Card className="bg-gray-800/50 border-gray-600">
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <Label htmlFor="additional-instructions" className="text-white text-lg">
+              Additional Instructions (Optional)
+            </Label>
+            <Textarea
+              id="additional-instructions"
+              placeholder="Add any general feedback or instructions that don't relate to specific timestamps..."
+              value={revisionInstructions}
+              onChange={(e) => onInstructionsChange(e.target.value)}
+              className="min-h-[120px] bg-gray-900/50 border-gray-600 text-white placeholder-gray-400"
+            />
+            <p className="text-sm text-gray-400">
+              Use the video review tool above for timestamp-specific feedback, and this field for general notes.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export function RevisionModal({
@@ -172,123 +303,16 @@ export function RevisionModal({
   const renderStepContent = () => {
     switch (step) {
       case "instructions":
+        // Reuse VideoViewingStep interface but with revision-specific content
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">
-                Step 1: Provide Revision Instructions
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Review your video and provide detailed feedback for our editors.
-              </p>
-            </div>
-
-            {reviewLink || project.mediaReviewLink ? (
-              <>
-                <Card className="border-green-200 bg-green-50">
-                  <CardHeader>
-                    <CardTitle className="text-green-800 flex items-center">
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      Review Your Video
-                    </CardTitle>
-                    <CardDescription className="text-green-700">
-                      Click the link below to watch your video in review mode,
-                      highlight and leave comments on anything you want changed.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button
-                      onClick={() =>
-                        window.open(
-                          reviewLink || project.mediaReviewLink,
-                          "_blank",
-                        )
-                      }
-                      className="w-full bg-cyan-600 hover:bg-cyan-700"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Open Video in Review Mode
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-cyan-800 mb-2">
-                    💡 How to Leave Effective Feedback:
-                  </h4>
-                  <ul className="text-cyan-700 text-sm space-y-1">
-                    <li>
-                      • Click anywhere on the video timeline to leave
-                      timestamp-specific comments
-                    </li>
-                    <li>
-                      • Be as detailed as possible about what needs to be
-                      changed
-                    </li>
-                    <li>
-                      • Mention specific elements like text, music, transitions,
-                      or pacing
-                    </li>
-                    <li>
-                      • If you have new assets, you can upload them in the next
-                      step
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="instructions">
-                    Additional Instructions (Optional)
-                  </Label>
-                  <Textarea
-                    id="instructions"
-                    placeholder="Add any general feedback or instructions that don't relate to specific timestamps..."
-                    value={revisionInstructions}
-                    onChange={(e) => setRevisionInstructions(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                  <p className="text-sm text-gray-600">
-                    You can leave detailed timestamp comments on the media platform and use
-                    this field for general notes.
-                  </p>
-                </div>
-              </>
-            ) : (
-              <Card className="border-orange-200 bg-orange-50">
-                <CardHeader>
-                  <CardTitle className="text-orange-800 flex items-center">
-                    <AlertTriangle className="h-5 w-5 mr-2" />
-                    Review Link Needed
-                  </CardTitle>
-                  <CardDescription className="text-orange-700">
-                    We couldn't automatically generate your review link. Please
-                    click below to create it manually.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    onClick={handleGenerateLink}
-                    disabled={
-                      generateLinkMutation.isPending || isGeneratingLink
-                    }
-                    className="w-full bg-orange-600 hover:bg-orange-700"
-                  >
-                    {generateLinkMutation.isPending ? (
-                      <>
-                        <Clock className="h-4 w-4 mr-2 animate-spin" />
-                        Generating Review Link...
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Generate Review Link
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          <RevisionVideoReviewStep
+            project={project}
+            revisionInstructions={revisionInstructions}
+            onInstructionsChange={setRevisionInstructions}
+            onBack={() => {}}
+            onVideoAccepted={() => {}}
+            onRevisionRequested={() => {}}
+          />
         );
 
       case "uploads":
