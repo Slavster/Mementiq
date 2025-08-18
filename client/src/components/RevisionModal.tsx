@@ -65,6 +65,8 @@ export function RevisionModal({
   const [currentStep, setCurrentStep] = useState<RevisionStep>("video-review");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showUploadInterface, setShowUploadInterface] = useState(false);
+  const [videoFiles, setVideoFiles] = useState<any[]>([]);
+  const [videoLoading, setVideoLoading] = useState(true);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -72,8 +74,51 @@ export function RevisionModal({
       setCurrentStep("video-review");
       setIsSubmitted(false);
       setShowUploadInterface(false);
+      setVideoLoading(true);
     }
   }, [open]);
+
+  // Fetch video files for this project - EXACT from VideoViewingStep
+  useEffect(() => {
+    let mounted = true;
+    
+    const fetchVideoFiles = async () => {
+      if (!project) return;
+      
+      try {
+        const files = await apiRequest(`/api/projects/${project.id}/files`);
+        
+        if (!mounted) return;
+        
+        // Filter for video files only
+        const videos = files.filter(
+          (file: any) => file.fileType && file.fileType.startsWith("video/"),
+        );
+        setVideoFiles(videos);
+      } catch (error) {
+        if (!mounted) return;
+        
+        console.error("Failed to fetch video files:", error);
+        toast({
+          title: "Error",
+          description: "Could not load video files",
+          variant: "destructive",
+        });
+      } finally {
+        if (mounted) {
+          setVideoLoading(false);
+        }
+      }
+    };
+
+    if (open && project) {
+      fetchVideoFiles();
+    }
+    
+    return () => {
+      mounted = false;
+    };
+  }, [open, project, toast]);
 
   // Submit revision request mutation
   const submitRevisionMutation = useMutation({
@@ -141,6 +186,17 @@ export function RevisionModal({
 
   if (!project) return null;
 
+  // Helper function from VideoViewingStep
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const primaryVideo = videoFiles[0]; // Use the first video as primary
+
   const renderStepContent = () => {
     switch (currentStep) {
       case "video-review":
@@ -156,6 +212,19 @@ export function RevisionModal({
             <Card className="bg-gray-900/50 border-gray-700">
               <CardContent className="p-8">
                 <div className="text-center space-y-6">
+                  {/* Video Title - EXACT from VideoViewingStep */}
+                  {primaryVideo && (
+                    <div className="space-y-2">
+                      <h2 className="text-2xl font-semibold text-white">
+                        "{primaryVideo.filename}"
+                      </h2>
+                      <div className="flex justify-center items-center gap-4 text-sm text-gray-400">
+                        <span>📁 {formatFileSize(primaryVideo.fileSize)}</span>
+                        <span>🎬 {primaryVideo.fileType}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Main Action Button - EXACT from VideoViewingStep but using existing link */}
                   <Button
                     onClick={() => {
