@@ -146,66 +146,72 @@ export function RevisionModal({
       case "video-review":
         return (
           <div className="space-y-8">
-            {/* Excitement Header - identical to VideoViewingStep */}
+            {/* Excitement Header - EXACT from VideoViewingStep */}
             <div className="text-center space-y-4">
-              <div className="text-6xl">🎬</div>
-              <h1 className="text-3xl font-bold text-white">Review Your Video for Revisions</h1>
+              <div className="text-6xl">🎉</div>
+              <h1 className="text-3xl font-bold text-white">Your Video is Ready!</h1>
             </div>
 
-            {/* Main Video Card - identical structure to VideoViewingStep */}
+            {/* Main Video Card - EXACT from VideoViewingStep */}
             <Card className="bg-gray-900/50 border-gray-700">
               <CardContent className="p-8">
                 <div className="text-center space-y-6">
-                  {/* Main Action Button - uses existing media review link */}
+                  {/* Main Action Button - EXACT from VideoViewingStep but using existing link */}
                   <Button
                     onClick={() => {
                       if (project.mediaReviewLink) {
                         window.open(project.mediaReviewLink, "_blank");
                         toast({
-                          title: "Opening Frame.io",
-                          description: "Your video is opening in Frame.io where you can add revision comments",
+                          title: "Share Link Created!",
+                          description: "Opening your video in a public Frame.io share (no login required)",
                         });
                       } else {
                         toast({
-                          title: "Share link not available",
-                          description: "The share link for this project is not available. Please contact support.",
+                          title: "Error",
+                          description: "Could not open share link. Please try again.",
                           variant: "destructive",
                         });
                       }
                     }}
-                    size="lg"
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-6 text-lg"
-                    disabled={!project.mediaReviewLink}
+                    className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg px-8 py-4 h-auto"
                   >
-                    <ExternalLink className="h-5 w-5 mr-3" />
-                    Open Video in Frame.io to Add Comments
+                    <ExternalLink className="w-6 h-6 mr-3" />
+                    Open Video Link
                   </Button>
 
-                  {/* Instructions text - matching VideoViewingStep style */}
-                  <div className="text-gray-400 space-y-4 max-w-2xl mx-auto">
-                    <p>
-                      Click the button above to open your video in Frame.io. Add comments directly on the timeline to indicate what changes you'd like.
-                    </p>
-                    <div className="bg-gray-800/50 rounded-lg p-6 text-left space-y-3">
-                      <p className="font-semibold text-white">How to add revision comments:</p>
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex items-start">
-                          <span className="text-cyan-500 mr-2">•</span>
-                          <span>Click on the video timeline where you want changes</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="text-cyan-500 mr-2">•</span>
-                          <span>Type your specific revision instructions</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="text-cyan-500 mr-2">•</span>
-                          <span>Be as detailed as possible about what you want changed</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="text-cyan-500 mr-2">•</span>
-                          <span>You can add multiple comments throughout the video</span>
-                        </li>
-                      </ul>
+                  {/* Instructions - EXACT from VideoViewingStep */}
+                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
+                    <div className="space-y-3 text-gray-300">
+                      <p>
+                        ✨ Clicking the button above will open a new tab where you can{" "}
+                        <strong>view</strong> and <strong>download</strong> your
+                        video.
+                      </p>
+
+                      <p>
+                        ⏰ <strong>Important:</strong> This link will only be
+                        available for <strong>30 days</strong>, so make sure to
+                        download your video before then!
+                      </p>
+
+                      <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                        <p className="font-semibold text-white">
+                          🎨 Need Changes? We Makes It Easy!
+                        </p>
+                        <p>
+                          Comment right on the video! Frame-accurate notes,
+                          highlights, and annotations. Add links if helpful.
+                        </p>
+                        <a
+                          href="https://support.frame.io/en/articles/1161479-review-links-explained-for-clients"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-cyan-400 hover:text-cyan-300 underline"
+                        >
+                          📖 Quick primer on Frame.io review tool
+                          <ExternalLink className="w-4 h-4 ml-1" />
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
