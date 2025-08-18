@@ -533,14 +533,7 @@ export function RevisionModal({
                         Your revision request has been submitted successfully. Our
                         editors are now working on implementing your changes.
                       </p>
-                      <div className="bg-black/20 rounded-lg p-4 inline-block">
-                        <p className="text-sm text-gray-400">
-                          Project Status:{" "}
-                          <Badge className="ml-2 bg-yellow-600 text-white">
-                            Revision in Progress
-                          </Badge>
-                        </p>
-                      </div>
+
 
                     </div>
                   </CardContent>
