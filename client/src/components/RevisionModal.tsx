@@ -128,12 +128,28 @@ export function RevisionModal({
   // Submit revision request mutation
   const submitRevisionMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest(
-        "POST",
-        `/api/projects/${project!.id}/request-revision`,
-        {},
-      );
-      return response.json();
+      console.log("🔍 Making revision request...");
+      try {
+        const response = await apiRequest(
+          "POST",
+          `/api/projects/${project!.id}/request-revision`,
+          {},
+        );
+        console.log("🔍 Response status:", response.status);
+        console.log("🔍 Response ok:", response.ok);
+        
+        if (!response.ok) {
+          console.error("❌ Response not ok:", response.status, response.statusText);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log("🔍 Response data:", data);
+        return data;
+      } catch (error) {
+        console.error("❌ Error in mutation function:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       if (data.success) {
