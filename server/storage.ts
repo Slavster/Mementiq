@@ -8,6 +8,7 @@ import {
   photoAlbums,
   photoFiles,
   revisionPayments,
+  frameioShareAssets,
   oauthStates,
   serviceTokens,
   type User,
@@ -28,7 +29,9 @@ import {
   type PhotoFile,
   type InsertPhotoFile,
   type RevisionPayment,
-  type InsertRevisionPayment
+  type InsertRevisionPayment,
+  type FrameioShareAsset,
+  type InsertFrameioShareAsset
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, and, desc, inArray, lt, sql } from "drizzle-orm";
@@ -115,6 +118,13 @@ export interface IStorage {
   // OAuth state methods
   createOAuthState(state: string, provider: string, expiresInMinutes: number): Promise<void>;
   validateAndConsumeOAuthState(state: string, provider: string): Promise<boolean>;
+  
+  // Frame.io share asset methods
+  createFrameioShareAsset(asset: InsertFrameioShareAsset): Promise<FrameioShareAsset>;
+  getFrameioShareAssetsByProject(projectId: number): Promise<FrameioShareAsset[]>;
+  getFrameioShareAssetsByShareId(shareId: string): Promise<FrameioShareAsset[]>;
+  getProjectByAssetId(assetId: string): Promise<Project | undefined>;
+  deleteFrameioShareAssetsByProject(projectId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -788,6 +798,56 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(projects.id, projectId));
+  }
+
+  // Frame.io share asset methods
+  async createFrameioShareAsset(asset: InsertFrameioShareAsset): Promise<FrameioShareAsset> {
+    const [shareAsset] = await this.db
+      .insert(frameioShareAssets)
+      .values(asset)
+      .returning();
+    return shareAsset;
+  }
+
+  async getFrameioShareAssetsByProject(projectId: number): Promise<FrameioShareAsset[]> {
+    return await this.db
+      .select()
+      .from(frameioShareAssets)
+      .where(eq(frameioShareAssets.projectId, projectId));
+  }
+
+  async getFrameioShareAssetsByShareId(shareId: string): Promise<FrameioShareAsset[]> {
+    return await this.db
+      .select()
+      .from(frameioShareAssets)
+      .where(eq(frameioShareAssets.shareId, shareId));
+  }
+
+  async getProjectByAssetId(assetId: string): Promise<Project | undefined> {
+    // Find share asset mapping
+    const [shareAsset] = await this.db
+      .select()
+      .from(frameioShareAssets)
+      .where(eq(frameioShareAssets.assetId, assetId))
+      .limit(1);
+    
+    if (!shareAsset) {
+      return undefined;
+    }
+
+    // Get the project
+    const [project] = await this.db
+      .select()
+      .from(projects)
+      .where(eq(projects.id, shareAsset.projectId));
+    
+    return project || undefined;
+  }
+
+  async deleteFrameioShareAssetsByProject(projectId: number): Promise<void> {
+    await this.db
+      .delete(frameioShareAssets)
+      .where(eq(frameioShareAssets.projectId, projectId));
   }
 }
 

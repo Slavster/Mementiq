@@ -142,6 +142,17 @@ export const revisionPayments = pgTable("revision_payments", {
   paidAt: timestamp("paid_at"),
 });
 
+// Frame.io share asset mapping for webhook detection
+export const frameioShareAssets = pgTable("frameio_share_assets", {
+  id: serial("id").primaryKey(),
+  shareId: text("share_id").notNull(), // Frame.io share UUID
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  assetId: text("asset_id").notNull(), // Frame.io file or folder ID
+  assetType: text("asset_type").notNull(), // 'file' or 'folder'
+  parentFolderId: text("parent_folder_id"), // For tracking folder hierarchy
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -236,6 +247,15 @@ export const insertRevisionPaymentSchema = createInsertSchema(revisionPayments).
   currency: true,
 });
 
+// Frame.io share asset schemas
+export const insertFrameioShareAssetSchema = createInsertSchema(frameioShareAssets).pick({
+  shareId: true,
+  projectId: true,
+  assetId: true,
+  assetType: true,
+  parentFolderId: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginUser = z.infer<typeof loginUserSchema>;
@@ -265,3 +285,6 @@ export type InsertPhotoFile = z.infer<typeof insertPhotoFileSchema>;
 
 export type RevisionPayment = typeof revisionPayments.$inferSelect;
 export type InsertRevisionPayment = z.infer<typeof insertRevisionPaymentSchema>;
+
+export type FrameioShareAsset = typeof frameioShareAssets.$inferSelect;
+export type InsertFrameioShareAsset = z.infer<typeof insertFrameioShareAssetSchema>;

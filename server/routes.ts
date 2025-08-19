@@ -882,6 +882,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Store existing share at project level for consistency
             await storage.updateProjectShareLink(projectId, existingShare.id, existingShare.url);
             
+            // Store asset mapping for webhook detection
+            await storage.createFrameioShareAsset({
+              shareId: existingShare.id,
+              projectId: projectId,
+              assetId: videoFile.mediaAssetId,
+              assetType: 'file',
+              parentFolderId: currentProjectFolderId
+            });
+            
             return res.json({
               shareUrl: existingShare.url,
               shareId: existingShare.id,
@@ -952,6 +961,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
               await storage.updateProjectShareLink(projectId, existingShare.id, existingShare.url);
               
+              // Store asset mapping for webhook detection
+              await storage.createFrameioShareAsset({
+                shareId: existingShare.id,
+                projectId: projectId,
+                assetId: videoFile.mediaAssetId,
+                assetType: 'file',
+                parentFolderId: project.mediaFolderId || ''
+              });
+              
               return res.json({
                 shareUrl: existingShare.url,
                 shareId: existingShare.id,
@@ -1011,6 +1029,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateProjectShareLink(projectId, shareLink.id, shareLink.url);
       await updateProjectTimestamp(projectId, "share link generated");
       console.log(`✅ Database updated with project-level share info`);
+      
+      // Store asset mapping for webhook detection
+      await storage.createFrameioShareAsset({
+        shareId: shareLink.id,
+        projectId: projectId,
+        assetId: videoFile.mediaAssetId,
+        assetType: 'file',
+        parentFolderId: project.mediaFolderId || ''
+      });
+      console.log(`📍 Asset mapping stored for webhook detection`);
       
       console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
       
@@ -1124,96 +1152,281 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/webhooks/frameio", async (req, res) => {
+  // Test endpoint to verify webhook configuration
+  app.get("/api/webhooks/frameio/test", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      console.log("Frame.io webhook received:", req.body);
+      // Check if webhook secret is configured
+      const webhookSecret = process.env.FRAMEIO_WEBHOOK_SECRET;
       
-      const { type, data } = req.body;
+      // Check share asset mappings
+      const shareAssets = await storage.db
+        .select()
+        .from(frameioShareAssets)
+        .limit(10);
       
-      if (type === 'asset.uploaded' || type === 'asset.processing_complete') {
-        const assetId = data.id;
-        const assetName = data.name;
-        
-        console.log(`Video processing completed: ${assetId} - ${assetName}`);
-        
-        // Find which project this asset belongs to by checking all projects in "edit in progress" or "revision in progress" status
-        const projectsInProgress = await storage.getProjectsByStatus(['edit in progress', 'revision in progress']);
-        
-        console.log(`Found ${projectsInProgress.length} projects in progress to check`);
-        
-        for (const project of projectsInProgress) {
-          console.log(`Checking project ${project.id} (${project.title}) with folder: ${project.mediaFolderId}`);
-          
-          if (project.mediaFolderId) {
-            try {
-              // Check if this video asset exists in the project folder
-              await frameioV4Service.loadServiceAccountToken();
-              const folderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-              
-              // Look for the asset and check if it's a video
-              const foundAsset = folderAssets.find(asset => asset.id === assetId);
-              const isVideoAsset = foundAsset && foundAsset.media_type && foundAsset.media_type.startsWith('video/');
-              
-              console.log(`Asset ${assetId} found in project ${project.id}? ${!!foundAsset}`);
-              console.log(`Is video asset? ${!!isVideoAsset}`);
-              
-              if (foundAsset && isVideoAsset) {
-                console.log(`✅ Video asset ${assetId} delivered to project ${project.id} (${project.title})`);
-                
-                // Update project status to "video is ready" with timestamp tracking
-                await storage.updateProject(project.id, {
-                  status: 'video is ready',
-                  updatedAt: new Date(),
-                });
-                await updateProjectTimestamp(project.id, "video delivered");
-                
-                // Get user details for email
-                const user = await storage.getUserById(project.userId);
-                
-                if (user) {
-                  // Use Frame.io view URL for the video
-                  const videoViewUrl = foundAsset.view_url || `https://next.frame.io/project/${foundAsset.project_id}/view/${foundAsset.id}`;
-                  
-                  // Send email notification
-                  const emailTemplate = emailService.generateVideoDeliveryEmail(
-                    user.email,
-                    project.title,
-                    videoViewUrl,
-                    project.id
-                  );
-                  
-                  await emailService.sendEmail(emailTemplate);
-                  console.log(`🎉 Video delivery email sent to ${user.email} for project ${project.id}`);
-                }
-                
-                // Store the video asset info in project files
-                await storage.createProjectFile({
-                  projectId: project.id,
-                  mediaAssetId: assetId,
-                  mediaAssetUrl: foundAsset.view_url || '',
-                  filename: assetName,
-                  originalFilename: assetName,
-                  fileType: foundAsset.media_type || 'video/mp4',
-                  fileSize: foundAsset.file_size || 0,
-                  uploadStatus: 'completed',
-                });
-                
-                console.log(`🎬 Project ${project.id} status updated to 'video is ready'`);
-                break; // Found the project, no need to check others
-              }
-            } catch (error) {
-              console.error(`Error checking if asset ${assetId} belongs to project ${project.id}:`, error);
-            }
-          }
+      res.json({
+        webhookConfigured: !!webhookSecret,
+        webhookSecretSet: webhookSecret ? 'Yes (hidden)' : 'No - Set FRAMEIO_WEBHOOK_SECRET environment variable',
+        shareAssetMappings: shareAssets.length,
+        recentMappings: shareAssets.map(sa => ({
+          shareId: sa.shareId,
+          projectId: sa.projectId,
+          assetId: sa.assetId,
+          assetType: sa.assetType,
+          createdAt: sa.createdAt
+        })),
+        webhookEndpoint: `${req.protocol}://${req.get('host')}/api/webhooks/frameio`,
+        instructions: {
+          setup: 'Configure this webhook URL in Frame.io project settings',
+          events: 'Subscribe to "file.versioned" events for revision detection',
+          secret: 'Copy the webhook secret from Frame.io and set as FRAMEIO_WEBHOOK_SECRET'
         }
-      }
-      
-      res.json({ received: true });
+      });
     } catch (error) {
-      console.error("Frame.io webhook processing error:", error);
-      res.status(500).json({ error: "Webhook processing failed" });
+      console.error('Webhook test error:', error);
+      res.status(500).json({ 
+        error: 'Failed to check webhook configuration',
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
+
+  // Frame.io webhook endpoint with signature verification
+  app.post("/api/webhooks/frameio", 
+    express.raw({ type: 'application/json' }), // Raw body for signature verification
+    async (req, res) => {
+      try {
+        // Step 1: Verify webhook signature (if secret is configured)
+        const webhookSecret = process.env.FRAMEIO_WEBHOOK_SECRET;
+        if (webhookSecret) {
+          const signature = req.headers['x-frameio-signature'] as string;
+          
+          if (!signature) {
+            console.error("Missing Frame.io webhook signature");
+            return res.status(401).json({ error: "Missing signature" });
+          }
+
+          // Frame.io V4 uses HMAC-SHA256 for webhook signatures
+          const crypto = require('crypto');
+          const expectedSignature = crypto
+            .createHmac('sha256', webhookSecret)
+            .update(req.body)
+            .digest('hex');
+          
+          if (signature !== `sha256=${expectedSignature}`) {
+            console.error("Invalid Frame.io webhook signature");
+            return res.status(401).json({ error: "Invalid signature" });
+          }
+        }
+
+        // Parse the body after verification
+        const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        
+        console.log("Frame.io webhook received:", {
+          type: payload.type,
+          resource_id: payload.resource?.id,
+          project_id: payload.project?.id
+        });
+
+        // Step 2: Handle file.versioned event (new version uploaded)
+        if (payload.type === 'file.versioned') {
+          const fileId = payload.resource?.id;
+          const projectId = payload.project?.id;
+          const fileName = payload.resource?.name;
+          
+          if (!fileId) {
+            console.log("No file ID in webhook payload");
+            return res.json({ received: true });
+          }
+
+          console.log(`📹 File versioned event: ${fileId} (${fileName})`);
+          
+          // Step 3: Check if this file is part of any project's share
+          const project = await storage.getProjectByAssetId(fileId);
+          
+          if (!project) {
+            // Check if it's in a folder that's shared
+            console.log(`File ${fileId} not directly mapped, checking folder hierarchy...`);
+            
+            // Get file details to find parent folder
+            try {
+              await frameioV4Service.loadServiceAccountToken();
+              const accountId = await frameioV4Service.getAccountId();
+              const fileResponse = await frameioV4Service.makeRequest(
+                'GET',
+                `/accounts/${accountId}/files/${fileId}`
+              );
+              
+              if (fileResponse?.data?.parent_id) {
+                const parentFolderId = fileResponse.data.parent_id;
+                // Check if parent folder is in share mapping
+                const folderProject = await storage.getProjectByAssetId(parentFolderId);
+                
+                if (folderProject && folderProject.status === 'revision in progress') {
+                  console.log(`✅ Found project ${folderProject.id} via parent folder ${parentFolderId}`);
+                  await handleRevisionVideoDelivery(folderProject, fileResponse.data);
+                  return res.json({ received: true });
+                }
+              }
+            } catch (error) {
+              console.error("Error checking file hierarchy:", error);
+            }
+            
+            console.log(`File ${fileId} not associated with any active project share`);
+            return res.json({ received: true });
+          }
+
+          // Step 4: Check if project is in revision stage
+          if (project.status !== 'revision in progress') {
+            console.log(`Project ${project.id} is not awaiting revision (status: ${project.status})`);
+            return res.json({ received: true });
+          }
+
+          // Step 5: Process revision video delivery
+          await handleRevisionVideoDelivery(project, payload.resource);
+          
+          res.json({ received: true });
+        } 
+        // Also handle the legacy event types for backward compatibility
+        else if (payload.type === 'asset.uploaded' || payload.type === 'asset.processing_complete') {
+          // Legacy handling for initial video uploads
+          await handleLegacyAssetUpload(payload);
+          res.json({ received: true });
+        } else {
+          console.log(`Unhandled webhook type: ${payload.type}`);
+          res.json({ received: true });
+        }
+        
+      } catch (error) {
+        console.error("Frame.io webhook processing error:", error);
+        // Return 200 to prevent retries that could cause duplicate processing
+        res.json({ error: "Processing failed but acknowledged" });
+      }
+    }
+  );
+
+  // Helper function to handle revision video delivery
+  async function handleRevisionVideoDelivery(project: Project, fileData: any) {
+    try {
+      const assetId = fileData.id || fileData.asset_id;
+      const fileName = fileData.name || 'Revised Video';
+      const fileSize = fileData.file_size || 0;
+      const mediaType = fileData.media_type || 'video/mp4';
+      
+      console.log(`🎬 Processing revision video delivery for project ${project.id}`);
+      
+      // Update project status to "video is ready" (revised version)
+      await storage.updateProject(project.id, {
+        status: 'video is ready',
+        updatedAt: new Date(),
+      });
+      
+      // Log the status change
+      await storage.logProjectStatusChange(
+        project.id, 
+        'revision in progress', 
+        'video is ready'
+      );
+      
+      // Store the revised video info
+      await storage.createProjectFile({
+        projectId: project.id,
+        mediaAssetId: assetId,
+        mediaAssetUrl: fileData.view_url || '',
+        filename: `${fileName} (Revision ${(project.revisionCount || 0) + 1})`,
+        originalFilename: fileName,
+        fileType: mediaType,
+        fileSize: fileSize,
+        uploadStatus: 'completed',
+        uploadProgress: 100,
+      });
+      
+      // Send notification email
+      const user = await storage.getUserById(project.userId);
+      if (user?.email) {
+        const emailTemplate = emailService.generateVideoDeliveryEmail(
+          user.email,
+          project.title,
+          project.frameioReviewLink || '', // Use existing share link
+          project.id
+        );
+        
+        await emailService.sendEmail(emailTemplate);
+        console.log(`📧 Revision delivery email sent to ${user.email} for project ${project.id}`);
+      }
+      
+      console.log(`✅ Project ${project.id} revision delivered successfully`);
+    } catch (error) {
+      console.error(`Error handling revision video delivery for project ${project.id}:`, error);
+      throw error;
+    }
+  }
+
+  // Legacy handler for initial uploads
+  async function handleLegacyAssetUpload(payload: any) {
+    const { type, data } = payload;
+    const assetId = data.id;
+    const assetName = data.name;
+    
+    console.log(`Legacy asset event: ${type} - ${assetId} (${assetName})`);
+    
+    // Find projects in "edit in progress" status
+    const projectsInProgress = await storage.getProjectsByStatus(['edit in progress']);
+    
+    for (const project of projectsInProgress) {
+      if (project.mediaFolderId) {
+        try {
+          await frameioV4Service.loadServiceAccountToken();
+          const folderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
+          
+          const foundAsset = folderAssets.find(asset => asset.id === assetId);
+          const isVideoAsset = foundAsset?.media_type?.startsWith('video/');
+          
+          if (foundAsset && isVideoAsset) {
+            console.log(`✅ Initial video delivered to project ${project.id}`);
+            
+            await storage.updateProject(project.id, {
+              status: 'video is ready',
+              updatedAt: new Date(),
+            });
+            
+            await updateProjectTimestamp(project.id, "video delivered");
+            
+            const user = await storage.getUserById(project.userId);
+            if (user) {
+              const videoViewUrl = foundAsset.view_url || 
+                `https://next.frame.io/project/${foundAsset.project_id}/view/${foundAsset.id}`;
+              
+              const emailTemplate = emailService.generateVideoDeliveryEmail(
+                user.email,
+                project.title,
+                videoViewUrl,
+                project.id
+              );
+              
+              await emailService.sendEmail(emailTemplate);
+            }
+            
+            await storage.createProjectFile({
+              projectId: project.id,
+              mediaAssetId: assetId,
+              mediaAssetUrl: foundAsset.view_url || '',
+              filename: assetName,
+              originalFilename: assetName,
+              fileType: foundAsset.media_type || 'video/mp4',
+              fileSize: foundAsset.file_size || 0,
+              uploadStatus: 'completed',
+              uploadProgress: 100,
+            });
+            
+            break;
+          }
+        } catch (error) {
+          console.error(`Error checking asset ${assetId} for project ${project.id}:`, error);
+        }
+      }
+    }
+  }
 
   // Get project files endpoint
   app.get("/api/projects/:id/files", requireAuth, async (req, res) => {

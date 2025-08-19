@@ -533,8 +533,7 @@ export function RevisionModal({
                       </h2>
                       <p className="text-gray-300 text-lg max-w-md mx-auto">
                         Your revision request has been submitted successfully.
-                        Our editors are now working on implementing your
-                        changes.
+                        Our editors are now working on your changes.
                       </p>
 
                       {/* Payment Confirmed Section */}
@@ -575,8 +574,7 @@ export function RevisionModal({
                           <li className="flex items-start">
                             <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
                             <span>
-                              They'll implement the requested changes to your
-                              video
+                              They'll make the requested changes to your video
                             </span>
                           </li>
                           <li className="flex items-start">
@@ -589,7 +587,8 @@ export function RevisionModal({
                           <li className="flex items-start">
                             <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
                             <span>
-                              You can then access your revised video link right here and let us know what you think
+                              You can then access your revised video link right
+                              here and let us know what you think
                             </span>
                           </li>
                         </ul>
