@@ -63,7 +63,6 @@ import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-
 interface User {
   id: number;
   email: string;
@@ -174,17 +173,20 @@ export default function DashboardPage() {
   const [pendingProject, setPendingProject] = useState<Project | null>(null);
   const [sendToEditorConfirmationStep, setSendToEditorConfirmationStep] =
     useState<1 | 2>(1);
-  
+
   // Revision Confirmation Modal state
-  const [revisionConfirmationOpen, setRevisionConfirmationOpen] = useState(false);
-  const [revisionSessionId, setRevisionSessionId] = useState<string | null>(null);
-  
+  const [revisionConfirmationOpen, setRevisionConfirmationOpen] =
+    useState(false);
+  const [revisionSessionId, setRevisionSessionId] = useState<string | null>(
+    null,
+  );
+
   // Track if URL parameters have been processed to prevent premature cleanup
   const hasProcessedParams = useRef(false);
-  
+
   // Track if current workflow is a revision request (to skip Tally form)
   const [isRevisionWorkflow, setIsRevisionWorkflow] = useState(false);
-  
+
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // Get user projects - always fetch fresh data to show latest updates
@@ -198,51 +200,67 @@ export default function DashboardPage() {
   // Check for pending revision payments on mount
   useEffect(() => {
     let pollCount = 0;
-    
+
     const checkPendingPayment = async () => {
-      const pendingPaymentData = localStorage.getItem('pending_revision_payment');
+      const pendingPaymentData = localStorage.getItem(
+        "pending_revision_payment",
+      );
       if (!pendingPaymentData) {
         console.log("🔍 No pending payment found in localStorage");
         return;
       }
-      
+
       try {
-        const { sessionId, projectId, timestamp } = JSON.parse(pendingPaymentData);
-        
+        const { sessionId, projectId, timestamp } =
+          JSON.parse(pendingPaymentData);
+
         // Only check payments from the last 30 minutes
         if (Date.now() - timestamp > 30 * 60 * 1000) {
           console.log("⏰ Pending payment expired, removing from storage");
-          localStorage.removeItem('pending_revision_payment');
+          localStorage.removeItem("pending_revision_payment");
           return;
         }
-        
+
         pollCount++;
-        console.log(`🔍 [Poll #${pollCount}] Checking pending revision payment:`, sessionId);
-        
+        console.log(
+          `🔍 [Poll #${pollCount}] Checking pending revision payment:`,
+          sessionId,
+        );
+
         // Check payment status with backend
-        const response = await apiRequest(`/api/stripe/check-revision-payment?session_id=${sessionId}`);
-        
-        console.log(`📊 [Poll #${pollCount}] Payment status response:`, response);
-        
+        const response = await apiRequest(
+          `/api/stripe/check-revision-payment?session_id=${sessionId}`,
+        );
+
+        console.log(
+          `📊 [Poll #${pollCount}] Payment status response:`,
+          response,
+        );
+
         if (response.success && response.completed) {
           console.log("✅ PAYMENT COMPLETED! Opening confirmation modal");
           console.log("- Session ID:", sessionId);
           console.log("- Project ID:", projectId);
-          
+
           // Clear pending payment from storage
-          localStorage.removeItem('pending_revision_payment');
-          
+          localStorage.removeItem("pending_revision_payment");
+
           // Find and select the project for revision workflow
           if (projectsData && (projectsData as any)?.projects) {
             const targetProject = (projectsData as any).projects.find(
-              (p: Project) => p.id === parseInt(projectId)
+              (p: Project) => p.id === parseInt(projectId),
             );
             if (targetProject) {
-              console.log("📂 Found target project for revision workflow:", targetProject.title);
+              console.log(
+                "📂 Found target project for revision workflow:",
+                targetProject.title,
+              );
               setSelectedProject(targetProject);
               setIsRevisionWorkflow(true); // Enable revision workflow
               setCurrentStep("confirmation"); // Go to confirmation step first to show revision instructions
-              console.log("✅ Starting revision workflow - going to upload step");
+              console.log(
+                "✅ Starting revision workflow - going to upload step",
+              );
             } else {
               console.log("⚠️ Could not find project with ID:", projectId);
             }
@@ -250,24 +268,30 @@ export default function DashboardPage() {
             console.log("⚠️ Projects data not available yet");
           }
         } else {
-          console.log(`⏳ [Poll #${pollCount}] Payment not completed yet. Status:`, response.paymentStatus);
+          console.log(
+            `⏳ [Poll #${pollCount}] Payment not completed yet. Status:`,
+            response.paymentStatus,
+          );
         }
       } catch (error) {
-        console.error(`❌ [Poll #${pollCount}] Error checking pending payment:`, error);
+        console.error(
+          `❌ [Poll #${pollCount}] Error checking pending payment:`,
+          error,
+        );
       }
     };
-    
+
     // Check immediately on mount
     console.log("🚀 Starting payment status polling");
     checkPendingPayment();
-    
+
     // Poll every 3 seconds if there's a pending payment (more frequent for better UX)
     const intervalId = setInterval(() => {
-      if (localStorage.getItem('pending_revision_payment')) {
+      if (localStorage.getItem("pending_revision_payment")) {
         checkPendingPayment();
       }
     }, 3000);
-    
+
     return () => {
       console.log("🛑 Stopping payment status polling");
       clearInterval(intervalId);
@@ -276,83 +300,102 @@ export default function DashboardPage() {
 
   // Handle revision payment success/failure from URL parameters
   useEffect(() => {
-    console.log("🔄 Dashboard useEffect triggered at:", new Date().toISOString());
+    console.log(
+      "🔄 Dashboard useEffect triggered at:",
+      new Date().toISOString(),
+    );
     console.log("📍 Current URL:", window.location.href);
     console.log("🔍 URL search params:", window.location.search);
     console.log("🔍 URL hash:", window.location.hash);
     console.log("🔍 URL pathname:", window.location.pathname);
-    
+
     // Debug session storage data from redirect test
-    const debugSource = sessionStorage.getItem('debug_redirect_source');
-    const debugTarget = sessionStorage.getItem('debug_redirect_target');
-    const debugTime = sessionStorage.getItem('debug_redirect_time');
+    const debugSource = sessionStorage.getItem("debug_redirect_source");
+    const debugTarget = sessionStorage.getItem("debug_redirect_target");
+    const debugTime = sessionStorage.getItem("debug_redirect_time");
     if (debugSource) {
       console.log("🔍 Debug redirect data from session:");
       console.log("- Source:", debugSource);
       console.log("- Target:", debugTarget);
       console.log("- Time:", debugTime);
       // Clear debug data
-      sessionStorage.removeItem('debug_redirect_source');
-      sessionStorage.removeItem('debug_redirect_target');
-      sessionStorage.removeItem('debug_redirect_time');
+      sessionStorage.removeItem("debug_redirect_source");
+      sessionStorage.removeItem("debug_redirect_target");
+      sessionStorage.removeItem("debug_redirect_time");
     }
-    
+
     // Check both URL search params and hash (in case params are in hash)
     const urlParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    
-    const revisionPayment = urlParams.get("revision_payment") || hashParams.get("revision_payment");
-    const sessionId = urlParams.get("session_id") || hashParams.get("session_id");
-    const projectId = urlParams.get("project_id") || hashParams.get("project_id");
 
-    console.log("🔍 Dashboard URL params extracted:", { 
-      revisionPayment, 
-      sessionId: sessionId ? `${sessionId.substring(0, 20)}...` : sessionId, 
-      projectId 
+    const revisionPayment =
+      urlParams.get("revision_payment") || hashParams.get("revision_payment");
+    const sessionId =
+      urlParams.get("session_id") || hashParams.get("session_id");
+    const projectId =
+      urlParams.get("project_id") || hashParams.get("project_id");
+
+    console.log("🔍 Dashboard URL params extracted:", {
+      revisionPayment,
+      sessionId: sessionId ? `${sessionId.substring(0, 20)}...` : sessionId,
+      projectId,
     });
-    console.log("📊 Projects data state:", { 
-      hasData: !!projectsData, 
+    console.log("📊 Projects data state:", {
+      hasData: !!projectsData,
       isLoading: projectsLoading,
-      dataKeys: projectsData ? Object.keys(projectsData) : null
+      dataKeys: projectsData ? Object.keys(projectsData) : null,
     });
 
     // Debug: log all possible URL parameter sources
     console.log("🔍 ALL URL parameter sources:");
-    console.log("- URL search params:", Object.fromEntries(urlParams.entries()));
+    console.log(
+      "- URL search params:",
+      Object.fromEntries(urlParams.entries()),
+    );
     console.log("- URL hash params:", Object.fromEntries(hashParams.entries()));
     console.log("- Raw search string:", window.location.search);
     console.log("- Raw hash string:", window.location.hash);
 
     // Always log what we're checking for
     console.log("🎯 Checking conditions:");
-    console.log("- revisionPayment === 'success':", revisionPayment === "success");
+    console.log(
+      "- revisionPayment === 'success':",
+      revisionPayment === "success",
+    );
     console.log("- sessionId exists:", !!sessionId);
-    console.log("- Combined condition:", revisionPayment === "success" && sessionId);
+    console.log(
+      "- Combined condition:",
+      revisionPayment === "success" && sessionId,
+    );
 
     if (revisionPayment === "success" && sessionId) {
       console.log("✅ REVISION PAYMENT SUCCESS DETECTED!");
       console.log("🎉 STARTING REVISION WORKFLOW");
-      
+
       // If project ID is provided and projects data is loaded, start revision workflow
       if (projectId && projectsData && (projectsData as any)?.projects) {
         const targetProject = (projectsData as any).projects.find(
-          (p: Project) => p.id === parseInt(projectId)
+          (p: Project) => p.id === parseInt(projectId),
         );
         console.log("🎯 Target project search result:", targetProject);
         if (targetProject) {
           setSelectedProject(targetProject);
-          setIsRevisionWorkflow(true); // Enable revision workflow  
+          setIsRevisionWorkflow(true); // Enable revision workflow
           setCurrentStep("confirmation"); // Go to confirmation step first to show revision instructions
-          console.log("✅ Starting revision workflow from URL redirect - going to upload step");
+          console.log(
+            "✅ Starting revision workflow from URL redirect - going to upload step",
+          );
         }
       } else if (projectId && !projectsData) {
-        console.log("⏳ Projects data not loaded yet, will retry when available");
+        console.log(
+          "⏳ Projects data not loaded yet, will retry when available",
+        );
         return; // Don't clean URL yet, let it retry when projectsData loads
       }
-      
+
       // Mark parameters as processed
       hasProcessedParams.current = true;
-      
+
       // Clean up URL parameters after a short delay to ensure modal opens
       setTimeout(() => {
         window.history.replaceState({}, "", "/dashboard");
@@ -360,11 +403,11 @@ export default function DashboardPage() {
       }, 1000);
     } else if (revisionPayment === "cancelled") {
       console.log("❌ Revision payment cancelled detected");
-      
+
       // Clear any pending payment from localStorage
-      localStorage.removeItem('pending_revision_payment');
+      localStorage.removeItem("pending_revision_payment");
       console.log("🧹 Cleared pending payment from localStorage");
-      
+
       toast({
         title: "Revision Payment Cancelled",
         description:
@@ -390,7 +433,10 @@ export default function DashboardPage() {
   // Send to editor mutation
   const sendToEditorMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      console.log("🚀 MUTATION: Starting sendToEditor mutation for project", projectId);
+      console.log(
+        "🚀 MUTATION: Starting sendToEditor mutation for project",
+        projectId,
+      );
       const response = await apiRequest(
         "PATCH",
         `/api/projects/${projectId}/status`,
@@ -404,7 +450,9 @@ export default function DashboardPage() {
     onSuccess: (data) => {
       console.log("🎉 MUTATION SUCCESS: onSuccess called with data:", data);
       if (data.success) {
-        console.log("🎉 MUTATION SUCCESS: data.success is true, proceeding with updates");
+        console.log(
+          "🎉 MUTATION SUCCESS: data.success is true, proceeding with updates",
+        );
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
         toast({
           title: "Project Sent to Editor!",
@@ -412,21 +460,28 @@ export default function DashboardPage() {
             "Your project is now being worked on. Keep an eye on your email for updates.",
           duration: 5000,
         });
-        
+
         // Update the selected project with the new status instead of closing dialog
         if (selectedProject) {
-          console.log("🔄 STATE UPDATE: Updating selectedProject status from:", selectedProject.status, "to: Edit in Progress");
+          console.log(
+            "🔄 STATE UPDATE: Updating selectedProject status from:",
+            selectedProject.status,
+            "to: Edit in Progress",
+          );
           const updatedProject = {
             ...selectedProject,
             status: "Edit in Progress",
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           };
           setSelectedProject(updatedProject);
-          console.log("✅ STATE UPDATE: Updated selectedProject:", updatedProject);
+          console.log(
+            "✅ STATE UPDATE: Updated selectedProject:",
+            updatedProject,
+          );
         } else {
           console.error("❌ STATE UPDATE: selectedProject is null/undefined");
         }
-        
+
         setCurrentStep("confirmation");
         setShowSendToEditorDialog(false);
         setPendingProject(null);
@@ -504,11 +559,11 @@ export default function DashboardPage() {
   const handleRevisionSubmitted = () => {
     // Refresh project data to show updated status
     queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-    
+
     // Close the modal
     setRevisionConfirmationOpen(false);
     setRevisionSessionId(null);
-    
+
     // Keep the selected project open so user returns to the project detail view
     // The project status should now be "revision in progress"
     if (selectedProject) {
@@ -516,7 +571,7 @@ export default function DashboardPage() {
       setSelectedProject({
         ...selectedProject,
         status: "revision in progress",
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
     }
   };
@@ -651,8 +706,6 @@ export default function DashboardPage() {
     company: user.user_metadata?.company || "",
     verified: user.email_confirmed_at !== null,
   };
-
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary">
@@ -927,7 +980,8 @@ export default function DashboardPage() {
                           <Eye className="h-4 w-4 mr-2" />
                           Describe Your Revisions
                         </Button>
-                      ) : project.status.toLowerCase() === "revision in progress" ? (
+                      ) : project.status.toLowerCase() ===
+                        "revision in progress" ? (
                         <Button
                           size="sm"
                           className="w-full bg-orange-600 hover:bg-orange-700 text-white"
@@ -939,7 +993,7 @@ export default function DashboardPage() {
                           }}
                         >
                           <Clock className="h-4 w-4 mr-2" />
-                          View Revision Status
+                          View Project Status
                         </Button>
                       ) : project.status.toLowerCase() === "complete" ? (
                         <div className="space-y-2">
@@ -1086,23 +1140,32 @@ export default function DashboardPage() {
 
                             // Continue with normal flow regardless of folder setup result
                             setSelectedProject(project);
-                            
+
                             // Check if this project has completed revision payments
-                            const hasCompletedRevisions = project.revisionCount && project.revisionCount > 0;
-                            
+                            const hasCompletedRevisions =
+                              project.revisionCount &&
+                              project.revisionCount > 0;
+
                             // Set the appropriate step based on project status AND revision payments
                             if (
-                              project.status.toLowerCase() === "awaiting revision instructions"
+                              project.status.toLowerCase() ===
+                              "awaiting revision instructions"
                             ) {
                               // Project is awaiting revision instructions = start revision workflow automatically
-                              console.log(`🔄 Project ${project.title} is awaiting revision instructions - starting revision workflow`);
+                              console.log(
+                                `🔄 Project ${project.title} is awaiting revision instructions - starting revision workflow`,
+                              );
                               setIsRevisionWorkflow(true);
                               setCurrentStep("upload"); // Start revision workflow with upload step
                             } else if (
-                              project.status.toLowerCase() === "video is ready" && hasCompletedRevisions
+                              project.status.toLowerCase() ===
+                                "video is ready" &&
+                              hasCompletedRevisions
                             ) {
                               // Project has video ready AND completed revision payments = start revision workflow
-                              console.log(`🔄 Project ${project.title} has ${project.revisionCount} completed revision payments - starting revision workflow`);
+                              console.log(
+                                `🔄 Project ${project.title} has ${project.revisionCount} completed revision payments - starting revision workflow`,
+                              );
                               setIsRevisionWorkflow(true);
                               setCurrentStep("upload"); // Start revision workflow with upload step
                             } else if (
@@ -1121,17 +1184,22 @@ export default function DashboardPage() {
                             }
                           }}
                         >
-                          {project.status.toLowerCase() === "awaiting revision instructions" ? (
+                          {project.status.toLowerCase() ===
+                          "awaiting revision instructions" ? (
                             <>
                               <RotateCcw className="h-4 w-4 mr-2" />
                               Submit Revision Instructions
                             </>
-                          ) : project.status.toLowerCase() === "video is ready" && project.revisionCount && project.revisionCount > 0 ? (
+                          ) : project.status.toLowerCase() ===
+                              "video is ready" &&
+                            project.revisionCount &&
+                            project.revisionCount > 0 ? (
                             <>
                               <RotateCcw className="h-4 w-4 mr-2" />
                               Submit Revision Instructions
                             </>
-                          ) : project.status.toLowerCase() === "video is ready" ? (
+                          ) : project.status.toLowerCase() ===
+                            "video is ready" ? (
                             <>
                               <Eye className="h-4 w-4 mr-2" />
                               Review Video
@@ -1202,7 +1270,8 @@ export default function DashboardPage() {
                   >
                     {currentStep === "form" ||
                     currentStep === "confirmation" ||
-                    selectedProject.status.toLowerCase() === "edit in progress" ||
+                    selectedProject.status.toLowerCase() ===
+                      "edit in progress" ||
                     selectedProject.status.toLowerCase() === "video is ready"
                       ? "✓"
                       : "1"}
@@ -1217,14 +1286,17 @@ export default function DashboardPage() {
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" && !isRevisionWorkflow ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" || isRevisionWorkflow ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
                     {currentStep === "confirmation" ||
-                    selectedProject.status.toLowerCase() === "edit in progress" ||
+                    selectedProject.status.toLowerCase() ===
+                      "edit in progress" ||
                     selectedProject.status.toLowerCase() === "video is ready" ||
                     isRevisionWorkflow
                       ? "✓"
                       : "2"}
                   </div>
                   <span className="font-medium">
-                    {isRevisionWorkflow ? "Instructions (Skipped for Revision)" : "Describe Your Dream Edit"}
+                    {isRevisionWorkflow
+                      ? "Instructions (Skipped for Revision)"
+                      : "Describe Your Dream Edit"}
                   </span>
                 </div>
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
@@ -1234,7 +1306,8 @@ export default function DashboardPage() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-green-600 text-white" : "bg-gray-600"}`}
                   >
-                    {selectedProject.status.toLowerCase() === "edit in progress" ||
+                    {selectedProject.status.toLowerCase() ===
+                      "edit in progress" ||
                     selectedProject.status.toLowerCase() === "video is ready"
                       ? "✓"
                       : "3"}
@@ -1312,17 +1385,25 @@ export default function DashboardPage() {
                       <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-green-400 mb-2">
                         {(() => {
-                          console.log("Confirmation screen - selectedProject.status:", selectedProject.status);
-                          return selectedProject.status.toLowerCase() === "edit in progress" ? "Project Submitted!" : "Ready to Submit?";
+                          console.log(
+                            "Confirmation screen - selectedProject.status:",
+                            selectedProject.status,
+                          );
+                          return selectedProject.status.toLowerCase() ===
+                            "edit in progress"
+                            ? "Project Submitted!"
+                            : "Ready to Submit?";
                         })()}
                       </h3>
                       <p className="text-gray-300 mb-6 whitespace-pre-line">
-                        {selectedProject.status.toLowerCase() === "edit in progress"
+                        {selectedProject.status.toLowerCase() ===
+                        "edit in progress"
                           ? "Your project is being worked on by an editor 🎉\n You can't upload more footage now, but you can update your instructions if needed."
                           : "Everything looks in order, nice!\n You can send it off to an editor now or upload additional footage / new instructions."}
                       </p>
                       <div className="flex gap-4 justify-center">
-                        {selectedProject.status.toLowerCase() === "edit in progress" ? (
+                        {selectedProject.status.toLowerCase() ===
+                        "edit in progress" ? (
                           <Button
                             variant="outline"
                             onClick={() => setCurrentStep("form")}
@@ -1346,7 +1427,9 @@ export default function DashboardPage() {
                               }}
                               className="bg-green-600 hover:bg-green-700 text-white"
                             >
-                              {isRevisionWorkflow ? "Submit for Revision" : "Send to Editor"}
+                              {isRevisionWorkflow
+                                ? "Submit for Revision"
+                                : "Send to Editor"}
                             </Button>
                           </>
                         )}
@@ -1538,16 +1621,24 @@ export default function DashboardPage() {
                   : "bg-red-600 hover:bg-red-700 text-white"
               }
               onClick={() => {
-                console.log("🔘 DIALOG BUTTON: Clicked with step:", sendToEditorConfirmationStep);
+                console.log(
+                  "🔘 DIALOG BUTTON: Clicked with step:",
+                  sendToEditorConfirmationStep,
+                );
                 if (sendToEditorConfirmationStep === 1) {
                   console.log("🔘 DIALOG BUTTON: Moving to step 2");
                   setSendToEditorConfirmationStep(2);
                 } else {
                   if (pendingProject) {
-                    console.log("🔘 DIALOG BUTTON: Triggering mutation for project:", pendingProject.id);
+                    console.log(
+                      "🔘 DIALOG BUTTON: Triggering mutation for project:",
+                      pendingProject.id,
+                    );
                     sendToEditorMutation.mutate(pendingProject.id);
                   } else {
-                    console.error("❌ DIALOG BUTTON: No pendingProject available");
+                    console.error(
+                      "❌ DIALOG BUTTON: No pendingProject available",
+                    );
                   }
                 }
               }}
