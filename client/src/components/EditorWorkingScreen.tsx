@@ -1,15 +1,15 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Paintbrush, 
-  Clock, 
-  MessageSquare, 
-  Upload, 
+import {
+  Paintbrush,
+  Clock,
+  MessageSquare,
+  Upload,
   ArrowLeft,
   Sparkles,
   FileVideo,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 
 interface EditorWorkingScreenProps {
@@ -17,7 +17,10 @@ interface EditorWorkingScreenProps {
   onBack: () => void;
 }
 
-export function EditorWorkingScreen({ project, onBack }: EditorWorkingScreenProps) {
+export function EditorWorkingScreen({
+  project,
+  onBack,
+}: EditorWorkingScreenProps) {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       {/* Header Section */}
@@ -39,8 +42,12 @@ export function EditorWorkingScreen({ project, onBack }: EditorWorkingScreenProp
               <CheckCircle className="w-6 h-6 text-green-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">Payment Confirmed</h2>
-              <p className="text-gray-400">$5.00 revision fee has been processed</p>
+              <h2 className="text-xl font-semibold text-white">
+                Payment Confirmed
+              </h2>
+              <p className="text-gray-400">
+                $5.00 revision fee has been processed
+              </p>
             </div>
           </div>
 
@@ -53,15 +60,29 @@ export function EditorWorkingScreen({ project, onBack }: EditorWorkingScreenProp
               <ul className="space-y-2 text-gray-300 text-sm">
                 <li className="flex items-start gap-2">
                   <span className="text-cyan-400 mt-0.5">•</span>
-                  <span>The editor will review all your Frame.io comments and highlights</span>
+                  <span>
+                    The editor will review all your Frame.io comments and
+                    highlights
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-cyan-400 mt-0.5">•</span>
-                  <span>They'll implement the requested changes to your video</span>
+                  <span>
+                    They'll implement the requested changes to your video
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-cyan-400 mt-0.5">•</span>
-                  <span>You'll receive an email when the revised video is ready</span>
+                  <span>
+                    You'll receive an email when the revised video is ready
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 mt-0.5">•</span>
+                  <span>
+                    Video will be posted in Step 4 and you will be able to
+                    review the new version
+                  </span>
                 </li>
               </ul>
             </div>
@@ -72,8 +93,8 @@ export function EditorWorkingScreen({ project, onBack }: EditorWorkingScreenProp
                 Timeline
               </h3>
               <p className="text-gray-300 text-sm">
-                Revisions typically take <strong>24-48 hours</strong> to complete, 
-                depending on the complexity of changes requested.
+                Revisions typically take <strong>24-48 hours</strong> to
+                complete, depending on the complexity of changes requested.
               </p>
             </div>
           </div>
@@ -83,7 +104,9 @@ export function EditorWorkingScreen({ project, onBack }: EditorWorkingScreenProp
       {/* Additional Actions */}
       <Card className="bg-gray-800/50 border-gray-700">
         <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">While you wait, you can:</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">
+            While you wait, you can:
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-3 text-gray-300">
               <MessageSquare className="w-5 h-5 text-cyan-400 flex-shrink-0" />
@@ -95,7 +118,9 @@ export function EditorWorkingScreen({ project, onBack }: EditorWorkingScreenProp
             <div className="flex items-center gap-3 text-gray-300">
               <Upload className="w-5 h-5 text-cyan-400 flex-shrink-0" />
               <div className="text-sm">
-                <p className="font-medium text-white">Upload additional footage</p>
+                <p className="font-medium text-white">
+                  Upload additional footage
+                </p>
                 <p>Add any new files that might be helpful for the revision</p>
               </div>
             </div>
@@ -110,8 +135,12 @@ export function EditorWorkingScreen({ project, onBack }: EditorWorkingScreenProp
             <FileVideo className="w-8 h-8 text-cyan-400" />
             <div>
               <p className="text-sm text-gray-400">Project</p>
-              <p className="text-lg font-semibold text-white">{project.title}</p>
-              <p className="text-sm text-cyan-400 mt-1">Status: Revision in Progress</p>
+              <p className="text-lg font-semibold text-white">
+                {project.title}
+              </p>
+              <p className="text-sm text-cyan-400 mt-1">
+                Status: Revision in Progress
+              </p>
             </div>
           </div>
         </CardContent>

@@ -78,7 +78,9 @@ export function RevisionModal({
   useEffect(() => {
     if (open && project) {
       if (project.status.toLowerCase() === "revision in progress") {
-        console.log("🎯 Project already in revision progress, showing confirmation screen");
+        console.log(
+          "🎯 Project already in revision progress, showing confirmation screen",
+        );
         setCurrentStep("submit-to-editor");
         setIsSubmitted(true); // Show confirmation state
       } else {
@@ -153,7 +155,7 @@ export function RevisionModal({
       if (data.success) {
         setIsSubmitted(true); // This will transform the submit-to-editor step
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-        
+
         // Auto-close modal after showing confirmation
         setTimeout(() => {
           onOpenChange(false);
@@ -530,8 +532,9 @@ export function RevisionModal({
                         Editor is on it! 🎬
                       </h2>
                       <p className="text-gray-300 text-lg max-w-md mx-auto">
-                        Your revision request has been submitted successfully. Our
-                        editors are now working on implementing your changes.
+                        Your revision request has been submitted successfully.
+                        Our editors are now working on implementing your
+                        changes.
                       </p>
 
                       {/* Payment Confirmed Section */}
@@ -541,8 +544,12 @@ export function RevisionModal({
                             <CheckCircle className="h-5 w-5 text-white" />
                           </div>
                           <div>
-                            <h3 className="text-white font-semibold text-lg">Payment Confirmed</h3>
-                            <p className="text-green-400 text-sm">$5.00 revision fee has been processed</p>
+                            <h3 className="text-white font-semibold text-lg">
+                              Payment Confirmed
+                            </h3>
+                            <p className="text-green-400 text-sm">
+                              $5.00 revision fee has been processed
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -553,20 +560,37 @@ export function RevisionModal({
                           <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center mr-3">
                             <Info className="h-5 w-5 text-white" />
                           </div>
-                          <h3 className="text-white font-semibold text-lg">What happens next?</h3>
+                          <h3 className="text-white font-semibold text-lg">
+                            What happens next?
+                          </h3>
                         </div>
                         <ul className="space-y-3 text-gray-300">
                           <li className="flex items-start">
                             <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
-                            <span>The editor will review all your Frame.io comments and highlights</span>
+                            <span>
+                              The editor will review all your Frame.io comments
+                              and highlights
+                            </span>
                           </li>
                           <li className="flex items-start">
                             <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
-                            <span>They'll implement the requested changes to your video</span>
+                            <span>
+                              They'll implement the requested changes to your
+                              video
+                            </span>
                           </li>
                           <li className="flex items-start">
                             <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
-                            <span>You'll receive an email when the revised video is ready</span>
+                            <span>
+                              You'll receive an email when the revised video is
+                              ready
+                            </span>
+                          </li>
+                          <li className="flex items-start">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full mr-3 mt-2"></div>
+                            <span>
+                              You can then access your revised video link right here and let us know what you think
+                            </span>
                           </li>
                         </ul>
                       </div>
@@ -574,16 +598,22 @@ export function RevisionModal({
                       {/* Timeline section */}
                       <div className="bg-gray-800/50 rounded-lg p-6 max-w-2xl mx-auto text-left">
                         <div className="flex items-center mb-4">
-                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                          <div className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center mr-3">
                             <Clock className="h-5 w-5 text-white" />
                           </div>
-                          <h3 className="text-white font-semibold text-lg">Timeline</h3>
+                          <h3 className="text-white font-semibold text-lg">
+                            Timeline
+                          </h3>
                         </div>
                         <p className="text-gray-300">
-                          Revisions typically take <span className="text-white font-semibold">24-48 hours</span> to complete, depending on the complexity of changes requested.
+                          Revisions typically take{" "}
+                          <span className="text-white font-semibold">
+                            2 - 5 days
+                          </span>{" "}
+                          to complete, depending on demand and complexity of
+                          changes requested.
                         </p>
                       </div>
-
                     </div>
                   </CardContent>
                 </Card>
@@ -639,9 +669,11 @@ export function RevisionModal({
             className={`flex items-center gap-2 ${
               currentStep === "video-review"
                 ? "text-[#2abdee]"
-                : ["upload-footage", "submit-to-editor", "video-ready"].includes(
-                      currentStep,
-                    )
+                : [
+                      "upload-footage",
+                      "submit-to-editor",
+                      "video-ready",
+                    ].includes(currentStep)
                   ? "text-green-400"
                   : "text-gray-400"
             }`}
@@ -650,9 +682,11 @@ export function RevisionModal({
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                 currentStep === "video-review"
                   ? "bg-[#2abdee] text-white"
-                  : ["upload-footage", "submit-to-editor", "video-ready"].includes(
-                        currentStep,
-                      )
+                  : [
+                        "upload-footage",
+                        "submit-to-editor",
+                        "video-ready",
+                      ].includes(currentStep)
                     ? "bg-green-600 text-white"
                     : "bg-gray-600"
               }`}
