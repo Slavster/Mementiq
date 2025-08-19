@@ -67,9 +67,7 @@ export function EditorWorkingScreen({
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-cyan-400 mt-0.5">•</span>
-                  <span>
-                    They'll implement the requested changes to your video
-                  </span>
+                  <span>They'll make the requested changes to your video</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-cyan-400 mt-0.5">•</span>
