@@ -538,7 +538,7 @@ export function RevisionModal({
                       </p>
 
                       {/* Payment Confirmed Section */}
-                      <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-6 max-w-2xl mx-auto text-left">
+                      <div className="bg-gray-800/50 rounded-lg p-6 max-w-2xl mx-auto text-left">
                         <div className="flex items-center mb-3">
                           <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center mr-3">
                             <CheckCircle className="h-5 w-5 text-white" />
