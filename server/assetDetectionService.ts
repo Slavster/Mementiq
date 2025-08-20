@@ -68,15 +68,15 @@ class AssetDetectionService {
   }
 
   /**
-   * Check all projects in "edit in progress" status for new video assets
+   * Check all projects in "edit in progress" and "revision in progress" status for new video assets
    */
   private async checkForNewAssets(): Promise<{ checked: number; updated: number; projects: any[] }> {
     try {
       console.log('🔍 Checking for new video assets in projects...');
       
-      // Get all projects in "edit in progress" status
-      const projectsInProgress = await storage.getProjectsByStatus(['edit in progress']);
-      console.log(`📊 Found ${projectsInProgress.length} projects in "edit in progress" status`);
+      // Get all projects in "edit in progress" and "revision in progress" status
+      const projectsInProgress = await storage.getProjectsByStatus(['edit in progress', 'revision in progress']);
+      console.log(`📊 Found ${projectsInProgress.length} projects in "edit in progress" or "revision in progress" status`);
 
       const results = {
         checked: projectsInProgress.length,
@@ -133,7 +133,8 @@ class AssetDetectionService {
       folderId: project.mediaFolderId,
       videoCount: 0,
       statusUpdated: false,
-      assets: [] as any[]
+      assets: [] as any[],
+      isRevision: project.status === 'revision in progress'
     };
 
     if (!project.mediaFolderId) {
@@ -141,7 +142,7 @@ class AssetDetectionService {
       return result;
     }
 
-    console.log(`🔍 Checking project ${project.id} (${project.title}) - folder: ${project.mediaFolderId}`);
+    console.log(`🔍 Checking project ${project.id} (${project.title}) - status: ${project.status} - folder: ${project.mediaFolderId}`);
 
     // Get assets in the project folder
     const folderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
@@ -153,19 +154,39 @@ class AssetDetectionService {
 
     console.log(`🎬 Project ${project.id}: Found ${allVideoAssets.length} total video assets`);
 
-    // Filter videos uploaded AFTER project was submitted to editor
+    // Different filtering logic based on project status
     let videoAssets = allVideoAssets;
-    if (project.submittedToEditorAt) {
-      const submissionTime = new Date(project.submittedToEditorAt);
+    let timestampToCheck: Date | null = null;
+    
+    if (project.status === 'revision in progress') {
+      // For revisions, check for videos uploaded after the revision was requested
+      // Get the most recent revision payment or status log entry
+      const statusLogs = await storage.getProjectStatusLogs(project.id);
+      const revisionLog = statusLogs
+        .filter(log => log.newStatus === 'revision in progress')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      
+      if (revisionLog) {
+        timestampToCheck = new Date(revisionLog.createdAt);
+        console.log(`🔄 Revision mode: checking for videos after ${revisionLog.createdAt}`);
+      }
+    } else if (project.status === 'edit in progress' && project.submittedToEditorAt) {
+      // For initial edits, check for videos uploaded after submission
+      timestampToCheck = new Date(project.submittedToEditorAt);
+      console.log(`📝 Initial edit mode: checking for videos after ${project.submittedToEditorAt}`);
+    }
+
+    // Filter videos based on the appropriate timestamp
+    if (timestampToCheck) {
       videoAssets = allVideoAssets.filter(asset => {
         const assetTime = new Date(asset.created_at);
-        const isAfterSubmission = assetTime > submissionTime;
-        console.log(`📅 Asset "${asset.name}": created ${asset.created_at}, submitted ${project.submittedToEditorAt}, after submission: ${isAfterSubmission}`);
-        return isAfterSubmission;
+        const isAfterTimestamp = assetTime > timestampToCheck;
+        console.log(`📅 Asset "${asset.name}": created ${asset.created_at}, after timestamp: ${isAfterTimestamp}`);
+        return isAfterTimestamp;
       });
-      console.log(`⏰ Project ${project.id}: ${videoAssets.length} videos uploaded after submission to editor`);
+      console.log(`⏰ Project ${project.id}: ${videoAssets.length} videos uploaded after the relevant timestamp`);
     } else {
-      console.log(`⚠️ Project ${project.id}: No submission timestamp found, considering all videos`);
+      console.log(`⚠️ Project ${project.id}: No timestamp found, considering all videos`);
     }
 
     // Sort by creation date (most recent first) and take the newest video only
@@ -188,7 +209,11 @@ class AssetDetectionService {
     // If we have valid video assets (uploaded after submission), update project status
     if (videoAssets.length > 0) {
       const selectedVideo = videoAssets[0];
-      console.log(`🚀 Updating project ${project.id} status to "video is ready" based on video: "${selectedVideo.name}"`);
+      const videoType = result.isRevision ? "revision" : "initial";
+      console.log(`🚀 Updating project ${project.id} status to "video is ready" based on ${videoType} video: "${selectedVideo.name}"`);
+      
+      // Log the status change
+      await storage.logProjectStatusChange(project.id, project.status, 'video is ready');
       
       await storage.updateProject(project.id, {
         status: 'video is ready',
@@ -196,7 +221,10 @@ class AssetDetectionService {
       });
 
       // Update timestamp
-      await this.updateProjectTimestamp(project.id, `video delivered: "${selectedVideo.name}" (auto-detected)`);
+      const actionMessage = result.isRevision 
+        ? `revision video delivered: "${selectedVideo.name}" (auto-detected)`
+        : `video delivered: "${selectedVideo.name}" (auto-detected)`;
+      await this.updateProjectTimestamp(project.id, actionMessage);
       
       result.statusUpdated = true;
 
@@ -222,8 +250,17 @@ class AssetDetectionService {
       return;
     }
 
-    // Use Frame.io view URL for the video
-    const videoViewUrl = videoAsset.view_url || `https://next.frame.io/project/${videoAsset.project_id}/view/${videoAsset.id}`;
+    // For revisions, use the existing share link
+    // For initial deliveries, use the Frame.io view URL
+    let videoViewUrl = project.frameioReviewLink || '';
+    
+    if (!videoViewUrl) {
+      // Fallback to direct Frame.io view URL if no share link exists
+      videoViewUrl = videoAsset.view_url || `https://next.frame.io/project/${videoAsset.project_id}/view/${videoAsset.id}`;
+    }
+
+    const isRevision = project.status === 'revision in progress';
+    console.log(`📧 Sending ${isRevision ? 'revision' : 'initial'} delivery email with URL: ${videoViewUrl}`);
 
     // Generate and send email
     const emailTemplate = emailService.generateVideoDeliveryEmail(

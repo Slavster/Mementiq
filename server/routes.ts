@@ -1152,6 +1152,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WEBHOOK FUNCTIONALITY (DISABLED - Using polling instead)
+  // Uncomment this section if you want to enable webhook-based detection in the future
+  /*
   // Test endpoint to verify webhook configuration
   app.get("/api/webhooks/frameio/test", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
@@ -1305,7 +1308,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Helper function to handle revision video delivery
+  */
+  // END OF WEBHOOK FUNCTIONALITY (Using polling instead)
+
+  // Helper functions for webhook handling (kept for reference but not used)
+  /*
   async function handleRevisionVideoDelivery(project: Project, fileData: any) {
     try {
       const assetId = fileData.id || fileData.asset_id;
@@ -1427,6 +1434,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   }
+  */
+  // END OF WEBHOOK HELPER FUNCTIONS
 
   // Get project files endpoint
   app.get("/api/projects/:id/files", requireAuth, async (req, res) => {

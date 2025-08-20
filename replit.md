@@ -60,7 +60,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **2025-08-18**: Removed misleading toast notifications about "Share Link Created!" in revision workflow - links are only retrieved, never created
 - **2025-08-18**: Updated database with correct share link (https://f.io/BC9_Q8JH) and video filename (Me - tu lan cave.mp4) for project 16
 - **2025-08-18**: Fixed file size display - API now fetches real-time Frame.io asset data for revision projects to show accurate file sizes instead of cached database values
-- **2025-08-19**: Implemented Frame.io webhook infrastructure for automated revision video detection with signature verification, 5-second response requirement, and share asset mapping database table (frameioShareAssets). Webhook listens for file.versioned events to detect when revised videos are uploaded and automatically updates project status from "revision in progress" to "video is ready"
+- **2025-08-19**: Enhanced polling-based asset detection to support revision workflow - AssetDetectionService now monitors both "edit in progress" and "revision in progress" statuses, detecting new videos based on appropriate timestamps (submission date for initial edits, revision request date for revisions). System runs every 5 minutes to detect uploads for both initial deliveries and revisions, providing a simple and reliable solution without external dependencies. Webhook infrastructure code preserved but commented out for potential future use
 
 ## External Dependencies
 
