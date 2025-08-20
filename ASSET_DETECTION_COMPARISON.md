@@ -1,102 +1,81 @@
-# Asset Detection: Polling vs Webhook Comparison
+# Asset Detection: New Files vs Version Updates
 
-## Current System Analysis
+## ✅ ENHANCED DETECTION IMPLEMENTED
 
-You're absolutely right to question this! After examining the codebase, here's what I found:
+The polling system now detects **BOTH** new files and version updates of existing files.
 
-## 🔄 EXISTING SYSTEM: Polling-Based Asset Detection
+## Detection Comparison
 
-**Location**: `server/assetDetectionService.ts`
-**How it works**:
-- Runs every 5 minutes automatically
-- Checks projects in "edit in progress" status
-- Polls Frame.io API to look for new video uploads
-- Updates project status to "video is ready" when videos are found
-- Filters videos by submission timestamp (only counts videos uploaded AFTER submission)
+### Previous Implementation ❌
+- **Only detected**: New files with `created_at` timestamp after revision request
+- **Missed**: Version updates of existing files (Frame.io version stacking)
+- **Problem**: If editor uploaded a new version of the same file, it wouldn't be detected
 
-**Pros**:
-✅ Already working reliably for initial video submissions
-✅ No external configuration needed
-✅ Works without Frame.io webhook setup
-✅ Handles multiple projects efficiently
+### Current Implementation ✅
+- **Detects**: New files via `created_at` timestamp
+- **Detects**: Version updates via `updated_at` timestamp  
+- **Logic**: Checks whichever is more recent between `created_at` and `updated_at`
 
-**Cons**:
-❌ 5-minute delay (videos detected every 5 minutes, not instantly)
-❌ Makes unnecessary API calls when no changes occur
-❌ Uses API rate limits even when idle
+## How Frame.io Handles Versions
 
-## 🚀 NEW SYSTEM: Webhook-Based Detection
+### Scenario 1: Brand New File Upload
+```
+File: revision_v1.mp4
+created_at: 2025-08-20T10:00:00Z
+updated_at: 2025-08-20T10:00:00Z
+```
+✅ **Detected**: created_at is after revision request
 
-**Location**: `/api/webhooks/frameio` endpoint
-**How it works**:
-- Frame.io sends instant notification when videos are uploaded
-- Receives `file.versioned` events for revised videos
-- Updates project status immediately (no delay)
-- Only processes when actual changes occur
+### Scenario 2: Version Update (Same File)
+```
+File: original_video.mp4
+created_at: 2025-08-14T09:00:00Z  ← Original upload (before revision)
+updated_at: 2025-08-20T10:00:00Z  ← New version uploaded
+```
+✅ **Detected**: updated_at is after revision request
 
-**Pros**:
-✅ Instant detection (real-time updates)
-✅ No polling overhead or API rate limit usage
-✅ More efficient - only runs when needed
-✅ Can detect specific revision uploads
+## Technical Implementation
 
-**Cons**:
-❌ Requires manual setup in Frame.io Developer Console
-❌ Needs webhook secret configuration
-❌ More complex to debug if issues arise
+```typescript
+// Enhanced detection logic
+const createdTime = new Date(asset.created_at);
+const updatedTime = new Date(asset.updated_at || asset.created_at);
+const latestTime = Math.max(createdTime, updatedTime);
 
-## 📊 KEY DIFFERENCE: What Each System Handles
+// Check if asset activity is after revision request
+const isAfterTimestamp = latestTime > timestampToCheck;
+```
 
-### Polling System (Existing)
-- **Initial video submissions**: ✅ Working perfectly
-- **Revision videos**: ⚠️ Would work but with 5-minute delay
-- **Detection method**: Checks all videos in folder every 5 minutes
+## Testing Validation
 
-### Webhook System (New)
-- **Initial video submissions**: ✅ Could handle these too
-- **Revision videos**: ✅ Designed specifically for instant detection
-- **Detection method**: Instant notification from Frame.io
+To validate version detection works:
 
-## 🎯 RECOMMENDATION
+1. **Test New File**: Upload a completely new file to a revision project
+   - Expected: Detected via `created_at`
+   - Log shows: "created [date], checking against [revision date]: true"
 
-**Keep BOTH systems running in parallel:**
+2. **Test Version Update**: Upload a new version of existing file
+   - Expected: Detected via `updated_at`  
+   - Log shows: "created [old date], updated [new date], checking against [revision date]: true (version update detected)"
 
-1. **Polling system** continues to handle initial submissions (already working well)
-2. **Webhook system** provides instant detection for revisions (better user experience)
+## Polling Schedule
 
-This gives you:
-- Redundancy (if webhooks fail, polling still catches videos)
-- Best of both worlds (instant + reliable backup)
-- No disruption to existing workflow
+- **Frequency**: Every 5 minutes
+- **Detection delay**: 0-5 minutes after upload
+- **Status monitored**: 
+  - "edit in progress" → initial videos
+  - "revision in progress" → revision videos
 
-## 🔧 IF YOU WANT TO SIMPLIFY
+## Webhook Alternative (Commented Out)
 
-You have three options:
+The code still contains the webhook handler for `file.versioned` events, which would provide instant detection. It's currently commented out but can be enabled if needed.
 
-### Option 1: Keep Only Polling (Simplest)
-- Remove webhook code
-- Accept 5-minute detection delay for revisions
-- No Frame.io configuration needed
+## Summary
 
-### Option 2: Keep Only Webhooks (Most Efficient)
-- Configure webhooks for ALL events
-- Get instant detection for everything
-- Requires Frame.io Developer Console setup
+✅ **New files**: Detected via created_at
+✅ **Version updates**: Detected via updated_at
+✅ **Both scenarios**: Fully covered
+✅ **No configuration needed**: Works automatically
+✅ **Frame.io version stacking**: Fully supported
 
-### Option 3: Keep Both (Recommended)
-- Maximum reliability
-- Instant detection with backup
-- Already implemented and working
-
-## 💡 BOTTOM LINE
-
-The webhook system is NOT necessary if you're happy with:
-- 5-minute detection delay for revised videos
-- The current polling system's reliability
-
-The webhook system IS valuable if you want:
-- Instant notification when editors upload revisions
-- Reduced API usage and better efficiency
-- Real-time user experience
-
-Since the webhook is already set up and tested, I recommend keeping both systems. But if you prefer simplicity, the polling system alone will work fine for all your needs!
+The system now comprehensively detects both completely new uploads AND version updates of existing files!

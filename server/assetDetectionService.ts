@@ -161,14 +161,16 @@ class AssetDetectionService {
     if (project.status === 'revision in progress') {
       // For revisions, check for videos uploaded after the revision was requested
       // Get the most recent revision payment or status log entry
-      const statusLogs = await storage.getProjectStatusLogs(project.id);
+      const statusLogs = await storage.getProjectStatusHistory(project.id);
       const revisionLog = statusLogs
         .filter(log => log.newStatus === 'revision in progress')
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
       
-      if (revisionLog) {
+      if (revisionLog && revisionLog.createdAt) {
         timestampToCheck = new Date(revisionLog.createdAt);
         console.log(`🔄 Revision mode: checking for videos after ${revisionLog.createdAt}`);
+      } else {
+        console.log(`⚠️ No revision timestamp found for project ${project.id}, skipping timestamp filter`);
       }
     } else if (project.status === 'edit in progress' && project.submittedToEditorAt) {
       // For initial edits, check for videos uploaded after submission
@@ -177,22 +179,45 @@ class AssetDetectionService {
     }
 
     // Filter videos based on the appropriate timestamp
+    // Check both created_at (new files) and updated_at (new versions)
     if (timestampToCheck) {
       videoAssets = allVideoAssets.filter(asset => {
-        const assetTime = new Date(asset.created_at);
-        const isAfterTimestamp = assetTime > timestampToCheck;
-        console.log(`📅 Asset "${asset.name}": created ${asset.created_at}, after timestamp: ${isAfterTimestamp}`);
+        const createdTime = new Date(asset.created_at);
+        const updatedTime = new Date(asset.updated_at || asset.created_at);
+        const latestTime = updatedTime > createdTime ? updatedTime : createdTime;
+        
+        const isAfterTimestamp = latestTime > timestampToCheck;
+        
+        if (updatedTime > createdTime) {
+          console.log(`📅 Asset "${asset.name}": created ${asset.created_at}, updated ${asset.updated_at}, checking against ${timestampToCheck.toISOString()}: ${isAfterTimestamp} (version update detected)`);
+        } else {
+          console.log(`📅 Asset "${asset.name}": created ${asset.created_at}, checking against ${timestampToCheck.toISOString()}: ${isAfterTimestamp}`);
+        }
+        
         return isAfterTimestamp;
       });
-      console.log(`⏰ Project ${project.id}: ${videoAssets.length} videos uploaded after the relevant timestamp`);
+      console.log(`⏰ Project ${project.id}: ${videoAssets.length} videos (new or versioned) after the relevant timestamp`);
     } else {
       console.log(`⚠️ Project ${project.id}: No timestamp found, considering all videos`);
     }
 
-    // Sort by creation date (most recent first) and take the newest video only
+    // Sort by latest activity (created or updated) and take the newest video only
     if (videoAssets.length > 1) {
-      videoAssets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      console.log(`📊 Multiple videos found, using most recent: "${videoAssets[0].name}" (${videoAssets[0].created_at})`);
+      videoAssets.sort((a, b) => {
+        const aLatest = Math.max(
+          new Date(a.created_at).getTime(),
+          new Date(a.updated_at || a.created_at).getTime()
+        );
+        const bLatest = Math.max(
+          new Date(b.created_at).getTime(),
+          new Date(b.updated_at || b.created_at).getTime()
+        );
+        return bLatest - aLatest;
+      });
+      
+      const mostRecent = videoAssets[0];
+      const mostRecentTime = new Date(mostRecent.updated_at || mostRecent.created_at);
+      console.log(`📊 Multiple videos found, using most recent: "${mostRecent.name}" (last activity: ${mostRecentTime.toISOString()})`);
       videoAssets = [videoAssets[0]]; // Keep only the most recent
     }
 
