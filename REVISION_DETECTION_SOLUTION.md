@@ -14,11 +14,15 @@ The `AssetDetectionService` now monitors:
 ### Detection Logic
 1. **Runs every 5 minutes** automatically
 2. **Checks Frame.io folders** for new video uploads
-3. **Smart timestamp filtering**:
-   - For initial edits: Detects videos uploaded after project submission
-   - For revisions: Detects videos uploaded after revision was requested
-4. **Updates status** to "video is ready" when new videos are found
-5. **Sends email notifications** with the existing share link
+3. **Enhanced version detection**:
+   - Detects both **new files** (via `created_at` timestamp)
+   - Detects **new versions** of existing files (via `updated_at` timestamp)
+   - Uses the latest timestamp between created and updated for comparison
+4. **Smart timestamp filtering**:
+   - For initial edits: Detects videos uploaded/updated after project submission
+   - For revisions: Detects videos uploaded/updated after revision was requested
+5. **Updates status** to "video is ready" when new videos are found
+6. **Sends email notifications** with the existing share link
 
 ## Why Polling Over Webhooks?
 
