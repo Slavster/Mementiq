@@ -55,7 +55,6 @@ import {
 } from "lucide-react";
 
 import TallyFormStep from "@/components/TallyFormStep";
-import { VideoViewingModal } from "@/components/VideoViewingModal";
 import { RevisionModal } from "@/components/RevisionModal";
 import { RevisionConfirmationModal } from "@/components/RevisionConfirmationModal";
 import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
@@ -458,7 +457,7 @@ export default function DashboardPage() {
           const updatedProject = {
             ...selectedProject,
             status: "Edit in Progress",
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date(),
           };
           setSelectedProject(updatedProject);
           console.log(
@@ -558,7 +557,7 @@ export default function DashboardPage() {
       setSelectedProject({
         ...selectedProject,
         status: "revision in progress",
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       });
     }
   };
@@ -933,7 +932,7 @@ export default function DashboardPage() {
                           className="w-full bg-green-600 hover:bg-green-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleAcceptanceModal(project);
+                            handleVideoViewingModal(project);
                           }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
@@ -945,8 +944,8 @@ export default function DashboardPage() {
                           className="w-full bg-green-600 hover:bg-green-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Open the acceptance modal (same as delivered status)
-                            handleAcceptanceModal(project);
+                            // Open the video viewing modal (same as delivered status)
+                            handleVideoViewingModal(project);
                           }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
@@ -1515,13 +1514,37 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Project Acceptance Modal */}
-      <ProjectAcceptanceModal
-        open={acceptanceModalOpen && !!acceptanceProject}
-        onOpenChange={setAcceptanceModalOpen}
-        project={acceptanceProject || { id: 0, title: "", status: "" }}
-        downloadLink={downloadLink}
-      />
+      {/* Video Viewing Modal - replaces old ProjectAcceptanceModal */}
+      <Dialog open={acceptanceModalOpen && !!acceptanceProject} onOpenChange={setAcceptanceModalOpen}>
+        <DialogContent className="sm:max-w-5xl max-h-[95vh] bg-gradient-to-br from-secondary via-purple-900 to-primary overflow-y-auto">
+          {acceptanceProject && (
+            <VideoViewingStep
+              project={acceptanceProject}
+              onBack={() => setAcceptanceModalOpen(false)}
+              onVideoAccepted={() => {
+                queryClient.invalidateQueries({
+                  queryKey: ["/api/projects"],
+                });
+                toast({
+                  title: "Video Accepted!",
+                  description: "Thank you for your feedback. The project is now complete.",
+                });
+                setAcceptanceModalOpen(false);
+              }}
+              onRevisionRequested={() => {
+                queryClient.invalidateQueries({
+                  queryKey: ["/api/projects"],
+                });
+                setAcceptanceModalOpen(false);
+                toast({
+                  title: "Ready for Revision",
+                  description: "Click 'Describe Your Revisions' on your project card to continue.",
+                });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Revision Modal */}
       <RevisionModal
