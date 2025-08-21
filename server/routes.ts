@@ -5908,6 +5908,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to manually trigger asset detection
+  app.post("/api/debug/run-asset-detection", async (req, res) => {
+    try {
+      console.log("🔍 Manual asset detection triggered");
+      const { AssetDetectionService } = await import('./assetDetectionService.js');
+      const assetDetectionService = new AssetDetectionService(storage, frameioV4Service);
+      await assetDetectionService.checkForNewAssets();
+      res.json({ message: "Asset detection completed", timestamp: new Date().toISOString() });
+    } catch (error) {
+      console.error("Manual asset detection failed:", error);
+      res.status(500).json({ error: "Asset detection failed", details: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   return httpServer;
 }
 
