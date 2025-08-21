@@ -164,13 +164,16 @@ class AssetDetectionService {
       const statusLogs = await storage.getProjectStatusHistory(project.id);
       const revisionLog = statusLogs
         .filter(log => log.newStatus === 'revision in progress')
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+        .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())[0];
       
-      if (revisionLog && revisionLog.createdAt) {
-        timestampToCheck = new Date(revisionLog.createdAt);
-        console.log(`🔄 Revision mode: checking for videos after ${revisionLog.createdAt}`);
+      if (revisionLog && revisionLog.changedAt) {
+        timestampToCheck = new Date(revisionLog.changedAt);
+        console.log(`🔄 Revision mode: checking for videos after ${revisionLog.changedAt}`);
       } else {
-        console.log(`⚠️ No revision timestamp found for project ${project.id}, skipping timestamp filter`);
+        console.log(`⚠️ No revision timestamp found for project ${project.id}, will NOT update status`);
+        // For revision projects without timestamp, we should not detect anything
+        // This prevents false positives from existing videos
+        return result;
       }
     } else if (project.status === 'edit in progress' && project.submittedToEditorAt) {
       // For initial edits, check for videos uploaded after submission
@@ -197,6 +200,12 @@ class AssetDetectionService {
         return isAfterTimestamp;
       });
       console.log(`⏰ Project ${project.id}: ${videoAssets.length} videos (new or versioned) after the relevant timestamp`);
+      
+      // If no videos found after timestamp, do not update status
+      if (videoAssets.length === 0) {
+        console.log(`📍 Project ${project.id}: No new/updated videos found, status remains unchanged`);
+        return result;
+      }
     } else {
       console.log(`⚠️ Project ${project.id}: No timestamp found, considering all videos`);
     }
