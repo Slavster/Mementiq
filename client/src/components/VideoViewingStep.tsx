@@ -177,10 +177,16 @@ export function VideoViewingStep({
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
-    const k = 1024;
+    // Use 1000-based calculation to match Frame.io's display
+    const k = 1000;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    const value = bytes / Math.pow(k, i);
+    // Round to whole number for MB and above (like Frame.io does)
+    if (i >= 2) {
+      return Math.round(value) + " " + sizes[i];
+    }
+    return parseFloat(value.toFixed(2)) + " " + sizes[i];
   };
 
   if (loading) {
