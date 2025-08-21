@@ -218,7 +218,7 @@ export default function SubscribePage() {
                   onClick={() => setSelectedTab("subscription")}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative ${
                     selectedTab === "subscription"
-                      ? "bg-accent text-dark shadow-lg"
+                      ? "bg-accent text-black shadow-lg"
                       : "text-gray-400 hover:text-light"
                   }`}
                 >
@@ -231,15 +231,20 @@ export default function SubscribePage() {
                   </div>
                 </button>
                 <button
-                  onClick={() => setSelectedTab("prepaid")}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                  disabled
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative cursor-not-allowed opacity-60 ${
                     selectedTab === "prepaid"
                       ? "bg-purple-500 text-white shadow-lg"
-                      : "text-gray-400 hover:text-light"
+                      : "text-gray-400"
                   }`}
                 >
                   <CreditCard className="h-5 w-5" />
-                  Prepaid Packages
+                  <span>Prepaid Packages</span>
+                  <div className="absolute -top-2 -right-2 z-20">
+                    <span className="text-xs text-gray-400 bg-gray-600 border border-gray-500 px-2 py-1 rounded-full whitespace-nowrap shadow-lg">
+                      Coming Soon
+                    </span>
+                  </div>
                 </button>
               </div>
             </div>
