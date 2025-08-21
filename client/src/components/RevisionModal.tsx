@@ -489,7 +489,7 @@ export function RevisionModal({
                       <Button
                         onClick={handleSubmit}
                         disabled={submitRevisionMutation.isPending}
-                        className="w-full bg-neon-green hover:bg-neon-green-dark text-black py-3"
+                        className="w-full bg-neon-green hover:bg-yellow-400 text-black py-3 transition-colors duration-200"
                         size="lg"
                       >
                         {submitRevisionMutation.isPending ? (

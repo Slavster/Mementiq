@@ -374,7 +374,7 @@ export function VideoViewingStep({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Accept Button */}
             <Button
-              className="bg-neon-green hover:bg-neon-green-dark text-black font-bold text-lg h-16"
+              className="bg-neon-green hover:bg-yellow-400 text-black font-bold text-lg h-16 transition-colors duration-200"
               onClick={handleAcceptVideo}
               disabled={isAccepting}
             >
