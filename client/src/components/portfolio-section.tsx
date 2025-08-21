@@ -61,6 +61,7 @@ export default function PortfolioSection() {
   const [videoProgress, setVideoProgress] = useState<{ [key: number]: number }>({});
   const [sectionInView, setSectionInView] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(true); // Videos start muted
+  const [hoveredVideo, setHoveredVideo] = useState<number | null>(null); // Track hovered video
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
@@ -273,6 +274,8 @@ export default function PortfolioSection() {
                       Math.abs(offset) > 2 ? 0 : Math.abs(offset) > 1 ? 0.7 : 1,
                   }}
                   onClick={() => handleVideoClick(item.id)}
+                  onMouseEnter={() => setHoveredVideo(item.id)}
+                  onMouseLeave={() => setHoveredVideo(null)}
                 >
                   <div
                     className={`relative rounded-xl overflow-hidden shadow-2xl border-2 transition-all duration-300 ${
@@ -340,32 +343,33 @@ export default function PortfolioSection() {
                       </div>
                     )}
 
-                    {playingVideo === item.id && (
-                      <>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
-                          <Button
-                            size="lg"
-                            className="bg-red-500/90 backdrop-blur-sm rounded-full p-4 hover:bg-red-500 transition-all duration-200 transform hover:scale-110 border border-red-400/30"
-                          >
-                            <div className="h-6 w-6 bg-white rounded-sm" />
-                          </Button>
-                        </div>
-                        {/* Unmute button in bottom right corner */}
+                    {playingVideo === item.id && hoveredVideo === item.id && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
                         <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleMute();
-                          }}
-                          size="sm"
-                          className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm rounded-full p-2 hover:bg-black/90 transition-all duration-200 border border-white/20"
+                          size="lg"
+                          className="bg-red-500/90 backdrop-blur-sm rounded-full p-4 hover:bg-red-500 transition-all duration-200 transform hover:scale-110 border border-red-400/30"
                         >
-                          {isMuted ? (
-                            <VolumeX className="h-5 w-5 text-white" />
-                          ) : (
-                            <Volume2 className="h-5 w-5 text-white" />
-                          )}
+                          <div className="h-6 w-6 bg-white rounded-sm" />
                         </Button>
-                      </>
+                      </div>
+                    )}
+
+                    {/* Unmute button - always visible when video is playing */}
+                    {playingVideo === item.id && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleMute();
+                        }}
+                        size="sm"
+                        className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm rounded-full p-2 hover:bg-black/90 transition-all duration-200 border border-white/20"
+                      >
+                        {isMuted ? (
+                          <VolumeX className="h-5 w-5 text-white" />
+                        ) : (
+                          <Volume2 className="h-5 w-5 text-white" />
+                        )}
+                      </Button>
                     )}
                   </div>
 
