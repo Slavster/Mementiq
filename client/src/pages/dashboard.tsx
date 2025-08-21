@@ -960,13 +960,12 @@ export default function DashboardPage() {
                           className="w-full bg-green-600 hover:bg-green-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Open revision modal in video-ready step to show revised video
-                            setRevisionProject(project);
-                            setRevisionModalOpen(true);
+                            // Open the original video viewing modal (same as delivered status)
+                            handleAcceptanceModal(project);
                           }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          Review Your Revised Video
+                          Review Your Video
                         </Button>
                       ) : project.status.toLowerCase() ===
                         "awaiting revision instructions" ? (
