@@ -111,12 +111,17 @@ export default function PortfolioSection() {
         console.log(`[DEBUG] Interview video - paused: ${video.paused}`);
       }
       
-      // Wait for next tick to ensure state is updated
-      setTimeout(() => {
-        if (video) {
-          video.currentTime = savedTime;
+      // Wait for video to be ready before playing
+      const attemptPlay = () => {
+        if (!video) return;
+        
+        // Check if video has sufficient data loaded
+        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+          // Only set currentTime if we have metadata
+          if (savedTime > 0 && !isNaN(video.duration)) {
+            video.currentTime = savedTime;
+          }
           
-          // Enhanced error handling for Interview video
           const playPromise = video.play();
           playPromise.then(() => {
             console.log(`Playing video ${videoId} from ${savedTime}s`);
@@ -125,30 +130,48 @@ export default function PortfolioSection() {
             }
           }).catch(error => {
             console.error(`Error playing video ${videoId}:`, error);
-            if (videoId === 3) {
-              console.log(`[DEBUG] Interview video failed to play, trying alternative approach...`);
-              // For Interview video, try multiple recovery approaches
-              video.load(); // Force reload
+            if (error.name === 'AbortError' && error.message.includes('interrupted')) {
+              console.log(`[DEBUG] Video ${videoId} play interrupted, retrying...`);
+              // Retry after a short delay without setting currentTime
               setTimeout(() => {
-                video.currentTime = 0;
-                video.play().then(() => {
-                  console.log(`[DEBUG] Interview video recovery successful`);
-                }).catch(err => {
-                  console.error(`[DEBUG] Interview video recovery failed:`, err);
-                  // Try one more time after a longer delay
-                  setTimeout(() => {
-                    video.play().catch(finalErr => console.error(`Final retry failed:`, finalErr));
-                  }, 1000);
-                });
-              }, 200);
-            } else {
-              // Standard retry for other videos
-              video.currentTime = 0;
-              video.play().catch(err => console.error(`Retry failed:`, err));
+                video.play().catch(retryErr => console.error(`Retry failed:`, retryErr));
+              }, 100);
             }
           });
+        } else {
+          // Video not ready, wait for it to load
+          if (videoId === 3) {
+            console.log(`[DEBUG] Interview video not ready (readyState: ${video.readyState}), waiting...`);
+          }
+          
+          const onCanPlay = () => {
+            video.removeEventListener('canplay', onCanPlay);
+            if (savedTime > 0 && !isNaN(video.duration)) {
+              video.currentTime = savedTime;
+            }
+            video.play().then(() => {
+              console.log(`Playing video ${videoId} after loading`);
+              if (videoId === 3) {
+                console.log(`[DEBUG] Interview video started after waiting`);
+              }
+            }).catch(err => console.error(`Play after load failed:`, err));
+          };
+          
+          video.addEventListener('canplay', onCanPlay);
+          
+          // Fallback timeout
+          setTimeout(() => {
+            video.removeEventListener('canplay', onCanPlay);
+            if (video.readyState === 0) {
+              console.log(`Video ${videoId} still not loading, forcing reload`);
+              video.load();
+            }
+          }, 2000);
         }
-      }, videoId === 3 ? 100 : 50); // Give Interview video more time
+      };
+
+      // Start attempt with small delay
+      setTimeout(attemptPlay, 50);
     }
   };
 
@@ -168,7 +191,8 @@ export default function PortfolioSection() {
     const interval = setInterval(() => {
       if (playingVideo !== null) {
         const video = videoRefs.current[playingVideo];
-        if (video && !video.paused) {
+        // Only update progress if video is actually playing and has loaded data
+        if (video && !video.paused && video.readyState >= 2 && !isNaN(video.duration)) {
           setVideoProgress(prev => ({
             ...prev,
             [playingVideo]: video.currentTime
