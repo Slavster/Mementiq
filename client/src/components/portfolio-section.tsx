@@ -103,20 +103,52 @@ export default function PortfolioSection() {
       // Resume from saved progress or start from beginning
       const savedTime = videoProgress[videoId] || 0;
       
+      // Enhanced debugging for video 3 (Interview)
+      if (videoId === 3) {
+        console.log(`[DEBUG] Interview video - readyState: ${video.readyState}, networkState: ${video.networkState}`);
+        console.log(`[DEBUG] Interview video - src: ${video.src}`);
+        console.log(`[DEBUG] Interview video - duration: ${video.duration}`);
+        console.log(`[DEBUG] Interview video - paused: ${video.paused}`);
+      }
+      
       // Wait for next tick to ensure state is updated
       setTimeout(() => {
         if (video) {
           video.currentTime = savedTime;
-          video.play().then(() => {
+          
+          // Enhanced error handling for Interview video
+          const playPromise = video.play();
+          playPromise.then(() => {
             console.log(`Playing video ${videoId} from ${savedTime}s`);
+            if (videoId === 3) {
+              console.log(`[DEBUG] Interview video successfully started playing`);
+            }
           }).catch(error => {
             console.error(`Error playing video ${videoId}:`, error);
-            // Try playing again with currentTime reset
-            video.currentTime = 0;
-            video.play().catch(err => console.error(`Retry failed:`, err));
+            if (videoId === 3) {
+              console.log(`[DEBUG] Interview video failed to play, trying alternative approach...`);
+              // For Interview video, try multiple recovery approaches
+              video.load(); // Force reload
+              setTimeout(() => {
+                video.currentTime = 0;
+                video.play().then(() => {
+                  console.log(`[DEBUG] Interview video recovery successful`);
+                }).catch(err => {
+                  console.error(`[DEBUG] Interview video recovery failed:`, err);
+                  // Try one more time after a longer delay
+                  setTimeout(() => {
+                    video.play().catch(finalErr => console.error(`Final retry failed:`, finalErr));
+                  }, 1000);
+                });
+              }, 200);
+            } else {
+              // Standard retry for other videos
+              video.currentTime = 0;
+              video.play().catch(err => console.error(`Retry failed:`, err));
+            }
           });
         }
-      }, 50);
+      }, videoId === 3 ? 100 : 50); // Give Interview video more time
     }
   };
 
@@ -297,10 +329,40 @@ export default function PortfolioSection() {
                       playsInline
                       preload="metadata"
                       src={item.preview}
-                      onLoadStart={() => console.log(`Video ${item.id} load started`)}
-                      onLoadedData={() => console.log(`Video ${item.id} data loaded`)}
-                      onCanPlay={() => console.log(`Video ${item.id} can play`)}
-                      onError={(e) => console.log(`Video ${item.id} error:`, e)}
+                      onLoadStart={() => {
+                        console.log(`Video ${item.id} load started`);
+                        if (item.id === 3) console.log(`[DEBUG] Interview video load started`);
+                      }}
+                      onLoadedData={() => {
+                        console.log(`Video ${item.id} data loaded`);
+                        if (item.id === 3) console.log(`[DEBUG] Interview video data loaded`);
+                      }}
+                      onCanPlay={() => {
+                        console.log(`Video ${item.id} can play`);
+                        if (item.id === 3) console.log(`[DEBUG] Interview video can play`);
+                      }}
+                      onCanPlayThrough={() => {
+                        if (item.id === 3) console.log(`[DEBUG] Interview video can play through`);
+                      }}
+                      onError={(e) => {
+                        console.log(`Video ${item.id} error:`, e);
+                        if (item.id === 3) {
+                          console.error(`[DEBUG] Interview video error:`, e);
+                          const video = videoRefs.current[item.id];
+                          if (video) {
+                            console.log(`[DEBUG] Interview video error details - readyState: ${video.readyState}, networkState: ${video.networkState}, error: ${video.error?.message}`);
+                          }
+                        }
+                      }}
+                      onStalled={() => {
+                        if (item.id === 3) console.log(`[DEBUG] Interview video stalled`);
+                      }}
+                      onWaiting={() => {
+                        if (item.id === 3) console.log(`[DEBUG] Interview video waiting`);
+                      }}
+                      onSuspend={() => {
+                        if (item.id === 3) console.log(`[DEBUG] Interview video suspended`);
+                      }}
                       onEnded={() => {
                         // Loop video
                         const video = videoRefs.current[item.id];
