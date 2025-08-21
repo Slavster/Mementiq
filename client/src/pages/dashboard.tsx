@@ -735,8 +735,12 @@ export default function DashboardPage() {
                   <div className="mt-2">
                     <p className="text-sm text-gray-400">Account Status</p>
                     <Badge
-                      variant={mappedUser.verified ? "default" : "destructive"}
-                      className="mt-1"
+                      variant="outline"
+                      className={`mt-1 ${
+                        mappedUser.verified 
+                          ? "bg-black border-green-400 text-green-400" 
+                          : "bg-black border-red-400 text-red-400"
+                      }`}
                     >
                       {mappedUser.verified ? "Verified" : "Unverified"}
                     </Badge>
@@ -754,8 +758,12 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Badge
-                          variant="default"
-                          className={`${subscription.hasReachedLimit ? "bg-pink-600" : "bg-purple-600"}`}
+                          variant="outline"
+                          className={`${
+                            subscription.hasReachedLimit 
+                              ? "bg-black border-pink-400 text-pink-400" 
+                              : "bg-black border-purple-400 text-purple-400"
+                          }`}
                         >
                           {subscription.productName ||
                             subscription.tier?.toUpperCase()}
@@ -792,7 +800,12 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <Badge variant="destructive">No Active Plan</Badge>
+                      <Badge 
+                        variant="outline"
+                        className="bg-black border-red-400 text-red-400"
+                      >
+                        No Active Plan
+                      </Badge>
                       <Button
                         size="sm"
                         onClick={() => setLocation("/subscribe")}

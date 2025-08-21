@@ -67,7 +67,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **2025-08-21**: Removed unnecessary "Video Accepted!" toast notification - The popup notification that appeared after accepting a video has been removed as requested. The confetti animation alone provides sufficient visual feedback for video acceptance
 - **2025-08-21**: Updated neon green color scheme with black text - Changed all neon green buttons and UI elements to use black text instead of white text for better visual consistency with the cyan button design. This includes status badges, action buttons, step progress indicators, and all completion states throughout the dashboard
 - **2025-08-21**: Added yellow hover states to green buttons matching cyan button behavior - Updated all green button hover states to turn yellow (hsl(45, 93%, 58%)) for clear interaction feedback, creating consistent button behavior across different color schemes (green and cyan)
-- **2025-08-21**: Updated status indicators to black backgrounds with colored borders and text - Changed all project status badges from solid colored backgrounds to black backgrounds with colored borders and text to make them visually distinct from clickable buttons and prevent accidental clicks
+- **2025-08-21**: Updated status indicators to black backgrounds with colored borders and text - Changed all project status badges from solid colored backgrounds to black backgrounds with colored borders and text to make them visually distinct from clickable buttons and prevent accidental clicks. Applied to both project status badges and account status indicators (verified status, subscription tiers, etc.)
 
 ## External Dependencies
 
