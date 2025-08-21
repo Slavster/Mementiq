@@ -752,70 +752,72 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Videos Created</p>
-                  {subscriptionLoading ? (
-                    <div className="animate-pulse">Loading...</div>
-                  ) : subscription?.hasActiveSubscription ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Badge
-                          variant="outline"
-                          className={`${
-                            subscription.hasReachedLimit 
-                              ? "bg-black border-pink-400 text-pink-400" 
-                              : "bg-black border-purple-400 text-purple-400"
-                          }`}
-                        >
-                          {subscription.productName ||
-                            subscription.tier?.toUpperCase()}
-                        </Badge>
-                        {subscription.tier === "premium" && (
-                          <Crown className="h-4 w-4 text-yellow-500" />
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-lg font-semibold">
-                          {subscription.usage}/{subscription.allowance} Videos
-                          Created
-                        </p>
-                        {subscription.periodEnd && (
-                          <p className="text-xs text-gray-400">
-                            Resets:{" "}
-                            {new Date(
-                              subscription.periodEnd,
-                            ).toLocaleDateString()}
-                          </p>
-                        )}
-                        {subscription.hasActiveSubscription &&
-                          subscription.hasReachedLimit && (
-                            <Button
-                              size="sm"
-                              onClick={() => setLocation("/subscribe")}
-                              className="mt-1 bg-pink-600 hover:bg-pink-700"
-                            >
-                              <Crown className="h-3 w-3 mr-1" />
-                              Upgrade
-                            </Button>
+                  <div className="mt-2">
+                    {subscriptionLoading ? (
+                      <div className="animate-pulse">Loading...</div>
+                    ) : subscription?.hasActiveSubscription ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Badge
+                            variant="outline"
+                            className={`${
+                              subscription.hasReachedLimit 
+                                ? "bg-black border-pink-400 text-pink-400" 
+                                : "bg-black border-purple-400 text-purple-400"
+                            }`}
+                          >
+                            {subscription.productName ||
+                              subscription.tier?.toUpperCase()}
+                          </Badge>
+                          {subscription.tier === "premium" && (
+                            <Crown className="h-4 w-4 text-yellow-500" />
                           )}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-lg font-semibold">
+                            {subscription.usage}/{subscription.allowance} Videos
+                            Created
+                          </p>
+                          {subscription.periodEnd && (
+                            <p className="text-xs text-gray-400">
+                              Resets:{" "}
+                              {new Date(
+                                subscription.periodEnd,
+                              ).toLocaleDateString()}
+                            </p>
+                          )}
+                          {subscription.hasActiveSubscription &&
+                            subscription.hasReachedLimit && (
+                              <Button
+                                size="sm"
+                                onClick={() => setLocation("/subscribe")}
+                                className="mt-1 bg-pink-600 hover:bg-pink-700"
+                              >
+                                <Crown className="h-3 w-3 mr-1" />
+                                Upgrade
+                              </Button>
+                            )}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <Badge 
-                        variant="outline"
-                        className="bg-black border-red-400 text-red-400"
-                      >
-                        No Active Plan
-                      </Badge>
-                      <Button
-                        size="sm"
-                        onClick={() => setLocation("/subscribe")}
-                        className="mt-2"
-                      >
-                        <CreditCard className="h-3 w-3 mr-1" />
-                        Subscribe
-                      </Button>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="space-y-1">
+                        <Badge 
+                          variant="outline"
+                          className="bg-black border-red-400 text-red-400"
+                        >
+                          No Active Plan
+                        </Badge>
+                        <Button
+                          size="sm"
+                          onClick={() => setLocation("/subscribe")}
+                          className="mt-2"
+                        >
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          Subscribe
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
