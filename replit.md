@@ -51,6 +51,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   Navigation allows back/forward until submission, after which "Editor is on it" screen displays and status updates to "revision in progress".
 
 ## Recent Changes
+- **2025-08-21**: Implemented 30-day expiration for all Frame.io share links - All newly created share links now automatically expire after 30 days for enhanced security. Share creation process updated to include PATCH request setting expiration timestamp using ISO-8601 format
 - **2025-08-18**: Fixed revision submission flow - corrected apiRequest handling in RevisionModal.tsx to properly handle returned JSON data instead of treating it as Response object, resolving "undefined" errors during submission
 - **2025-08-18**: Improved revision workflow UX - step 3 ("Submit to Editor") now transforms in-place to show "Editor is on it!" confirmation screen without changing steps, then auto-closes after 3 seconds for seamless user experience
 - **2025-08-18**: Fixed revision submission errors - removed unnecessary Frame.io API calls from revision request endpoint that were causing submission failures. Revision submission now only updates project status and logs changes without external API dependencies

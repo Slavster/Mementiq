@@ -1154,6 +1154,33 @@ export class FrameioV4Service {
       console.log(`📊 Share created with ID: ${shareId}`);
       console.log(`📊 Initial URL: ${initialUrl}`);
       
+      // Step 1.5: Set share expiration to 30 days from now
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+      const expirationISO = thirtyDaysFromNow.toISOString();
+      
+      console.log(`⏰ Setting share expiration to 30 days from now: ${expirationISO}`);
+      
+      try {
+        const expirationUpdateBody = {
+          data: {
+            expiration: expirationISO
+          }
+        };
+        
+        const expirationResponse = await this.makeRequest(
+          'PATCH',
+          `/accounts/${accountId}/shares/${shareId}`,
+          expirationUpdateBody
+        );
+        
+        console.log(`✅ Share expiration set successfully to ${expirationISO}`);
+        console.log(`📊 Expiration update response:`, JSON.stringify(expirationResponse, null, 2));
+      } catch (expirationError) {
+        console.error(`⚠️ Failed to set share expiration:`, expirationError.message);
+        // Continue anyway - share will work without expiration
+      }
+      
       // Step 2: Add the asset to the share
       console.log(`🔍 Adding asset ${assetId} to share ${shareId}`);
       const addAssetBody = {
@@ -1201,8 +1228,6 @@ export class FrameioV4Service {
       
       return {
         url: publicUrl,  // This is what gets stored in database and shown to user
-        shortUrl: shortUrl,  // f.io format
-        fullUrl: fullUrl,    // Full Frame.io format
         id: shareId
       };
 
