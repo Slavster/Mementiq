@@ -1025,10 +1025,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`📊 Skipping file-level update - using Frame.io asset directly (${videoFile.id})`);
       }
       
-      // ALWAYS store the share link at the project level for easy access (enforces 1:1 relationship)
-      await storage.updateProjectShareLink(projectId, shareLink.id, shareLink.url);
+      // ALWAYS store the share link at the project level with video metadata for easy access (enforces 1:1 relationship)
+      await storage.updateProjectShareLink(projectId, shareLink.id, shareLink.url, {
+        filename: videoFile.filename,
+        fileSize: videoFile.fileSize,
+        fileType: videoFile.fileType,
+        assetId: videoFile.mediaAssetId
+      });
       await updateProjectTimestamp(projectId, "share link generated");
-      console.log(`✅ Database updated with project-level share info`);
+      console.log(`✅ Database updated with project-level share info and video metadata`);
       
       // Store asset mapping for webhook detection
       await storage.createFrameioShareAsset({
@@ -1449,7 +1454,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Project not found" });
       }
       
-      // For projects in "video is ready" or revision status, return Frame.io assets directly
+      // PRIORITY 1: If we have stored video metadata with the share link, use that
+      if (project.frameioReviewLink && project.frameioVideoFilename && project.frameioVideoAssetId) {
+        console.log(`📌 Using stored video metadata for project ${projectId}: ${project.frameioVideoFilename}`);
+        const storedVideoFile = [{
+          id: project.frameioVideoAssetId,
+          projectId: projectId,
+          mediaAssetId: project.frameioVideoAssetId,
+          mediaAssetUrl: project.frameioReviewLink,
+          filename: project.frameioVideoFilename,
+          originalFilename: project.frameioVideoFilename,
+          fileType: project.frameioVideoFileType || 'video/mp4',
+          fileSize: project.frameioVideoFileSize || 0,
+          uploadStatus: 'completed',
+          uploadDate: project.updatedAt
+        }];
+        return res.json(storedVideoFile);
+      }
+      
+      // PRIORITY 2: For projects in "video is ready" or revision status, fetch from Frame.io
       if ((project.status.toLowerCase() === "video is ready" || 
            project.status.toLowerCase() === "awaiting revision instructions" ||
            project.status.toLowerCase() === "revision in progress") && 
@@ -1467,16 +1490,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             let videoAssets = [];
             
-            // For revision projects, get ALL video files (not filtered by submission time)
-            if (project.status.toLowerCase() === 'awaiting revision instructions' || 
+            // For all statuses showing delivered videos, filter by submission timestamp
+            // This ensures we only show videos uploaded by the editor, not user uploads
+            if (project.status.toLowerCase() === 'video is ready' || 
+                project.status.toLowerCase() === 'awaiting revision instructions' || 
                 project.status.toLowerCase() === 'revision in progress') {
-              console.log(`📹 Getting ALL videos for revision project (status: ${project.status})`);
-              videoAssets = response.data.filter((asset: any) => 
-                asset.media_type && asset.media_type.startsWith('video/')
-              );
-              console.log(`📹 Found ${videoAssets.length} total video assets for revision`);
-            } else {
-              // For "video is ready" status, filter by submission timestamp
+              console.log(`🎬 Getting delivered videos for project (status: ${project.status})`);
               videoAssets = response.data.filter((asset: any) => 
                 asset.media_type && 
                 asset.media_type.startsWith('video/') && 
@@ -1485,6 +1504,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               );
               console.log(`🎬 Found ${videoAssets.length} video assets after submission timestamp`);
               console.log(`⏰ Submission timestamp: ${project.submittedToEditorAt}`);
+            } else {
+              // For other statuses, get all videos
+              videoAssets = response.data.filter((asset: any) => 
+                asset.media_type && asset.media_type.startsWith('video/')
+              );
+              console.log(`📹 Found ${videoAssets.length} total video assets`);
             }
             
             // Sort by creation date and take the most recent

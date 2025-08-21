@@ -295,17 +295,37 @@ export class DatabaseStorage implements IStorage {
    * Update project-level Frame.io share link (both full URL and share ID)
    * Ensures 1:1 relationship between share UUID and public URL
    */
-  async updateProjectShareLink(projectId: number, shareId: string, shareUrl: string): Promise<Project | undefined> {
+  async updateProjectShareLink(
+    projectId: number, 
+    shareId: string, 
+    shareUrl: string,
+    videoMetadata?: {
+      filename: string;
+      fileSize: number;
+      fileType: string;
+      assetId: string;
+    }
+  ): Promise<Project | undefined> {
+    const updateData: any = {
+      frameioReviewLink: shareUrl,
+      frameioReviewShareId: shareId,
+    };
+    
+    // If video metadata is provided, store it with the share link
+    if (videoMetadata) {
+      updateData.frameioVideoFilename = videoMetadata.filename;
+      updateData.frameioVideoFileSize = videoMetadata.fileSize;
+      updateData.frameioVideoFileType = videoMetadata.fileType;
+      updateData.frameioVideoAssetId = videoMetadata.assetId;
+    }
+    
     const [updatedProject] = await this.db
       .update(projects)
-      .set({
-        frameioReviewLink: shareUrl,
-        frameioReviewShareId: shareId,
-      })
+      .set(updateData)
       .where(eq(projects.id, projectId))
       .returning();
     
-    console.log(`📊 Synchronized project share update for ${projectId}: shareId=${shareId}, shareUrl=${shareUrl}`);
+    console.log(`📊 Synchronized project share update for ${projectId}: shareId=${shareId}, shareUrl=${shareUrl}${videoMetadata ? `, video=${videoMetadata.filename}` : ''}`);
     return updatedProject || undefined;
   }
 
