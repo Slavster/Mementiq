@@ -445,6 +445,7 @@ export default function SubscribePage() {
                   <Check className="h-4 w-4 text-orange-400 mr-2" />
                   48-hour turnaround
                 </div>
+              </div>
             </CardContent>
           </Card>
         </div>
