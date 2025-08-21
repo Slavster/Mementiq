@@ -57,7 +57,6 @@ import {
 import TallyFormStep from "@/components/TallyFormStep";
 import { RevisionModal } from "@/components/RevisionModal";
 import { RevisionConfirmationModal } from "@/components/RevisionConfirmationModal";
-import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
