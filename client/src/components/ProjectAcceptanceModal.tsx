@@ -218,7 +218,7 @@ export function ProjectAcceptanceModal({
             {downloadLink && (
               <Button 
                 onClick={handleDownload} 
-                className="w-full bg-green-600 hover:bg-green-700 text-white" 
+                className="w-full bg-neon-green hover:bg-neon-green-dark text-white" 
                 size="lg"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
