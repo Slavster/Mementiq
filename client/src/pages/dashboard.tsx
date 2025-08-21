@@ -960,7 +960,7 @@ export default function DashboardPage() {
                           className="w-full bg-green-600 hover:bg-green-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Open the original video viewing modal (same as delivered status)
+                            // Open the acceptance modal (same as delivered status)
                             handleAcceptanceModal(project);
                           }}
                         >
