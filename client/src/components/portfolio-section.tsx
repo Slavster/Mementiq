@@ -70,52 +70,68 @@ export default function PortfolioSection() {
 
   const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
-    if (!video) return;
+    if (!video) {
+      console.error(`Video ref not found for video ${videoId}`);
+      return;
+    }
 
     if (playingVideo === videoId) {
-      // Pause current video and save progress
+      // Pause current video
       video.pause();
-      setVideoProgress(prev => ({
-        ...prev,
-        [videoId]: video.currentTime
-      }));
       setPlayingVideo(null);
-      console.log(`Paused video ${videoId} at ${video.currentTime}s`);
+      console.log(`Paused video ${videoId}`);
     } else {
       // Stop any currently playing video
       if (playingVideo !== null) {
         const currentVideo = videoRefs.current[playingVideo];
         if (currentVideo) {
           currentVideo.pause();
-          currentVideo.currentTime = 0; // Reset to start
-          setVideoProgress(prev => ({
-            ...prev,
-            [playingVideo]: 0
-          }));
+          currentVideo.currentTime = 0;
         }
       }
 
-      // Start playing the new video
+      // Set playing state first
       setPlayingVideo(videoId);
-      
-      // Set muted state on the video
       video.muted = isMuted;
       
-      // Reset to beginning for clean start
+      // For Interview video, add extra logging
+      if (videoId === 3) {
+        console.log(`[Interview] Attempting to play Interview video`);
+        console.log(`[Interview] Video element:`, video);
+        console.log(`[Interview] Video src: ${video.src}`);
+        console.log(`[Interview] Ready state: ${video.readyState}`);
+        console.log(`[Interview] Network state: ${video.networkState}`);
+        console.log(`[Interview] Paused: ${video.paused}`);
+        console.log(`[Interview] Muted: ${video.muted}`);
+      }
+      
+      // Reset to beginning
       video.currentTime = 0;
       
-      // Simple approach - just play immediately
-      video.play().then(() => {
-        console.log(`Playing video ${videoId}`);
-      }).catch(error => {
-        console.error(`Error playing video ${videoId}:`, error);
-        // Retry after a short delay
-        setTimeout(() => {
-          video.play().catch(err => {
-            console.error(`Retry failed for video ${videoId}:`, err);
+      // Try to play with Promise handling
+      const playPromise = video.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log(`Successfully playing video ${videoId}`);
+            if (videoId === 3) {
+              console.log(`[Interview] Video is now playing`);
+            }
+          })
+          .catch(error => {
+            console.error(`Error playing video ${videoId}:`, error);
+            if (videoId === 3) {
+              console.error(`[Interview] Error details:`, error.message, error.name);
+            }
+            // Simple retry
+            setTimeout(() => {
+              video.play().catch(err => {
+                console.error(`Retry failed for video ${videoId}:`, err);
+              });
+            }, 300);
           });
-        }, 200);
-      });
+      }
     }
   };
 
@@ -295,10 +311,29 @@ export default function PortfolioSection() {
                       muted
                       loop
                       playsInline
-                      preload="metadata"
+                      preload={item.id === 3 ? "auto" : "metadata"}
                       src={item.preview}
                       onError={(e) => {
                         console.error(`Video ${item.id} error:`, e);
+                        if (item.id === 3) {
+                          const video = e.currentTarget as HTMLVideoElement;
+                          console.error(`[Interview] Video error details:`, {
+                            src: video.src,
+                            readyState: video.readyState,
+                            networkState: video.networkState,
+                            error: video.error
+                          });
+                        }
+                      }}
+                      onLoadedMetadata={() => {
+                        if (item.id === 3) {
+                          console.log(`[Interview] Metadata loaded`);
+                        }
+                      }}
+                      onCanPlay={() => {
+                        if (item.id === 3) {
+                          console.log(`[Interview] Can play`);
+                        }
                       }}
                       onEnded={() => {
                         // Loop video
