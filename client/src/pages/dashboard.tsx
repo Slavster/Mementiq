@@ -61,6 +61,7 @@ import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { Project } from "@/../../shared/schema";
+// import logoImage from "@assets/Mementiq logo - small border_1755766751477.png";
 
 interface User {
   id: number;
