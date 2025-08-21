@@ -5947,6 +5947,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to update existing Frame.io shares with 30-day expiration
+  app.post("/api/admin/update-share-expiration", async (req, res) => {
+    try {
+      console.log("📅 Updating existing Frame.io shares with 30-day expiration");
+      
+      await frameioV4Service.initialize();
+      const accountId = await frameioV4Service.getAccountId();
+      const projectId = 'e0a4fadd-52b0-4156-91ed-8880bbc0c51a';
+      
+      // Calculate expiration (30 days from now)
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+      const expirationISO = thirtyDaysFromNow.toISOString();
+      
+      console.log(`Target expiration: ${expirationISO}`);
+      
+      // Get all shares for the project
+      const sharesResponse = await frameioV4Service.makeRequest(
+        'GET',
+        `/accounts/${accountId}/projects/${projectId}/shares`
+      );
+      
+      const shares = sharesResponse?.data || [];
+      console.log(`Found ${shares.length} shares to update`);
+      
+      const results = [];
+      
+      for (const share of shares) {
+        try {
+          // Skip if already has expiration
+          if (share.expiration) {
+            console.log(`Share ${share.id} already has expiration: ${share.expiration}`);
+            results.push({
+              shareId: share.id,
+              name: share.name,
+              status: 'skipped',
+              reason: 'already has expiration',
+              existingExpiration: share.expiration
+            });
+            continue;
+          }
+          
+          // Update the share with expiration
+          const updateResponse = await frameioV4Service.makeRequest(
+            'PATCH',
+            `/accounts/${accountId}/shares/${share.id}`,
+            {
+              data: {
+                expiration: expirationISO
+              }
+            }
+          );
+          
+          console.log(`✅ Updated share ${share.id} with expiration`);
+          results.push({
+            shareId: share.id,
+            name: share.name,
+            shortUrl: share.short_url,
+            status: 'updated',
+            newExpiration: expirationISO
+          });
+        } catch (updateError) {
+          console.error(`Failed to update share ${share.id}:`, updateError.message);
+          results.push({
+            shareId: share.id,
+            name: share.name,
+            status: 'failed',
+            error: updateError.message
+          });
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Processed ${shares.length} shares`,
+        newExpiration: expirationISO,
+        results
+      });
+      
+    } catch (error) {
+      console.error("Failed to update share expiration:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update share expiration",
+        error: error.message
+      });
+    }
+  });
+
   return httpServer;
 }
 
