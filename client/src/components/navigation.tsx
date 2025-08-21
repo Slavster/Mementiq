@@ -25,7 +25,7 @@ export default function Navigation() {
               <img 
                 src={logoImage} 
                 alt="Mementiq" 
-                className="h-12 w-auto"
+                className="h-16 w-auto max-h-full"
               />
             </div>
           </div>
