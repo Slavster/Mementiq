@@ -284,7 +284,7 @@ export function RevisionModal({
                       </p>
 
                       <p className="flex items-start">
-                        <span className="text-2xl mr-2 mt-0.5 flex-shrink-0">🎞️</span>
+                        <Edit3 className="w-5 h-5 text-cyan-400 mr-2 mt-0.5 flex-shrink-0" />
                         <span>
                           Comment right on the video! Frame-accurate notes,
                           highlights, and annotations. Add links if helpful.
