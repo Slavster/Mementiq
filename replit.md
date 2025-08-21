@@ -66,6 +66,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **2025-08-21**: Changed all orange color instances to pink throughout the dashboard - Updated status badge colors for "awaiting instructions", "awaiting revision instructions", and "revision in progress" from orange to pink. Modified all orange buttons, alerts, and warning messages to use pink color scheme for better visual consistency with the overall design
 - **2025-08-21**: Removed unnecessary "Video Accepted!" toast notification - The popup notification that appeared after accepting a video has been removed as requested. The confetti animation alone provides sufficient visual feedback for video acceptance
 - **2025-08-21**: Updated neon green color scheme with black text - Changed all neon green buttons and UI elements to use black text instead of white text for better visual consistency with the cyan button design. This includes status badges, action buttons, step progress indicators, and all completion states throughout the dashboard
+- **2025-08-21**: Added yellow hover states to green buttons matching cyan button behavior - Updated all green button hover states to turn yellow (hsl(45, 93%, 58%)) for clear interaction feedback, creating consistent button behavior across different color schemes (green and cyan)
 
 ## External Dependencies
 

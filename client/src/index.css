@@ -126,7 +126,7 @@ html, body {
   }
   
   .hover\:bg-neon-green-dark:hover {
-    background-color: hsl(120, 80%, 48%); /* Slightly darker for hover states */
+    background-color: hsl(45, 93%, 58%); /* Yellow hover like cyan buttons */
   }
   
   .bg-neon-green-emerald {
@@ -134,7 +134,7 @@ html, body {
   }
   
   .hover\:bg-neon-green-emerald-dark:hover {
-    background-color: hsl(140, 75%, 45%); /* Darker emerald for hover */
+    background-color: hsl(45, 93%, 58%); /* Yellow hover like cyan buttons */
   }
 
   .portfolio-3d {
