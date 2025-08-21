@@ -489,7 +489,7 @@ export function RevisionModal({
                       <Button
                         onClick={handleSubmit}
                         disabled={submitRevisionMutation.isPending}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
+                        className="w-full bg-neon-green hover:bg-neon-green-dark text-white py-3"
                         size="lg"
                       >
                         {submitRevisionMutation.isPending ? (
@@ -642,7 +642,7 @@ export function RevisionModal({
               currentStep === "video-review"
                 ? "text-[#2abdee]"
                 : ["upload-footage", "submit-to-editor"].includes(currentStep)
-                  ? "text-green-400"
+                  ? "text-lime-400"
                   : "text-gray-400"
             }`}
           >
@@ -651,7 +651,7 @@ export function RevisionModal({
                 currentStep === "video-review"
                   ? "bg-[#2abdee] text-white"
                   : ["upload-footage", "submit-to-editor"].includes(currentStep)
-                    ? "bg-green-600 text-white"
+                    ? "bg-neon-green text-white"
                     : "bg-gray-600"
               }`}
             >
@@ -672,7 +672,7 @@ export function RevisionModal({
               currentStep === "upload-footage"
                 ? "text-[#2abdee]"
                 : ["submit-to-editor", "video-ready"].includes(currentStep)
-                  ? "text-green-400"
+                  ? "text-lime-400"
                   : "text-gray-400"
             }`}
           >
@@ -681,7 +681,7 @@ export function RevisionModal({
                 currentStep === "upload-footage"
                   ? "bg-[#2abdee] text-white"
                   : ["submit-to-editor", "video-ready"].includes(currentStep)
-                    ? "bg-green-600 text-white"
+                    ? "bg-neon-green text-white"
                     : "bg-gray-600"
               }`}
             >
@@ -700,7 +700,7 @@ export function RevisionModal({
               currentStep === "submit-to-editor" && !isSubmitted
                 ? "text-[#2abdee]"
                 : (currentStep === "submit-to-editor" && isSubmitted)
-                  ? "text-green-400"
+                  ? "text-lime-400"
                   : "text-gray-400"
             }`}
           >
@@ -709,7 +709,7 @@ export function RevisionModal({
                 currentStep === "submit-to-editor" && !isSubmitted
                   ? "bg-[#2abdee] text-white"
                   : (currentStep === "submit-to-editor" && isSubmitted)
-                    ? "bg-green-600 text-white"
+                    ? "bg-neon-green text-white"
                     : "bg-gray-600"
               }`}
             >
