@@ -291,18 +291,17 @@ export function RevisionModal({
                         </span>
                       </p>
 
-                      <div className="ml-7">
+                      <p className="flex items-start">
+                        <ExternalLink className="w-5 h-5 text-cyan-400 mr-2 mt-0.5 flex-shrink-0" />
                         <a
                           href="https://support.frame.io/en/articles/1161479-review-links-explained-for-clients"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center text-cyan-400 hover:text-cyan-300 underline"
+                          className="text-cyan-400 hover:text-cyan-300 underline"
                         >
-                          <Eye className="w-5 h-5 mr-2" />
                           Quick primer on Frame.io review tool
-                          <ExternalLink className="w-4 h-4 ml-1" />
                         </a>
-                      </div>
+                      </p>
                     </div>
                   </div>
 
