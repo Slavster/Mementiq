@@ -33,6 +33,10 @@ export const projects = pgTable("projects", {
   mediaReviewLink: text("media_review_link"), // Media platform review link for revisions
   frameioReviewLink: text("frameio_review_link"), // Frame.io public share URL (full format)
   frameioReviewShareId: text("frameio_review_share_id"), // Frame.io share UUID for the public link
+  frameioVideoFilename: text("frameio_video_filename"), // Filename of the video associated with the share link
+  frameioVideoFileSize: bigint("frameio_video_file_size", { mode: "number" }), // File size of the video
+  frameioVideoFileType: text("frameio_video_file_type"), // MIME type of the video
+  frameioVideoAssetId: text("frameio_video_asset_id"), // Asset ID of the video in Frame.io
   revisionCount: integer("revision_count").default(0), // Number of revisions requested for this project
   uploadSizeLimit: bigint("upload_size_limit", { mode: "number" }).default(10737418240), // 10GB default
   currentUploadSize: bigint("current_upload_size", { mode: "number" }).default(0),
