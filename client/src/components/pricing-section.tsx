@@ -162,8 +162,8 @@ export default function PricingSection() {
                 >
                   <CreditCard className="h-5 w-5" />
                   <span>Prepaid Packages</span>
-                  <div className="absolute -top-1 -right-1 z-30">
-                    <span className="text-xs text-white bg-gray-500 border border-gray-400 px-2 py-1 rounded-full whitespace-nowrap shadow-xl font-medium">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                    <span className="text-xs text-gray-400 bg-gray-600 border border-gray-500 px-2 py-1 rounded-full whitespace-nowrap shadow-lg">
                       Coming Soon
                     </span>
                   </div>
