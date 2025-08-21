@@ -36,15 +36,7 @@ import {
   Info,
 } from "lucide-react";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
-
-interface Project {
-  id: number;
-  title: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  mediaReviewLink?: string;
-}
+import type { Project } from "@/../../shared/schema";
 
 type RevisionStep =
   | "video-review"
@@ -73,8 +65,9 @@ export function RevisionModal({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [videoFiles, setVideoFiles] = useState<any[]>([]);
   const [videoLoading, setVideoLoading] = useState(true);
+  const [shareLink, setShareLink] = useState<string>("");
 
-  // Reset state when modal opens, or show confirmation if already in progress
+  // Reset state when modal opens, or show appropriate state based on project status
   useEffect(() => {
     if (open && project) {
       if (project.status.toLowerCase() === "revision in progress") {
@@ -83,6 +76,12 @@ export function RevisionModal({
         );
         setCurrentStep("submit-to-editor");
         setIsSubmitted(true); // Show confirmation state
+      } else if (project.status.toLowerCase() === "video is ready") {
+        console.log(
+          "🎯 Project revision completed - video is ready, showing final step",
+        );
+        setCurrentStep("video-ready");
+        setIsSubmitted(false);
       } else {
         console.log("🎯 Starting new revision workflow");
         setCurrentStep("video-review");
@@ -133,6 +132,35 @@ export function RevisionModal({
       mounted = false;
     };
   }, [open, project, toast]);
+
+  // Fetch share link for revised videos when in video-ready state
+  useEffect(() => {
+    const fetchShareLink = async () => {
+      if (!project || currentStep !== "video-ready") return;
+      
+      // First check if project already has a share link
+      if (project.frameioReviewLink) {
+        setShareLink(project.frameioReviewLink);
+        return;
+      }
+      
+      // Fallback to API call to get/create share link
+      try {
+        const response = await apiRequest(`/api/projects/${project.id}/video-share-link`);
+        if (response?.shareUrl) {
+          setShareLink(response.shareUrl);
+        }
+      } catch (error) {
+        console.error("Failed to fetch share link:", error);
+        // Use fallback mediaReviewLink if available
+        if (project.mediaReviewLink) {
+          setShareLink(project.mediaReviewLink);
+        }
+      }
+    };
+
+    fetchShareLink();
+  }, [project, currentStep]);
 
   // Submit revision request mutation
   const submitRevisionMutation = useMutation({
@@ -627,20 +655,80 @@ export function RevisionModal({
             {/* Step Title */}
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-white mb-2">
-                Step 4: Video is Ready
+                Step 4: Video is Ready!
               </h2>
               <p className="text-gray-400">
                 Your revised video is ready for review
               </p>
             </div>
 
-            {/* Placeholder content */}
+            {/* Video Ready Content - Similar to VideoViewingStep */}
             <Card className="bg-gray-900/50 border-gray-700">
               <CardContent className="p-8">
                 <div className="text-center space-y-6">
-                  <p className="text-gray-400">
-                    This step will be implemented based on your requirements.
+                  <div className="flex items-center justify-center mb-6">
+                    <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center">
+                      <CheckCircle className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-xl font-semibold text-white">
+                    Your revised video is ready!
+                  </h3>
+                  
+                  <p className="text-gray-300">
+                    The editor has completed your revisions. Review the updated video and decide next steps.
                   </p>
+
+                  {/* Share Link Button */}
+                  {shareLink ? (
+                    <div className="space-y-4">
+                      <Button
+                        onClick={() => window.open(shareLink, "_blank")}
+                        className="w-full bg-[#2abdee] hover:bg-[#2abdee]/80 text-white py-3"
+                        size="lg"
+                      >
+                        <ExternalLink className="h-5 w-5 mr-2" />
+                        View Revised Video in Frame.io
+                      </Button>
+                      
+                      <p className="text-sm text-gray-400">
+                        Click above to view your revised video with the latest changes
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
+                      <p className="text-yellow-400 text-sm">
+                        Share link is being generated...
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Next Steps */}
+                  <div className="mt-8 space-y-4">
+                    <p className="text-gray-300 font-medium">What's next?</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Button
+                        onClick={() => onOpenChange(false)}
+                        variant="outline"
+                        className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Accept Final Video
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          onOpenChange(false);
+                          // This would trigger another revision request - handled by parent component
+                        }}
+                        variant="outline"
+                        className="bg-orange-600 hover:bg-orange-700 text-white border-orange-600"
+                      >
+                        <Edit3 className="h-4 w-4 mr-2" />
+                        Request Another Revision
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
