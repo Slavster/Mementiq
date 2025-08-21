@@ -8,7 +8,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Check, ArrowLeft, CreditCard, Calendar, Plus } from "lucide-react";
-import { RevisionRequestModal } from "@/components/RevisionRequestModal";
 
 interface SubscriptionStatus {
   hasActiveSubscription: boolean;
@@ -117,7 +116,6 @@ const prepaidPackages = [
 
 export default function SubscribePage() {
   const [selectedTab, setSelectedTab] = useState<"subscription" | "prepaid">("subscription");
-  const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
@@ -450,10 +448,10 @@ export default function SubscribePage() {
               </div>
               {isAuthenticated && (
                 <Button
-                  onClick={() => setRevisionModalOpen(true)}
+                  onClick={() => setLocation("/dashboard")}
                   className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-8 py-3"
                 >
-                  Request Revision
+                  Go to Dashboard for Revisions
                 </Button>
               )}
               {!isAuthenticated && (
@@ -480,12 +478,6 @@ export default function SubscribePage() {
           </p>
         </div>
       </div>
-
-      {/* Revision Request Modal */}
-      <RevisionRequestModal
-        open={revisionModalOpen}
-        onOpenChange={setRevisionModalOpen}
-      />
     </div>
   );
 }
