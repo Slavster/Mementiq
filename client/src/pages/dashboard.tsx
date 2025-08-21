@@ -101,7 +101,7 @@ const getStatusColor = (status: string) => {
     case "delivered":
       return "bg-neon-green";
     case "complete":
-      return "bg-neon-green-emerald";
+      return "bg-neon-green";
     case "revision in progress":
       return "bg-pink-600";
     default:
@@ -924,7 +924,7 @@ export default function DashboardPage() {
                       {project.status.toLowerCase() === "delivered" ? (
                         <Button
                           size="sm"
-                          className="w-full bg-neon-green hover:bg-neon-green-dark text-black"
+                          className="w-full bg-neon-green hover:bg-yellow-400 text-black transition-colors duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleVideoViewingModal(project);
@@ -936,7 +936,7 @@ export default function DashboardPage() {
                       ) : project.status.toLowerCase() === "video is ready" ? (
                         <Button
                           size="sm"
-                          className="w-full bg-neon-green hover:bg-neon-green-dark text-black"
+                          className="w-full bg-neon-green hover:bg-yellow-400 text-black transition-colors duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
                             // Open the video viewing modal (same as delivered status)
@@ -978,7 +978,7 @@ export default function DashboardPage() {
                         <div className="space-y-2">
                           <Button
                             size="sm"
-                            className="w-full bg-neon-green-emerald hover:bg-neon-green-emerald-dark text-black"
+                            className="w-full bg-neon-green hover:bg-yellow-400 text-black transition-colors duration-200"
                             onClick={async (e) => {
                               e.stopPropagation();
                               // Use the stored Frame.io review link from the project

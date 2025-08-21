@@ -122,26 +122,7 @@ html, body {
   
   /* Custom neon green with black text - original darker hue */
   .bg-neon-green {
-    background-color: hsl(120, 80%, 55%) !important; /* Original darker green with black text */
-  }
-  
-  .hover\:bg-neon-green-dark:hover {
-    background-color: hsl(45, 93%, 58%) !important; /* Yellow hover like cyan buttons */
-  }
-  
-  .bg-neon-green-emerald {
-    background-color: hsl(140, 75%, 52%) !important; /* Original emerald shade with black text */
-  }
-  
-  .hover\:bg-neon-green-emerald-dark:hover {
-    background-color: hsl(45, 93%, 58%) !important; /* Yellow hover like cyan buttons */
-  }
-  
-  /* Additional specificity for buttons */
-  button.hover\:bg-neon-green-dark:hover,
-  .bg-neon-green:hover {
-    background-color: hsl(45, 93%, 58%) !important;
-    transition: background-color 0.2s ease;
+    background-color: hsl(120, 80%, 55%); /* Original darker green with black text */
   }
 
   .portfolio-3d {
