@@ -268,7 +268,7 @@ export function RevisionModal({
                   <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-6 text-left space-y-4">
                     <div className="space-y-3 text-gray-300">
                       <p className="flex items-start">
-                        <MessageCircle className="w-5 h-5 text-cyan-400 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-2xl mr-2 mt-0.5 flex-shrink-0">🎞️</span>
                         Clicking the button above will open a new tab where you
                         can review your video. Use comments and annotations to
                         tell us precisely what you want changed.
