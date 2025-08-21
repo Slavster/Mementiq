@@ -445,26 +445,6 @@ export default function SubscribePage() {
                   <Check className="h-4 w-4 text-orange-400 mr-2" />
                   48-hour turnaround
                 </div>
-              </div>
-              {isAuthenticated && (
-                <Button
-                  onClick={() => setLocation("/dashboard")}
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-8 py-3"
-                >
-                  Go to Dashboard for Revisions
-                </Button>
-              )}
-              {!isAuthenticated && (
-                <p className="text-sm text-gray-400">
-                  <Button
-                    variant="outline"
-                    onClick={() => setLocation("/auth")}
-                    className="border-orange-600 text-orange-400 hover:bg-orange-600 hover:text-white"
-                  >
-                    Login to Request Revision
-                  </Button>
-                </p>
-              )}
             </CardContent>
           </Card>
         </div>
