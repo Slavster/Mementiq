@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 
 const portfolioItems = [
   {
@@ -60,11 +60,12 @@ export default function PortfolioSection() {
   const [playingVideo, setPlayingVideo] = useState<number | null>(null);
   const [videoProgress, setVideoProgress] = useState<{ [key: number]: number }>({});
   const [sectionInView, setSectionInView] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(true); // Videos start muted
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
   const isNavigating = useRef<boolean>(false);
-  const scrollThreshold = 200; // Responsive timing
+  const scrollThreshold = 100; // Faster scrolling response
 
   const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
@@ -95,17 +96,37 @@ export default function PortfolioSection() {
       // Start playing the new video
       setPlayingVideo(videoId);
       
+      // Set muted state on the video
+      video.muted = isMuted;
+      
       // Resume from saved progress or start from beginning
       const savedTime = videoProgress[videoId] || 0;
-      video.currentTime = savedTime;
       
-      // Force load and play immediately
-      video.load();
-      video.play().then(() => {
-        console.log(`Playing video ${videoId} from ${savedTime}s`);
-      }).catch(error => {
-        console.error(`Error playing video ${videoId}:`, error);
-      });
+      // Wait for next tick to ensure state is updated
+      setTimeout(() => {
+        if (video) {
+          video.currentTime = savedTime;
+          video.play().then(() => {
+            console.log(`Playing video ${videoId} from ${savedTime}s`);
+          }).catch(error => {
+            console.error(`Error playing video ${videoId}:`, error);
+            // Try playing again with currentTime reset
+            video.currentTime = 0;
+            video.play().catch(err => console.error(`Retry failed:`, err));
+          });
+        }
+      }, 50);
+    }
+  };
+
+  // Toggle mute/unmute for playing video
+  const toggleMute = () => {
+    setIsMuted(prev => !prev);
+    if (playingVideo !== null) {
+      const video = videoRefs.current[playingVideo];
+      if (video) {
+        video.muted = !isMuted;
+      }
     }
   };
 
@@ -139,7 +160,7 @@ export default function PortfolioSection() {
     // Reset navigation lock after animation completes
     setTimeout(() => {
       isNavigating.current = false;
-    }, 700); // Match transition duration
+    }, 400); // Faster transition
   };
 
   const prevVideo = () => {
@@ -155,7 +176,7 @@ export default function PortfolioSection() {
     // Reset navigation lock after animation completes
     setTimeout(() => {
       isNavigating.current = false;
-    }, 700); // Match transition duration
+    }, 400); // Faster transition
   };
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -170,7 +191,7 @@ export default function PortfolioSection() {
     }
 
     // Simple threshold - no special cases
-    const deltaThreshold = 60;
+    const deltaThreshold = 30; // Lower threshold for more responsive scrolling
 
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       // Horizontal scroll
@@ -242,7 +263,7 @@ export default function PortfolioSection() {
               return (
                 <div
                   key={item.id}
-                  className={`absolute transition-all duration-700 ease-out cursor-pointer ${
+                  className={`absolute transition-all duration-500 ease-out cursor-pointer ${
                     isActive ? "scale-100" : "scale-60"
                   }`}
                   style={{
@@ -260,12 +281,14 @@ export default function PortfolioSection() {
                   >
                     {/* Always render video element for preloading */}
                     <video
-                      ref={(el) => (videoRefs.current[item.id] = el)}
+                      ref={(el) => {
+                        videoRefs.current[item.id] = el;
+                      }}
                       className={`${
                         isActive ? "w-[420px] h-[470px]" : "w-80 h-96"
                       } object-cover ${
                         playingVideo === item.id ? "block" : "hidden"
-                      } transition-all duration-700`}
+                      } transition-all duration-500`}
                       muted
                       loop
                       playsInline
@@ -295,7 +318,7 @@ export default function PortfolioSection() {
                         isActive ? "w-[420px] h-[470px]" : "w-80 h-96"
                       } object-cover ${
                         playingVideo === item.id ? "hidden" : "block"
-                      } transition-all duration-700`}
+                      } transition-all duration-500`}
                       loading="lazy"
                       decoding="async"
                     />
@@ -318,14 +341,31 @@ export default function PortfolioSection() {
                     )}
 
                     {playingVideo === item.id && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
+                          <Button
+                            size="lg"
+                            className="bg-red-500/90 backdrop-blur-sm rounded-full p-4 hover:bg-red-500 transition-all duration-200 transform hover:scale-110 border border-red-400/30"
+                          >
+                            <div className="h-6 w-6 bg-white rounded-sm" />
+                          </Button>
+                        </div>
+                        {/* Unmute button in bottom right corner */}
                         <Button
-                          size="lg"
-                          className="bg-red-500/90 backdrop-blur-sm rounded-full p-4 hover:bg-red-500 transition-all duration-200 transform hover:scale-110 border border-red-400/30"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMute();
+                          }}
+                          size="sm"
+                          className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm rounded-full p-2 hover:bg-black/90 transition-all duration-200 border border-white/20"
                         >
-                          <div className="h-6 w-6 bg-white rounded-sm" />
+                          {isMuted ? (
+                            <VolumeX className="h-5 w-5 text-white" />
+                          ) : (
+                            <Volume2 className="h-5 w-5 text-white" />
+                          )}
                         </Button>
-                      </div>
+                      </>
                     )}
                   </div>
 
