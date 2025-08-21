@@ -109,10 +109,11 @@ export function VideoViewingStep({
       // Show confetti animation
       setShowConfetti(true);
 
-      toast({
-        title: "Video Accepted!",
-        description: "The video has been marked as complete and accepted.",
-      });
+      // Toast notification removed as per user request - the confetti animation is sufficient
+      // toast({
+      //   title: "Video Accepted!",
+      //   description: "The video has been marked as complete and accepted.",
+      // });
 
       // Wait for confetti animation before redirecting
       setTimeout(() => {
