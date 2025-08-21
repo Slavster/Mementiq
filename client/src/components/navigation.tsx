@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useLocation } from "wouter";
-import logoImage from "@assets/Mementiq-logo-transparent_1755766253695.png";
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -19,14 +18,10 @@ export default function Navigation() {
   return (
     <nav className="bg-secondary/20 backdrop-blur-xl shadow-2xl fixed top-0 left-0 right-0 z-50 border-b border-gray-800/30 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <img 
-                src={logoImage} 
-                alt="Mementiq" 
-                className="h-18 w-auto"
-              />
+              <h1 className="text-accent text-[40px] font-bold">Mementiq</h1>
             </div>
           </div>
           
