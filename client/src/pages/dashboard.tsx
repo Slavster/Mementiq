@@ -61,7 +61,7 @@ import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { Project } from "@/../../shared/schema";
-// import logoImage from "@assets/Mementiq logo - small border_1755766751477.png";
+import logoImage from "@assets/Mementiq logo - small border_1755766751477.png";
 
 interface User {
   id: number;
@@ -680,7 +680,11 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-[#2abdee] text-2xl font-bold">Mementiq</h1>
+              <img 
+                src={logoImage} 
+                alt="Mementiq" 
+                className="h-10 object-contain"
+              />
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-white">
