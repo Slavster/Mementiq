@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Check, RotateCcw, Play, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { FrameVideo } from "./FrameVideo";
 import Confetti from "react-confetti";
 import { RevisionPaymentPopup } from "./RevisionPaymentPopup";
 
