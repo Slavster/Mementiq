@@ -38,10 +38,7 @@ import {
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import type { Project } from "@/../../shared/schema";
 
-type RevisionStep =
-  | "video-review"
-  | "upload-footage"
-  | "submit-to-editor";
+type RevisionStep = "video-review" | "upload-footage" | "submit-to-editor";
 
 interface RevisionModalProps {
   open: boolean;
@@ -124,8 +121,6 @@ export function RevisionModal({
       mounted = false;
     };
   }, [open, project, toast]);
-
-
 
   // Submit revision request mutation
   const submitRevisionMutation = useMutation({
@@ -288,18 +283,22 @@ export function RevisionModal({
                         </span>
                       </p>
 
-                      <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
-                        <p>
+                      <p className="flex items-start">
+                        <MessageCircle className="w-5 h-5 text-cyan-400 mr-2 mt-0.5 flex-shrink-0" />
+                        <span>
                           Comment right on the video! Frame-accurate notes,
                           highlights, and annotations. Add links if helpful.
-                        </p>
+                        </span>
+                      </p>
+
+                      <div className="ml-7">
                         <a
                           href="https://support.frame.io/en/articles/1161479-review-links-explained-for-clients"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center text-cyan-400 hover:text-cyan-300 underline"
                         >
-                          <Eye className="w-4 h-4 mr-1" />
+                          <Eye className="w-5 h-5 mr-2" />
                           Quick primer on Frame.io review tool
                           <ExternalLink className="w-4 h-4 ml-1" />
                         </a>
@@ -325,13 +324,21 @@ export function RevisionModal({
                         <li className="flex items-start">
                           <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
                           <span>
-                            Use drawing tools to highlight specific areas
+                            Use drawing tools or emoji to highlight problem
+                            areas
                           </span>
                         </li>
                         <li className="flex items-start">
                           <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
                           <span>
-                            Be specific about what changes you want made
+                            Be specific about the changes you want made
+                          </span>
+                        </li>
+                        <li className="flex items-start">
+                          <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
+                          <span>
+                            Comments, annotations, and highlights are saved
+                            automatically
                           </span>
                         </li>
                       </ul>
@@ -614,8 +621,6 @@ export function RevisionModal({
           </div>
         );
 
-
-
       default:
         return null;
     }
@@ -637,10 +642,7 @@ export function RevisionModal({
             className={`flex items-center gap-2 ${
               currentStep === "video-review"
                 ? "text-[#2abdee]"
-                : [
-                      "upload-footage",
-                      "submit-to-editor"
-                    ].includes(currentStep)
+                : ["upload-footage", "submit-to-editor"].includes(currentStep)
                   ? "text-green-400"
                   : "text-gray-400"
             }`}
@@ -649,10 +651,7 @@ export function RevisionModal({
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                 currentStep === "video-review"
                   ? "bg-[#2abdee] text-white"
-                  : [
-                        "upload-footage",
-                        "submit-to-editor"
-                      ].includes(currentStep)
+                  : ["upload-footage", "submit-to-editor"].includes(currentStep)
                     ? "bg-green-600 text-white"
                     : "bg-gray-600"
               }`}
