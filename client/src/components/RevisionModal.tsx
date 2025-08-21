@@ -472,11 +472,11 @@ export function RevisionModal({
                       </div>
 
                       {/* Warning */}
-                      <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
+                      <div className="bg-pink-900/20 border border-pink-600/30 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
                         <div className="flex items-start">
-                          <AlertTriangle className="h-5 w-5 text-orange-400 mr-2 mt-0.5" />
+                          <AlertTriangle className="h-5 w-5 text-pink-400 mr-2 mt-0.5" />
                           <div className="text-left">
-                            <p className="text-orange-400 text-sm">
+                            <p className="text-pink-400 text-sm">
                               <strong>Important: </strong>
                               Once you submit, you won't be able to add more
                               comments or footage.
@@ -699,8 +699,7 @@ export function RevisionModal({
             className={`flex items-center gap-2 ${
               currentStep === "submit-to-editor" && !isSubmitted
                 ? "text-[#2abdee]"
-                : (currentStep === "submit-to-editor" && isSubmitted) ||
-                    currentStep === "video-ready"
+                : (currentStep === "submit-to-editor" && isSubmitted)
                   ? "text-green-400"
                   : "text-gray-400"
             }`}
@@ -709,13 +708,12 @@ export function RevisionModal({
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                 currentStep === "submit-to-editor" && !isSubmitted
                   ? "bg-[#2abdee] text-white"
-                  : (currentStep === "submit-to-editor" && isSubmitted) ||
-                      currentStep === "video-ready"
+                  : (currentStep === "submit-to-editor" && isSubmitted)
                     ? "bg-green-600 text-white"
                     : "bg-gray-600"
               }`}
             >
-              {isSubmitted || currentStep === "video-ready" ? "✓" : "3"}
+              {isSubmitted ? "✓" : "3"}
             </div>
             <span className="font-medium">Submit to Editor</span>
           </div>
@@ -724,16 +722,10 @@ export function RevisionModal({
 
           {/* Step 4 - Video Ready */}
           <div
-            className={`flex items-center gap-2 ${
-              currentStep === "video-ready" ? "text-[#2abdee]" : "text-gray-400"
-            }`}
+            className={`flex items-center gap-2 text-gray-400`}
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                currentStep === "video-ready"
-                  ? "bg-[#2abdee] text-white"
-                  : "bg-gray-600"
-              }`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-gray-600`}
             >
               4
             </div>
