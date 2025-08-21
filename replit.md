@@ -6,7 +6,13 @@ Mementiq is a full-stack web application designed as a professional video editin
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Frame.io Account: V4 account with OAuth authentication successfully configured via Adobe Developer Console.
-Design Standard: NEVER use blue colors anywhere in the app - all blue instances must be cyan (hsl(180, 85%, 55%)). This is a permanent design requirement.
+Design Standard: Standardized neon color palette inspired by Launch JDI website:
+- Primary: Electric Cyan (hsl(180, 100%, 50%)) - default color for buttons and accents
+- Accent: Electric Purple (hsl(280, 85%, 65%)) - secondary emphasis
+- Destructive: Hot Pink (hsl(330, 100%, 60%)) - warnings and important actions
+- Success: Neon Green (hsl(150, 80%, 50%)) - completion states
+- Dark background: Deep navy (hsl(240, 10%, 3%))
+This is a permanent design requirement - maintain consistency across all UI elements.
 
 ## System Architecture
 
@@ -63,6 +69,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **2025-08-19**: Enhanced polling-based asset detection to support revision workflow - AssetDetectionService now monitors both "edit in progress" and "revision in progress" statuses, detecting new videos based on appropriate timestamps (submission date for initial edits, revision request date for revisions). System runs every 5 minutes to detect uploads for both initial deliveries and revisions, providing a simple and reliable solution without external dependencies. Webhook infrastructure code preserved but commented out for potential future use
 - **2025-08-21**: Unified video review experience - Replaced ProjectAcceptanceModal with VideoViewingStep for all video review flows (both initial delivery and revision completion). VideoViewingStep provides superior UX with integrated payment functionality for revisions, detailed Frame.io instructions, confetti animation on acceptance, and comprehensive video information. This consolidation eliminates code duplication and ensures consistent user experience across all video review scenarios
 - **2025-08-21**: Removed distracting share link popups from VideoViewingStep - The "Creating Share Link" and "Share Link Created!" toast notifications have been removed to improve user experience. The Frame.io link button now opens directly without popup distractions, maintaining only error notifications when necessary
+- **2025-08-21**: Standardized color palette across entire application - Implemented Launch JDI-inspired neon color scheme with Electric Cyan as primary, Electric Purple as accent, Hot Pink for destructive actions, and Neon Green for success states. Reduced overall color variations for better visual consistency
 
 ## External Dependencies
 

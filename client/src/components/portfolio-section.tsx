@@ -255,12 +255,14 @@ export default function PortfolioSection() {
                 >
                   <div
                     className={`relative rounded-xl overflow-hidden shadow-2xl border-2 transition-all duration-300 ${
-                      isActive ? "border-primary/70" : "border-gray-700/50"
+                      isActive ? "border-primary/70" : "border-muted/50"
                     } ${playingVideo === item.id ? "border-accent" : ""}`}
                   >
                     {/* Always render video element for preloading */}
                     <video
-                      ref={(el) => (videoRefs.current[item.id] = el)}
+                      ref={(el) => {
+                        if (el) videoRefs.current[item.id] = el;
+                      }}
                       className={`${
                         isActive ? "w-[420px] h-[470px]" : "w-80 h-96"
                       } object-cover ${
@@ -310,7 +312,7 @@ export default function PortfolioSection() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
                         <Button
                           size="lg"
-                          className="bg-accent/90 backdrop-blur-sm rounded-full p-4 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-cyan-400/30"
+                          className="bg-primary/90 backdrop-blur-sm rounded-full p-4 hover:bg-primary transition-all duration-200 transform hover:scale-110 border border-primary/30"
                         >
                           <Play className="h-6 w-6 text-secondary ml-1" />
                         </Button>
@@ -321,7 +323,7 @@ export default function PortfolioSection() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
                         <Button
                           size="lg"
-                          className="bg-red-500/90 backdrop-blur-sm rounded-full p-4 hover:bg-red-500 transition-all duration-200 transform hover:scale-110 border border-red-400/30"
+                          className="bg-destructive/90 backdrop-blur-sm rounded-full p-4 hover:bg-destructive transition-all duration-200 transform hover:scale-110 border border-destructive/30"
                         >
                           <div className="h-6 w-6 bg-white rounded-sm" />
                         </Button>
@@ -353,8 +355,8 @@ export default function PortfolioSection() {
                 onClick={() => setSelectedVideo(index)}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
                   index === selectedVideo
-                    ? "bg-accent"
-                    : "bg-gray-600 hover:bg-gray-500"
+                    ? "bg-primary"
+                    : "bg-muted hover:bg-muted-foreground"
                 }`}
               />
             ))}
