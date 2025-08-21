@@ -62,6 +62,7 @@ import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import type { Project } from "@/../../shared/schema";
 
 interface User {
   id: number;
@@ -83,20 +84,6 @@ interface SubscriptionStatus {
   periodEnd: string;
   stripeCustomerId: string;
   hasReachedLimit: boolean;
-}
-
-interface Project {
-  id: number;
-  title: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  frameioFolderId?: string;
-  frameioUserFolderId?: string;
-  tallyFormUrl?: string;
-  frameioReviewLink?: string;
-  currentUploadSize?: number;
-  uploadSizeLimit?: number;
 }
 
 // Helper functions for project status
@@ -966,6 +953,20 @@ export default function DashboardPage() {
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Review Your Finished Video
+                        </Button>
+                      ) : project.status.toLowerCase() === "video is ready" ? (
+                        <Button
+                          size="sm"
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Open revision modal in video-ready step to show revised video
+                            setRevisionProject(project);
+                            setRevisionModalOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Review Your Revised Video
                         </Button>
                       ) : project.status.toLowerCase() ===
                         "awaiting revision instructions" ? (
