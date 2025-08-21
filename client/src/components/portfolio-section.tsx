@@ -87,9 +87,10 @@ export default function PortfolioSection() {
         const currentVideo = videoRefs.current[playingVideo];
         if (currentVideo) {
           currentVideo.pause();
+          currentVideo.currentTime = 0; // Reset to start
           setVideoProgress(prev => ({
             ...prev,
-            [playingVideo]: currentVideo.currentTime
+            [playingVideo]: 0
           }));
         }
       }
@@ -100,78 +101,21 @@ export default function PortfolioSection() {
       // Set muted state on the video
       video.muted = isMuted;
       
-      // Resume from saved progress or start from beginning
-      const savedTime = videoProgress[videoId] || 0;
+      // Reset to beginning for clean start
+      video.currentTime = 0;
       
-      // Enhanced debugging for video 3 (Interview)
-      if (videoId === 3) {
-        console.log(`[DEBUG] Interview video - readyState: ${video.readyState}, networkState: ${video.networkState}`);
-        console.log(`[DEBUG] Interview video - src: ${video.src}`);
-        console.log(`[DEBUG] Interview video - duration: ${video.duration}`);
-        console.log(`[DEBUG] Interview video - paused: ${video.paused}`);
-      }
-      
-      // Wait for video to be ready before playing
-      const attemptPlay = () => {
-        if (!video) return;
-        
-        // Check if video has sufficient data loaded
-        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
-          // Only set currentTime if we have metadata
-          if (savedTime > 0 && !isNaN(video.duration)) {
-            video.currentTime = savedTime;
-          }
-          
-          const playPromise = video.play();
-          playPromise.then(() => {
-            console.log(`Playing video ${videoId} from ${savedTime}s`);
-            if (videoId === 3) {
-              console.log(`[DEBUG] Interview video successfully started playing`);
-            }
-          }).catch(error => {
-            console.error(`Error playing video ${videoId}:`, error);
-            if (error.name === 'AbortError' && error.message.includes('interrupted')) {
-              console.log(`[DEBUG] Video ${videoId} play interrupted, retrying...`);
-              // Retry after a short delay without setting currentTime
-              setTimeout(() => {
-                video.play().catch(retryErr => console.error(`Retry failed:`, retryErr));
-              }, 100);
-            }
+      // Simple approach - just play immediately
+      video.play().then(() => {
+        console.log(`Playing video ${videoId}`);
+      }).catch(error => {
+        console.error(`Error playing video ${videoId}:`, error);
+        // Retry after a short delay
+        setTimeout(() => {
+          video.play().catch(err => {
+            console.error(`Retry failed for video ${videoId}:`, err);
           });
-        } else {
-          // Video not ready, wait for it to load
-          if (videoId === 3) {
-            console.log(`[DEBUG] Interview video not ready (readyState: ${video.readyState}), waiting...`);
-          }
-          
-          const onCanPlay = () => {
-            video.removeEventListener('canplay', onCanPlay);
-            if (savedTime > 0 && !isNaN(video.duration)) {
-              video.currentTime = savedTime;
-            }
-            video.play().then(() => {
-              console.log(`Playing video ${videoId} after loading`);
-              if (videoId === 3) {
-                console.log(`[DEBUG] Interview video started after waiting`);
-              }
-            }).catch(err => console.error(`Play after load failed:`, err));
-          };
-          
-          video.addEventListener('canplay', onCanPlay);
-          
-          // Fallback timeout
-          setTimeout(() => {
-            video.removeEventListener('canplay', onCanPlay);
-            if (video.readyState === 0) {
-              console.log(`Video ${videoId} still not loading, forcing reload`);
-              video.load();
-            }
-          }, 2000);
-        }
-      };
-
-      // Start attempt with small delay
-      setTimeout(attemptPlay, 50);
+        }, 200);
+      });
     }
   };
 
@@ -353,39 +297,8 @@ export default function PortfolioSection() {
                       playsInline
                       preload="metadata"
                       src={item.preview}
-                      onLoadStart={() => {
-                        console.log(`Video ${item.id} load started`);
-                        if (item.id === 3) console.log(`[DEBUG] Interview video load started`);
-                      }}
-                      onLoadedData={() => {
-                        console.log(`Video ${item.id} data loaded`);
-                        if (item.id === 3) console.log(`[DEBUG] Interview video data loaded`);
-                      }}
-                      onCanPlay={() => {
-                        console.log(`Video ${item.id} can play`);
-                        if (item.id === 3) console.log(`[DEBUG] Interview video can play`);
-                      }}
-                      onCanPlayThrough={() => {
-                        if (item.id === 3) console.log(`[DEBUG] Interview video can play through`);
-                      }}
                       onError={(e) => {
-                        console.log(`Video ${item.id} error:`, e);
-                        if (item.id === 3) {
-                          console.error(`[DEBUG] Interview video error:`, e);
-                          const video = videoRefs.current[item.id];
-                          if (video) {
-                            console.log(`[DEBUG] Interview video error details - readyState: ${video.readyState}, networkState: ${video.networkState}, error: ${video.error?.message}`);
-                          }
-                        }
-                      }}
-                      onStalled={() => {
-                        if (item.id === 3) console.log(`[DEBUG] Interview video stalled`);
-                      }}
-                      onWaiting={() => {
-                        if (item.id === 3) console.log(`[DEBUG] Interview video waiting`);
-                      }}
-                      onSuspend={() => {
-                        if (item.id === 3) console.log(`[DEBUG] Interview video suspended`);
+                        console.error(`Video ${item.id} error:`, e);
                       }}
                       onEnded={() => {
                         // Loop video
