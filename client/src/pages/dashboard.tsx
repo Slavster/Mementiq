@@ -1442,9 +1442,11 @@ export default function DashboardPage() {
                       queryClient.invalidateQueries({
                         queryKey: ["/api/projects"],
                       });
-                      // Set revision workflow flag and go to upload step for revision
-                      setIsRevisionWorkflow(true);
+                      // Close the project management modal and open revision modal
+                      setSelectedProject(null);
                       setCurrentStep("upload");
+                      // Open the revision modal with the first step
+                      handleRevisionModal(selectedProject);
                     }}
                   />
                 </ErrorBoundary>
@@ -1536,10 +1538,8 @@ export default function DashboardPage() {
                   queryKey: ["/api/projects"],
                 });
                 setAcceptanceModalOpen(false);
-                toast({
-                  title: "Ready for Revision",
-                  description: "Click 'Describe Your Revisions' on your project card to continue.",
-                });
+                // Open the revision modal directly with the first step
+                handleRevisionModal(acceptanceProject);
               }}
             />
           )}
