@@ -1135,23 +1135,27 @@ export default function DashboardPage() {
                               project.status.toLowerCase() ===
                               "awaiting revision instructions"
                             ) {
-                              // Project is awaiting revision instructions = start revision workflow automatically
+                              // Project is awaiting revision instructions = open the revision modal directly
                               console.log(
-                                `🔄 Project ${project.title} is awaiting revision instructions - starting revision workflow`,
+                                `🔄 Project ${project.title} is awaiting revision instructions - opening revision modal`,
                               );
-                              setIsRevisionWorkflow(true);
-                              setCurrentStep("upload"); // Start revision workflow with upload step
+                              // Don't open the project management dialog, open revision modal instead
+                              setSelectedProject(null);
+                              handleRevisionModal(project);
+                              return; // Exit early to prevent opening project management dialog
                             } else if (
                               project.status.toLowerCase() ===
                                 "video is ready" &&
                               hasCompletedRevisions
                             ) {
-                              // Project has video ready AND completed revision payments = start revision workflow
+                              // Project has video ready AND completed revision payments = open revision modal
                               console.log(
-                                `🔄 Project ${project.title} has ${project.revisionCount} completed revision payments - starting revision workflow`,
+                                `🔄 Project ${project.title} has ${project.revisionCount} completed revision payments - opening revision modal`,
                               );
-                              setIsRevisionWorkflow(true);
-                              setCurrentStep("upload"); // Start revision workflow with upload step
+                              // Don't open the project management dialog, open revision modal instead
+                              setSelectedProject(null);
+                              handleRevisionModal(project);
+                              return; // Exit early to prevent opening project management dialog
                             } else if (
                               project.status.toLowerCase() === "video is ready"
                             ) {
