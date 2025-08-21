@@ -89,23 +89,23 @@ interface SubscriptionStatus {
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "draft":
-      return "bg-gray-600";
+      return "bg-black border border-gray-400 text-gray-400";
     case "awaiting instructions":
-      return "bg-pink-600";
+      return "bg-black border border-pink-400 text-pink-400";
     case "awaiting revision instructions":
-      return "bg-pink-600";
+      return "bg-black border border-pink-400 text-pink-400";
     case "edit in progress":
-      return "bg-primary";
+      return "bg-black border border-blue-400 text-blue-400";
     case "video is ready":
-      return "bg-neon-green";
+      return "bg-black border border-green-400 text-green-400";
     case "delivered":
-      return "bg-neon-green";
+      return "bg-black border border-green-400 text-green-400";
     case "complete":
-      return "bg-neon-green";
+      return "bg-black border border-green-400 text-green-400";
     case "revision in progress":
-      return "bg-pink-600";
+      return "bg-black border border-pink-400 text-pink-400";
     default:
-      return "bg-gray-600";
+      return "bg-black border border-gray-400 text-gray-400";
   }
 };
 
