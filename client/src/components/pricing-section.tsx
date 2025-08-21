@@ -143,11 +143,12 @@ export default function PricingSection() {
                   onClick={() => setSelectedTab("subscription")}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative ${
                     selectedTab === "subscription"
-                      ? "bg-accent text-dark shadow-lg"
+                      ? "bg-accent shadow-lg"
                       : "text-gray-400 hover:text-light"
                   }`}
+                  style={selectedTab === "subscription" ? { color: "#000000" } : {}}
                 >
-                  <Calendar className="h-5 w-5" />
+                  <Calendar className="h-5 w-5" style={selectedTab === "subscription" ? { color: "#000000" } : {}} />
                   <span>Subscription Plans</span>
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
                     <span className="text-xs text-green-400 bg-dark border border-green-400 px-2 py-1 rounded-full whitespace-nowrap shadow-lg">
@@ -156,15 +157,16 @@ export default function PricingSection() {
                   </div>
                 </button>
                 <button
-                  onClick={() => setSelectedTab("prepaid")}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                    selectedTab === "prepaid"
-                      ? "bg-purple-500 text-white shadow-lg"
-                      : "text-gray-400 hover:text-light"
-                  }`}
+                  disabled
+                  className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative cursor-not-allowed opacity-50 text-gray-500 bg-gray-700/50"
                 >
                   <CreditCard className="h-5 w-5" />
-                  Prepaid Packages
+                  <span>Prepaid Packages</span>
+                  <div className="absolute -top-1 -right-1 z-30">
+                    <span className="text-xs text-white bg-gray-500 border border-gray-400 px-2 py-1 rounded-full whitespace-nowrap shadow-xl font-medium">
+                      Coming Soon
+                    </span>
+                  </div>
                 </button>
               </div>
             </div>
