@@ -91,9 +91,9 @@ const getStatusColor = (status: string) => {
     case "draft":
       return "bg-gray-600";
     case "awaiting instructions":
-      return "bg-orange-600";
+      return "bg-pink-600";
     case "awaiting revision instructions":
-      return "bg-orange-600";
+      return "bg-pink-600";
     case "edit in progress":
       return "bg-primary";
     case "video is ready":
@@ -103,7 +103,7 @@ const getStatusColor = (status: string) => {
     case "complete":
       return "bg-emerald-600";
     case "revision in progress":
-      return "bg-orange-600";
+      return "bg-pink-600";
     default:
       return "bg-gray-600";
   }
@@ -588,7 +588,7 @@ export default function DashboardPage() {
             <Button
               size="sm"
               onClick={() => setLocation("/subscribe")}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-pink-600 hover:bg-pink-700"
             >
               Upgrade Plan
             </Button>
@@ -755,7 +755,7 @@ export default function DashboardPage() {
                       <div className="flex items-center space-x-2">
                         <Badge
                           variant="default"
-                          className={`${subscription.hasReachedLimit ? "bg-orange-600" : "bg-purple-600"}`}
+                          className={`${subscription.hasReachedLimit ? "bg-pink-600" : "bg-purple-600"}`}
                         >
                           {subscription.productName ||
                             subscription.tier?.toUpperCase()}
@@ -782,7 +782,7 @@ export default function DashboardPage() {
                             <Button
                               size="sm"
                               onClick={() => setLocation("/subscribe")}
-                              className="mt-1 bg-orange-600 hover:bg-orange-700"
+                              className="mt-1 bg-pink-600 hover:bg-pink-700"
                             >
                               <Crown className="h-3 w-3 mr-1" />
                               Upgrade
@@ -819,7 +819,7 @@ export default function DashboardPage() {
               className={
                 subscription?.hasActiveSubscription &&
                 subscription?.hasReachedLimit
-                  ? "bg-orange-600 hover:bg-orange-700 font-semibold"
+                  ? "bg-pink-600 hover:bg-pink-700 font-semibold"
                   : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"
               }
               onClick={handleCreateProject}
@@ -859,7 +859,7 @@ export default function DashboardPage() {
                   className={
                     subscription?.hasActiveSubscription &&
                     subscription?.hasReachedLimit
-                      ? "bg-orange-600 hover:bg-orange-700 font-semibold"
+                      ? "bg-pink-600 hover:bg-pink-700 font-semibold"
                       : "bg-accent text-secondary hover:bg-yellow-500 font-semibold"
                   }
                   onClick={handleCreateProject}
@@ -963,7 +963,7 @@ export default function DashboardPage() {
                         "revision in progress" ? (
                         <Button
                           size="sm"
-                          className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                          className="w-full bg-pink-600 hover:bg-pink-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
                             // Open revision modal in submitted/confirmation state
@@ -1572,7 +1572,7 @@ export default function DashboardPage() {
                       through a new form. Make sure you've uploaded all the
                       footage you need before proceeding.
                     </p>
-                    <p className="text-amber-400 font-medium">
+                    <p className="text-pink-400 font-medium">
                       Sure you're ready to send "{pendingProject?.title}" to the
                       editor?
                     </p>
@@ -1587,7 +1587,7 @@ export default function DashboardPage() {
                       <strong>NOT</strong> be able to upload any more footage to
                       "{pendingProject?.title}" after this point.
                     </p>
-                    <p className="text-amber-400 font-medium">
+                    <p className="text-pink-400 font-medium">
                       Click "CONFIRM - Send to Editor" to proceed, or cancel to
                       go back.
                     </p>
@@ -1612,7 +1612,7 @@ export default function DashboardPage() {
             <AlertDialogAction
               className={
                 sendToEditorConfirmationStep === 1
-                  ? "bg-orange-600 hover:bg-orange-700 text-white"
+                  ? "bg-pink-600 hover:bg-pink-700 text-white"
                   : "bg-red-600 hover:bg-red-700 text-white"
               }
               onClick={() => {

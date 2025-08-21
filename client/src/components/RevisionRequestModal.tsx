@@ -151,12 +151,12 @@ export function RevisionRequestModal({ open, onOpenChange }: RevisionRequestModa
         </DialogHeader>
         
         <div className="space-y-6 py-4">
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <ExternalLink className="h-4 w-4 text-orange-600" />
-              <span className="font-semibold text-orange-800">Revision Add-on - $5</span>
+              <ExternalLink className="h-4 w-4 text-pink-600" />
+              <span className="font-semibold text-pink-800">Revision Add-on - $5</span>
             </div>
-            <p className="text-sm text-orange-800">
+            <p className="text-sm text-pink-800">
               Minor tweaks and adjustments to your completed video with 48-hour turnaround.
             </p>
           </div>
