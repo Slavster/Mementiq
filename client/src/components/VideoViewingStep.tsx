@@ -250,11 +250,6 @@ export function VideoViewingStep({
             <Button
               onClick={async () => {
                 try {
-                  toast({
-                    title: "Creating Share Link",
-                    description: "Generating public Frame.io share...",
-                  });
-
                   const response = await apiRequest(
                     `/api/projects/${project.id}/video-share-link`,
                   );
@@ -265,12 +260,6 @@ export function VideoViewingStep({
                       response.shareUrl,
                     );
                     window.open(response.shareUrl, "_blank");
-
-                    toast({
-                      title: "Share Link Created!",
-                      description:
-                        "Opening your video in a public Frame.io share (no login required)",
-                    });
                   } else {
                     throw new Error("No share URL returned");
                   }
