@@ -271,7 +271,10 @@ export default function SubscribePage() {
                       {subscription.usage}/{subscription.allowance} videos created this month
                     </p>
                   </div>
-                  <Badge className="bg-neon-green text-black">
+                  <Badge 
+                    variant="outline"
+                    className="bg-black border-green-400 text-green-400"
+                  >
                     Active
                   </Badge>
                 </div>
