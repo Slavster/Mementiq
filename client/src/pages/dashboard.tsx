@@ -55,7 +55,7 @@ import {
 } from "lucide-react";
 
 import TallyFormStep from "@/components/TallyFormStep";
-import { ProjectAcceptanceModal } from "@/components/ProjectAcceptanceModal";
+import { VideoViewingModal } from "@/components/VideoViewingModal";
 import { RevisionModal } from "@/components/RevisionModal";
 import { RevisionConfirmationModal } from "@/components/RevisionConfirmationModal";
 import { FrameioOAuthButton } from "@/components/FrameioOAuthButton";
@@ -607,25 +607,10 @@ export default function DashboardPage() {
     setShowCreateForm(true);
   };
 
-  // Handle opening acceptance modal and fetching download link
-  const handleAcceptanceModal = async (project: Project) => {
+  // Handle opening video viewing modal
+  const handleVideoViewingModal = async (project: Project) => {
     setAcceptanceProject(project);
     setAcceptanceModalOpen(true);
-
-    // Fetch download link for the project
-    try {
-      const response = await fetch(`/api/projects/${project.id}/download-link`);
-      if (response.ok) {
-        const data = await response.json();
-        setDownloadLink(data.downloadLink);
-      } else {
-        console.error("Failed to fetch download link");
-        setDownloadLink(undefined);
-      }
-    } catch (error) {
-      console.error("Error fetching download link:", error);
-      setDownloadLink(undefined);
-    }
   };
 
   const handleRevisionModal = (project: Project) => {
