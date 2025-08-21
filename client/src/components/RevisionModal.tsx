@@ -489,7 +489,7 @@ export function RevisionModal({
                       <Button
                         onClick={handleSubmit}
                         disabled={submitRevisionMutation.isPending}
-                        className="w-full bg-neon-green hover:bg-neon-green-dark text-white py-3"
+                        className="w-full bg-neon-green hover:bg-neon-green-dark text-black py-3"
                         size="lg"
                       >
                         {submitRevisionMutation.isPending ? (
@@ -651,7 +651,7 @@ export function RevisionModal({
                 currentStep === "video-review"
                   ? "bg-[#2abdee] text-white"
                   : ["upload-footage", "submit-to-editor"].includes(currentStep)
-                    ? "bg-neon-green text-white"
+                    ? "bg-neon-green text-black"
                     : "bg-gray-600"
               }`}
             >
@@ -681,7 +681,7 @@ export function RevisionModal({
                 currentStep === "upload-footage"
                   ? "bg-[#2abdee] text-white"
                   : ["submit-to-editor", "video-ready"].includes(currentStep)
-                    ? "bg-neon-green text-white"
+                    ? "bg-neon-green text-black"
                     : "bg-gray-600"
               }`}
             >
@@ -709,7 +709,7 @@ export function RevisionModal({
                 currentStep === "submit-to-editor" && !isSubmitted
                   ? "bg-[#2abdee] text-white"
                   : (currentStep === "submit-to-editor" && isSubmitted)
-                    ? "bg-neon-green text-white"
+                    ? "bg-neon-green text-black"
                     : "bg-gray-600"
               }`}
             >

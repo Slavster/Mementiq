@@ -120,21 +120,21 @@ html, body {
     font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   }
   
-  /* Custom neon green that maintains readability with white text */
+  /* Custom neon green with black text for better contrast */
   .bg-neon-green {
-    background-color: hsl(120, 80%, 45%); /* Neon green with good contrast */
+    background-color: hsl(120, 100%, 75%); /* Bright neon green for black text */
   }
   
   .hover\:bg-neon-green-dark:hover {
-    background-color: hsl(120, 80%, 38%); /* Slightly darker for hover states */
+    background-color: hsl(120, 100%, 68%); /* Slightly darker for hover states */
   }
   
   .bg-neon-green-emerald {
-    background-color: hsl(140, 75%, 42%); /* Emerald variant for variety */
+    background-color: hsl(140, 90%, 70%); /* Emerald variant for black text */
   }
   
   .hover\:bg-neon-green-emerald-dark:hover {
-    background-color: hsl(140, 75%, 35%); /* Darker emerald for hover */
+    background-color: hsl(140, 90%, 63%); /* Darker emerald for hover */
   }
 
   .portfolio-3d {

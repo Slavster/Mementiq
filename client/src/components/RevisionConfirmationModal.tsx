@@ -204,7 +204,7 @@ export function RevisionConfirmationModal({
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-neon-green rounded-full flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-white" />
+                  <DollarSign className="h-5 w-5 text-black" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-green-800">Payment Confirmed</h3>

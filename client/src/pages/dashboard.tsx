@@ -924,7 +924,7 @@ export default function DashboardPage() {
                       {project.status.toLowerCase() === "delivered" ? (
                         <Button
                           size="sm"
-                          className="w-full bg-neon-green hover:bg-neon-green-dark text-white"
+                          className="w-full bg-neon-green hover:bg-neon-green-dark text-black"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleVideoViewingModal(project);
@@ -936,7 +936,7 @@ export default function DashboardPage() {
                       ) : project.status.toLowerCase() === "video is ready" ? (
                         <Button
                           size="sm"
-                          className="w-full bg-neon-green hover:bg-neon-green-dark text-white"
+                          className="w-full bg-neon-green hover:bg-neon-green-dark text-black"
                           onClick={(e) => {
                             e.stopPropagation();
                             // Open the video viewing modal (same as delivered status)
@@ -978,7 +978,7 @@ export default function DashboardPage() {
                         <div className="space-y-2">
                           <Button
                             size="sm"
-                            className="w-full bg-neon-green-emerald hover:bg-neon-green-emerald-dark text-white"
+                            className="w-full bg-neon-green-emerald hover:bg-neon-green-emerald-dark text-black"
                             onClick={async (e) => {
                               e.stopPropagation();
                               // Use the stored Frame.io review link from the project
@@ -1248,7 +1248,7 @@ export default function DashboardPage() {
                   className={`flex items-center gap-2 ${currentStep === "upload" ? "text-[#2abdee]" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "text-lime-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-neon-green text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "upload" ? "bg-[#2abdee] text-white" : currentStep === "form" || currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-neon-green text-black" : "bg-gray-600"}`}
                   >
                     {currentStep === "form" ||
                     currentStep === "confirmation" ||
@@ -1265,7 +1265,7 @@ export default function DashboardPage() {
                   className={`flex items-center gap-2 ${currentStep === "form" ? "text-[#2abdee]" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "text-lime-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-neon-green text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "form" ? "bg-[#2abdee] text-white" : currentStep === "confirmation" || selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-neon-green text-black" : "bg-gray-600"}`}
                   >
                     {currentStep === "confirmation" ||
                     selectedProject.status.toLowerCase() ===
@@ -1281,7 +1281,7 @@ export default function DashboardPage() {
                   className={`flex items-center gap-2 ${currentStep === "confirmation" ? "text-[#2abdee]" : selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "text-lime-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-neon-green text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "confirmation" ? "bg-[#2abdee] text-white" : selectedProject.status.toLowerCase() === "edit in progress" || selectedProject.status.toLowerCase() === "video is ready" ? "bg-neon-green text-black" : "bg-gray-600"}`}
                   >
                     {selectedProject.status.toLowerCase() ===
                       "edit in progress" ||
@@ -1296,7 +1296,7 @@ export default function DashboardPage() {
                   className={`flex items-center gap-2 ${currentStep === "video-ready" ? "text-[#2abdee]" : selectedProject.status === "Video is Ready" ? "text-lime-400" : "text-gray-400"}`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "video-ready" ? "bg-[#2abdee] text-white" : selectedProject.status === "Video is Ready" ? "bg-neon-green text-white" : "bg-gray-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === "video-ready" ? "bg-[#2abdee] text-white" : selectedProject.status === "Video is Ready" ? "bg-neon-green text-black" : "bg-gray-600"}`}
                   >
                     {selectedProject.status === "Video is Ready" ? "✓" : "4"}
                   </div>
@@ -1398,7 +1398,7 @@ export default function DashboardPage() {
                                 setPendingProject(selectedProject);
                                 setShowSendToEditorDialog(true);
                               }}
-                              className="bg-neon-green hover:bg-neon-green-dark text-white"
+                              className="bg-neon-green hover:bg-neon-green-dark text-black"
                             >
                               Send to Editor
                             </Button>
