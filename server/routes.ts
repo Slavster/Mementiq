@@ -4134,6 +4134,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // IMPORTANT: Prevent duplicate submissions to editor
+      if (status === 'edit in progress' && 
+          (project.status === 'edit in progress' || 
+           project.status === 'video is ready' || 
+           project.status === 'complete' ||
+           project.status === 'revision in progress')) {
+        console.log(`⚠️ Blocking duplicate submission for project ${projectId}. Current status: ${project.status}`);
+        return res.status(400).json({
+          success: false,
+          message: "This project has already been submitted to the editor.",
+          alreadySubmitted: true,
+        });
+      }
+
       // Prepare update object
       const updateObject: any = {
         status,
