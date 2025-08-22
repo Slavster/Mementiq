@@ -3,8 +3,8 @@
  * This script tests the Trello API connection and basic functionality
  */
 
-const { trelloService } = require('./server/services/trello.js');
-const { trelloAutomation } = require('./server/services/trello-automation.js');
+import { trelloService } from './server/services/trello.js';
+import { trelloAutomation } from './server/services/trello-automation.js';
 
 async function testTrelloIntegration() {
   console.log('🧪 Testing Trello Integration...\n');
@@ -68,13 +68,11 @@ async function testTrelloIntegration() {
 }
 
 // Run the test
-if (require.main === module) {
-  testTrelloIntegration().then(() => {
-    process.exit(0);
-  }).catch((error) => {
-    console.error('Test script error:', error);
-    process.exit(1);
-  });
-}
+testTrelloIntegration().then(() => {
+  process.exit(0);
+}).catch((error) => {
+  console.error('Test script error:', error);
+  process.exit(1);
+});
 
-module.exports = { testTrelloIntegration };
+export { testTrelloIntegration };

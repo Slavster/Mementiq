@@ -31,9 +31,16 @@ export class TrelloService {
     this.apiKey = process.env.TRELLO_KEY || '';
     this.token = process.env.TRELLO_TOKEN || '';
     
+    console.log('Trello Service initialization:');
+    console.log('TRELLO_KEY configured:', !!this.apiKey);
+    console.log('TRELLO_TOKEN configured:', !!this.token);
+    
     if (!this.apiKey || !this.token) {
+      console.error('Missing Trello credentials - API Key:', !!this.apiKey, 'Token:', !!this.token);
       throw new Error('Trello API credentials not configured');
     }
+    
+    console.log('✅ Trello API credentials configured successfully');
   }
 
   private getAuthParams() {
