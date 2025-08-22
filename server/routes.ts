@@ -31,6 +31,8 @@ import {
   verifyFrameioUpload,
 } from "./frameioUpload";
 import { emailService } from "./emailService";
+import { trelloAutomation } from "./services/trello-automation";
+import { trelloService } from "./services/trello";
 import "./types"; // Import session types
 import Stripe from "stripe";
 import multer from "multer";
@@ -345,6 +347,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   status: "awaiting revision instructions",
                   updatedAt: new Date(),
                 });
+                
+                // Create Trello revision card after successful payment
+                try {
+                  const project = await storage.getProject(projectId);
+                  if (project) {
+                    await trelloAutomation.createRevisionCard(projectId, project.revisionCount + 1);
+                  }
+                } catch (error) {
+                  console.error('Failed to create Trello revision card:', error);
+                }
 
                 // Automatically generate review link after successful payment
                 try {
@@ -2024,6 +2036,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Trello Integration API Routes
+  
+  // Get Trello boards (for setup)
+  app.get("/api/trello/boards", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const boards = await trelloService.getBoards();
+      res.json({ success: true, boards });
+    } catch (error) {
+      console.error("Get Trello boards error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get Trello boards. Check your API credentials."
+      });
+    }
+  });
+
+  // Get board lists (for configuration)
+  app.get("/api/trello/boards/:boardId/lists", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { boardId } = req.params;
+      const lists = await trelloService.getBoardLists(boardId);
+      res.json({ success: true, lists });
+    } catch (error) {
+      console.error("Get board lists error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get board lists"
+      });
+    }
+  });
+
+  // Setup Trello configuration
+  app.post("/api/trello/config", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { boardId, todoListId, doneListId, revisionListId } = req.body;
+      
+      if (!boardId || !todoListId || !doneListId) {
+        return res.status(400).json({
+          success: false,
+          message: "Board ID, todo list ID, and done list ID are required"
+        });
+      }
+      
+      await trelloAutomation.setupTrelloConfig(boardId, todoListId, doneListId, revisionListId);
+      
+      res.json({
+        success: true,
+        message: "Trello configuration saved successfully"
+      });
+    } catch (error) {
+      console.error("Setup Trello config error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to setup Trello configuration"
+      });
+    }
+  });
+
+  // Get current Trello configuration
+  app.get("/api/trello/config", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const config = await trelloAutomation.getTrelloConfig();
+      res.json({ success: true, config });
+    } catch (error) {
+      console.error("Get Trello config error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get Trello configuration"
+      });
+    }
+  });
+
+  // Test Trello integration - create a test card
+  app.post("/api/trello/test", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const config = await trelloAutomation.getTrelloConfig();
+      if (!config) {
+        return res.status(400).json({
+          success: false,
+          message: "Trello not configured yet"
+        });
+      }
+
+      const testCard = await trelloService.createCard({
+        name: "Test Card - " + new Date().toLocaleString(),
+        desc: "This is a test card created by Mementiq integration",
+        idList: config.todoListId
+      });
+
+      res.json({
+        success: true,
+        message: "Test card created successfully",
+        cardId: testCard.id
+      });
+    } catch (error) {
+      console.error("Trello test error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create test card"
+      });
+    }
+  });
+
   // Revision API Routes
 
   // Generate media platform review link for revisions
@@ -2130,6 +2245,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedProject = await storage.updateProject(projectId, {
         status: 'revision in progress'
       });
+      
+      // Create Trello revision card
+      try {
+        await trelloAutomation.createRevisionCard(projectId, project.revisionCount + 1);
+      } catch (error) {
+        console.error('Failed to create Trello revision card:', error);
+      }
 
       // TODO: Send notification to editors about revision request
       // This could be an email to the editing team with:
@@ -3830,6 +3952,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update timestamp tracking for "edit in progress" status
       if (status === 'edit in progress') {
         await updateProjectTimestamp(projectId, "project sent to editor");
+        
+        // Create Trello card for project submission
+        try {
+          await trelloAutomation.createProjectCard(projectId);
+        } catch (error) {
+          console.error('Failed to create Trello card:', error);
+        }
       }
 
       res.json({

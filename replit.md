@@ -32,6 +32,8 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - `photo_files`: Tracks photo files associated with projects.
 - `project_status_log`: Audit trail for project status changes.
 - `revision_payments`: Tracks revision payments with Stripe session IDs.
+- `trello_cards`: Maps projects to Trello cards with card IDs, types (initial/revision), assigned editors, and completion tracking.
+- `trello_config`: Stores Trello board and list configuration for automation.
 
 ### Core Features
 - **User Authentication**: Supabase Auth integration for email/password and Google social login with JWT token-based API authentication.
@@ -49,8 +51,16 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
   - Step 3: Submit to Editor - Confirmation screen with warning text, checklist, and irreversible submission
   - Step 4: Video Ready (Placeholder) - For future implementation
   Navigation allows back/forward until submission, after which "Editor is on it" screen displays and status updates to "revision in progress".
+- **Trello Integration**: Comprehensive workflow automation that creates and manages Trello cards for project lifecycle tracking:
+  - Automatically creates initial project cards when submitted to editor with client info, Frame.io links, Tally form responses, and subscription details
+  - Moves cards to "Done" when videos are delivered (both initial and revision)
+  - Creates revision cards with original editor assignment inheritance and Frame.io review links
+  - Supports configurable board setup with separate lists for todo, done, and optionally revisions
+  - Includes project metadata storage (project ID, revision count, editor assignments) embedded in card descriptions
+  - All operations are one-way (app to Trello) to avoid webhook complexity and stay within free Trello plan limits
 
 ## Recent Changes
+- **2025-08-22**: Implemented comprehensive Trello integration for project workflow automation - Added complete Trello API service with board/list management, card creation/updates, and editor assignment tracking. Integrated automation triggers at key project lifecycle points: initial submission (creates project card with all client/project details), video delivery (moves cards to done), revision requests (creates revision cards with editor inheritance), and revision completion (marks revision cards done). Includes full API endpoints for Trello configuration, testing, and management. Database expanded with trello_cards and trello_config tables. System designed for one-way communication (app to Trello) to stay within free plan limits and avoid webhook complexity
 - **2025-08-21**: Implemented 30-day expiration for all Frame.io share links - All newly created share links now automatically expire after 30 days for enhanced security. Share creation process updated to include PATCH request setting expiration timestamp using ISO-8601 format
 - **2025-08-18**: Fixed revision submission flow - corrected apiRequest handling in RevisionModal.tsx to properly handle returned JSON data instead of treating it as Response object, resolving "undefined" errors during submission
 - **2025-08-18**: Improved revision workflow UX - step 3 ("Submit to Editor") now transforms in-place to show "Editor is on it!" confirmation screen without changing steps, then auto-closes after 3 seconds for seamless user experience

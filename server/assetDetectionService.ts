@@ -7,6 +7,7 @@
 import { storage } from './storage.js';
 import { frameioV4Service } from './frameioV4Service.js';
 import { emailService } from './emailService.js';
+import { trelloAutomation } from './services/trello-automation.js';
 
 class AssetDetectionService {
   private isRunning = false;
@@ -253,6 +254,17 @@ class AssetDetectionService {
         status: 'video is ready',
         updatedAt: new Date(),
       });
+
+      // Mark Trello card as complete
+      try {
+        if (result.isRevision) {
+          await trelloAutomation.markRevisionComplete(project.id, project.revisionCount);
+        } else {
+          await trelloAutomation.markProjectComplete(project.id);
+        }
+      } catch (error) {
+        console.error('Failed to update Trello card:', error);
+      }
 
       // Update timestamp
       const actionMessage = result.isRevision 
