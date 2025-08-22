@@ -28,8 +28,9 @@ Each Trello card includes:
 - **Client Information**: Name, email, company, subscription tier
 - **Project Details**: Title, status, revision count
 - **Frame.io Links**: Direct links to project folders and review links
-- **Tally Form Data**: Client instructions and requirements
-- **Timestamps**: Creation dates and status updates
+- **Tally Form Data**: Complete client instructions and requirements formatted as Q&A
+- **Timestamps**: Project creation date AND submission-to-editor date
+- **Professional Formatting**: Clear sections with emojis and organized layout
 
 ### 4. Enhanced Trello Service
 Added full API capabilities:
@@ -75,8 +76,10 @@ Added full API capabilities:
 ✅ **Board Access**: Can read your board lists and structure  
 ✅ **Card Creation**: Created test card successfully  
 ✅ **Configuration**: Board settings saved and loaded  
+✅ **Submission Dates**: Cards show both project creation and editor submission dates
+✅ **Tally Integration**: All form questions and answers formatted clearly
 
-Test card created: https://trello.com/c/MDMnqTjG
+Latest test card: https://trello.com/c/JqkU6lsq
 
 ## Next Steps
 

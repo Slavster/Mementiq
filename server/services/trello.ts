@@ -228,12 +228,15 @@ export class TrelloService {
     name: string;
     desc: string;
   } {
-    const creationDate = new Date().toLocaleDateString();
+    const creationDate = project.createdAt ? new Date(project.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
+    const submissionDate = project.submittedToEditorAt ? new Date(project.submittedToEditorAt).toLocaleDateString() : 'Not submitted yet';
     
     let description = `**Project ID:** ${project.id}
-**Client:** ${user.firstName} ${user.lastName}
+**Client:** ${user.firstName} ${user.lastName} (${user.email})
+**Company:** ${user.company || 'Not provided'}
 **Subscription:** ${subscription?.tier || 'Unknown'}
-**Created:** ${creationDate}
+**Project Created:** ${creationDate}
+**Submitted to Editor:** ${submissionDate}
 **Frame.io Link:** ${frameioLink}
 
 ---
@@ -284,19 +287,23 @@ export class TrelloService {
   formatRevisionCard(project: any, user: any, subscription: any, frameioLink: string, shareLink: string, revisionCount: number): {
     name: string;
     desc: string;
+    revisionRequestedAt?: Date;
   } {
-    const creationDate = new Date().toLocaleDateString();
+    const currentDate = new Date().toLocaleDateString();
+    const originalSubmissionDate = project.submittedToEditorAt ? new Date(project.submittedToEditorAt).toLocaleDateString() : 'Unknown';
     
     const description = `**Project ID:** ${project.id}
-**Client:** ${user.firstName} ${user.lastName}
+**Client:** ${user.firstName} ${user.lastName} (${user.email})
+**Company:** ${user.company || 'Not provided'}
 **Subscription:** ${subscription?.tier || 'Unknown'}
 **Revision #:** ${revisionCount}
-**Created:** ${creationDate}
+**Original Submitted:** ${originalSubmissionDate}
+**Revision Requested:** ${currentDate}
 **Frame.io Link:** ${frameioLink}
 **Review Link (for comments):** ${shareLink}
 
 ---
-**REVISION REQUEST**
+**🔄 REVISION REQUEST**
 Please review the comments in Frame.io and make the requested changes.
 `;
 
