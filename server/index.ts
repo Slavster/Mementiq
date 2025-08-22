@@ -128,19 +128,29 @@ app.use((req, res, next) => {
         console.error('❌ Failed to start asset detection service:', error);
       });
 
-      // Test Trello integration on startup
-      import('./services/trello.js').then(({ trelloService }) => {
-        console.log('🧪 Testing Trello integration on startup...');
-        trelloService.getBoards().then((boards) => {
-          console.log(`✅ Trello integration working! Found ${boards.length} boards`);
-          if (boards.length > 0) {
-            console.log('Available boards:', boards.map(b => b.name).join(', '));
-          }
-        }).catch(error => {
-          console.error('❌ Trello integration test failed:', error.message);
-        });
+      // Initialize Trello integration on startup
+      import('./services/trello-automation.js').then(({ trelloAutomation }) => {
+        console.log('🔧 Initializing Trello board configuration...');
+        
+        // Set up board configuration with your specific IDs
+        const BOARD_ID = 'kg3EFU40';
+        const TODO_LIST_ID = '684bff2e9e09bcad40e947dc'; // "New"
+        const DONE_LIST_ID = '684bff459668ae4a9c3eb454'; // "Done"
+        const REVISION_LIST_ID = '6853c0882efa9520206f6538'; // "Revision Requested"
+        
+        trelloAutomation.setupTrelloConfig(BOARD_ID, TODO_LIST_ID, DONE_LIST_ID, REVISION_LIST_ID)
+          .then(() => {
+            console.log('✅ Trello board configuration initialized successfully');
+            console.log(`   Board: kg3EFU40`);
+            console.log(`   Todo List: "New" (${TODO_LIST_ID})`);
+            console.log(`   Done List: "Done" (${DONE_LIST_ID})`);
+            console.log(`   Revision List: "Revision Requested" (${REVISION_LIST_ID})`);
+          })
+          .catch(error => {
+            console.error('❌ Failed to initialize Trello configuration:', error.message);
+          });
       }).catch(error => {
-        console.error('❌ Failed to load Trello service:', error);
+        console.error('❌ Failed to load Trello automation service:', error);
       });
     });
   } catch (error) {

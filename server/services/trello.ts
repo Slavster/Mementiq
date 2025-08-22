@@ -89,6 +89,63 @@ export class TrelloService {
     }
   }
 
+  // Move a card to a different list
+  async moveCard(cardId: string, listId: string): Promise<any> {
+    try {
+      const response = await axios.put(`${this.baseUrl}/cards/${cardId}/idList`, {
+        value: listId,
+        ...this.getAuthParams()
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error moving Trello card:', error);
+      throw error;
+    }
+  }
+
+  // Assign member to card
+  async assignMemberToCard(cardId: string, memberId: string): Promise<any> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/cards/${cardId}/idMembers`, {
+        value: memberId,
+        ...this.getAuthParams()
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error assigning member to Trello card:', error);
+      throw error;
+    }
+  }
+
+  // Add attachment (URL) to card
+  async addAttachmentToCard(cardId: string, url: string, name?: string): Promise<any> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/cards/${cardId}/attachments`, {
+        url,
+        name: name || url,
+        ...this.getAuthParams()
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding attachment to Trello card:', error);
+      throw error;
+    }
+  }
+
+  // Add comment to card
+  async addCommentToCard(cardId: string, text: string): Promise<any> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/cards/${cardId}/actions/comments`, {
+        text,
+        ...this.getAuthParams()
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding comment to Trello card:', error);
+      throw error;
+    }
+  }
+
   // Create a new card
   async createCard(data: {
     name: string;

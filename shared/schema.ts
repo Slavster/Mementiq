@@ -38,6 +38,8 @@ export const projects = pgTable("projects", {
   frameioVideoFileType: text("frameio_video_file_type"), // MIME type of the video
   frameioVideoAssetId: text("frameio_video_asset_id"), // Asset ID of the video in Frame.io
   revisionCount: integer("revision_count").default(0), // Number of revisions requested for this project
+  trelloCardId: text("trello_card_id"), // Initial project card ID in Trello
+  trelloRevisionCardId: text("trello_revision_card_id"), // Current revision card ID in Trello
   uploadSizeLimit: bigint("upload_size_limit", { mode: "number" }).default(10737418240), // 10GB default
   currentUploadSize: bigint("current_upload_size", { mode: "number" }).default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
