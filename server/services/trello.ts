@@ -22,6 +22,12 @@ interface TrelloMember {
   username: string;
 }
 
+interface TrelloLabel {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export class TrelloService {
   private apiKey: string;
   private token: string;
@@ -85,6 +91,35 @@ export class TrelloService {
       return response.data;
     } catch (error) {
       console.error('Error fetching board members:', error);
+      throw error;
+    }
+  }
+
+  // Get board labels
+  async getBoardLabels(boardId: string): Promise<TrelloLabel[]> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/boards/${boardId}/labels`, {
+        params: this.getAuthParams()
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching board labels:', error);
+      throw error;
+    }
+  }
+
+  // Create a label on the board
+  async createLabel(boardId: string, name: string, color: string): Promise<TrelloLabel> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/labels`, {
+        name,
+        color,
+        idBoard: boardId,
+        ...this.getAuthParams()
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating Trello label:', error);
       throw error;
     }
   }
@@ -154,6 +189,7 @@ export class TrelloService {
     idMembers?: string[];
     start?: string; // Start date in ISO format
     due?: string; // Due date in ISO format
+    idLabels?: string[]; // Label IDs to apply to the card
   }): Promise<TrelloCard> {
     try {
       const response = await axios.post(`${this.baseUrl}/cards`, {
@@ -253,17 +289,55 @@ export class TrelloService {
     return dueDate;
   }
 
+  // Get subscription label ID (creates if doesn't exist)
+  async getSubscriptionLabelId(boardId: string, subscriptionTier: string): Promise<string | null> {
+    try {
+      // Get existing labels
+      const labels = await this.getBoardLabels(boardId);
+      
+      // Check if subscription tier label already exists
+      const existingLabel = labels.find(label => 
+        label.name.toLowerCase() === subscriptionTier.toLowerCase()
+      );
+      
+      if (existingLabel) {
+        return existingLabel.id;
+      }
+      
+      // Create new label with appropriate color
+      let color = 'blue'; // Default
+      switch (subscriptionTier.toLowerCase()) {
+        case 'growth accelerator':
+          color = 'orange'; // Premium tier - orange
+          break;
+        case 'consistency club':
+          color = 'green'; // Mid tier - green
+          break;
+        case 'creative spark':
+          color = 'blue'; // Basic tier - blue
+          break;
+      }
+      
+      const newLabel = await this.createLabel(boardId, subscriptionTier, color);
+      console.log(`✅ Created subscription label: ${subscriptionTier} (${color})`);
+      return newLabel.id;
+    } catch (error) {
+      console.error('Error managing subscription label:', error);
+      return null;
+    }
+  }
+
   // Format project data for Trello card
   formatProjectCard(project: any, user: any, subscription: any, frameioLink: string, tallyData?: any): {
     name: string;
     desc: string;
     start?: string; // ISO date string for Trello start date (submission date)
     due?: string; // ISO date string for Trello due date (based on subscription)
+    subscriptionTier?: string; // For label creation
   } {
     let description = `**Project ID:** ${project.id}
 **Client:** ${user.firstName} ${user.lastName} (${user.email})
 **Company:** ${user.company || 'Not provided'}
-**Subscription:** ${subscription?.tier || 'Unknown'}
 **Frame.io Link:** ${frameioLink}
 
 ---
@@ -318,7 +392,8 @@ export class TrelloService {
       name: `${project.title} - ${user.firstName}`,
       desc: description,
       start: startDate,
-      due: dueDate
+      due: dueDate,
+      subscriptionTier: subscription?.tier
     };
   }
 
@@ -328,11 +403,11 @@ export class TrelloService {
     desc: string;
     start?: string; // ISO date string for Trello start date (revision request date)
     due?: string; // ISO date string for Trello due date (48 hours from request)
+    subscriptionTier?: string; // For label creation
   } {
     const description = `**Project ID:** ${project.id}
 **Client:** ${user.firstName} ${user.lastName} (${user.email})
 **Company:** ${user.company || 'Not provided'}
-**Subscription:** ${subscription?.tier || 'Unknown'}
 **Revision #:** ${revisionCount}
 **Frame.io Link:** ${frameioLink}
 **Review Link (for comments):** ${shareLink}
@@ -351,7 +426,8 @@ Please review the comments in Frame.io and make the requested changes.
       name: `REVISION: ${project.title} - ${user.firstName} (Rev #${revisionCount})`,
       desc: description,
       start: startDate,
-      due: dueDate
+      due: dueDate,
+      subscriptionTier: subscription?.tier
     };
   }
 }

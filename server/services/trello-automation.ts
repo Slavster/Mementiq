@@ -119,13 +119,23 @@ export class TrelloAutomationService {
         parsedTallyData
       );
 
-      // Create the Trello card with dates
+      // Get subscription label ID
+      let labelIds: string[] = [];
+      if (cardData.subscriptionTier) {
+        const labelId = await trelloService.getSubscriptionLabelId(config.boardId, cardData.subscriptionTier);
+        if (labelId) {
+          labelIds.push(labelId);
+        }
+      }
+
+      // Create the Trello card with dates and labels
       const card = await trelloService.createCard({
         name: cardData.name,
         desc: cardData.desc,
         idList: config.todoListId,
         start: cardData.start,
-        due: cardData.due
+        due: cardData.due,
+        idLabels: labelIds
       });
 
       // Store the card reference in database
@@ -254,13 +264,23 @@ export class TrelloAutomationService {
       // Determine which list to use
       const listId = config.revisionListId || config.todoListId;
 
+      // Get subscription label ID
+      let labelIds: string[] = [];
+      if (cardData.subscriptionTier) {
+        const labelId = await trelloService.getSubscriptionLabelId(config.boardId, cardData.subscriptionTier);
+        if (labelId) {
+          labelIds.push(labelId);
+        }
+      }
+
       // Create the revision card
       const cardCreateData: any = {
         name: cardData.name,
         desc: cardData.desc,
         idList: listId,
         start: cardData.start,
-        due: cardData.due
+        due: cardData.due,
+        idLabels: labelIds
       };
 
       // Add assigned editor if we have one
