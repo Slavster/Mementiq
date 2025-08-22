@@ -126,62 +126,77 @@ async function testTallyTrelloIntegration() {
       "contact_preference": "Email preferred, but phone OK for urgent matters"
     };
 
-    // Sample project and user data with submission dates
-    const sampleProject = {
-      id: 999,
-      title: "Acme Corp Training Video",
-      status: "edit in progress",
-      createdAt: new Date('2025-08-20T10:30:00Z'), // Project created 2 days ago
-      submittedToEditorAt: new Date('2025-08-21T14:45:00Z') // Submitted to editor yesterday
-    };
+    // Test different subscription tiers
+    const subscriptionTiers = [
+      { name: "Growth Accelerator", tier: "Growth Accelerator", hours: 48 },
+      { name: "Consistency Club", tier: "Consistency Club", days: 4 },
+      { name: "Creative Spark", tier: "Creative Spark", days: 7 }
+    ];
 
-    const sampleUser = {
-      firstName: "Sarah",
-      lastName: "Johnson", 
-      email: "sarah.johnson@acmecorp.com",
-      company: "Acme Corporation"
-    };
+    console.log('Testing subscription-based due dates:\n');
 
-    const sampleSubscription = {
-      tier: "Pro"
-    };
+    for (const subscription of subscriptionTiers) {
+      // Sample project and user data with submission dates
+      const sampleProject = {
+        id: 999 + subscriptionTiers.indexOf(subscription),
+        title: `${subscription.name} Video Project`,
+        status: "edit in progress",
+        createdAt: new Date('2025-08-20T10:30:00Z'),
+        submittedToEditorAt: new Date('2025-08-21T14:45:00Z') // Submitted yesterday at 2:45 PM
+      };
+
+      const sampleUser = {
+        firstName: "Sarah",
+        lastName: "Johnson", 
+        email: "sarah.johnson@acmecorp.com",
+        company: "Acme Corporation"
+      };
+
+      console.log(`📊 ${subscription.name} Subscription:`);
+      if (subscription.hours) {
+        console.log(`   Turnaround: ${subscription.hours} hours`);
+      } else {
+        console.log(`   Turnaround: ${subscription.days} days`);
+      }
 
     const frameioLink = "https://app.frame.io/library/abc123-test-folder";
 
-    console.log('1. Formatting Tally data for Trello card...');
-    
-    // Format the card using the enhanced formatting
-    const cardData = trelloClient.formatProjectCard(
-      sampleProject,
-      sampleUser, 
-      sampleSubscription,
-      frameioLink,
-      sampleTallyData
-    );
+      // Format the card using the enhanced formatting
+      const cardData = trelloClient.formatProjectCard(
+        sampleProject,
+        sampleUser, 
+        subscription,
+        frameioLink,
+        sampleTallyData
+      );
 
-    console.log('✅ Card formatted successfully');
-    console.log('\n2. Card content preview:');
-    console.log('='.repeat(60));
-    console.log(`TITLE: ${cardData.name}`);
-    console.log('='.repeat(60));
-    console.log(cardData.desc);
-    console.log('='.repeat(60));
+      console.log(`   Start Date: ${cardData.start ? new Date(cardData.start).toLocaleString() : 'Not set'}`);
+      console.log(`   Due Date: ${cardData.due ? new Date(cardData.due).toLocaleString() : 'Not set'}`);
+      
+      if (cardData.start && cardData.due) {
+        const startDate = new Date(cardData.start);
+        const dueDate = new Date(cardData.due);
+        const diffHours = (dueDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+        const diffDays = Math.round(diffHours / 24 * 10) / 10;
+        console.log(`   Calculated Turnaround: ${diffDays} days (${Math.round(diffHours)} hours)`);
+      }
 
-    // Create the actual Trello card
-    console.log('\n3. Creating test card in Trello...');
+      // Create test card for this subscription tier
+      console.log(`   Creating test card...`);
     
-    const TODO_LIST_ID = '684bff2e9e09bcad40e947dc'; // "New" list
-    
-    const card = await trelloClient.createCard({
-      name: `🧪 SUBMISSION DATE TEST - ${cardData.name}`,
-      desc: cardData.desc,
-      idList: TODO_LIST_ID
-    });
+      const TODO_LIST_ID = '684bff2e9e09bcad40e947dc'; // "New" list
+      
+      const card = await trelloClient.createCard({
+        name: `🧪 ${subscription.name.toUpperCase()} TEST - ${cardData.name}`,
+        desc: cardData.desc,
+        idList: TODO_LIST_ID,
+        start: cardData.start,
+        due: cardData.due
+      });
 
-    console.log(`✅ Test card created successfully!`);
-    console.log(`   Card ID: ${card.id}`);
-    console.log(`   Card URL: https://trello.com/c/${card.shortLink}`);
-    console.log(`   List: "New" (TODO)`);
+      console.log(`   ✅ Card created: https://trello.com/c/${card.shortLink}`);
+      console.log(`   📅 Dates set in Trello with ${subscription.name} turnaround`);
+      console.log('');
 
     // Add Frame.io link as attachment for better visibility
     console.log('\n4. Adding Frame.io link as attachment...');
