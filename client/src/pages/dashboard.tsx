@@ -1310,25 +1310,27 @@ export default function DashboardPage() {
                 <div className="flex-1 h-px bg-gray-600 mx-2" />
                 <div
                   className={`flex items-center gap-2 ${
-                    currentStep === "confirmation" 
-                      ? "text-[#2abdee]" 
-                      : (selectedProject.status.toLowerCase() === "edit in progress" || 
-                         selectedProject.status.toLowerCase() === "video is ready" ||
-                         selectedProject.status.toLowerCase() === "delivered" ||
-                         selectedProject.status.toLowerCase() === "complete")
-                        ? "text-lime-400" 
+                    // Show as completed (green) if project has been submitted
+                    (selectedProject.status.toLowerCase() === "edit in progress" || 
+                     selectedProject.status.toLowerCase() === "video is ready" ||
+                     selectedProject.status.toLowerCase() === "delivered" ||
+                     selectedProject.status.toLowerCase() === "complete")
+                      ? "text-lime-400" 
+                      : currentStep === "confirmation" 
+                        ? "text-[#2abdee]" 
                         : "text-gray-400"
                   }`}
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                      currentStep === "confirmation" 
-                        ? "bg-[#2abdee] text-white" 
-                        : (selectedProject.status.toLowerCase() === "edit in progress" || 
-                           selectedProject.status.toLowerCase() === "video is ready" ||
-                           selectedProject.status.toLowerCase() === "delivered" ||
-                           selectedProject.status.toLowerCase() === "complete")
-                          ? "bg-neon-green text-black" 
+                      // Show as completed (green) if project has been submitted
+                      (selectedProject.status.toLowerCase() === "edit in progress" || 
+                       selectedProject.status.toLowerCase() === "video is ready" ||
+                       selectedProject.status.toLowerCase() === "delivered" ||
+                       selectedProject.status.toLowerCase() === "complete")
+                        ? "bg-neon-green text-black" 
+                        : currentStep === "confirmation" 
+                          ? "bg-[#2abdee] text-white" 
                           : "bg-gray-600"
                     }`}
                   >
