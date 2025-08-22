@@ -468,6 +468,21 @@ export default function DashboardPage() {
         setShowSendToEditorDialog(false);
         setPendingProject(null);
         setSendToEditorConfirmationStep(1);
+      } else if (data.alreadySubmitted) {
+        // Handle duplicate submission
+        toast({
+          title: "Already Submitted",
+          description: "This project has already been sent to the editor.",
+          variant: "destructive",
+        });
+        
+        // Close dialog and update UI to reflect current status
+        setShowSendToEditorDialog(false);
+        setPendingProject(null);
+        setSendToEditorConfirmationStep(1);
+        
+        // Refresh projects to ensure we have latest status
+        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       } else {
         toast({
           title: "Failed to send project",
