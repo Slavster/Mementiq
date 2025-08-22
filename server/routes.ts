@@ -33,6 +33,7 @@ import {
 import { emailService } from "./emailService";
 import { trelloAutomation } from "./services/trello-automation";
 import { trelloService } from "./services/trello";
+import { trelloWebhookService, type TrelloWebhookPayload } from "./services/trello-webhook";
 import "./types"; // Import session types
 import Stripe from "stripe";
 import multer from "multer";
@@ -2157,6 +2158,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: "Failed to connect to Trello",
         error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Trello Webhook Routes
+
+  // Webhook endpoint for Trello events (HEAD request for validation)
+  app.head("/api/trello/webhook", (req, res) => {
+    console.log("🔍 Trello webhook HEAD validation request received");
+    res.status(200).send();
+  });
+
+  // Webhook endpoint for Trello events (POST request for actual webhooks)
+  app.post("/api/trello/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
+    try {
+      const signature = req.headers['x-trello-webhook'] as string;
+      const callbackUrl = `${req.protocol}://${req.get('host')}/api/trello/webhook`;
+      const body = req.body.toString('utf8');
+
+      console.log("🔔 Trello webhook received");
+      console.log("Headers:", req.headers);
+      
+      if (!signature) {
+        console.log("❌ Missing webhook signature");
+        return res.status(400).json({ success: false, message: "Missing signature" });
+      }
+
+      // Verify webhook signature
+      const isValid = trelloWebhookService.verifyWebhookSignature(body, callbackUrl, signature);
+      if (!isValid) {
+        console.log("❌ Invalid webhook signature");
+        return res.status(403).json({ success: false, message: "Invalid signature" });
+      }
+
+      console.log("✅ Webhook signature verified");
+
+      // Parse and process webhook payload
+      const payload: TrelloWebhookPayload = JSON.parse(body);
+      console.log("📋 Webhook action:", payload.action?.type);
+      
+      const processed = await trelloWebhookService.processWebhook(payload);
+      
+      if (processed) {
+        res.status(200).json({ success: true, message: "Webhook processed" });
+      } else {
+        res.status(400).json({ success: false, message: "Failed to process webhook" });
+      }
+    } catch (error) {
+      console.error("❌ Webhook processing error:", error);
+      res.status(500).json({ success: false, message: "Webhook processing failed" });
+    }
+  });
+
+  // Create webhook for a board
+  app.post("/api/trello/webhook/create", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { boardId } = req.body;
+      
+      if (!boardId) {
+        return res.status(400).json({
+          success: false,
+          message: "Board ID is required"
+        });
+      }
+
+      const callbackUrl = `${req.protocol}://${req.get('host')}/api/trello/webhook`;
+      const webhookId = await trelloWebhookService.createWebhook(boardId, callbackUrl);
+      
+      if (webhookId) {
+        res.json({
+          success: true,
+          message: "Webhook created successfully",
+          webhookId: webhookId,
+          callbackUrl: callbackUrl
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: "Failed to create webhook"
+        });
+      }
+    } catch (error) {
+      console.error("Create webhook error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create webhook"
+      });
+    }
+  });
+
+  // Get active webhooks
+  app.get("/api/trello/webhooks", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const webhooks = await trelloWebhookService.getActiveWebhooks();
+      res.json({ success: true, webhooks });
+    } catch (error) {
+      console.error("Get webhooks error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get webhooks"
+      });
+    }
+  });
+
+  // Delete webhook
+  app.delete("/api/trello/webhooks/:webhookId", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { webhookId } = req.params;
+      const success = await trelloWebhookService.deleteWebhook(webhookId);
+      
+      if (success) {
+        res.json({ success: true, message: "Webhook deleted successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to delete webhook" });
+      }
+    } catch (error) {
+      console.error("Delete webhook error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete webhook"
+      });
+    }
+  });
+
+  // Editor Management Routes
+
+  // Add or update editor mapping
+  app.post("/api/trello/editors", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { trelloMemberId, editorName, editorEmail } = req.body;
+      
+      if (!trelloMemberId || !editorName) {
+        return res.status(400).json({
+          success: false,
+          message: "Trello member ID and editor name are required"
+        });
+      }
+
+      const success = await trelloWebhookService.addEditor(trelloMemberId, editorName, editorEmail);
+      
+      if (success) {
+        res.json({ success: true, message: "Editor mapping added/updated successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to add/update editor mapping" });
+      }
+    } catch (error) {
+      console.error("Add editor error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to add/update editor mapping"
+      });
+    }
+  });
+
+  // Get active editors
+  app.get("/api/trello/editors", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const editors = await trelloWebhookService.getActiveEditors();
+      res.json({ success: true, editors });
+    } catch (error) {
+      console.error("Get editors error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get editors"
       });
     }
   });
