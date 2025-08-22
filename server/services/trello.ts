@@ -227,16 +227,12 @@ export class TrelloService {
   formatProjectCard(project: any, user: any, subscription: any, frameioLink: string, tallyData?: any): {
     name: string;
     desc: string;
+    due?: string; // ISO date string for Trello due date
   } {
-    const creationDate = project.createdAt ? new Date(project.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
-    const submissionDate = project.submittedToEditorAt ? new Date(project.submittedToEditorAt).toLocaleDateString() : 'Not submitted yet';
-    
     let description = `**Project ID:** ${project.id}
 **Client:** ${user.firstName} ${user.lastName} (${user.email})
 **Company:** ${user.company || 'Not provided'}
 **Subscription:** ${subscription?.tier || 'Unknown'}
-**Project Created:** ${creationDate}
-**Submitted to Editor:** ${submissionDate}
 **Frame.io Link:** ${frameioLink}
 
 ---
@@ -277,9 +273,13 @@ export class TrelloService {
       description += `---\n\n`;
     }
 
+    // Use submission date as due date if available
+    const dueDate = project.submittedToEditorAt ? new Date(project.submittedToEditorAt).toISOString() : undefined;
+    
     return {
       name: `${project.title} - ${user.firstName}`,
-      desc: description
+      desc: description,
+      due: dueDate
     };
   }
 
@@ -287,18 +287,13 @@ export class TrelloService {
   formatRevisionCard(project: any, user: any, subscription: any, frameioLink: string, shareLink: string, revisionCount: number): {
     name: string;
     desc: string;
-    revisionRequestedAt?: Date;
+    due?: string; // ISO date string for Trello due date
   } {
-    const currentDate = new Date().toLocaleDateString();
-    const originalSubmissionDate = project.submittedToEditorAt ? new Date(project.submittedToEditorAt).toLocaleDateString() : 'Unknown';
-    
     const description = `**Project ID:** ${project.id}
 **Client:** ${user.firstName} ${user.lastName} (${user.email})
 **Company:** ${user.company || 'Not provided'}
 **Subscription:** ${subscription?.tier || 'Unknown'}
 **Revision #:** ${revisionCount}
-**Original Submitted:** ${originalSubmissionDate}
-**Revision Requested:** ${currentDate}
 **Frame.io Link:** ${frameioLink}
 **Review Link (for comments):** ${shareLink}
 
