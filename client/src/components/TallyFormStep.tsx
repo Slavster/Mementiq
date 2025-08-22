@@ -268,6 +268,13 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   return (
     <Card className="w-full">
       <CardHeader className="text-center">
+        {/* Back button - show at the top left */}
+        {backToUploadButton && (
+          <div className="flex justify-start mb-4">
+            {backToUploadButton}
+          </div>
+        )}
+        
         <CardTitle className="flex items-center justify-center gap-2">
           <FileText className="h-5 w-5" />
           {hasExistingSubmission
