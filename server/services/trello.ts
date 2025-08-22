@@ -239,13 +239,39 @@ export class TrelloService {
 ---
 `;
 
-    if (tallyData && tallyData.fields) {
-      description += `**Project Instructions:**\n`;
-      tallyData.fields.forEach((field: any) => {
-        if (field.label && field.value) {
-          description += `**${field.label}:** ${field.value}\n`;
-        }
-      });
+    if (tallyData) {
+      description += `**📋 CLIENT REQUIREMENTS & INSTRUCTIONS:**\n\n`;
+      
+      // Handle different Tally data formats
+      if (tallyData.fields && Array.isArray(tallyData.fields)) {
+        // Format: { fields: [{ label, value }] }
+        tallyData.fields.forEach((field: any) => {
+          if (field.label && field.value) {
+            description += `**Q: ${field.label}**\n`;
+            description += `A: ${field.value}\n\n`;
+          }
+        });
+      } else if (typeof tallyData === 'object') {
+        // Format: Direct object with key-value pairs
+        Object.keys(tallyData).forEach((key) => {
+          const value = tallyData[key];
+          if (value && key !== 'submissionId' && key !== 'createdAt') {
+            // Format field names (remove underscores, capitalize)
+            const formattedKey = key
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (l: string) => l.toUpperCase());
+            
+            description += `**Q: ${formattedKey}**\n`;
+            if (typeof value === 'object') {
+              description += `A: ${JSON.stringify(value, null, 2)}\n\n`;
+            } else {
+              description += `A: ${value}\n\n`;
+            }
+          }
+        });
+      }
+      
+      description += `---\n\n`;
     }
 
     return {
