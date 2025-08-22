@@ -52,6 +52,7 @@ import {
   Eye,
   ExternalLink,
   RotateCcw,
+  ArrowLeft,
 } from "lucide-react";
 
 import TallyFormStep from "@/components/TallyFormStep";
@@ -1372,6 +1373,21 @@ export default function DashboardPage() {
                 />
               ) : currentStep === "confirmation" ? (
                 <div className="space-y-4">
+                  {/* Back to Previous Step Button - only show before submission */}
+                  {selectedProject.status.toLowerCase() !== "edit in progress" &&
+                   selectedProject.status.toLowerCase() !== "video is ready" && (
+                    <div className="flex justify-start mb-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep("form")}
+                        className="text-white border-gray-600 hover:bg-gray-700"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Instructions
+                      </Button>
+                    </div>
+                  )}
+                  
                   <Card className="bg-green-500/10 border-green-500/30">
                     <CardContent className="p-6 text-center">
                       <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
@@ -1391,7 +1407,7 @@ export default function DashboardPage() {
                         {selectedProject.status.toLowerCase() ===
                         "edit in progress"
                           ? "Your project is being worked on by an editor 🎉\n You can't upload more footage now, but you can update your instructions if needed."
-                          : "Everything looks in order, nice!\n You can send it off to an editor now or upload additional footage / new instructions."}
+                          : "Everything looks in order, nice!\n You can send it off to an editor now or need to make changes?"}
                       </p>
                       <div className="flex gap-4 justify-center">
                         {selectedProject.status.toLowerCase() ===
@@ -1405,13 +1421,22 @@ export default function DashboardPage() {
                           </Button>
                         ) : (
                           <>
-                            <Button
-                              variant="outline"
-                              onClick={() => setCurrentStep("upload")}
-                              className="text-white border-gray-600 hover:bg-gray-700"
-                            >
-                              ← Back to Upload
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => setCurrentStep("upload")}
+                                className="text-white border-gray-600 hover:bg-gray-700"
+                              >
+                                Add More Footage
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setCurrentStep("form")}
+                                className="text-white border-gray-600 hover:bg-gray-700"
+                              >
+                                Edit Instructions
+                              </Button>
+                            </div>
                             <Button
                               onClick={() => {
                                 setPendingProject(selectedProject);
