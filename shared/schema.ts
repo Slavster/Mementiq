@@ -157,6 +157,31 @@ export const frameioShareAssets = pgTable("frameio_share_assets", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Trello integration tracking
+export const trelloCards = pgTable("trello_cards", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  cardId: text("card_id").notNull(), // Trello card ID
+  cardType: text("card_type").notNull(), // 'initial' or 'revision'
+  revisionNumber: integer("revision_number").default(0), // 0 for initial, 1+ for revisions
+  boardId: text("board_id").notNull(),
+  listId: text("list_id").notNull(), // Current list ID
+  assignedEditorId: text("assigned_editor_id"), // Trello member ID of assigned editor
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"), // When moved to done
+});
+
+// Trello configuration
+export const trelloConfig = pgTable("trello_config", {
+  id: serial("id").primaryKey(),
+  boardId: text("board_id").notNull(),
+  todoListId: text("todo_list_id").notNull(), // List for new projects/revisions
+  doneListId: text("done_list_id").notNull(), // List for completed items
+  revisionListId: text("revision_list_id"), // Optional separate list for revisions
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -292,3 +317,28 @@ export type InsertRevisionPayment = z.infer<typeof insertRevisionPaymentSchema>;
 
 export type FrameioShareAsset = typeof frameioShareAssets.$inferSelect;
 export type InsertFrameioShareAsset = z.infer<typeof insertFrameioShareAssetSchema>;
+
+// Trello card schemas
+export const insertTrelloCardSchema = createInsertSchema(trelloCards).pick({
+  projectId: true,
+  cardId: true,
+  cardType: true,
+  revisionNumber: true,
+  boardId: true,
+  listId: true,
+  assignedEditorId: true,
+});
+
+export type TrelloCard = typeof trelloCards.$inferSelect;
+export type InsertTrelloCard = z.infer<typeof insertTrelloCardSchema>;
+
+// Trello config schemas
+export const insertTrelloConfigSchema = createInsertSchema(trelloConfig).pick({
+  boardId: true,
+  todoListId: true,
+  doneListId: true,
+  revisionListId: true,
+});
+
+export type TrelloConfig = typeof trelloConfig.$inferSelect;
+export type InsertTrelloConfig = z.infer<typeof insertTrelloConfigSchema>;
