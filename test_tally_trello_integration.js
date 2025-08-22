@@ -50,12 +50,15 @@ class TrelloTestClient {
   }
 
   formatProjectCard(project, user, subscription, frameioLink, tallyData) {
-    const creationDate = new Date().toLocaleDateString();
+    const creationDate = project.createdAt ? new Date(project.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
+    const submissionDate = project.submittedToEditorAt ? new Date(project.submittedToEditorAt).toLocaleDateString() : 'Not submitted yet';
     
     let description = `**Project ID:** ${project.id}
-**Client:** ${user.firstName} ${user.lastName}
+**Client:** ${user.firstName} ${user.lastName} (${user.email})
+**Company:** ${user.company || 'Not provided'}
 **Subscription:** ${subscription?.tier || 'Unknown'}
-**Created:** ${creationDate}
+**Project Created:** ${creationDate}
+**Submitted to Editor:** ${submissionDate}
 **Frame.io Link:** ${frameioLink}
 
 ---
@@ -123,11 +126,13 @@ async function testTallyTrelloIntegration() {
       "contact_preference": "Email preferred, but phone OK for urgent matters"
     };
 
-    // Sample project and user data
+    // Sample project and user data with submission dates
     const sampleProject = {
       id: 999,
       title: "Acme Corp Training Video",
-      status: "edit in progress"
+      status: "edit in progress",
+      createdAt: new Date('2025-08-20T10:30:00Z'), // Project created 2 days ago
+      submittedToEditorAt: new Date('2025-08-21T14:45:00Z') // Submitted to editor yesterday
     };
 
     const sampleUser = {
@@ -168,7 +173,7 @@ async function testTallyTrelloIntegration() {
     const TODO_LIST_ID = '684bff2e9e09bcad40e947dc'; // "New" list
     
     const card = await trelloClient.createCard({
-      name: `🧪 TALLY TEST - ${cardData.name}`,
+      name: `🧪 SUBMISSION DATE TEST - ${cardData.name}`,
       desc: cardData.desc,
       idList: TODO_LIST_ID
     });
@@ -190,18 +195,22 @@ async function testTallyTrelloIntegration() {
     // Add a comment with additional context
     console.log('\n5. Adding context comment...');
     try {
-      const comment = `This is a test card demonstrating Tally form integration. 
+      const comment = `This is a test card demonstrating enhanced Trello integration with submission dates.
 
-All client requirements and form responses are now included in the card description with proper Q&A formatting.
-
-The card includes:
-✓ Client information
-✓ Project details  
+The card now includes:
+✓ Client information (with email and company)
+✓ Project creation date (when project was first created)
+✓ Submission date (when submitted to editor)
 ✓ All Tally form questions and answers
 ✓ Frame.io project link
 ✓ Subscription tier info
 
-Ready for editor assignment and project workflow!`;
+This helps editors track:
+- How long ago the project was submitted
+- Project timeline and urgency
+- Complete client context for better service
+
+Ready for editor assignment and workflow tracking!`;
       
       await trelloClient.addCommentToCard(card.id, comment);
       console.log('✅ Context comment added');
