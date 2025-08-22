@@ -119,11 +119,13 @@ export class TrelloAutomationService {
         parsedTallyData
       );
 
-      // Create the Trello card
+      // Create the Trello card with dates
       const card = await trelloService.createCard({
         name: cardData.name,
         desc: cardData.desc,
-        idList: config.todoListId
+        idList: config.todoListId,
+        start: cardData.start,
+        due: cardData.due
       });
 
       // Store the card reference in database
@@ -256,7 +258,9 @@ export class TrelloAutomationService {
       const cardCreateData: any = {
         name: cardData.name,
         desc: cardData.desc,
-        idList: listId
+        idList: listId,
+        start: cardData.start,
+        due: cardData.due
       };
 
       // Add assigned editor if we have one

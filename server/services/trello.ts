@@ -152,7 +152,8 @@ export class TrelloService {
     desc: string;
     idList: string;
     idMembers?: string[];
-    due?: string;
+    start?: string; // Start date in ISO format
+    due?: string; // Due date in ISO format
   }): Promise<TrelloCard> {
     try {
       const response = await axios.post(`${this.baseUrl}/cards`, {
@@ -223,11 +224,41 @@ export class TrelloService {
     return this.updateCard(cardId, { idList: doneListId });
   }
 
+  // Calculate due date based on subscription tier
+  calculateDueDate(submissionDate: Date, subscriptionTier: string, isRevision = false): Date {
+    const dueDate = new Date(submissionDate);
+    
+    if (isRevision) {
+      // All revisions have 48 hour turnaround
+      dueDate.setHours(dueDate.getHours() + 48);
+    } else {
+      // Initial video submission due dates by tier
+      switch (subscriptionTier?.toLowerCase()) {
+        case 'growth accelerator':
+          dueDate.setHours(dueDate.getHours() + 48); // 48 hours
+          break;
+        case 'consistency club':
+          dueDate.setDate(dueDate.getDate() + 4); // 4 days
+          break;
+        case 'creative spark':
+          dueDate.setDate(dueDate.getDate() + 7); // 7 days
+          break;
+        default:
+          // Default to 7 days for unknown tiers
+          dueDate.setDate(dueDate.getDate() + 7);
+          break;
+      }
+    }
+    
+    return dueDate;
+  }
+
   // Format project data for Trello card
   formatProjectCard(project: any, user: any, subscription: any, frameioLink: string, tallyData?: any): {
     name: string;
     desc: string;
-    due?: string; // ISO date string for Trello due date
+    start?: string; // ISO date string for Trello start date (submission date)
+    due?: string; // ISO date string for Trello due date (based on subscription)
   } {
     let description = `**Project ID:** ${project.id}
 **Client:** ${user.firstName} ${user.lastName} (${user.email})
@@ -273,12 +304,20 @@ export class TrelloService {
       description += `---\n\n`;
     }
 
-    // Use submission date as due date if available
-    const dueDate = project.submittedToEditorAt ? new Date(project.submittedToEditorAt).toISOString() : undefined;
+    // Calculate dates if project was submitted
+    let startDate: string | undefined;
+    let dueDate: string | undefined;
+    
+    if (project.submittedToEditorAt) {
+      const submissionDate = new Date(project.submittedToEditorAt);
+      startDate = submissionDate.toISOString();
+      dueDate = this.calculateDueDate(submissionDate, subscription?.tier, false).toISOString();
+    }
     
     return {
       name: `${project.title} - ${user.firstName}`,
       desc: description,
+      start: startDate,
       due: dueDate
     };
   }
@@ -287,7 +326,8 @@ export class TrelloService {
   formatRevisionCard(project: any, user: any, subscription: any, frameioLink: string, shareLink: string, revisionCount: number): {
     name: string;
     desc: string;
-    due?: string; // ISO date string for Trello due date
+    start?: string; // ISO date string for Trello start date (revision request date)
+    due?: string; // ISO date string for Trello due date (48 hours from request)
   } {
     const description = `**Project ID:** ${project.id}
 **Client:** ${user.firstName} ${user.lastName} (${user.email})
@@ -302,9 +342,16 @@ export class TrelloService {
 Please review the comments in Frame.io and make the requested changes.
 `;
 
+    // Calculate dates for revision (start = now, due = 48 hours from now)
+    const revisionRequestDate = new Date();
+    const startDate = revisionRequestDate.toISOString();
+    const dueDate = this.calculateDueDate(revisionRequestDate, subscription?.tier, true).toISOString();
+
     return {
       name: `REVISION: ${project.title} - ${user.firstName} (Rev #${revisionCount})`,
-      desc: description
+      desc: description,
+      start: startDate,
+      due: dueDate
     };
   }
 }
