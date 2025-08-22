@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, bigint, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, bigint, varchar, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -182,6 +182,27 @@ export const trelloConfig = pgTable("trello_config", {
   revisionListId: text("revision_list_id"), // Optional separate list for revisions
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Trello member to editor mapping
+export const trelloEditors = pgTable("trello_editors", {
+  id: serial("id").primaryKey(),
+  trelloMemberId: text("trello_member_id").notNull().unique(),
+  editorName: text("editor_name").notNull(),
+  editorEmail: text("editor_email"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Trello webhook tracking
+export const trelloWebhooks = pgTable("trello_webhooks", {
+  id: serial("id").primaryKey(),
+  webhookId: text("webhook_id").notNull().unique(),
+  boardId: text("board_id").notNull(),
+  callbackUrl: text("callback_url").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // User schemas
