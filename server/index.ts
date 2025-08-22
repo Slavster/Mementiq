@@ -127,6 +127,21 @@ app.use((req, res, next) => {
       }).catch(error => {
         console.error('❌ Failed to start asset detection service:', error);
       });
+
+      // Test Trello integration on startup
+      import('./services/trello.js').then(({ trelloService }) => {
+        console.log('🧪 Testing Trello integration on startup...');
+        trelloService.getBoards().then((boards) => {
+          console.log(`✅ Trello integration working! Found ${boards.length} boards`);
+          if (boards.length > 0) {
+            console.log('Available boards:', boards.map(b => b.name).join(', '));
+          }
+        }).catch(error => {
+          console.error('❌ Trello integration test failed:', error.message);
+        });
+      }).catch(error => {
+        console.error('❌ Failed to load Trello service:', error);
+      });
     });
   } catch (error) {
     console.error('Failed to start server:', error);

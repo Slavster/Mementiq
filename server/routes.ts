@@ -2139,6 +2139,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Simple Trello connection test (no auth required for testing)
+  app.get("/api/trello/test-connection", async (req, res) => {
+    try {
+      console.log("Testing Trello connection...");
+      const boards = await trelloService.getBoards();
+      
+      res.json({
+        success: true,
+        message: `Successfully connected to Trello! Found ${boards.length} boards`,
+        boardCount: boards.length,
+        boards: boards.map(board => ({ id: board.id, name: board.name }))
+      });
+    } catch (error) {
+      console.error("Trello connection test error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to connect to Trello",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Revision API Routes
 
   // Generate media platform review link for revisions
