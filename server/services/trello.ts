@@ -305,16 +305,16 @@ export class TrelloService {
       }
       
       // Create new label with appropriate color
-      let color = 'blue'; // Default
+      let color = 'yellow'; // Default
       switch (subscriptionTier.toLowerCase()) {
         case 'growth accelerator':
-          color = 'orange'; // Premium tier - orange
+          color = 'red'; // Premium tier - red
           break;
         case 'consistency club':
-          color = 'green'; // Mid tier - green
+          color = 'orange'; // Mid tier - orange
           break;
         case 'creative spark':
-          color = 'blue'; // Basic tier - blue
+          color = 'yellow'; // Basic tier - yellow
           break;
       }
       
