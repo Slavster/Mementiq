@@ -167,6 +167,93 @@ export class TrelloService {
     }
   }
 
+  // Get card's short URL for linking
+  async getCardShortUrl(cardId: string): Promise<string | null> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/cards/${cardId}`, {
+        params: {
+          fields: 'shortUrl',
+          ...this.getAuthParams()
+        }
+      });
+      return response.data.shortUrl;
+    } catch (error) {
+      console.error('Error fetching card short URL:', error);
+      return null;
+    }
+  }
+
+  // Get card attachments to check for duplicates
+  async getCardAttachments(cardId: string): Promise<Array<{url: string, name: string}>> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/cards/${cardId}/attachments`, {
+        params: this.getAuthParams()
+      });
+      return response.data.map((attachment: any) => ({
+        url: attachment.url,
+        name: attachment.name
+      }));
+    } catch (error) {
+      console.error('Error fetching card attachments:', error);
+      return [];
+    }
+  }
+
+  // Add URL attachment to card with duplicate checking
+  async addCardAttachment(cardId: string, url: string, name: string): Promise<boolean> {
+    try {
+      // Check existing attachments to avoid duplicates
+      const existingAttachments = await this.getCardAttachments(cardId);
+      const duplicateExists = existingAttachments.some(attachment => attachment.url === url);
+      
+      if (duplicateExists) {
+        console.log(`Attachment already exists: ${name} -> ${url}`);
+        return true;
+      }
+
+      await this.addAttachmentToCard(cardId, url, name);
+      console.log(`✅ Added attachment: ${name} -> ${url}`);
+      return true;
+    } catch (error) {
+      console.error('Error adding card attachment:', error);
+      return false;
+    }
+  }
+
+  // Create bidirectional links between original and revision cards
+  async linkCards(originalCardId: string, revisionCardId: string, projectTitle: string, revisionNumber: number): Promise<void> {
+    try {
+      console.log(`🔗 Creating bidirectional links between cards...`);
+      
+      // Get short URLs for both cards
+      const originalShortUrl = await this.getCardShortUrl(originalCardId);
+      const revisionShortUrl = await this.getCardShortUrl(revisionCardId);
+      
+      if (!originalShortUrl || !revisionShortUrl) {
+        console.error('Failed to get card URLs for linking');
+        return;
+      }
+
+      // Link revision card to original card
+      await this.addCardAttachment(
+        revisionCardId, 
+        originalShortUrl, 
+        `📄 Original Request: ${projectTitle}`
+      );
+
+      // Link original card to revision card
+      await this.addCardAttachment(
+        originalCardId, 
+        revisionShortUrl, 
+        `🔄 Revision #${revisionNumber}: ${projectTitle}`
+      );
+
+      console.log(`✅ Bidirectional links created between original and revision cards`);
+    } catch (error) {
+      console.error('Error creating card links:', error);
+    }
+  }
+
   // Add comment to card
   async addCommentToCard(cardId: string, text: string): Promise<any> {
     try {

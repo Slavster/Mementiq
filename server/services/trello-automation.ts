@@ -301,6 +301,16 @@ export class TrelloAutomationService {
         assignedEditorId: assignedEditorId
       });
 
+      // Create bidirectional links between original and revision cards
+      if (originalCards.length > 0) {
+        await trelloService.linkCards(
+          originalCards[0].cardId,
+          card.id,
+          project.title,
+          revisionCount
+        );
+      }
+
       console.log(`✅ Created revision card for project ${projectId} (revision #${revisionCount})`);
       return card.id;
     } catch (error) {
