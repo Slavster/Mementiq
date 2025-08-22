@@ -136,6 +136,11 @@ export class TrelloAutomationService {
         listId: config.todoListId
       });
 
+      // Also update the project record with the initial Trello card ID
+      await db.update(projects)
+        .set({ trelloCardId: card.id })
+        .where(eq(projects.id, projectId));
+
       console.log(`✅ Created Trello card for project ${projectId}: ${card.name}`);
       return card.id;
     } catch (error) {
