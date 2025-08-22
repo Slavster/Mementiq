@@ -7,7 +7,7 @@ import axios from 'axios';
 const TRELLO_KEY = process.env.TRELLO_KEY;
 const TRELLO_TOKEN = process.env.TRELLO_TOKEN;
 const BOARD_ID = '684bfec9a3ce706ae8b8ca03'; // Your Trello board ID (full ID from API)
-const CALLBACK_URL = 'https://workspace-marvelous-journey-dev.replit.app/api/trello/webhook';
+const CALLBACK_URL = 'https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/api/trello/webhook';
 
 async function setupWebhook() {
   console.log('🔧 Setting up Trello webhook for editor assignment tracking...\n');
