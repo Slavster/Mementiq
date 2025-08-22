@@ -435,18 +435,24 @@ export class TrelloService {
       
       // Handle different Tally data formats
       if (tallyData.fields && Array.isArray(tallyData.fields)) {
-        // Format: { fields: [{ label, value }] }
+        // Format: { fields: [{ title, answer: { value } }] } - Actual Tally format
         tallyData.fields.forEach((field: any) => {
-          if (field.label && field.value) {
-            description += `**Q: ${field.label}**\n`;
-            description += `A: ${field.value}\n\n`;
+          // Skip hidden fields (userId, projectId)
+          if (field.type === 'HIDDEN_FIELDS') {
+            return;
+          }
+          
+          // Only show fields that have an answer value
+          if (field.title && field.answer && field.answer.value !== undefined && field.answer.value !== '') {
+            description += `**Q: ${field.title}**\n`;
+            description += `A: ${field.answer.value}\n\n`;
           }
         });
       } else if (typeof tallyData === 'object') {
-        // Format: Direct object with key-value pairs
+        // Fallback: Direct object with key-value pairs
         Object.keys(tallyData).forEach((key) => {
           const value = tallyData[key];
-          if (value && key !== 'submissionId' && key !== 'createdAt') {
+          if (value && key !== 'submissionId' && key !== 'createdAt' && key !== 'id' && key !== 'formId' && key !== 'formName' && key !== 'respondentId' && key !== 'fields') {
             // Format field names (remove underscores, capitalize)
             const formattedKey = key
               .replace(/_/g, ' ')
