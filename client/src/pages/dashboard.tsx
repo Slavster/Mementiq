@@ -158,8 +158,6 @@ export default function DashboardPage() {
   >("instructions");
   const [showSendToEditorDialog, setShowSendToEditorDialog] = useState(false);
   const [pendingProject, setPendingProject] = useState<Project | null>(null);
-  const [sendToEditorConfirmationStep, setSendToEditorConfirmationStep] =
-    useState<1 | 2>(1);
 
   // Revision Confirmation Modal state
   const [revisionConfirmationOpen, setRevisionConfirmationOpen] =
@@ -467,7 +465,6 @@ export default function DashboardPage() {
         setCurrentStep("confirmation");
         setShowSendToEditorDialog(false);
         setPendingProject(null);
-        setSendToEditorConfirmationStep(1);
       } else if (data.alreadySubmitted) {
         // Handle duplicate submission
         toast({
@@ -479,7 +476,6 @@ export default function DashboardPage() {
         // Close dialog and update UI to reflect current status
         setShowSendToEditorDialog(false);
         setPendingProject(null);
-        setSendToEditorConfirmationStep(1);
         
         // Refresh projects to ensure we have latest status
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -1609,49 +1605,27 @@ export default function DashboardPage() {
         <AlertDialogContent className="bg-black/95 backdrop-blur-xl border-gray-800/30 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-400">
-              ⚠️{" "}
-              {sendToEditorConfirmationStep === 1
-                ? "Send Project to Editor?"
-                : "Final Confirmation Required"}
+              ⚠️ Send Project to Editor?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-300">
               <div className="space-y-3">
-                {sendToEditorConfirmationStep === 1 ? (
-                  <>
-                    <p>
-                      <strong>Important:</strong> Once you send this project to
-                      the editor, you will{" "}
-                      <strong>
-                        no longer be able to upload additional footage
-                      </strong>
-                      .
-                    </p>
-                    <p>
-                      You'll only be able to edit your project instructions
-                      through a new form. Make sure you've uploaded all the
-                      footage you need before proceeding.
-                    </p>
-                    <p className="text-pink-400 font-medium">
-                      Sure you're ready to send "{pendingProject?.title}" to the
-                      editor?
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-red-400 font-semibold">
-                      ⚠️ FINAL WARNING ⚠️
-                    </p>
-                    <p>
-                      This action is <strong>irreversible</strong>. You will{" "}
-                      <strong>NOT</strong> be able to upload any more footage to
-                      "{pendingProject?.title}" after this point.
-                    </p>
-                    <p className="text-pink-400 font-medium">
-                      Click "CONFIRM - Send to Editor" to proceed, or cancel to
-                      go back.
-                    </p>
-                  </>
-                )}
+                <p>
+                  <strong>Important:</strong> Once you send this project to
+                  the editor, you will{" "}
+                  <strong>
+                    no longer be able to upload additional footage
+                  </strong>
+                  .
+                </p>
+                <p>
+                  You'll only be able to edit your project instructions
+                  through a new form. Make sure you've uploaded all the
+                  footage you need before proceeding.
+                </p>
+                <p className="text-pink-400 font-medium">
+                  Sure you're ready to send "{pendingProject?.title}" to the
+                  editor?
+                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1661,48 +1635,30 @@ export default function DashboardPage() {
               onClick={() => {
                 setShowSendToEditorDialog(false);
                 setPendingProject(null);
-                setSendToEditorConfirmationStep(1);
               }}
             >
-              {sendToEditorConfirmationStep === 1
-                ? "Cancel - Let me upload more footage"
-                : "Cancel"}
+              Cancel - Let me upload more footage
             </AlertDialogCancel>
             <AlertDialogAction
-              className={
-                sendToEditorConfirmationStep === 1
-                  ? "bg-pink-600 hover:bg-pink-700 text-white"
-                  : "bg-red-600 hover:bg-red-700 text-white"
-              }
+              className="bg-pink-600 hover:bg-pink-700 text-white"
               onClick={() => {
-                console.log(
-                  "🔘 DIALOG BUTTON: Clicked with step:",
-                  sendToEditorConfirmationStep,
-                );
-                if (sendToEditorConfirmationStep === 1) {
-                  console.log("🔘 DIALOG BUTTON: Moving to step 2");
-                  setSendToEditorConfirmationStep(2);
+                if (pendingProject) {
+                  console.log(
+                    "🔘 DIALOG BUTTON: Triggering mutation for project:",
+                    pendingProject.id,
+                  );
+                  sendToEditorMutation.mutate(pendingProject.id);
                 } else {
-                  if (pendingProject) {
-                    console.log(
-                      "🔘 DIALOG BUTTON: Triggering mutation for project:",
-                      pendingProject.id,
-                    );
-                    sendToEditorMutation.mutate(pendingProject.id);
-                  } else {
-                    console.error(
-                      "❌ DIALOG BUTTON: No pendingProject available",
-                    );
-                  }
+                  console.error(
+                    "❌ DIALOG BUTTON: No pendingProject available",
+                  );
                 }
               }}
               disabled={sendToEditorMutation.isPending}
             >
               {sendToEditorMutation.isPending
                 ? "Sending..."
-                : sendToEditorConfirmationStep === 1
-                  ? "Yes, Continue"
-                  : "CONFIRM - Send to Editor"}
+                : "Yes, Continue - Send to Editor"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
