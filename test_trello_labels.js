@@ -146,7 +146,7 @@ async function testTrelloLabels() {
 
   try {
     const trelloClient = new TrelloLabelTestClient();
-    const frameioLink = "https://app.frame.io/library/abc123-test-folder";
+    const frameioLink = "https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/abc123-test-folder";
     const TODO_LIST_ID = '684bff2e9e09bcad40e947dc'; // "New" list
     const BOARD_ID = 'kg3EFU40'; // Your board ID
 

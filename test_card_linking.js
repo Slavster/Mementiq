@@ -152,7 +152,7 @@ async function testCardLinking() {
 **Client:** ${originalCard.clientName} (michael.chen@techstartup.com)
 **Company:** TechStartup Inc
 **Revision #:** ${revisionNumber}
-**Frame.io Link:** https://app.frame.io/library/production-folder-xyz
+**Frame.io Link:** https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/production-folder-xyz
 **Review Link:** https://f.io/ABC123-review-comments
 
 ---

@@ -164,7 +164,7 @@ async function testSubscriptionLabels() {
       const description = `**Project ID:** ${sampleProject.id}
 **Client:** ${sampleUser.firstName} ${sampleUser.lastName} (${sampleUser.email})
 **Company:** ${sampleUser.company}
-**Frame.io Link:** https://app.frame.io/library/test-folder
+**Frame.io Link:** https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/test-folder
 
 ---
 **📋 CLIENT REQUIREMENTS:**
