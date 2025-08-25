@@ -350,6 +350,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.error('Failed to create Trello revision card:', error);
                 }
 
+                // Move original card to Done (revision request completes the original video request)
+                try {
+                  await trelloAutomation.markProjectComplete(projectId);
+                  console.log(`✅ WEBHOOK: Moved original card to Done for project ${projectId}`);
+                } catch (error) {
+                  console.error('Failed to move original Trello card to Done:', error);
+                }
+
                 // Automatically generate review link after successful payment
                 try {
                   const project = await storage.getProject(projectId);
@@ -3343,6 +3351,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Log the revision for accounting/tracking
         console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
+
+        // Move original card to Done (revision request completes the original video request)
+        try {
+          await trelloAutomation.markProjectComplete(payment.projectId);
+          console.log(`✅ PAYMENT CHECK: Moved original card to Done for project ${payment.projectId}`);
+        } catch (error) {
+          console.error('Failed to move original Trello card to Done:', error);
+        }
       }
       
       console.log("🔍 Payment status check:", {
