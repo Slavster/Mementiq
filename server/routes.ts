@@ -1867,17 +1867,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update project status to revision in progress with timestamp tracking
+      // Calculate new revision count
+      const newRevisionCount = (project.revisionCount || 0) + 1;
+      
+      // Update project status to revision in progress with timestamp tracking and increment revision count
       await storage.updateProject(projectId, {
         status: 'revision in progress',
+        revisionCount: newRevisionCount,
         updatedAt: new Date(),
       });
       await updateProjectTimestamp(projectId, "revision requested");
       
-      console.log(`✅ Project ${projectId} status updated to "revision in progress"`);
+      console.log(`✅ Project ${projectId} status updated to "revision in progress", revision count: ${newRevisionCount}`);
       
       // Log status change
       await storage.logProjectStatusChange(projectId, project.status, 'revision in progress');
+      
+      // Create Trello revision card
+      try {
+        const cardId = await trelloAutomation.createRevisionCard(projectId, newRevisionCount);
+        if (cardId) {
+          console.log(`✅ Created Trello revision card for project ${projectId}, revision #${newRevisionCount}: ${cardId}`);
+        } else {
+          console.log(`⚠️ Failed to create Trello revision card for project ${projectId}`);
+        }
+      } catch (trelloError) {
+        console.error(`❌ Error creating Trello revision card for project ${projectId}:`, trelloError);
+        // Don't fail the whole request if Trello fails
+      }
       
       res.json({ 
         success: true, 
