@@ -12,7 +12,7 @@ export class EmailService {
   async sendEmail(template: EmailTemplate): Promise<void> {
     try {
       const { data, error } = await resend.emails.send({
-        from: "Mementiq <noreply@mementiq.com>",
+        from: "Mementiq <onboarding@resend.dev>",
         to: template.to,
         subject: template.subject,
         html: template.html,
@@ -88,10 +88,6 @@ export class EmailService {
                 <strong>⏰ Important:</strong> Download links are available for 30 days. Make sure to save your video locally!
               </p>
             </div>
-            
-            <p style="color: #666; font-size: 14px; margin-top: 30px;">
-              Questions? Reply to this email or contact our support team.
-            </p>
           </div>
         </body>
         </html>
@@ -190,7 +186,7 @@ export class EmailService {
                 <li><strong>Leave specific comments</strong> on any object in any frame by clicking on them </li>
                 <li><strong>Be as detailed as possible</strong> - the more specific your feedback, the better the result</li>
                 <li><strong>Upload additional video clips or photos via your dashboard</strong> if needed (optional)</li>
-                <li><strong>Submit your instructions on the dashboard</strong> when ready</li>
+                <li><strong>Submit to the editor in the dashboard</strong> when ready</li>
               </ol>
             </div>
             
@@ -211,10 +207,6 @@ export class EmailService {
                 <strong>💡 Pro Tip:</strong> Click anywhere on the video timeline to leave timestamp-specific comments. This helps our editors understand exactly what needs to be changed!
               </p>
             </div>
-            
-            <p style="color: #666; font-size: 14px; margin-top: 30px;">
-              Questions? Reply to this email or contact our support team.
-            </p>
           </div>
         </body>
         </html>
