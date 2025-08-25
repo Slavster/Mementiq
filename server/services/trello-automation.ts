@@ -180,7 +180,7 @@ export class TrelloAutomationService {
     }
   }
 
-  // 2. Move card to waiting on approval when video is ready
+  // 2. Move card to done when video is accepted (button click)
   async markProjectComplete(projectId: number): Promise<boolean> {
     try {
       const config = await this.getTrelloConfig();
@@ -204,33 +204,22 @@ export class TrelloAutomationService {
 
       const cardRecord = cardRecords[0];
 
-      // Determine target list - use waiting on approval if configured, otherwise done
-      const targetListId = config.waitingOnApprovalListId || config.doneListId;
-      const targetListName = config.waitingOnApprovalListId ? 'Waiting on Approval' : 'Done';
-
-      // Check if card is already in the target list
-      if (cardRecord.listId === targetListId) {
-        console.log(`Card for project ${projectId} is already in ${targetListName} list`);
-        return true;
-      }
-
-      // Move card to target list
-      await trelloService.moveCard(cardRecord.cardId, targetListId);
+      // Move card to done list
+      await trelloService.moveCardToDone(cardRecord.cardId, config.doneListId);
 
       // Update database record
       await db
         .update(trelloCards)
         .set({ 
-          listId: targetListId,
-          // Only set completedAt if moving to done list
-          ...(targetListId === config.doneListId ? { completedAt: new Date() } : {})
+          listId: config.doneListId,
+          completedAt: new Date()
         })
         .where(eq(trelloCards.id, cardRecord.id));
 
-      console.log(`✅ Moved project ${projectId} card to ${targetListName}`);
+      console.log(`✅ Moved project ${projectId} card to Done`);
       return true;
     } catch (error) {
-      console.error('Error moving project card in Trello:', error);
+      console.error('Error marking project complete in Trello:', error);
       return false;
     }
   }
@@ -365,7 +354,7 @@ export class TrelloAutomationService {
     }
   }
 
-  // 4. Mark revision as complete (video ready - move to waiting on approval)
+  // 4. Mark revision as complete (video accepted - move to done)
   async markRevisionComplete(projectId: number, revisionNumber: number): Promise<boolean> {
     try {
       const config = await this.getTrelloConfig();
@@ -390,38 +379,87 @@ export class TrelloAutomationService {
 
       const cardRecord = cardRecords[0];
 
-      // Determine target list - use waiting on approval if configured, otherwise done
-      const targetListId = config.waitingOnApprovalListId || config.doneListId;
-      const targetListName = config.waitingOnApprovalListId ? 'Waiting on Approval' : 'Done';
-
-      // Check if card is already in the target list
-      if (cardRecord.listId === targetListId) {
-        console.log(`Revision card for project ${projectId} revision ${revisionNumber} is already in ${targetListName} list`);
-        return true;
-      }
-
-      // Move to target list
-      await trelloService.moveCard(cardRecord.cardId, targetListId);
+      // Move to done
+      await trelloService.moveCardToDone(cardRecord.cardId, config.doneListId);
 
       // Update database
       await db
         .update(trelloCards)
         .set({
-          listId: targetListId,
-          // Only set completedAt if moving to done list
-          ...(targetListId === config.doneListId ? { completedAt: new Date() } : {})
+          listId: config.doneListId,
+          completedAt: new Date()
         })
         .where(eq(trelloCards.id, cardRecord.id));
 
-      console.log(`✅ Moved revision ${revisionNumber} for project ${projectId} to ${targetListName}`);
+      console.log(`✅ Marked revision ${revisionNumber} complete for project ${projectId}`);
       return true;
     } catch (error) {
-      console.error('Error moving revision card:', error);
+      console.error('Error marking revision complete:', error);
       return false;
     }
   }
 
-  // 5. Move card from waiting on approval to done (when actually approved)
+  // 5. Move card to waiting on approval when video is ready (automatic)
+  async moveToWaitingOnApproval(projectId: number, isRevision: boolean = false, revisionNumber?: number): Promise<boolean> {
+    try {
+      const config = await this.getTrelloConfig();
+      if (!config || !config.waitingOnApprovalListId) {
+        console.log(`⚠️ No Waiting on Approval list configured, skipping card move for project ${projectId}`);
+        return false;
+      }
+
+      // Find the appropriate card
+      const cardQuery = isRevision && revisionNumber !== undefined ? 
+        and(
+          eq(trelloCards.projectId, projectId),
+          eq(trelloCards.cardType, 'revision'),
+          eq(trelloCards.revisionNumber, revisionNumber)
+        ) :
+        and(
+          eq(trelloCards.projectId, projectId),
+          eq(trelloCards.cardType, 'initial')
+        );
+
+      const cardRecords = await db
+        .select()
+        .from(trelloCards)
+        .where(cardQuery);
+
+      if (cardRecords.length === 0) {
+        console.log(`No card found for project ${projectId}${isRevision ? ` revision ${revisionNumber}` : ''}`);
+        return false;
+      }
+
+      const cardRecord = cardRecords[0];
+
+      // Check if card is already in waiting on approval
+      if (cardRecord.listId === config.waitingOnApprovalListId) {
+        console.log(`Card for project ${projectId}${isRevision ? ` revision ${revisionNumber}` : ''} is already in Waiting on Approval list`);
+        return true;
+      }
+
+      // Move to waiting on approval
+      await trelloService.moveCard(cardRecord.cardId, config.waitingOnApprovalListId);
+
+      // Update database
+      await db
+        .update(trelloCards)
+        .set({
+          listId: config.waitingOnApprovalListId
+          // Don't set completedAt yet - that happens when moved to Done
+        })
+        .where(eq(trelloCards.id, cardRecord.id));
+
+      const cardType = isRevision ? `revision ${revisionNumber}` : 'project';
+      console.log(`✅ Moved ${cardType} ${projectId} to Waiting on Approval`);
+      return true;
+    } catch (error) {
+      console.error('Error moving to waiting on approval:', error);
+      return false;
+    }
+  }
+
+  // 6. Move card from waiting on approval to done (when actually approved)
   async markProjectApproved(projectId: number, isRevision: boolean = false, revisionNumber?: number): Promise<boolean> {
     try {
       const config = await this.getTrelloConfig();

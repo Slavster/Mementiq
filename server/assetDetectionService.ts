@@ -255,15 +255,15 @@ class AssetDetectionService {
         updatedAt: new Date(),
       });
 
-      // Mark Trello card as complete
+      // Move Trello card to waiting on approval
       try {
         if (result.isRevision) {
-          await trelloAutomation.markRevisionComplete(project.id, project.revisionCount);
+          await trelloAutomation.moveToWaitingOnApproval(project.id, true, project.revisionCount);
         } else {
-          await trelloAutomation.markProjectComplete(project.id);
+          await trelloAutomation.moveToWaitingOnApproval(project.id, false);
         }
       } catch (error) {
-        console.error('Failed to update Trello card:', error);
+        console.error('Failed to move Trello card to waiting on approval:', error);
       }
 
       // Update timestamp
