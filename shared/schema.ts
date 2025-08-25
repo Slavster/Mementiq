@@ -180,6 +180,7 @@ export const trelloConfig = pgTable("trello_config", {
   todoListId: text("todo_list_id").notNull(), // List for new projects/revisions
   doneListId: text("done_list_id").notNull(), // List for completed items
   revisionListId: text("revision_list_id"), // Optional separate list for revisions
+  waitingOnApprovalListId: text("waiting_on_approval_list_id"), // List for videos ready and waiting approval
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -361,6 +362,7 @@ export const insertTrelloConfigSchema = createInsertSchema(trelloConfig).pick({
   todoListId: true,
   doneListId: true,
   revisionListId: true,
+  waitingOnApprovalListId: true,
 });
 
 export type TrelloConfig = typeof trelloConfig.$inferSelect;
