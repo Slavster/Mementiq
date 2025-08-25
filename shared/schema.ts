@@ -33,6 +33,7 @@ export const projects = pgTable("projects", {
   mediaReviewLink: text("media_review_link"), // Media platform review link for revisions
   frameioReviewLink: text("frameio_review_link"), // Frame.io public share URL (full format)
   frameioReviewShareId: text("frameio_review_share_id"), // Frame.io share UUID for the public link
+  frameioProjectLink: text("frameio_project_link"), // Frame.io V4 project folder URL for footage access
   frameioVideoFilename: text("frameio_video_filename"), // Filename of the video associated with the share link
   frameioVideoFileSize: bigint("frameio_video_file_size", { mode: "number" }), // File size of the video
   frameioVideoFileType: text("frameio_video_file_type"), // MIME type of the video
