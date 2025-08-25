@@ -105,24 +105,40 @@ export class TrelloAutomationService {
         ? JSON.parse(tallyData[0].submissionData || '{}')
         : null;
 
-      // Build Frame.io link (project folder) - use correct V4 format
+      // Build Frame.io link (project folder) - use correct V4 format with robust fallbacks
       let frameioLink = 'Frame.io folder not created yet';
       
       if (project.mediaFolderId) {
-        try {
-          // Get the Frame.io project ID for the correct URL format
-          const frameioProjectId = await frameioV4Service.getProjectIdFromFolder(project.mediaFolderId);
-          
-          if (frameioProjectId) {
-            frameioLink = `https://next.frame.io/project/${frameioProjectId}/view/${project.mediaFolderId}`;
-          } else {
-            // Fallback to library URL if project ID not found
-            frameioLink = `https://app.frame.io/library/${project.mediaFolderId}`;
+        // Fallback 1: Use stored project link from database
+        if (project.frameioProjectLink) {
+          frameioLink = project.frameioProjectLink;
+          console.log('✅ Using stored Frame.io project link from database');
+        } else {
+          // Fallback 2: Try to generate the correct V4 project link
+          try {
+            const frameioProjectId = await frameioV4Service.getProjectIdFromFolder(project.mediaFolderId);
+            
+            if (frameioProjectId) {
+              frameioLink = `https://next.frame.io/project/${frameioProjectId}/view/${project.mediaFolderId}`;
+              console.log('✅ Generated correct Frame.io V4 project link');
+              
+              // Store the generated link for future use
+              try {
+                await db.update(projects)
+                  .set({ frameioProjectLink: frameioLink })
+                  .where(eq(projects.id, projectId));
+                console.log('💾 Stored Frame.io project link in database for future use');
+              } catch (storeError) {
+                console.log('⚠️ Failed to store Frame.io project link:', storeError.message);
+              }
+            } else {
+              console.log('❌ Could not determine Frame.io project ID');
+              frameioLink = 'Frame.io project link unavailable - please check project setup';
+            }
+          } catch (error) {
+            console.error('❌ Failed to get Frame.io project ID:', error.message);
+            frameioLink = 'Frame.io project link unavailable - authentication required';
           }
-        } catch (error) {
-          console.error('Failed to get Frame.io project ID:', error);
-          // Fallback to library URL on error
-          frameioLink = `https://app.frame.io/library/${project.mediaFolderId}`;
         }
       }
 
@@ -262,25 +278,43 @@ export class TrelloAutomationService {
         assignedEditorId = originalCards[0].assignedEditorId;
       }
 
-      // Build links - use correct V4 format
+      // Build Frame.io link for revision with triple fallback system
       let frameioLink = 'Frame.io folder not available';
       
       if (project.mediaFolderId) {
-        try {
-          // Get the Frame.io project ID for the correct URL format
-          const frameioProjectId = await frameioV4Service.getProjectIdFromFolder(project.mediaFolderId);
-          
-          if (frameioProjectId) {
-            frameioLink = `https://next.frame.io/project/${frameioProjectId}/view/${project.mediaFolderId}`;
-          } else {
-            // Fallback to library URL if project ID not found
-            frameioLink = `https://app.frame.io/library/${project.mediaFolderId}`;
+        // Fallback 1: Use stored project link from database
+        if (project.frameioProjectLink) {
+          frameioLink = project.frameioProjectLink;
+          console.log('✅ REVISION: Using stored Frame.io project link from database');
+        } else {
+          // Fallback 2: Try to generate the correct V4 project link
+          try {
+            const frameioProjectId = await frameioV4Service.getProjectIdFromFolder(project.mediaFolderId);
+            
+            if (frameioProjectId) {
+              frameioLink = `https://next.frame.io/project/${frameioProjectId}/view/${project.mediaFolderId}`;
+              console.log('✅ REVISION: Generated correct Frame.io V4 project link');
+              
+              // Store for future use
+              try {
+                await db.update(projects)
+                  .set({ frameioProjectLink: frameioLink })
+                  .where(eq(projects.id, projectId));
+              } catch (storeError) {
+                console.log('⚠️ REVISION: Failed to store Frame.io project link');
+              }
+            } else {
+              console.log('⚠️ REVISION: Could not determine Frame.io project ID, trying original card fallback');
+              frameioLink = await this.getFrameioLinkFromOriginalCard(projectId);
+            }
+          } catch (error) {
+            console.error('❌ REVISION: Failed to get Frame.io project ID, trying original card fallback');
+            frameioLink = await this.getFrameioLinkFromOriginalCard(projectId);
           }
-        } catch (error) {
-          console.error('Failed to get Frame.io project ID for revision:', error);
-          // Fallback to library URL on error
-          frameioLink = `https://app.frame.io/library/${project.mediaFolderId}`;
         }
+      } else {
+        // Fallback 3: Try to get from original card if no media folder ID
+        frameioLink = await this.getFrameioLinkFromOriginalCard(projectId);
       }
 
       const shareLink = project.frameioReviewLink || 'Review link not available';
@@ -522,6 +556,58 @@ export class TrelloAutomationService {
       .select()
       .from(trelloCards)
       .where(eq(trelloCards.projectId, projectId));
+  }
+
+  // Helper method: Extract Frame.io link from original card description as fallback
+  private async getFrameioLinkFromOriginalCard(projectId: number): Promise<string> {
+    try {
+      console.log(`🔍 FALLBACK: Extracting Frame.io link from original card for project ${projectId}`);
+      
+      // Find the original card
+      const originalCards = await db
+        .select()
+        .from(trelloCards)
+        .where(
+          and(
+            eq(trelloCards.projectId, projectId),
+            eq(trelloCards.cardType, 'initial')
+          )
+        );
+
+      if (originalCards.length === 0) {
+        console.log('⚠️ FALLBACK: No original card found');
+        return 'Frame.io link unavailable - original card not found';
+      }
+
+      const originalCardId = originalCards[0].cardId;
+      
+      // Get the card description from Trello
+      try {
+        const cardData = await trelloService.makeRequest('GET', `/cards/${originalCardId}?fields=desc`);
+        const description = cardData.desc || '';
+        
+        // Extract Frame.io link from description using regex
+        // Look for https://next.frame.io/project/ URLs (V4 format)
+        const frameioLinkMatch = description.match(/https:\/\/next\.frame\.io\/project\/[^\s]+/);
+        
+        if (frameioLinkMatch) {
+          const extractedLink = frameioLinkMatch[0];
+          console.log(`✅ FALLBACK: Successfully extracted Frame.io link from original card: ${extractedLink}`);
+          return extractedLink;
+        } else {
+          console.log('⚠️ FALLBACK: No V4 Frame.io link found in original card description');
+          return 'Frame.io link unavailable - not found in original card';
+        }
+        
+      } catch (trelloError) {
+        console.error('❌ FALLBACK: Failed to fetch original card from Trello:', trelloError.message);
+        return 'Frame.io link unavailable - could not access original card';
+      }
+      
+    } catch (error) {
+      console.error('❌ FALLBACK: Error extracting Frame.io link from original card:', error.message);
+      return 'Frame.io link unavailable - extraction failed';
+    }
   }
 }
 
