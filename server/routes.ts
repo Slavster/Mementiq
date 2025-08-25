@@ -318,8 +318,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Handle revision payments
             if (session.metadata?.type === 'revision_payment') {
               console.log("🎯 WEBHOOK: Processing revision payment completion");
-              console.log("🎯 Session metadata:", session.metadata);
-              console.log("🎯 Payment status:", session.payment_status);
               
               try {
                 const projectId = parseInt(session.metadata.projectId);
