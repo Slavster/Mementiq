@@ -164,7 +164,7 @@ async function testCompleteTrelloIntegration() {
     const trelloClient = new CompleteTrelloIntegrationTest();
     const BOARD_ID = 'kg3EFU40';
     const TODO_LIST_ID = '684bff2e9e09bcad40e947dc'; // "New" list
-    const frameioLink = "https://app.frame.io/library/production-folder-xyz";
+    const frameioLink = "https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/production-folder-xyz";
 
     console.log('📋 Current board labels:');
     const allLabels = await trelloClient.getBoardLabels(BOARD_ID);
