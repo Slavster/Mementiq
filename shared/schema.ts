@@ -172,6 +172,7 @@ export const trelloCards = pgTable("trello_cards", {
   assignedEditorId: text("assigned_editor_id"), // Trello member ID of assigned editor
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"), // When moved to done
+  archivedAt: timestamp("archived_at"), // When card was archived
 });
 
 // Trello configuration
