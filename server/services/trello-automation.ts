@@ -2,6 +2,7 @@ import { trelloService } from './trello.js';
 import { db } from '../db.js';
 import { trelloCards, trelloConfig, projects, users, tallyFormSubmissions } from '../../shared/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { frameioV4Service } from '../frameioV4Service.js';
 
 export class TrelloAutomationService {
   private static instance: TrelloAutomationService;
@@ -102,10 +103,26 @@ export class TrelloAutomationService {
         ? JSON.parse(tallyData[0].submissionData || '{}')
         : null;
 
-      // Build Frame.io link (project folder)
-      const frameioLink = project.mediaFolderId 
-        ? `https://app.frame.io/library/${project.mediaFolderId}`
-        : 'Frame.io folder not created yet';
+      // Build Frame.io link (project folder) - use correct V4 format
+      let frameioLink = 'Frame.io folder not created yet';
+      
+      if (project.mediaFolderId) {
+        try {
+          // Get the Frame.io project ID for the correct URL format
+          const frameioProjectId = await frameioV4Service.getProjectIdFromFolder(project.mediaFolderId);
+          
+          if (frameioProjectId) {
+            frameioLink = `https://next.frame.io/project/${frameioProjectId}/view/${project.mediaFolderId}`;
+          } else {
+            // Fallback to library URL if project ID not found
+            frameioLink = `https://app.frame.io/library/${project.mediaFolderId}`;
+          }
+        } catch (error) {
+          console.error('Failed to get Frame.io project ID:', error);
+          // Fallback to library URL on error
+          frameioLink = `https://app.frame.io/library/${project.mediaFolderId}`;
+        }
+      }
 
       // Get user subscription info
       const subscriptionTier = user.subscriptionTier || 'Free';
@@ -243,10 +260,26 @@ export class TrelloAutomationService {
         assignedEditorId = originalCards[0].assignedEditorId;
       }
 
-      // Build links
-      const frameioLink = project.mediaFolderId 
-        ? `https://app.frame.io/library/${project.mediaFolderId}`
-        : 'Frame.io folder not available';
+      // Build links - use correct V4 format
+      let frameioLink = 'Frame.io folder not available';
+      
+      if (project.mediaFolderId) {
+        try {
+          // Get the Frame.io project ID for the correct URL format
+          const frameioProjectId = await frameioV4Service.getProjectIdFromFolder(project.mediaFolderId);
+          
+          if (frameioProjectId) {
+            frameioLink = `https://next.frame.io/project/${frameioProjectId}/view/${project.mediaFolderId}`;
+          } else {
+            // Fallback to library URL if project ID not found
+            frameioLink = `https://app.frame.io/library/${project.mediaFolderId}`;
+          }
+        } catch (error) {
+          console.error('Failed to get Frame.io project ID for revision:', error);
+          // Fallback to library URL on error
+          frameioLink = `https://app.frame.io/library/${project.mediaFolderId}`;
+        }
+      }
 
       const shareLink = project.frameioReviewLink || 'Review link not available';
 

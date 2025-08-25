@@ -1397,6 +1397,28 @@ export class FrameioV4Service {
   }
 
   /**
+   * Get Frame.io project ID from a folder asset ID
+   */
+  async getProjectIdFromFolder(folderId: string): Promise<string | null> {
+    await this.initialize();
+
+    try {
+      const accountId = await this.getAccountId();
+      const response = await this.makeRequest('GET', `/accounts/${accountId}/folders/${folderId}`);
+      
+      if (response.data && response.data.project_id) {
+        return response.data.project_id;
+      }
+      
+      console.log(`No project_id found for folder ${folderId}`);
+      return null;
+    } catch (error) {
+      console.error(`Failed to get project ID for folder ${folderId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Get playable media links for streaming - Frame.io V4 approach
    * Based on API research, Frame.io V4 uses a different streaming approach
    */
