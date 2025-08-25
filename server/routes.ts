@@ -1826,6 +1826,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
         // Don't fail the request if Frame.io update fails
       }
+
+      // Move Trello card to Done list
+      try {
+        await trelloAutomation.markProjectComplete(projectId);
+        console.log(`✅ Moved Trello card to Done for project ${projectId}`);
+      } catch (trelloError) {
+        console.log(`⚠️ Trello card update failed for project ${projectId}:`, trelloError.message);
+        // Don't fail the request if Trello update fails
+      }
       
       res.json({ success: true, message: "Video accepted successfully" });
     } catch (error) {
