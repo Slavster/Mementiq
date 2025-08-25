@@ -23,7 +23,7 @@ const testPayload = {
     name: 'Revised_Video_v2.mp4',
     media_type: 'video/mp4',
     file_size: 50000000,
-    view_url: 'https://app.frame.io/test-view-url'
+    view_url: 'https://next.frame.io/project/e0a4fadd-52b0-4156-91ed-8880bbc0c51a/view/test-view-url'
   },
   project: {
     id: 'test-project-456'

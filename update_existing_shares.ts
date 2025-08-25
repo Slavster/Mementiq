@@ -48,7 +48,7 @@ async function updateExistingShares() {
       console.log(`Share Link: ${project.frameioReviewLink}`);
       
       // Extract share ID from the link
-      // Frame.io share links typically look like: https://f.io/XXXXXXXX or https://app.frame.io/reviews/XXXXXXXX
+      // Frame.io share links typically look like: https://f.io/XXXXXXXX or https://next.frame.io/reviews/XXXXXXXX (V4 format)
       const shareLink = project.frameioReviewLink;
       let shareId = null;
       
