@@ -2182,7 +2182,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
   // Simple Trello connection test (no auth required for testing)
   app.get("/api/trello/test-connection", async (req, res) => {
     try {
