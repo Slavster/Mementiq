@@ -323,6 +323,13 @@ class AssetDetectionService {
       
       result.statusUpdated = true;
 
+      // Create/ensure public share link exists BEFORE sending email
+      try {
+        await this.ensurePublicShareLink(project, selectedVideo);
+      } catch (shareError) {
+        console.error(`❌ Failed to create share link for project ${project.id}:`, shareError instanceof Error ? shareError.message : String(shareError));
+      }
+
       // Send email notification to user with the most recent video
       try {
         await this.sendVideoDeliveryNotification(project, selectedVideo);
@@ -336,6 +343,54 @@ class AssetDetectionService {
   }
 
   /**
+   * Ensure a public share link exists for the project video
+   */
+  private async ensurePublicShareLink(project: any, videoAsset: any) {
+    // Skip if we already have a valid public share link
+    if (project.frameioReviewLink && 
+        (project.frameioReviewLink.includes('share.frame.io') || 
+         project.frameioReviewLink.includes('f.io'))) {
+      console.log(`✅ Project ${project.id} already has public share link: ${project.frameioReviewLink}`);
+      return;
+    }
+
+    console.log(`🔗 Creating public share link for project ${project.id} video: "${videoAsset.name}"`);
+    
+    try {
+      // Use the same logic as the video-share-link endpoint
+      await frameioV4Service.initialize();
+      
+      const shareName = `${project.title} - Video Review`;
+      const shareResult = await frameioV4Service.createAssetShareLink(
+        videoAsset.id, 
+        shareName, 
+        true // Enable comments for review
+      );
+      
+      if (shareResult && shareResult.url) {
+        // Store the share link in the project
+        await storage.updateProject(project.id, {
+          frameioReviewLink: shareResult.url,
+          frameioReviewShareId: shareResult.id,
+          frameioVideoAssetId: videoAsset.id,
+          frameioVideoFilename: videoAsset.name,
+          frameioVideoFileSize: videoAsset.filesize || 0,
+          frameioVideoFileType: videoAsset.media_type || 'video/mp4',
+          updatedAt: new Date()
+        });
+        
+        console.log(`✅ Created and stored public share link for project ${project.id}: ${shareResult.url}`);
+      } else {
+        throw new Error('No share URL returned from Frame.io');
+      }
+      
+    } catch (error) {
+      console.error(`❌ Failed to create share link for project ${project.id}:`, error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+  }
+
+  /**
    * Send video delivery notification email
    */
   private async sendVideoDeliveryNotification(project: any, videoAsset: any) {
@@ -345,12 +400,13 @@ class AssetDetectionService {
       return;
     }
 
-    // For revisions, use the existing share link
-    // For initial deliveries, use the Frame.io view URL
-    let videoViewUrl = project.frameioReviewLink || '';
+    // Get the updated project with the latest share link
+    const updatedProject = await storage.getProject(project.id);
+    let videoViewUrl = updatedProject?.frameioReviewLink || project.frameioReviewLink || '';
     
     if (!videoViewUrl) {
-      // Fallback to direct Frame.io view URL if no share link exists
+      console.warn(`⚠️ No public share link available for project ${project.id} - email may contain invalid link`);
+      // Fallback to direct Frame.io view URL (requires authentication)
       videoViewUrl = videoAsset.view_url || `https://next.frame.io/project/${videoAsset.project_id}/view/${videoAsset.id}`;
     }
 
