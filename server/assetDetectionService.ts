@@ -145,13 +145,56 @@ class AssetDetectionService {
 
     console.log(`🔍 Checking project ${project.id} (${project.title}) - status: ${project.status} - folder: ${project.mediaFolderId}`);
 
-    // Get assets in the project folder
-    const folderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-    const allVideoAssets = folderAssets.filter(asset => 
+    console.log(`🚨 ENHANCED ASSET DETECTION v3.0 - FORCE UPDATE SINGLETON - ${new Date().toISOString()}`);
+    
+    // Get assets from multiple possible locations where videos might be uploaded
+    let allVideoAssets = [];
+    
+    // 1. Check the main project folder (where videos are typically stored)
+    console.log(`📁 Checking main project folder: ${project.mediaFolderId}`);
+    const mainFolderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
+    const mainVideoAssets = mainFolderAssets.filter(asset => 
       asset.type === 'file' && 
       asset.media_type && 
       asset.media_type.startsWith('video/')
     );
+    console.log(`🎬 Found ${mainVideoAssets.length} videos in main project folder`);
+    allVideoAssets = allVideoAssets.concat(mainVideoAssets);
+    
+    // 2. Check the user's root folder (in case they were uploaded there directly)
+    if (project.mediaUserFolderId && project.mediaUserFolderId !== project.mediaFolderId) {
+      console.log(`👤 Checking user root folder: ${project.mediaUserFolderId}`);
+      const userFolderAssets = await frameioV4Service.getFolderAssets(project.mediaUserFolderId);
+      const userVideoAssets = userFolderAssets.filter(asset => 
+        asset.type === 'file' && 
+        asset.media_type && 
+        asset.media_type.startsWith('video/')
+      );
+      console.log(`🎬 Found ${userVideoAssets.length} videos in user root folder`);
+      allVideoAssets = allVideoAssets.concat(userVideoAssets);
+      
+      // 3. Also check if there are any subfolders in the user folder that might contain new videos
+      const userFolderChildren = await frameioV4Service.getFolderAssets(project.mediaUserFolderId);
+      const projectSubfolders = userFolderChildren.filter(item => 
+        item.type === 'folder' && 
+        item.name && 
+        (item.name.includes(project.title) || item.id === project.mediaFolderId)
+      );
+      
+      for (const subfolder of projectSubfolders) {
+        if (subfolder.id !== project.mediaFolderId) { // Don't double-check the main folder
+          console.log(`📂 Checking project subfolder: ${subfolder.name} (${subfolder.id})`);
+          const subfolderAssets = await frameioV4Service.getFolderAssets(subfolder.id);
+          const subfolderVideos = subfolderAssets.filter(asset => 
+            asset.type === 'file' && 
+            asset.media_type && 
+            asset.media_type.startsWith('video/')
+          );
+          console.log(`🎬 Found ${subfolderVideos.length} videos in subfolder ${subfolder.name}`);
+          allVideoAssets = allVideoAssets.concat(subfolderVideos);
+        }
+      }
+    }
 
     console.log(`🎬 Project ${project.id}: Found ${allVideoAssets.length} total video assets`);
 
@@ -332,5 +375,5 @@ class AssetDetectionService {
   }
 }
 
-// Export singleton instance
+// Export singleton instance (force new instance to clear cache)
 export const assetDetectionService = new AssetDetectionService();

@@ -1052,6 +1052,79 @@ export class FrameioV4Service {
   }
 
   /**
+   * Get all assets from all folders within a Frame.io project
+   * This recursively searches through all folders to find assets
+   */
+  async getProjectAssets(projectId: string): Promise<any[]> {
+    await this.initialize();
+
+    try {
+      console.log(`=== Getting All Assets for Project: ${projectId} ===`);
+
+      if (!projectId || projectId === 'undefined') {
+        console.log('Invalid project ID provided, cannot fetch assets');
+        return [];
+      }
+
+      // Get account ID for the correct V4 endpoint structure
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+
+      // Get the project root folder
+      const projectResponse = await this.makeRequest('GET', `/accounts/${accountId}/projects/${projectId}`);
+      const project = projectResponse.data;
+      
+      if (!project || !project.root_asset_id) {
+        console.log(`No root folder found for project ${projectId}`);
+        return [];
+      }
+
+      console.log(`Project root folder ID: ${project.root_asset_id}`);
+
+      // Recursively get all assets from all folders in the project
+      const allAssets = await this.getAllAssetsRecursive(accountId, project.root_asset_id);
+      
+      console.log(`Found ${allAssets.length} total assets across all folders in project ${projectId}`);
+      return allAssets;
+    } catch (error) {
+      console.error(`Failed to get project assets for ${projectId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Recursively get all assets from a folder and its subfolders
+   */
+  private async getAllAssetsRecursive(accountId: string, folderId: string): Promise<any[]> {
+    try {
+      const endpoint = `/accounts/${accountId}/folders/${folderId}/children`;
+      const response = await this.makeRequest('GET', endpoint);
+      const items = response.data || [];
+
+      let allAssets: any[] = [];
+
+      for (const item of items) {
+        if (item.type === 'file') {
+          // It's a file asset, add it to our collection
+          allAssets.push(item);
+        } else if (item.type === 'folder') {
+          // It's a subfolder, recursively get its assets
+          const subfolderAssets = await this.getAllAssetsRecursive(accountId, item.id);
+          allAssets = allAssets.concat(subfolderAssets);
+        }
+      }
+
+      return allAssets;
+    } catch (error) {
+      console.error(`Failed to get assets from folder ${folderId}:`, error);
+      return [];
+    }
+  }
+
+  /**
    * Generate download link for asset (V4 compatible)
    * Frame.io V4 provides download URLs that can be used for streaming
    */
