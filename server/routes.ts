@@ -2155,6 +2155,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Move project cards to Done (temporary admin endpoint)
+  app.post("/api/trello/move-to-done/:projectId", requireAuth, async (req: Request, res) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid project ID"
+        });
+      }
+
+      const result = await trelloAutomation.markProjectComplete(projectId, true);
+      
+      res.json({
+        success: true,
+        message: `Cards moved to Done for project ${projectId}`,
+        result
+      });
+    } catch (error) {
+      console.error("Move cards to Done error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to move cards to Done"
+      });
+    }
+  });
+
+
   // Simple Trello connection test (no auth required for testing)
   app.get("/api/trello/test-connection", async (req, res) => {
     try {
