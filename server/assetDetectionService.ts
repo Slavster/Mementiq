@@ -344,49 +344,106 @@ class AssetDetectionService {
 
   /**
    * Ensure a public share link exists for the project video
+   * Uses the same logic as the dashboard's video-share-link endpoint
    */
   private async ensurePublicShareLink(project: any, videoAsset: any) {
-    // Skip if we already have a valid public share link
-    if (project.frameioReviewLink && 
-        (project.frameioReviewLink.includes('share.frame.io') || 
-         project.frameioReviewLink.includes('f.io'))) {
-      console.log(`✅ Project ${project.id} already has public share link: ${project.frameioReviewLink}`);
-      return;
-    }
-
-    console.log(`🔗 Creating public share link for project ${project.id} video: "${videoAsset.name}"`);
+    console.log(`🔗 Ensuring public share link exists for project ${project.id} video: "${videoAsset.name}"`);
     
     try {
-      // Use the same logic as the video-share-link endpoint
-      await frameioV4Service.initialize();
+      // Create share link using the same logic as the video-share-link endpoint
+      const shareResult = await this.createProjectVideoShareLink(project, videoAsset);
       
-      const shareName = `${project.title} - Video Review`;
-      const shareResult = await frameioV4Service.createAssetShareLink(
-        videoAsset.id, 
-        shareName, 
-        true // Enable comments for review
-      );
-      
-      if (shareResult && shareResult.url) {
-        // Store the share link in the project
+      if (shareResult && shareResult.shareUrl) {
+        console.log(`✅ Share link ensured for project ${project.id}: ${shareResult.shareUrl}`);
+        
+        // Store the share link in the project for email use
         await storage.updateProject(project.id, {
-          frameioReviewLink: shareResult.url,
-          frameioReviewShareId: shareResult.id,
+          frameioReviewLink: shareResult.shareUrl,
+          frameioReviewShareId: shareResult.shareId,
           frameioVideoAssetId: videoAsset.id,
           frameioVideoFilename: videoAsset.name,
           frameioVideoFileSize: videoAsset.filesize || 0,
           frameioVideoFileType: videoAsset.media_type || 'video/mp4',
           updatedAt: new Date()
         });
-        
-        console.log(`✅ Created and stored public share link for project ${project.id}: ${shareResult.url}`);
-      } else {
-        throw new Error('No share URL returned from Frame.io');
       }
       
     } catch (error) {
-      console.error(`❌ Failed to create share link for project ${project.id}:`, error instanceof Error ? error.message : String(error));
-      throw error;
+      console.error(`❌ Failed to ensure share link for project ${project.id}:`, error instanceof Error ? error.message : String(error));
+      // Don't throw the error - email can still be sent even if share link creation fails
+    }
+  }
+
+  /**
+   * Create project video share link using the same logic as the video-share-link endpoint
+   * This mirrors the exact logic from /api/projects/:id/video-share-link
+   */
+  private async createProjectVideoShareLink(project: any, videoAsset: any) {
+    // Format video asset to match expected structure
+    const videoFile = {
+      id: videoAsset.id,
+      projectId: project.id,
+      mediaAssetId: videoAsset.id,
+      mediaAssetUrl: videoAsset.view_url || '',
+      filename: videoAsset.name,
+      originalFilename: videoAsset.name,
+      fileType: videoAsset.media_type,
+      fileSize: videoAsset.filesize || 0,
+      uploadStatus: 'completed'
+    };
+
+    console.log(`🚨 ASSET DETECTION: Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
+    
+    // PRIORITY 1: Check if we have a project-level share link
+    if (project.frameioReviewLink && 
+        (project.frameioReviewLink.includes('f.io/') || project.frameioReviewLink.includes('share.frame.io'))) {
+      console.log(`✅ Found existing project-level public share link: ${project.frameioReviewLink}`);
+      
+      return {
+        shareUrl: project.frameioReviewLink,
+        shareId: project.frameioReviewShareId || 'project-cached',
+        filename: videoFile.filename,
+        isPublicShare: true,
+        note: 'Using existing project-level Frame.io public share'
+      };
+    }
+
+    // PRIORITY 2: Check if we have a valid public cached share URL in video file database  
+    if (videoFile.mediaAssetUrl && videoFile.mediaAssetUrl.includes('f.io/')) {
+      console.log(`✅ Found valid public share URL in video file: ${videoFile.mediaAssetUrl}`);
+      
+      return {
+        shareUrl: videoFile.mediaAssetUrl,
+        shareId: 'cached-public',
+        filename: videoFile.filename,
+        isPublicShare: true,
+        note: 'Using cached Frame.io public share'
+      };
+    }
+
+    // PRIORITY 3: Create new share link using Frame.io V4 service
+    console.log(`🔨 Creating new Frame.io V4 public share for asset ${videoFile.mediaAssetId}`);
+    
+    await frameioV4Service.initialize();
+    const shareName = `${project.title} - Video Review`;
+    const shareResult = await frameioV4Service.createAssetShareLink(
+      videoFile.mediaAssetId, 
+      shareName, 
+      true // Enable comments for review
+    );
+    
+    if (shareResult && shareResult.url) {
+      console.log(`✅ Created new public share: ${shareResult.url}`);
+      
+      return {
+        shareUrl: shareResult.url,
+        shareId: shareResult.id,
+        filename: videoFile.filename,
+        isPublicShare: true,
+        note: 'Created new Frame.io public share'
+      };
+    } else {
+      throw new Error('No share URL returned from Frame.io');
     }
   }
 
