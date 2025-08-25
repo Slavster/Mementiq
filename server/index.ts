@@ -9,11 +9,11 @@ import { pool } from "./db";
 
 const app = express();
 
-// CORS configuration for Frame.io direct uploads
+// CORS configuration for Frame.io V4 direct uploads
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://app.frame.io', 'https://*.frame.io'] 
-    : ['http://localhost:5000', 'https://app.frame.io', 'https://*.frame.io'],
+    ? ['https://next.frame.io', 'https://*.frame.io'] 
+    : ['http://localhost:5000', 'https://next.frame.io', 'https://*.frame.io'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
