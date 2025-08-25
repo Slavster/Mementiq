@@ -994,7 +994,7 @@ export default function DashboardPage() {
                         "revision in progress" ? (
                         <Button
                           size="sm"
-                          className="w-full bg-pink-600 hover:bg-pink-700 text-white"
+                          className="w-full bg-accent text-secondary hover:bg-yellow-500"
                           onClick={(e) => {
                             e.stopPropagation();
                             // Open revision modal in submitted/confirmation state
