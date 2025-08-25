@@ -660,9 +660,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`🚨 ROUTE ENTRY: Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
-      console.log(`🚨 ROUTE: Current cached URL in database: ${videoFile.mediaAssetUrl}`);
+      console.log(`🚨 ROUTE: Current cached URL in project: ${project.frameioReviewLink}`);
+      console.log(`🚨 ROUTE: Current cached URL in video file: ${videoFile.mediaAssetUrl}`);
       
-      // First priority: Check if we have a VALID PUBLIC cached share URL in database
+      // PRIORITY 1: Check if we have a project-level share link (created by asset detection)
+      if (project.frameioReviewLink && 
+          (project.frameioReviewLink.includes('f.io/') || project.frameioReviewLink.includes('share.frame.io'))) {
+        console.log(`✅ Found project-level public share link - reusing for consistency: ${project.frameioReviewLink}`);
+        
+        return res.json({
+          shareUrl: project.frameioReviewLink,
+          shareId: project.frameioReviewShareId || 'project-cached',
+          filename: videoFile.filename,
+          isPublicShare: true,
+          note: 'Using project-level Frame.io public share - same link as email notification',
+          features: {
+            publicAccess: true,
+            commentsEnabled: true,
+            downloadsEnabled: true
+          }
+        });
+      }
+      
+      // PRIORITY 2: Check if we have a VALID PUBLIC cached share URL in video file database
       if (videoFile.mediaAssetUrl) {
         console.log(`🔍 Found cached URL in database: ${videoFile.mediaAssetUrl}`);
         
