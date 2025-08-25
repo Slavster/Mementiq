@@ -220,10 +220,7 @@ export class TrelloAutomationService {
         if (originalCards.length > 0) {
           const originalCard = originalCards[0];
           
-          // Skip archived cards (check database field or detect via API error)
-          if (originalCard.archivedAt) {
-            console.log(`📁 Original card is archived for project ${projectId} - leaving archived`);
-          } else if (originalCard.listId !== config.doneListId) {
+          if (originalCard.listId !== config.doneListId) {
             try {
               await trelloService.moveCardToDone(originalCard.cardId, config.doneListId);
               await db
@@ -238,15 +235,6 @@ export class TrelloAutomationService {
               // Check if error indicates card is archived
               if (error.message && (error.message.includes('archived') || error.message.includes('closed') || error.message.includes('not found'))) {
                 console.log(`📁 Original card appears to be archived for project ${projectId} - leaving archived`);
-                // Mark as archived in database
-                try {
-                  await db
-                    .update(trelloCards)
-                    .set({ archivedAt: new Date() })
-                    .where(eq(trelloCards.id, originalCard.id));
-                } catch (dbError) {
-                  console.log(`⚠️ Could not update archived status in database for original card`);
-                }
               } else {
                 console.error(`Failed to move original card for project ${projectId}:`, error);
                 success = false;
@@ -270,10 +258,7 @@ export class TrelloAutomationService {
           .orderBy(desc(trelloCards.revisionNumber));
 
         for (const revisionCard of revisionCards) {
-          // Skip archived cards (check database field or detect via API error)
-          if (revisionCard.archivedAt) {
-            console.log(`📁 Revision card #${revisionCard.revisionNumber} is archived for project ${projectId} - leaving archived`);
-          } else if (revisionCard.listId !== config.doneListId) {
+          if (revisionCard.listId !== config.doneListId) {
             try {
               await trelloService.moveCardToDone(revisionCard.cardId, config.doneListId);
               await db
@@ -288,15 +273,6 @@ export class TrelloAutomationService {
               // Check if error indicates card is archived
               if (error.message && (error.message.includes('archived') || error.message.includes('closed') || error.message.includes('not found'))) {
                 console.log(`📁 Revision card #${revisionCard.revisionNumber} appears to be archived for project ${projectId} - leaving archived`);
-                // Mark as archived in database
-                try {
-                  await db
-                    .update(trelloCards)
-                    .set({ archivedAt: new Date() })
-                    .where(eq(trelloCards.id, revisionCard.id));
-                } catch (dbError) {
-                  console.log(`⚠️ Could not update archived status in database for revision card #${revisionCard.revisionNumber}`);
-                }
               } else {
                 console.error(`Failed to move revision card #${revisionCard.revisionNumber} for project ${projectId}:`, error);
                 success = false;
