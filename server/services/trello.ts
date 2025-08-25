@@ -355,8 +355,11 @@ export class TrelloService {
       // All revisions have 48 hour turnaround
       dueDate.setHours(dueDate.getHours() + 48);
     } else {
+      // Map database tier to proper label name for calculations
+      const labelName = this.mapSubscriptionTier(subscriptionTier);
+      
       // Initial video submission due dates by tier
-      switch (subscriptionTier?.toLowerCase()) {
+      switch (labelName.toLowerCase()) {
         case 'growth accelerator':
           dueDate.setHours(dueDate.getHours() + 48); // 48 hours
           break;
@@ -376,15 +379,33 @@ export class TrelloService {
     return dueDate;
   }
 
+  // Map database subscription tiers to Trello label names
+  private mapSubscriptionTier(dbTier: string): string {
+    const mapping: { [key: string]: string } = {
+      'premium': 'Growth Accelerator',
+      'growth accelerator': 'Growth Accelerator',
+      'standard': 'Consistency Club', 
+      'consistency club': 'Consistency Club',
+      'basic': 'Creative Spark',
+      'creative spark': 'Creative Spark',
+      'free': 'Creative Spark'
+    };
+    
+    return mapping[dbTier?.toLowerCase()] || 'Creative Spark';
+  }
+
   // Get subscription label ID (creates if doesn't exist)
   async getSubscriptionLabelId(boardId: string, subscriptionTier: string): Promise<string | null> {
     try {
+      // Map database tier to proper label name
+      const labelName = this.mapSubscriptionTier(subscriptionTier);
+      
       // Get existing labels
       const labels = await this.getBoardLabels(boardId);
       
       // Check if subscription tier label already exists
       const existingLabel = labels.find(label => 
-        label.name.toLowerCase() === subscriptionTier.toLowerCase()
+        label.name.toLowerCase() === labelName.toLowerCase()
       );
       
       if (existingLabel) {
@@ -393,7 +414,7 @@ export class TrelloService {
       
       // Create new label with appropriate color
       let color = 'yellow'; // Default
-      switch (subscriptionTier.toLowerCase()) {
+      switch (labelName.toLowerCase()) {
         case 'growth accelerator':
           color = 'red'; // Premium tier - red
           break;
@@ -405,8 +426,8 @@ export class TrelloService {
           break;
       }
       
-      const newLabel = await this.createLabel(boardId, subscriptionTier, color);
-      console.log(`✅ Created subscription label: ${subscriptionTier} (${color})`);
+      const newLabel = await this.createLabel(boardId, labelName, color);
+      console.log(`✅ Created subscription label: ${labelName} (${color}) for tier: ${subscriptionTier}`);
       return newLabel.id;
     } catch (error) {
       console.error('Error managing subscription label:', error);
@@ -423,9 +444,8 @@ export class TrelloService {
     subscriptionTier?: string; // For label creation
   } {
     let description = `**Project ID:** ${project.id}
-**Client:** ${user.firstName} ${user.lastName} (${user.email})
-**Company:** ${user.company || 'Not provided'}
-**Frame.io Link:** ${frameioLink}
+**Client:** ${user.firstName} ${user.lastName}
+**Footage Link:** ${frameioLink}
 
 ---
 `;
@@ -482,7 +502,7 @@ export class TrelloService {
     }
     
     return {
-      name: `${project.title} - ${user.firstName}`,
+      name: `${project.id} - ${project.title}`,
       desc: description,
       start: startDate,
       due: dueDate,
@@ -499,10 +519,9 @@ export class TrelloService {
     subscriptionTier?: string; // For label creation
   } {
     const description = `**Project ID:** ${project.id}
-**Client:** ${user.firstName} ${user.lastName} (${user.email})
-**Company:** ${user.company || 'Not provided'}
+**Client:** ${user.firstName} ${user.lastName}
 **Revision #:** ${revisionCount}
-**Frame.io Link:** ${frameioLink}
+**Footage Link:** ${frameioLink}
 **Review Link (for comments):** ${shareLink}
 
 ---
@@ -516,7 +535,7 @@ Please review the comments in Frame.io and make the requested changes.
     const dueDate = this.calculateDueDate(revisionRequestDate, subscription?.tier, true).toISOString();
 
     return {
-      name: `REVISION: ${project.title} - ${user.firstName} (Rev #${revisionCount})`,
+      name: `${project.id} - ${project.title} (Rev #${revisionCount})`,
       desc: description,
       start: startDate,
       due: dueDate,
