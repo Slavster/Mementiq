@@ -285,8 +285,11 @@ export class TrelloAutomationService {
 
         return success;
       } else {
-        // For regular completion, find the initial project card
-        const cardRecords = await db
+        // For regular completion, move ALL cards (initial + any pending revision cards) to Done
+        let success = true;
+
+        // 1. Move initial card to Done
+        const initialCards = await db
           .select()
           .from(trelloCards)
           .where(
@@ -296,27 +299,75 @@ export class TrelloAutomationService {
             )
           );
 
-        if (cardRecords.length === 0) {
+        if (initialCards.length > 0) {
+          const initialCard = initialCards[0];
+          
+          if (initialCard.listId !== config.doneListId) {
+            try {
+              await trelloService.moveCardToDone(initialCard.cardId, config.doneListId);
+              await db
+                .update(trelloCards)
+                .set({ 
+                  listId: config.doneListId,
+                  completedAt: new Date()
+                })
+                .where(eq(trelloCards.id, initialCard.id));
+              console.log(`✅ Moved initial card to Done for project ${projectId}`);
+            } catch (error: any) {
+              // Check if error indicates card is archived
+              if (error.message && (error.message.includes('archived') || error.message.includes('closed') || error.message.includes('not found'))) {
+                console.log(`📁 Initial card appears to be archived for project ${projectId} - leaving archived`);
+              } else {
+                console.error(`Failed to move initial card for project ${projectId}:`, error);
+                success = false;
+              }
+            }
+          } else {
+            console.log(`✅ Initial card already in Done for project ${projectId}`);
+          }
+        } else {
           console.log(`No initial Trello card found for project ${projectId}`);
-          return false;
         }
 
-        const cardRecord = cardRecords[0];
+        // 2. Move any pending revision cards to Done  
+        const revisionCards = await db
+          .select()
+          .from(trelloCards)
+          .where(
+            and(
+              eq(trelloCards.projectId, projectId),
+              eq(trelloCards.cardType, 'revision')
+            )
+          )
+          .orderBy(desc(trelloCards.revisionNumber));
 
-        // Move card to done list
-        await trelloService.moveCardToDone(cardRecord.cardId, config.doneListId);
+        for (const revisionCard of revisionCards) {
+          if (revisionCard.listId !== config.doneListId) {
+            try {
+              await trelloService.moveCardToDone(revisionCard.cardId, config.doneListId);
+              await db
+                .update(trelloCards)
+                .set({ 
+                  listId: config.doneListId,
+                  completedAt: new Date()
+                })
+                .where(eq(trelloCards.id, revisionCard.id));
+              console.log(`✅ Moved pending revision card #${revisionCard.revisionNumber} to Done for project ${projectId}`);
+            } catch (error: any) {
+              // Check if error indicates card is archived
+              if (error.message && (error.message.includes('archived') || error.message.includes('closed') || error.message.includes('not found'))) {
+                console.log(`📁 Revision card #${revisionCard.revisionNumber} appears to be archived for project ${projectId} - leaving archived`);
+              } else {
+                console.error(`Failed to move revision card #${revisionCard.revisionNumber} for project ${projectId}:`, error);
+                success = false;
+              }
+            }
+          } else {
+            console.log(`✅ Revision card #${revisionCard.revisionNumber} already in Done for project ${projectId}`);
+          }
+        }
 
-        // Update database record
-        await db
-          .update(trelloCards)
-          .set({ 
-            listId: config.doneListId,
-            completedAt: new Date()
-          })
-          .where(eq(trelloCards.id, cardRecord.id));
-
-        console.log(`✅ Moved project ${projectId} card to Done`);
-        return true;
+        return success;
       }
     } catch (error) {
       console.error('Error marking project complete in Trello:', error);
