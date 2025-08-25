@@ -1,7 +1,7 @@
 import { trelloService } from './trello.js';
 import { db } from '../db.js';
 import { trelloCards, trelloConfig, projects, users, tallyFormSubmissions } from '../../shared/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { frameioV4Service } from '../frameioV4Service.js';
 
 export class TrelloAutomationService {
@@ -197,24 +197,41 @@ export class TrelloAutomationService {
   }
 
   // 2. Move card to done when video is accepted (button click)
-  async markProjectComplete(projectId: number): Promise<boolean> {
+  async markProjectComplete(projectId: number, isRevisionRequest: boolean = false): Promise<boolean> {
     try {
       const config = await this.getTrelloConfig();
       if (!config) return false;
 
-      // Find the initial project card
-      const cardRecords = await db
-        .select()
-        .from(trelloCards)
-        .where(
-          and(
-            eq(trelloCards.projectId, projectId),
-            eq(trelloCards.cardType, 'initial')
+      let cardRecords;
+
+      if (isRevisionRequest) {
+        // For revision requests, find the most recent revision card
+        cardRecords = await db
+          .select()
+          .from(trelloCards)
+          .where(
+            and(
+              eq(trelloCards.projectId, projectId),
+              eq(trelloCards.cardType, 'revision')
+            )
           )
-        );
+          .orderBy(desc(trelloCards.revisionNumber));
+      } else {
+        // For regular completion, find the initial project card
+        cardRecords = await db
+          .select()
+          .from(trelloCards)
+          .where(
+            and(
+              eq(trelloCards.projectId, projectId),
+              eq(trelloCards.cardType, 'initial')
+            )
+          );
+      }
 
       if (cardRecords.length === 0) {
-        console.log(`No Trello card found for project ${projectId}`);
+        const cardType = isRevisionRequest ? 'revision' : 'initial';
+        console.log(`No ${cardType} Trello card found for project ${projectId}`);
         return false;
       }
 
@@ -232,7 +249,8 @@ export class TrelloAutomationService {
         })
         .where(eq(trelloCards.id, cardRecord.id));
 
-      console.log(`✅ Moved project ${projectId} card to Done`);
+      const cardType = isRevisionRequest ? 'revision' : 'project';
+      console.log(`✅ Moved ${cardType} ${projectId} card to Done`);
       return true;
     } catch (error) {
       console.error('Error marking project complete in Trello:', error);

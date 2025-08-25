@@ -340,12 +340,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   updatedAt: new Date(),
                 });
                 
-                // Move original card to Done (revision request completes the original video request)
+                // Move revision card to Done (revision request completes the current revision)
                 try {
-                  await trelloAutomation.markProjectComplete(projectId);
-                  console.log(`✅ WEBHOOK: Moved original card to Done for project ${projectId}`);
+                  await trelloAutomation.markProjectComplete(projectId, true);
+                  console.log(`✅ WEBHOOK: Moved revision card to Done for project ${projectId}`);
                 } catch (error) {
-                  console.error('Failed to move original Trello card to Done:', error);
+                  console.error('Failed to move revision Trello card to Done:', error);
                 }
 
                 // Automatically generate review link after successful payment
@@ -3306,12 +3306,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Log the revision for accounting/tracking
         console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
 
-        // Move original card to Done (revision request completes the original video request)
+        // Move revision card to Done (revision request completes the current revision)
         try {
-          await trelloAutomation.markProjectComplete(payment.projectId);
-          console.log(`✅ PAYMENT CHECK: Moved original card to Done for project ${payment.projectId}`);
+          await trelloAutomation.markProjectComplete(payment.projectId, true);
+          console.log(`✅ PAYMENT CHECK: Moved revision card to Done for project ${payment.projectId}`);
         } catch (error) {
-          console.error('Failed to move original Trello card to Done:', error);
+          console.error('Failed to move revision Trello card to Done:', error);
         }
       }
       
