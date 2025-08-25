@@ -3741,6 +3741,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile(path.join(process.cwd(), 'test_stripe_redirect.html'));
   });
 
+  // Test email endpoint 
+  app.get("/test-emails/:type", async (req, res) => {
+    const { type } = req.params;
+    const testEmail = req.query.email as string || "test@example.com";
+    
+    try {
+      let emailTemplate;
+      
+      switch(type) {
+        case 'video-ready':
+          emailTemplate = emailService.generateVideoDeliveryEmail(
+            testEmail,
+            "Test Project - Video Ready",
+            "https://example.com/download/test-video.mp4",
+            999
+          );
+          break;
+          
+        case 'completion':
+          emailTemplate = emailService.generateProjectCompletionEmail(
+            testEmail,
+            "Test Project - Completed",
+            "https://example.com/download/test-video.mp4"
+          );
+          break;
+          
+        case 'revision':
+          emailTemplate = emailService.generateRevisionInstructionEmail(
+            testEmail,
+            "Test Project - Revision Ready",
+            "https://frame.io/review/test-project",
+            999
+          );
+          break;
+          
+        default:
+          return res.status(400).json({ error: "Invalid email type. Use: video-ready, completion, or revision" });
+      }
+      
+      // For testing, just return the HTML instead of sending
+      if (req.query.preview === 'true') {
+        res.setHeader('Content-Type', 'text/html');
+        return res.send(emailTemplate.html);
+      }
+      
+      // Actually send the email
+      await emailService.sendEmail(emailTemplate);
+      res.json({ 
+        success: true, 
+        message: `${type} email sent to ${testEmail}`,
+        subject: emailTemplate.subject
+      });
+      
+    } catch (error: any) {
+      console.error('Test email error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Test endpoint to check URL parameter processing
   app.get("/api/test-url-params", (req, res) => {
     // Use relative URL instead of absolute URL
