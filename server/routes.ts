@@ -340,16 +340,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   updatedAt: new Date(),
                 });
                 
-                // Create Trello revision card after successful payment
-                try {
-                  const project = await storage.getProject(projectId);
-                  if (project) {
-                    await trelloAutomation.createRevisionCard(projectId, project.revisionCount + 1);
-                  }
-                } catch (error) {
-                  console.error('Failed to create Trello revision card:', error);
-                }
-
                 // Move original card to Done (revision request completes the original video request)
                 try {
                   await trelloAutomation.markProjectComplete(projectId);
