@@ -150,17 +150,50 @@ class AssetDetectionService {
     
     // Get assets from the project's dedicated folder only
     const folderAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-    const allVideoAssets = folderAssets.filter(asset => 
-      asset.type === 'file' && 
-      asset.media_type && 
-      asset.media_type.startsWith('video/')
-    );
+    
+    // Log all assets first for debugging
+    console.log(`📂 Found ${folderAssets.length} total assets in folder:`);
+    folderAssets.forEach((asset, index) => {
+      console.log(`   ${index + 1}. "${asset.name}" (Type: ${asset.type}, Media: ${asset.media_type || 'none'}, ID: ${asset.id})`);
+    });
+    
+    // Filter for video assets - check both direct videos and versioned videos
+    const allVideoAssets = folderAssets.filter(asset => {
+      // Regular video files
+      const isDirectVideo = asset.type === 'file' && 
+                           asset.media_type && 
+                           asset.media_type.startsWith('video/');
+      
+      // Versioned video files (Frame.io version stacks)
+      const isVersionedVideo = asset.type === 'version_stack' && 
+                              asset.head_version && 
+                              asset.head_version.media_type && 
+                              asset.head_version.media_type.startsWith('video/');
+      
+      const isVideo = isDirectVideo || isVersionedVideo;
+      
+      if (isVideo) {
+        const mediaType = isDirectVideo ? asset.media_type : asset.head_version.media_type;
+        const videoType = isDirectVideo ? 'direct' : 'versioned';
+        console.log(`✅ FOUND VIDEO: "${asset.name}" (${mediaType}, ${videoType})`);
+      }
+      
+      return isVideo;
+    });
     
     console.log(`🎬 Found ${allVideoAssets.length} videos in project folder ${project.mediaFolderId}`);
     
     // Log each video found for debugging
     allVideoAssets.forEach((asset, index) => {
-      console.log(`📹 Video ${index + 1}: "${asset.name}" (ID: ${asset.id}, Created: ${asset.created_at}, Updated: ${asset.updated_at})`);
+      // For versioned videos, use head_version timestamps
+      const createdAt = asset.type === 'version_stack' && asset.head_version ? 
+                       asset.head_version.created_at : asset.created_at;
+      const updatedAt = asset.type === 'version_stack' && asset.head_version ? 
+                       asset.head_version.updated_at : asset.updated_at;
+      const assetId = asset.type === 'version_stack' && asset.head_version ? 
+                     asset.head_version.id : asset.id;
+      
+      console.log(`📹 Video ${index + 1}: "${asset.name}" (ID: ${assetId}, Created: ${createdAt}, Updated: ${updatedAt})`);
     });
 
     console.log(`🎬 Project ${project.id}: Found ${allVideoAssets.length} total video assets`);
@@ -196,16 +229,22 @@ class AssetDetectionService {
     // Check both created_at (new files) and updated_at (new versions)
     if (timestampToCheck) {
       videoAssets = allVideoAssets.filter(asset => {
-        const createdTime = new Date(asset.created_at);
-        const updatedTime = new Date(asset.updated_at || asset.created_at);
+        // For versioned videos, use head_version timestamps
+        const createdAt = asset.type === 'version_stack' && asset.head_version ? 
+                         asset.head_version.created_at : asset.created_at;
+        const updatedAt = asset.type === 'version_stack' && asset.head_version ? 
+                         asset.head_version.updated_at : asset.updated_at;
+        
+        const createdTime = new Date(createdAt);
+        const updatedTime = new Date(updatedAt || createdAt);
         const latestTime = updatedTime > createdTime ? updatedTime : createdTime;
         
         const isAfterTimestamp = latestTime > timestampToCheck;
         
         if (updatedTime > createdTime) {
-          console.log(`📅 Asset "${asset.name}": created ${asset.created_at}, updated ${asset.updated_at}, checking against ${timestampToCheck.toISOString()}: ${isAfterTimestamp} (version update detected)`);
+          console.log(`📅 Asset "${asset.name}": created ${createdAt}, updated ${updatedAt}, checking against ${timestampToCheck.toISOString()}: ${isAfterTimestamp} (version update detected)`);
         } else {
-          console.log(`📅 Asset "${asset.name}": created ${asset.created_at}, checking against ${timestampToCheck.toISOString()}: ${isAfterTimestamp}`);
+          console.log(`📅 Asset "${asset.name}": created ${createdAt}, checking against ${timestampToCheck.toISOString()}: ${isAfterTimestamp}`);
         }
         
         return isAfterTimestamp;
