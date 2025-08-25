@@ -65,7 +65,7 @@ export class EmailService {
               <ol style="margin: 0; padding-left: 20px;">
                 <li>Watch your video using the download link below</li>
                 <li>Accept the final video or request a revision. Please visit your 
-                <a href="${process.env.VITE_APP_URL || "https://mementiq.com"}/dashboard/projects/${projectId}">
+                <a href="${process.env.CLIENT_URL || process.env.VITE_APP_URL || "http://localhost:5000"}/dashboard?project=${projectId}">
                 project dashboard</a> to complete this step.</li>
                 <li>Download your video within 30 days</li>
               </ol>
@@ -74,12 +74,12 @@ export class EmailService {
             <div style="text-align: center; margin: 30px 0;">
               <a href="${downloadLink}" 
                  style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
-                📥 Download Video
+                🎬 Watch Video
               </a>
               
-              <a href="${process.env.VITE_APP_URL || "https://mementiq.com"}/dashboard" 
+              <a href="${process.env.CLIENT_URL || process.env.VITE_APP_URL || "http://localhost:5000"}/dashboard" 
                  style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
-                🎯 Review in Dashboard
+                🎯 Go to Dashboard
               </a>
             </div>
             
@@ -134,8 +134,13 @@ export class EmailService {
             
             <div style="text-align: center; margin: 30px 0;">
               <a href="${downloadLink}" 
-                 style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-                📥 Download Your Completed Video
+                 style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
+                📥 Download Your Video
+              </a>
+              
+              <a href="${process.env.CLIENT_URL || process.env.VITE_APP_URL || "http://localhost:5000"}/dashboard" 
+                 style="background: #6f42c1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
+                🎯 Back to Dashboard
               </a>
             </div>
             
@@ -193,12 +198,12 @@ export class EmailService {
             <div style="text-align: center; margin: 30px 0;">
               <a href="${reviewLink}" 
                  style="background: #fd7e14; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
-                🎬 Review Video
+                🎬 Review & Comment on Video
               </a>
               
-              <a href="${process.env.VITE_APP_URL || "https://mementiq.com"}/dashboard" 
+              <a href="${process.env.CLIENT_URL || process.env.VITE_APP_URL || "http://localhost:5000"}/dashboard?project=${projectId}" 
                  style="background: #6f42c1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
-                📝 Provide Instructions
+                📝 Go to Dashboard
               </a>
             </div>
             
