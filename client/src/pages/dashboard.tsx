@@ -179,6 +179,21 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, setLocation]);
 
+  // Check if user just returned from Stripe payment and refresh subscription
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    const paymentReturn = urlParams.get('payment_return');
+    
+    if (sessionId || paymentReturn === 'success') {
+      console.log("💳 Detected return from Stripe payment, refreshing subscription status");
+      // Force refresh subscription data
+      setTimeout(() => {
+        refetchSubscription();
+      }, 1000); // Small delay to ensure Stripe has processed
+    }
+  }, [refetchSubscription]);
+
   // Get user projects - reasonable cache to improve performance
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
     queryKey: ["/api/projects"],
@@ -409,12 +424,13 @@ export default function DashboardPage() {
     }
   }, [toast, projectsData, projectsLoading]);
 
-  // Get subscription status
-  const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
+  // Get subscription status with more frequent checks
+  const { data: subscriptionData, isLoading: subscriptionLoading, refetch: refetchSubscription } = useQuery({
     queryKey: ["/api/subscription/status"],
     enabled: isAuthenticated,
-    staleTime: 2 * 60 * 1000, // Cache subscription for 2 minutes
-    refetchOnWindowFocus: false, // Reduce unnecessary refetches
+    staleTime: 30 * 1000, // Cache for only 30 seconds to catch subscription changes
+    refetchOnWindowFocus: true, // Allow refetch on window focus for subscription updates
+    refetchInterval: 60 * 1000, // Poll every minute for subscription updates
   });
 
   const subscription: SubscriptionStatus | undefined = (subscriptionData as any)
@@ -723,6 +739,22 @@ export default function DashboardPage() {
               <span className="text-white">
                 Welcome, {mappedUser.firstName}
               </span>
+              <Button
+                onClick={() => {
+                  console.log("🔄 Manual subscription refresh requested");
+                  refetchSubscription();
+                  toast({
+                    title: "Refreshing subscription status...",
+                    description: "Checking for updates",
+                  });
+                }}
+                variant="ghost"
+                className="text-white hover:text-accent"
+                size="sm"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
               {subscription && (
                 <Button
                   onClick={() =>

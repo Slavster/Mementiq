@@ -14,7 +14,10 @@ export default function PaymentSuccessPage() {
 
   // Invalidate subscription status on success to refresh data
   useEffect(() => {
+    console.log("💳 Payment success page - invalidating subscription queries");
+    // Force refetch with longer stale time to ensure fresh data
     queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+    queryClient.refetchQueries({ queryKey: ["/api/subscription/status"] });
   }, [queryClient]);
 
   // Auto-redirect to dashboard after a short delay if authenticated
