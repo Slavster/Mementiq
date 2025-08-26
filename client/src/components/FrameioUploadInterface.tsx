@@ -85,7 +85,7 @@ export function FrameioUploadInterface({
   const [isUploading, setIsUploading] = useState(false);
   const [folderSetupStatus, setFolderSetupStatus] = useState<
     "checking" | "ready" | "error"
-  >("checking");
+  >("ready");
   const [totalSize, setTotalSize] = useState(0);
   const [existingFiles, setExistingFiles] = useState<ExistingFile[]>([]);
   const [existingFileCount, setExistingFileCount] = useState(0);
@@ -109,19 +109,20 @@ export function FrameioUploadInterface({
     console.log(
       `🟢 COMPONENT: Initial folder setup status: ${folderSetupStatus}`,
     );
+    // Run folder structure check silently in background without showing loading popup
     checkFolderStructure();
   }, [project.id]);
 
   const checkFolderStructure = async () => {
     console.log(
-      `🔵 CLIENT: Retry Setup button clicked for project ${project.id}`,
+      `🔵 CLIENT: Background folder structure check for project ${project.id}`,
     );
     try {
       console.log(`🔵 CLIENT: Getting Supabase session...`);
       const session = await supabase.auth.getSession();
       if (!session.data.session?.access_token) {
         console.log(`🔴 CLIENT: No access token found`);
-        setFolderSetupStatus("error");
+        // Don't show error to user for background check
         return;
       }
       console.log(`🔵 CLIENT: Access token found, making API call...`);
@@ -143,7 +144,6 @@ export function FrameioUploadInterface({
 
       if (result.success && result.frameioConfigured) {
         console.log(`🟢 CLIENT: Folder setup successful`);
-        setFolderSetupStatus("ready");
         setExistingFiles(result.existingFiles || []);
         setExistingFileCount(result.fileCount || 0);
         setExistingStorageUsed(result.totalStorageUsed || 0);
@@ -154,11 +154,11 @@ export function FrameioUploadInterface({
         }
       } else {
         console.log(`🔴 CLIENT: Folder setup failed:`, result);
-        setFolderSetupStatus("error");
+        // Don't change status for background failures
       }
     } catch (error) {
       console.error("🔴 CLIENT: Folder structure check failed:", error);
-      setFolderSetupStatus("error");
+      // Don't change status for background failures
     }
   };
 
