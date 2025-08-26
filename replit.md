@@ -25,7 +25,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 
 ### Feature Specifications
 - **User Authentication**: Supabase Auth (email/password, Google social login, JWT).
-- **Subscription Management**: Stripe integration (three-tier model, usage tracking, project creation limits).
+- **Subscription Management**: Stripe integration (three-tier model: Creative Spark 1 video/month, Consistency Club 4 videos/month, Growth Accelerator 8 videos/month, usage tracking, project creation limits).
 - **Project Management Dashboard**: Comprehensive project lifecycle management (`draft`, `awaiting instructions`, `edit in progress`, `video is ready`, `complete`, `revision in progress`), with automatic status updates.
 - **Video & Photo Upload System**: Frame.io API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Frame.io folders are created only upon "New Video Request" and enforce a maximum 2-level hierarchy. Features a centralized, automatically refreshed token system for Frame.io V4 API.
 - **Tally Form Integration**: Mandatory for editing instructions.
