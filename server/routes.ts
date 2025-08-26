@@ -274,7 +274,7 @@ const SUBSCRIPTION_TIERS = {
   },
   premium: {
     name: "Growth Accelerator",
-    allowance: 12,
+    allowance: 8,
     stripeProductId: "prod_Sm3pNUZ42txw8o",
   },
 };
