@@ -2621,7 +2621,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create actual Stripe checkout session using your product IDs
         const tierConfig =
           SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS];
-        const baseUrl = process.env.REPL_SLUG
+        
+        // Use new Replit dev domain format, fallback to old format, then localhost
+        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+          : process.env.REPL_SLUG
           ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
           : "http://localhost:5000";
 
@@ -3243,7 +3247,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use same baseUrl construction as subscription flow
-      const baseUrl = process.env.REPL_SLUG
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : process.env.REPL_SLUG
         ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
         : "http://localhost:5000";
 
