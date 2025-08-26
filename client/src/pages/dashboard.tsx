@@ -739,22 +739,7 @@ export default function DashboardPage() {
               <span className="text-white">
                 Welcome, {mappedUser.firstName}
               </span>
-              <Button
-                onClick={() => {
-                  console.log("🔄 Manual subscription refresh requested");
-                  refetchSubscription();
-                  toast({
-                    title: "Refreshing subscription status...",
-                    description: "Checking for updates",
-                  });
-                }}
-                variant="ghost"
-                className="text-white hover:text-accent"
-                size="sm"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
+
               {subscription && (
                 <Button
                   onClick={() =>
