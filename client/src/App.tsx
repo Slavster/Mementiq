@@ -1,38 +1,11 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import Home from "@/pages/home";
-import AuthPage from "@/pages/auth";
-import DashboardPage from "@/pages/dashboard";
-import Subscribe from "@/pages/subscribe";
-import PaymentCancelledPage from "@/pages/payment-cancelled";
-import PaymentSuccessPage from "@/pages/payment-success";
-import NotFound from "@/pages/not-found";
-
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/dashboard" component={DashboardPage} />
-      <Route path="/subscribe" component={Subscribe} />
-      <Route path="/payment-cancelled" component={PaymentCancelledPage} />
-      <Route path="/payment-success" component={PaymentSuccessPage} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
-
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
+      <div className="text-white text-center">
+        <h1 className="text-4xl font-bold mb-4">Mementiq Test</h1>
+        <p className="text-xl">App is loading successfully!</p>
+      </div>
+    </div>
   );
 }
 
