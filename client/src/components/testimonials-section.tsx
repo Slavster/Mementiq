@@ -11,7 +11,7 @@ const testimonials = [
     country: "🇦🇺",
     content:
       "Mementiq did a fabulous job at creating a montage with fun music and creative transitions. Completed quickly and without any prompts, they knew the vibe we wanted. Love your work.",
-    avatar: "/api/assets/Testimonial_Pics/Paddy.png",
+    avatar: null, // Removed to improve load time
     rating: 5,
   },
   {
@@ -21,7 +21,7 @@ const testimonials = [
     country: "🇩🇰",
     content:
       "The video was so amazing, exactly what I was looking for! Other editors have been so difficult to work with, but with Mementiq it was one take, one send, one revision, and we were done! Cuts really captured the essence of what people wanted to watch.",
-    avatar: "/api/assets/Testimonial_Pics/Martin.png",
+    avatar: null, // Removed to improve load time
     rating: 5,
   },
   {
@@ -31,7 +31,7 @@ const testimonials = [
     country: "🇺🇸",
     content:
       "I had two movies done using my photos and video clips from the past year. I didn’t have time to do it myself, so I decided to use Mementiq. I am impressed! Everything was done as I wanted and in a timely manner. I will use your service again and I highly recommend it to everyone.",
-    avatar: "/api/assets/Testimonial_Pics/Elena.png",
+    avatar: null, // Removed to improve load time
     rating: 5,
   },
 
@@ -42,7 +42,7 @@ const testimonials = [
     country: "🇬🇷",
     content:
       "Mementiq did an incredible job editing and producing one of the most powerful reels from Vietnam Nomad Fest 2025. As Co-Founder of the festival, I sent over 30 raw interview clips, and what they delivered was beyond impressive. It captured our community's spirit, energy, and diversity that deeply resonated with our audience.",
-    avatar: "/api/assets/Testimonial_Pics/Markos.png",
+    avatar: null, // Removed to improve load time
     rating: 5,
   },
   {
@@ -52,7 +52,7 @@ const testimonials = [
     country: "🇦🇺",
     content:
       "As someone who is new to advertising, I was not confident about how I came across on camera. I wanted my ad to look exceptional, Mementiq beautifully edited an ad which distracts from the parts I was a little bit critical of. I am now very excited and confident about posting the ad.",
-    avatar: "/api/assets/Testimonial_Pics/Ethan.png",
+    avatar: null, // Removed to improve load time
     rating: 5,
   },
   {
@@ -62,7 +62,7 @@ const testimonials = [
     country: "🇹🇭",
     content:
       "Big thanks to Mementiq for helping me out with video editing! Your eye for detail and smooth transitions made the video look amazing. Couldn’t have done it without you!",
-    avatar: "/api/assets/Testimonial_Pics/Jainkarn.png",
+    avatar: null, // Removed to improve load time
     rating: 5,
   },
 ];
@@ -127,26 +127,16 @@ export default function TestimonialsSection() {
                         <Star key={i} className="h-4 w-4 fill-current" />
                       ))}
                     </div>
+                    <span className="text-gray-400 text-sm">{testimonial.country}</span>
                   </div>
-                  <p className="text-charcoal mb-4 italic text-sm leading-relaxed">
-                    "{testimonial.content}"
-                  </p>
-                  <div className="flex items-center">
-                    <img
-                      src={testimonial.avatar}
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover mr-3 border-2 border-primary/30"
-                    />
-                    <div>
-                      <p className="font-semibold text-light text-sm">
-                        {testimonial.name}
-                      </p>
-                      <p className="text-xs text-charcoal">
-                        {testimonial.title}
-                      </p>
-                      <p className="text-lg">{testimonial.country}</p>
+                  <div className="mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center text-white font-bold text-lg mb-2">
+                      {testimonial.name.split(' ').map(n => n[0]).join('')}
                     </div>
+                    <h4 className="text-white font-semibold">{testimonial.name}</h4>
+                    <p className="text-gray-400 text-sm">{testimonial.title}</p>
                   </div>
+                  <p className="text-gray-300 italic">"{testimonial.content}"</p>
                 </CardContent>
               </Card>
             ))}

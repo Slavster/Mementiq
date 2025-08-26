@@ -1,6 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Volume2, VolumeX, Play } from "lucide-react";
+
+// Lazy load the video component for better initial page load
+const PortfolioVideo = lazy(() => import("./portfolio-video"));
 
 const portfolioItems = [
   {
@@ -59,27 +62,22 @@ export default function PortfolioSection() {
   const [selectedVideo, setSelectedVideo] = useState<number>(0);
   const [playingVideo, setPlayingVideo] = useState<number | null>(null);
   const [videoProgress, setVideoProgress] = useState<{ [key: number]: number }>({});
-  const [sectionInView, setSectionInView] = useState<boolean>(false);
-  const [isMuted, setIsMuted] = useState<boolean>(true); // Videos start muted
-  const [hoveredVideo, setHoveredVideo] = useState<number | null>(null); // Track hovered video
+  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [hoveredVideo, setHoveredVideo] = useState<number | null>(null);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
   const isNavigating = useRef<boolean>(false);
-  const scrollThreshold = 100; // Faster scrolling response
+  const scrollThreshold = 100;
 
   const handleVideoClick = (videoId: number) => {
-    const video = videoRefs.current[videoId];
-    if (!video) {
-      console.error(`Video ref not found for video ${videoId}`);
-      return;
-    }
-
     if (playingVideo === videoId) {
       // Pause current video
-      video.pause();
-      setPlayingVideo(null);
-      console.log(`Paused video ${videoId}`);
+      const video = videoRefs.current[videoId];
+      if (video) {
+        video.pause();
+        setPlayingVideo(null);
+      }
     } else {
       // Stop any currently playing video
       if (playingVideo !== null) {
@@ -90,54 +88,21 @@ export default function PortfolioSection() {
         }
       }
 
-      // Set playing state first
-      setPlayingVideo(videoId);
-      video.muted = isMuted;
-      
-      // For Interview video, add extra logging
-      if (videoId === 3) {
-        console.log(`[Interview] Attempting to play Interview video`);
-        console.log(`[Interview] Video element:`, video);
-        console.log(`[Interview] Video src: ${video.src}`);
-        console.log(`[Interview] Ready state: ${video.readyState}`);
-        console.log(`[Interview] Network state: ${video.networkState}`);
-        console.log(`[Interview] Paused: ${video.paused}`);
-        console.log(`[Interview] Muted: ${video.muted}`);
-      }
-      
-      // Reset to beginning
-      video.currentTime = 0;
-      
-      // Try to play with Promise handling
-      const playPromise = video.play();
-      
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log(`Successfully playing video ${videoId}`);
-            if (videoId === 3) {
-              console.log(`[Interview] Video is now playing`);
-            }
-          })
-          .catch(error => {
-            console.error(`Error playing video ${videoId}:`, error);
-            if (videoId === 3) {
-              console.error(`[Interview] Error details:`, error.message, error.name);
-            }
-            // Simple retry
-            setTimeout(() => {
-              video.play().catch(err => {
-                console.error(`Retry failed for video ${videoId}:`, err);
-              });
-            }, 300);
-          });
+      // Play new video
+      const video = videoRefs.current[videoId];
+      if (video) {
+        setPlayingVideo(videoId);
+        video.muted = isMuted;
+        video.currentTime = 0;
+        video.play().catch(error => {
+          console.error(`Error playing video ${videoId}:`, error);
+        });
       }
     }
   };
 
-  // Toggle mute/unmute for playing video
   const toggleMute = () => {
-    setIsMuted(prev => !prev);
+    setIsMuted(!isMuted);
     if (playingVideo !== null) {
       const video = videoRefs.current[playingVideo];
       if (video) {
@@ -298,54 +263,33 @@ export default function PortfolioSection() {
                       isActive ? "border-primary/70" : "border-gray-700/50"
                     } ${playingVideo === item.id ? "border-accent" : ""}`}
                   >
-                    {/* Always render video element for preloading */}
-                    <video
-                      ref={(el) => {
-                        videoRefs.current[item.id] = el;
-                      }}
-                      className={`${
-                        isActive ? "w-[420px] h-[470px]" : "w-80 h-96"
-                      } object-cover ${
-                        playingVideo === item.id ? "block" : "hidden"
-                      } transition-all duration-500`}
-                      muted
-                      loop
-                      playsInline
-                      preload={item.id === 3 ? "auto" : "metadata"}
-                      src={item.preview}
-                      onError={(e) => {
-                        console.error(`Video ${item.id} error:`, e);
-                        if (item.id === 3) {
-                          const video = e.currentTarget as HTMLVideoElement;
-                          console.error(`[Interview] Video error details:`, {
-                            src: video.src,
-                            readyState: video.readyState,
-                            networkState: video.networkState,
-                            error: video.error
-                          });
-                        }
-                      }}
-                      onLoadedMetadata={() => {
-                        if (item.id === 3) {
-                          console.log(`[Interview] Metadata loaded`);
-                        }
-                      }}
-                      onCanPlay={() => {
-                        if (item.id === 3) {
-                          console.log(`[Interview] Can play`);
-                        }
-                      }}
-                      onEnded={() => {
-                        // Loop video
-                        const video = videoRefs.current[item.id];
-                        if (video) {
-                          video.currentTime = 0;
-                          video.play().catch(() => {
-                            // Ignore replay errors
-                          });
-                        }
-                      }}
-                    />
+                    {/* Lazy load video only when playing */}
+                    {playingVideo === item.id && (
+                      <video
+                        ref={(el) => {
+                          videoRefs.current[item.id] = el;
+                        }}
+                        className={`${
+                          isActive ? "w-[420px] h-[470px]" : "w-80 h-96"
+                        } object-cover transition-all duration-500`}
+                        muted={isMuted}
+                        autoPlay
+                        loop
+                        playsInline
+                        preload="none"
+                        src={item.preview}
+                        onEnded={() => {
+                          // Loop video
+                          const video = videoRefs.current[item.id];
+                          if (video) {
+                            video.currentTime = 0;
+                            video.play().catch(() => {
+                              // Ignore replay errors
+                            });
+                          }
+                        }}
+                      />
+                    )}
                     
                     {/* Show thumbnail when video is not playing */}
                     <img
