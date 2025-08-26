@@ -179,21 +179,6 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, setLocation]);
 
-  // Check if user just returned from Stripe payment and refresh subscription
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session_id');
-    const paymentReturn = urlParams.get('payment_return');
-    
-    if (sessionId || paymentReturn === 'success') {
-      console.log("💳 Detected return from Stripe payment, refreshing subscription status");
-      // Force refresh subscription data
-      setTimeout(() => {
-        refetchSubscription();
-      }, 1000); // Small delay to ensure Stripe has processed
-    }
-  }, [refetchSubscription]);
-
   // Get user projects - reasonable cache to improve performance
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
     queryKey: ["/api/projects"],
@@ -435,6 +420,21 @@ export default function DashboardPage() {
 
   const subscription: SubscriptionStatus | undefined = (subscriptionData as any)
     ?.subscription;
+
+  // Check if user just returned from Stripe payment and refresh subscription
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    const paymentReturn = urlParams.get('payment_return');
+    
+    if (sessionId || paymentReturn === 'success') {
+      console.log("💳 Detected return from Stripe payment, refreshing subscription status");
+      // Force refresh subscription data
+      setTimeout(() => {
+        refetchSubscription();
+      }, 1000); // Small delay to ensure Stripe has processed
+    }
+  }, [refetchSubscription]);
 
   // Send to editor mutation
   const sendToEditorMutation = useMutation({
