@@ -1,9 +1,6 @@
-import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Volume2, VolumeX, Play } from "lucide-react";
-
-// Lazy load the video component for better initial page load
-const PortfolioVideo = lazy(() => import("./portfolio-video"));
 
 const portfolioItems = [
   {
