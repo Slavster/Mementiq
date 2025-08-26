@@ -2621,18 +2621,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create actual Stripe checkout session using your product IDs
         const tierConfig =
           SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS];
-        
-        // Construct the correct base URL for Stripe redirects
-        // For development: https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/
-        let baseUrl = "https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev";
-        
-        // Auto-detect from request headers as backup
-        if (req.headers.host && !req.headers.host.includes('localhost')) {
-          const protocol = req.headers['x-forwarded-proto'] || 'https';
-          baseUrl = `${protocol}://${req.headers.host}`;
-        }
-        
-        console.log("🔗 Using base URL for Stripe redirect:", baseUrl);
+        const baseUrl = process.env.REPL_SLUG
+          ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+          : "http://localhost:5000";
 
         // Get the default price for the product
         const prices = await stripe.prices.list({
