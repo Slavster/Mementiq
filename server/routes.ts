@@ -264,12 +264,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 const SUBSCRIPTION_TIERS = {
   basic: {
     name: "Creative Spark",
-    allowance: 2,
+    allowance: 1,
     stripeProductId: "prod_SlhMaAjk64ykbk",
   },
   standard: {
     name: "Consistency Club",
-    allowance: 6,
+    allowance: 4,
     stripeProductId: "prod_SlhNEEOKukgpjo",
   },
   premium: {
@@ -277,6 +277,16 @@ const SUBSCRIPTION_TIERS = {
     allowance: 12,
     stripeProductId: "prod_Sm3pNUZ42txw8o",
   },
+};
+
+// Helper function to map Stripe product ID back to tier name
+const getSubscriptionTierFromProductId = (productId: string): string => {
+  for (const [tierKey, tierConfig] of Object.entries(SUBSCRIPTION_TIERS)) {
+    if (tierConfig.stripeProductId === productId) {
+      return tierKey;
+    }
+  }
+  return 'basic'; // Default fallback
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -2563,17 +2573,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             if (productId) {
               const product = await stripe.products.retrieve(productId);
+              
+              // Map Stripe product ID to correct tier
+              const correctTier = getSubscriptionTierFromProductId(productId);
+              const correctAllowance = SUBSCRIPTION_TIERS[correctTier as keyof typeof SUBSCRIPTION_TIERS].allowance;
 
-              // Get allowance from Stripe product metadata
+              // Get allowance from Stripe product metadata (fallback to our config)
               if (product.metadata?.allowance) {
                 allowanceFromStripe = parseInt(product.metadata.allowance);
+              } else {
+                allowanceFromStripe = correctAllowance;
+              }
 
-                // Update local storage if different
-                if (allowanceFromStripe !== user.subscriptionAllowance) {
-                  await storage.updateUserSubscription(user.id, {
-                    subscriptionAllowance: allowanceFromStripe,
-                  });
-                }
+              // Update local storage if tier or allowance is different
+              if (allowanceFromStripe !== user.subscriptionAllowance || correctTier !== user.subscriptionTier) {
+                console.log(`🔄 Updating subscription tier from ${user.subscriptionTier} to ${correctTier} (allowance: ${allowanceFromStripe})`);
+                await storage.updateUserSubscription(user.id, {
+                  subscriptionTier: correctTier,
+                  subscriptionAllowance: allowanceFromStripe,
+                });
               }
 
               productName = product.name;
