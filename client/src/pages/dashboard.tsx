@@ -171,6 +171,18 @@ export default function DashboardPage() {
 
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
+  // Early loading state - show immediately to prevent white screen
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-white text-lg">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Redirect to auth if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -181,12 +193,14 @@ export default function DashboardPage() {
 
 
 
-  // Get user projects - reasonable cache to improve performance
+  // Get user projects - optimized for better performance  
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes for better performance
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
     refetchOnWindowFocus: false, // Reduce unnecessary refetches
+    refetchOnMount: false, // Don't refetch if data exists
   });
 
   // Check for pending revision payments on mount
@@ -411,13 +425,14 @@ export default function DashboardPage() {
     }
   }, [toast, projectsData, projectsLoading]);
 
-  // Get subscription status with more frequent checks
+  // Get subscription status with optimized caching
   const { data: subscriptionData, isLoading: subscriptionLoading, refetch: refetchSubscription } = useQuery({
     queryKey: ["/api/subscription/status"],
     enabled: isAuthenticated,
-    staleTime: 30 * 1000, // Cache for only 30 seconds to catch subscription changes
-    refetchOnWindowFocus: true, // Allow refetch on window focus for subscription updates
-    refetchInterval: 60 * 1000, // Poll every minute for subscription updates
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes for better performance
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Reduce unnecessary refetches for performance
+    refetchInterval: 5 * 60 * 1000, // Poll every 5 minutes instead of 1 minute
   });
 
   const subscription: SubscriptionStatus | undefined = (subscriptionData as any)
@@ -679,27 +694,9 @@ export default function DashboardPage() {
     }
   };
 
-  // Only show loading screen for auth, let dashboard show with individual loading states
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <div className="text-white text-xl">Authenticating...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <div className="text-white text-xl">Redirecting to login...</div>
-        </div>
-      </div>
-    );
+  // Return early if not authenticated - the useEffect will handle redirect
+  if (!isAuthenticated) {
+    return null;
   }
 
   const projects: Project[] = (projectsData as any)?.projects || [];
