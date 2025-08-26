@@ -310,32 +310,6 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
           <div className="space-y-4">
             {/* Tally Form Embed */}
             <div className="border rounded-lg overflow-hidden">
-              {/* Debug URL generation - only show in development */}
-              {process.env.NODE_ENV === "development" && (
-                <div className="p-2 bg-yellow-100 text-xs border-b">
-                  <p>
-                    <strong>Debug Info:</strong>
-                  </p>
-                  <p>
-                    <strong>Has Existing:</strong>{" "}
-                    {hasExistingSubmission ? "Yes" : "No"}
-                  </p>
-                  <p>
-                    <strong>Submission ID:</strong>{" "}
-                    {existingSubmission?.tallySubmissionId || "None"}
-                  </p>
-                  <p>
-                    <strong>API Response:</strong>{" "}
-                    {JSON.stringify(submissionData)}
-                  </p>
-                  <p>
-                    <strong>Project Status:</strong>{" "}
-                    {hasExistingSubmission
-                      ? "Should load existing submission for editing"
-                      : "Fresh form - no submission exists"}
-                  </p>
-                </div>
-              )}
               <iframe
                 key={hasExistingSubmission ? "edit-mode" : "new-mode"}
                 data-tally-src={`https://tally.so/embed/wv854l?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1&userId=${userId}&projectId=${projectId}${hasExistingSubmission && existingSubmission?.tallySubmissionId ? `&submissionId=${existingSubmission.tallySubmissionId}` : ""}`}
