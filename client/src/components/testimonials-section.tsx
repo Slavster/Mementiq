@@ -128,7 +128,7 @@ export default function TestimonialsSection() {
                       ))}
                     </div>
                     <span className="bg-primary/20 text-primary px-2 py-1 rounded-full text-xs font-semibold">
-                      Fiverr
+                      {testimonial.platform}
                     </span>
                   </div>
                   <p className="text-charcoal mb-4 italic text-sm leading-relaxed">
