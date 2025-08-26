@@ -96,7 +96,7 @@ const getStatusColor = (status: string) => {
     case "awaiting revision instructions":
       return "bg-black border border-pink-400 text-pink-400";
     case "edit in progress":
-      return "bg-black border border-blue-400 text-blue-400";
+      return "bg-black border border-cyan-400 text-cyan-400";
     case "video is ready":
       return "bg-black border border-green-400 text-green-400";
     case "delivered":
@@ -171,12 +171,20 @@ export default function DashboardPage() {
 
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  // Get user projects - always fetch fresh data to show latest updates
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      console.log("🔓 Not authenticated, redirecting to /auth");
+      setLocation("/auth");
+    }
+  }, [isAuthenticated, authLoading, setLocation]);
+
+  // Get user projects - reasonable cache to improve performance
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
-    staleTime: 0, // Always consider data stale to ensure fresh timestamps
-    gcTime: 0, // Don't cache old data
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false, // Reduce unnecessary refetches
   });
 
   // Check for pending revision payments on mount
@@ -405,6 +413,8 @@ export default function DashboardPage() {
   const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
     queryKey: ["/api/subscription/status"],
     enabled: isAuthenticated,
+    staleTime: 2 * 60 * 1000, // Cache subscription for 2 minutes
+    refetchOnWindowFocus: false, // Reduce unnecessary refetches
   });
 
   const subscription: SubscriptionStatus | undefined = (subscriptionData as any)
@@ -651,16 +661,27 @@ export default function DashboardPage() {
     }
   };
 
+  // Only show loading screen for auth, let dashboard show with individual loading states
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <div className="text-white text-xl">Authenticating...</div>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated || !user) {
-    return null; // Will be redirected by useEffect
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <div className="text-white text-xl">Redirecting to login...</div>
+        </div>
+      </div>
+    );
   }
 
   const projects: Project[] = (projectsData as any)?.projects || [];
@@ -770,7 +791,10 @@ export default function DashboardPage() {
                   <p className="text-sm text-gray-400">Videos Created</p>
                   <div className="mt-2">
                     {subscriptionLoading ? (
-                      <div className="animate-pulse">Loading...</div>
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-300"></div>
+                        <span>Loading...</span>
+                      </div>
                     ) : subscription?.hasActiveSubscription ? (
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
@@ -872,6 +896,7 @@ export default function DashboardPage() {
 
           {projectsLoading ? (
             <div className="text-white text-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
               Loading projects...
             </div>
           ) : projects.length === 0 ? (
