@@ -219,7 +219,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
             <Alert>
               <AlertDescription>
                 Your instructions were submitted on{" "}
-                {new Date(existingSubmission?.submittedAt).toLocaleDateString()}.{" "}
+                {existingSubmission?.submittedAt ? new Date(existingSubmission.submittedAt).toLocaleDateString() : "an earlier date"}.{" "}
                 <br />
                 You can submit a fresh form if you need to give the editor new
                 directions.
