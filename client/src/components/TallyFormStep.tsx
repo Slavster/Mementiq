@@ -47,7 +47,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
   backToUploadButton,
 }) => {
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [submissionReceived, setSubmissionReceived] = useState(false);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -82,13 +82,6 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
       );
     },
     onSuccess: () => {
-      setSubmissionReceived(true);
-      toast({
-        title: "Form Submitted Successfully",
-        description:
-          "Your project request has been submitted and is now being reviewed.",
-      });
-
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({
         queryKey: [`/api/projects/${projectId}/tally-submission`],
@@ -96,9 +89,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
 
       // Call onFormComplete to automatically close dialog and move to next step
       if (onFormComplete) {
-        setTimeout(() => {
-          onFormComplete();
-        }, 1500); // Brief delay to show success message
+        onFormComplete();
       }
     },
     onError: (error: any) => {
@@ -240,30 +231,7 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
     );
   }
 
-  if (submissionReceived) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            Form Submitted Successfully
-          </CardTitle>
-          <CardDescription>
-            Your project request has been submitted for review.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <CheckCircle2 className="h-4 w-4" />
-            <AlertDescription>
-              Thank you! Your project details have been recorded and you'll be
-              contacted soon.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+
 
   return (
     <Card className="w-full">
