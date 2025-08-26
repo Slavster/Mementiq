@@ -3242,6 +3242,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Use same baseUrl construction as subscription flow
+      const baseUrl = process.env.REPL_SLUG
+        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+        : "http://localhost:5000";
+
       // Create Stripe checkout session for revision payment
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -3252,8 +3257,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quantity: 1,
           },
         ],
-        success_url: `${process.env.CLIENT_URL || 'http://localhost:5000'}/stripe/revision-payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`,
-        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5000'}/stripe/revision-payment-cancel?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`,
+        success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`,
+        cancel_url: `${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`,
         metadata: {
           projectId: numericProjectId.toString(),
           userId: req.user!.id,
@@ -3272,8 +3277,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ Stripe session created successfully:");
       console.log("- Session ID:", session.id);
       console.log("- Session URL:", session.url);
-      console.log("- Success URL:", `${process.env.CLIENT_URL || 'http://localhost:5000'}/stripe/revision-payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`);
-      console.log("- Cancel URL:", `${process.env.CLIENT_URL || 'http://localhost:5000'}/stripe/revision-payment-cancel?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}`);
+      console.log("- Success URL:", `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`);
+      console.log("- Cancel URL:", `${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`);
       
       res.json({
         success: true,
