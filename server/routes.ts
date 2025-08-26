@@ -2499,12 +2499,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         let allowanceFromStripe = user.subscriptionAllowance || 0;
         let productName = user.subscriptionTier || null;
+        let actualSubscriptionStatus = user.subscriptionStatus || "inactive";
+        let stripeSubscriptionId = user.stripeSubscriptionId;
+
+        // Always check with Stripe if user has a customer ID to catch missed subscription updates
+        if (user.stripeCustomerId) {
+          try {
+            console.log(`🔍 Checking Stripe for latest subscription status for customer: ${user.stripeCustomerId}`);
+            
+            // Get all active subscriptions for this customer
+            const subscriptions = await stripe.subscriptions.list({
+              customer: user.stripeCustomerId,
+              status: 'active',
+              limit: 1,
+            });
+
+            if (subscriptions.data.length > 0) {
+              const latestSubscription = subscriptions.data[0];
+              console.log(`✅ Found active subscription in Stripe: ${latestSubscription.id}, status: ${latestSubscription.status}`);
+              
+              // Update our records if they're out of sync
+              if (actualSubscriptionStatus !== 'active' || stripeSubscriptionId !== latestSubscription.id) {
+                console.log(`🔄 Updating local subscription status from ${actualSubscriptionStatus} to active`);
+                
+                const periodStart = new Date(latestSubscription.current_period_start * 1000);
+                const periodEnd = new Date(latestSubscription.current_period_end * 1000);
+                
+                await storage.updateUserSubscription(user.id, {
+                  subscriptionStatus: 'active',
+                  stripeSubscriptionId: latestSubscription.id,
+                  subscriptionPeriodStart: periodStart,
+                  subscriptionPeriodEnd: periodEnd,
+                });
+                
+                actualSubscriptionStatus = 'active';
+                stripeSubscriptionId = latestSubscription.id;
+              }
+            } else {
+              console.log(`❌ No active subscriptions found in Stripe for customer: ${user.stripeCustomerId}`);
+              // If we think they have an active sub but Stripe says no, update our records
+              if (actualSubscriptionStatus === 'active') {
+                console.log(`🔄 Updating local subscription status from active to inactive`);
+                await storage.updateUserSubscription(user.id, {
+                  subscriptionStatus: 'inactive',
+                });
+                actualSubscriptionStatus = 'inactive';
+              }
+            }
+          } catch (stripeError) {
+            console.warn("Failed to check Stripe subscription status:", stripeError);
+            // Continue with stored values
+          }
+        }
 
         // If user has active subscription, fetch allowance from Stripe product metadata
-        if (user.subscriptionStatus === "active" && user.stripeSubscriptionId) {
+        if (actualSubscriptionStatus === "active" && stripeSubscriptionId) {
           try {
             const subscription = await stripe.subscriptions.retrieve(
-              user.stripeSubscriptionId,
+              stripeSubscriptionId,
             );
             const productId = subscription.items.data[0]?.price
               .product as string;
@@ -2555,8 +2607,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           success: true,
           subscription: {
-            hasActiveSubscription: user.subscriptionStatus === "active",
-            status: user.subscriptionStatus,
+            hasActiveSubscription: actualSubscriptionStatus === "active",
+            status: actualSubscriptionStatus,
             tier: user.subscriptionTier,
             productName,
             usage: usageInPeriod,
