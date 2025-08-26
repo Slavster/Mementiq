@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function PaymentSuccessPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Invalidate subscription status on success to refresh data
