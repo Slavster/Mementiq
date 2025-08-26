@@ -2493,6 +2493,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Stripe Subscription Routes
 
+  // Update existing Trello card with correct subscription tier
+  app.post("/api/trello/update-card-tier", requireAuth, async (req: any, res: any) => {
+    try {
+      const user = req.user!;
+      console.log(`🔄 Updating Trello card for user ${user.id} with tier: ${user.subscriptionTier}`);
+      
+      // Get the user's most recent project
+      const projects = await storage.getProjectsByUser(user.id);
+      const latestProject = projects
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      
+      if (!latestProject) {
+        return res.status(404).json({ success: false, message: "No projects found" });
+      }
+      
+      console.log(`📂 Latest project: "${latestProject.title}" (ID: ${latestProject.id})`);
+      
+      // Use the automation service to update the project card
+      await trelloAutomation.updateProjectCard(latestProject.id, {
+        subscriptionTier: user.subscriptionTier || 'basic'
+      });
+      
+      console.log(`✅ Updated Trello card with correct "${user.subscriptionTier}" subscription label`);
+      
+      res.json({ 
+        success: true, 
+        message: `Updated Trello card for project "${latestProject.title}" with tier: ${user.subscriptionTier}`,
+        projectId: latestProject.id
+      });
+      
+    } catch (error) {
+      console.error("❌ Error updating Trello card:", error);
+      res.status(500).json({ success: false, message: "Failed to update Trello card" });
+    }
+  });
+
   // Check subscription status with Stripe metadata
   app.get(
     "/api/subscription/status",
