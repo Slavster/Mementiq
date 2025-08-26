@@ -127,9 +127,6 @@ export default function TestimonialsSection() {
                         <Star key={i} className="h-4 w-4 fill-current" />
                       ))}
                     </div>
-                    <span className="bg-primary/20 text-primary px-2 py-1 rounded-full text-xs font-semibold">
-                      Verified
-                    </span>
                   </div>
                   <p className="text-charcoal mb-4 italic text-sm leading-relaxed">
                     "{testimonial.content}"
