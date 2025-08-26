@@ -133,7 +133,7 @@ export default function SubscribePage() {
   const createCheckoutMutation = useMutation({
     mutationFn: async (tier: string) => {
       const response = await apiRequest("POST", "/api/subscription/create-checkout", { tier });
-      return response.json();
+      return response;
     },
     onSuccess: (data) => {
       if (data.success && data.checkoutUrl) {
