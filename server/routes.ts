@@ -2623,19 +2623,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS];
         
         // Construct the correct base URL for Stripe redirects
-        // Priority: Custom env var > Request headers > Fallback construction
-        let baseUrl = "http://localhost:5000";
+        // For development: https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev/
+        let baseUrl = "https://bb0a5c69-363f-451b-9bc8-306c97c51a42-00-zggicmdh4byf.picard.replit.dev";
         
-        if (process.env.REPLIT_APP_URL) {
-          // Use explicitly configured URL if available
-          baseUrl = process.env.REPLIT_APP_URL;
-        } else if (req.headers.host && !req.headers.host.includes('localhost')) {
-          // Use the actual host from the request headers
+        // Auto-detect from request headers as backup
+        if (req.headers.host && !req.headers.host.includes('localhost')) {
           const protocol = req.headers['x-forwarded-proto'] || 'https';
           baseUrl = `${protocol}://${req.headers.host}`;
-        } else if (process.env.REPL_ID) {
-          // Fallback to constructed Replit URL
-          baseUrl = `https://${process.env.REPL_ID}.${process.env.REPL_OWNER?.toLowerCase() || 'user'}.repl.co`;
         }
         
         console.log("🔗 Using base URL for Stripe redirect:", baseUrl);
