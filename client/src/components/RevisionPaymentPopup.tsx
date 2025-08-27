@@ -31,35 +31,15 @@ export function RevisionPaymentPopup({
   const popupRef = useRef<Window | null>(null);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Open Stripe checkout in popup
+  // Navigate to Stripe checkout in same window
   const openCheckoutPopup = async () => {
     if (!checkoutUrl) {
       await createPaymentSession();
       return;
     }
 
-    // Open popup window
-    const width = 600;
-    const height = 700;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
-
-    popupRef.current = window.open(
-      checkoutUrl,
-      "stripe_checkout",
-      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-    );
-
-    if (popupRef.current) {
-      // Start monitoring for payment completion
-      startPaymentMonitoring();
-    } else {
-      toast({
-        title: "Popup Blocked",
-        description: "Please allow popups for this site to complete payment.",
-        variant: "destructive",
-      });
-    }
+    // Navigate to Stripe checkout in same window
+    window.location.href = checkoutUrl;
   };
 
   // Create Stripe payment session
@@ -88,27 +68,8 @@ export function RevisionPaymentPopup({
           })
         );
 
-        // Open popup immediately
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
-
-        popupRef.current = window.open(
-          response.sessionUrl,
-          "stripe_checkout",
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
-
-        if (popupRef.current) {
-          startPaymentMonitoring();
-        } else {
-          toast({
-            title: "Popup Blocked",
-            description: "Please allow popups for this site and click 'Open Payment Window' to continue.",
-            variant: "destructive",
-          });
-        }
+        // Navigate to Stripe checkout in same window
+        window.location.href = response.sessionUrl;
       } else {
         throw new Error(response.message || "Failed to create payment session");
       }
@@ -252,24 +213,21 @@ export function RevisionPaymentPopup({
                 <div className="flex items-center gap-3 text-yellow-400">
                   <AlertCircle className="w-6 h-6" />
                   <div>
-                    <p className="font-semibold">Complete payment in popup</p>
+                    <p className="font-semibold">Ready to process payment</p>
                     <p className="text-sm text-gray-400">
-                      A secure Stripe checkout window has opened. Please complete your payment there.
+                      Click the button below to proceed to secure Stripe checkout.
                     </p>
                   </div>
                 </div>
 
                 {/* Instructions */}
                 <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4 space-y-2">
-                  <p className="text-sm text-cyan-400 font-semibold">💡 What's happening:</p>
+                  <p className="text-sm text-cyan-400 font-semibold">💡 What happens next:</p>
                   <ol className="text-sm text-gray-300 space-y-1 list-decimal list-inside">
-                    <li>A payment window opened in a new tab</li>
-                    <li>Complete your $5 payment there</li>
-                    <li>This screen will update automatically when done</li>
+                    <li>You'll be taken to secure Stripe checkout</li>
+                    <li>Complete your $5 payment</li>
+                    <li>You'll be redirected back to continue with revision</li>
                   </ol>
-                  <p className="text-xs text-gray-400 mt-3">
-                    <strong>Popup blocked?</strong> Click "Open Payment Window" above to try again.
-                  </p>
                 </div>
               </div>
             )}
@@ -291,19 +249,10 @@ export function RevisionPaymentPopup({
                     </>
                   ) : (
                     <>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Open Payment Window
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Proceed to Payment
                     </>
                   )}
-                </Button>
-                <Button
-                  onClick={checkPaymentStatus}
-                  disabled={!sessionId}
-                  variant="outline"
-                  className="border-gray-700 hover:bg-gray-800"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Check Status
                 </Button>
               </>
             )}
@@ -319,7 +268,6 @@ export function RevisionPaymentPopup({
 
           {/* Help text */}
           <p className="text-xs text-gray-500 text-center">
-            Having trouble? Make sure popups are enabled for this site.
             Payment is processed securely through Stripe.
           </p>
         </CardContent>
