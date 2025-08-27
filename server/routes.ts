@@ -1867,17 +1867,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const user = await storage.getUserById(userId);
         
-        if (user && project.frameioReviewLink) {
+        // Get fresh project data to ensure we have the latest frameioReviewLink
+        const freshProject = await storage.getProject(projectId);
+        console.log(`🔍 Debug - Project frameioReviewLink: ${freshProject?.frameioReviewLink}`);
+        console.log(`🔍 Debug - Project object keys:`, Object.keys(freshProject || {}));
+        
+        if (user && freshProject?.frameioReviewLink) {
           const emailTemplate = emailService.generateProjectCompletionEmail(
             user.email,
-            project.title,
-            project.frameioReviewLink
+            freshProject.title,
+            freshProject.frameioReviewLink
           );
           
           await emailService.sendEmail(emailTemplate);
-          console.log(`✅ Project completion email sent to ${user.email} for project ${projectId}`);
+          console.log(`✅ Project completion email sent to ${user.email} for project ${projectId} with link: ${freshProject.frameioReviewLink}`);
         } else {
-          console.log(`⚠️ Cannot send completion email: missing user (${!!user}) or Frame.io review link (${!!project.frameioReviewLink})`);
+          console.log(`⚠️ Cannot send completion email: missing user (${!!user}) or Frame.io review link (${!!freshProject?.frameioReviewLink})`);
         }
       } catch (emailError) {
         console.log(`⚠️ Failed to send completion email for project ${projectId}:`, emailError.message);
