@@ -146,10 +146,7 @@ export default function DashboardPage() {
   const [currentStep, setCurrentStep] = useState<
     "upload" | "form" | "confirmation" | "video-ready"
   >("upload");
-  const [acceptanceModalOpen, setAcceptanceModalOpen] = useState(false);
-  const [acceptanceProject, setAcceptanceProject] = useState<Project | null>(
-    null,
-  );
+  // REMOVED: acceptanceModalOpen and acceptanceProject - consolidated into project management dialog
   const [downloadLink, setDownloadLink] = useState<string | undefined>();
   const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [revisionProject, setRevisionProject] = useState<Project | null>(null);
@@ -639,11 +636,7 @@ export default function DashboardPage() {
     setShowCreateForm(true);
   };
 
-  // Handle opening video viewing modal
-  const handleVideoViewingModal = async (project: Project) => {
-    setAcceptanceProject(project);
-    setAcceptanceModalOpen(true);
-  };
+  // REMOVED: handleVideoViewingModal - functionality consolidated into project management dialog
 
   const handleRevisionModal = (project: Project) => {
     setRevisionProject(project);
@@ -1000,7 +993,9 @@ export default function DashboardPage() {
                           className="w-full bg-neon-green hover:bg-yellow-400 text-black transition-colors duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleVideoViewingModal(project);
+                            // Open consolidated project management dialog with video viewing
+                            setSelectedProject(project);
+                            setCurrentStep("video-ready");
                           }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
@@ -1012,8 +1007,9 @@ export default function DashboardPage() {
                           className="w-full bg-neon-green hover:bg-yellow-400 text-black transition-colors duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Open the video viewing modal (same as delivered status)
-                            handleVideoViewingModal(project);
+                            // Open consolidated project management dialog with video viewing
+                            setSelectedProject(project);
+                            setCurrentStep("video-ready");
                           }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
@@ -1621,35 +1617,7 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Video Viewing Modal - replaces old ProjectAcceptanceModal */}
-      <Dialog open={acceptanceModalOpen && !!acceptanceProject} onOpenChange={setAcceptanceModalOpen}>
-        <DialogContent className="sm:max-w-5xl max-h-[95vh] bg-gradient-to-br from-secondary via-purple-900 to-primary overflow-y-auto">
-          {acceptanceProject && (
-            <VideoViewingStep
-              project={acceptanceProject}
-              onBack={() => setAcceptanceModalOpen(false)}
-              onVideoAccepted={() => {
-                queryClient.invalidateQueries({
-                  queryKey: ["/api/projects"],
-                });
-                toast({
-                  title: "Video Accepted!",
-                  description: "Thank you for your feedback. The project is now complete.",
-                });
-                setAcceptanceModalOpen(false);
-              }}
-              onRevisionRequested={() => {
-                queryClient.invalidateQueries({
-                  queryKey: ["/api/projects"],
-                });
-                setAcceptanceModalOpen(false);
-                // Open the revision modal directly with the first step
-                handleRevisionModal(acceptanceProject);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* REMOVED: Duplicate Video Viewing Modal - functionality consolidated into project management dialog */}
 
       {/* Revision Modal */}
       <RevisionModal
