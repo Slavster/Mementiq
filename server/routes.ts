@@ -1823,7 +1823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Accept video endpoint
+  // Accept video endpoint - THE ONLY endpoint for accepting completed videos
   app.post("/api/projects/:id/accept", requireAuth, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
@@ -1833,6 +1833,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const project = await storage.getProject(projectId);
       if (!project || project.userId !== userId) {
         return res.status(404).json({ error: "Project not found" });
+      }
+      
+      // Verify project is in correct status
+      if (project.status !== 'video is ready') {
+        return res.status(400).json({ 
+          error: "Project must be in 'video is ready' status to accept" 
+        });
       }
       
       // Update project status to complete
@@ -1845,7 +1852,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.logProjectStatusChange(projectId, project.status, 'complete');
       
       // Update Frame.io assets status to "Approved"
-      console.log(`🧪 TESTING: About to update Frame.io assets to "Approved" for project ${projectId}`);
       try {
         await frameioV4Service.updateProjectAssetsStatus(projectId, 'Approved');
         console.log(`✅ Frame.io assets updated to "Approved" for project ${projectId}`);
@@ -1863,27 +1869,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the request if Trello update fails
       }
 
-      // Send completion confirmation email using the same link as "video is ready" email
+      // Send completion confirmation email using the same Frame.io share link as "video is ready" email
       try {
         const user = await storage.getUserById(userId);
         
-        // Debug logging to see what link we're using
-        console.log(`📧 DEBUG: Project frameioReviewLink value: ${project.frameioReviewLink}`);
-        console.log(`📧 DEBUG: Project object keys:`, Object.keys(project));
-        
-        // Use the frameioReviewLink that was already set when "video is ready" email was sent
         if (user && project.frameioReviewLink) {
-          console.log(`📧 SENDING EMAIL with link: ${project.frameioReviewLink}`);
           const emailTemplate = emailService.generateProjectCompletionEmail(
             user.email,
             project.title,
-            project.frameioReviewLink  // This is the EXACT SAME link used in "video is ready" email
+            project.frameioReviewLink  // Use the same Frame.io share link from "video is ready" email
           );
           
           await emailService.sendEmail(emailTemplate);
-          console.log(`✅ Project completion email sent to ${user.email} for project ${projectId} with Frame.io share link: ${project.frameioReviewLink}`);
+          console.log(`✅ Project completion email sent to ${user.email} for project ${projectId}`);
         } else {
-          console.log(`⚠️ Cannot send completion email: missing user (${!!user}) or Frame.io review link (${!!project.frameioReviewLink})`);
+          console.log(`⚠️ Cannot send completion email: missing user or Frame.io review link`);
         }
       } catch (emailError) {
         console.log(`⚠️ Failed to send completion email for project ${projectId}:`, emailError.message);
@@ -3007,78 +3007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Project acceptance endpoint
-  app.post("/api/projects/:id/accept", requireAuth, async (req: Request, res) => {
-    try {
-      const projectId = parseInt(req.params.id);
-      const userId = req.user!.id;
-      
-      // Verify project belongs to user
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "Project not found" 
-        });
-      }
-      
-      // Verify project is in "video is ready" status
-      if (project.status !== 'video is ready') {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Project must be in video is ready status to accept" 
-        });
-      }
-      
-      // Update project status to "complete" with automatic timestamp tracking
-      await storage.updateProject(projectId, {
-        status: 'complete',
-        updatedAt: new Date(),
-      });
-      await updateProjectTimestamp(projectId, "video accepted");
-
-      // Update Frame.io assets status to "Approved"
-      console.log(`🧪 TESTING: About to update Frame.io assets to "Approved" for project ${projectId}`);
-      try {
-        await frameioV4Service.initialize();
-        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Approved');
-        console.log(`✅ Frame.io assets updated to "Approved" for project ${projectId}`);
-      } catch (frameioError) {
-        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
-        // Don't fail the request if Frame.io update fails
-      }
-      
-      // Get user details for completion email
-      const user = await storage.getUserById(userId);
-      
-      // Use the frameioReviewLink that was already set when "video is ready" email was sent
-      if (user && project.frameioReviewLink) {
-        // Send completion confirmation email with the SAME link as "video is ready" email
-        const emailTemplate = emailService.generateProjectCompletionEmail(
-          user.email,
-          project.title,
-          project.frameioReviewLink  // Use the exact same Frame.io share link
-        );
-        
-        await emailService.sendEmail(emailTemplate);
-        console.log(`Project completion email sent to ${user.email} for project ${projectId} with Frame.io share link: ${project.frameioReviewLink}`);
-      } else {
-        console.log(`⚠️ Cannot send completion email: missing user or Frame.io review link`);
-      }
-      
-      res.json({ 
-        success: true, 
-        message: "Project accepted successfully",
-        project: { ...project, status: 'complete' }
-      });
-    } catch (error) {
-      console.error("Project acceptance error:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Failed to accept project" 
-      });
-    }
-  });
+  // REMOVED DUPLICATE: Project acceptance endpoint moved to line 1827
 
   // Get video download link endpoint
   app.get("/api/projects/:id/download-link", requireAuth, async (req: Request, res) => {
