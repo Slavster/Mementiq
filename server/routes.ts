@@ -4556,46 +4556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test Frame.io photo integration (for debugging)
-  app.post("/api/test-frameio-photo", async (req, res) => {
-    try {
-      console.log("Testing Frame.io photo integration...");
-      
-      if (!frameioService.isConfigured()) {
-        return res.status(500).json({
-          success: false,
-          message: "Frame.io is not properly configured"
-        });
-      }
-
-      // Initialize service to get team ID
-      await frameioService.initialize();
-
-      // Create test folder for API verification
-      const rootProject = await frameioService.getOrCreateRootProject();
-      const testFolder = await frameioService.getOrCreateFolder('API_Test', rootProject.root_asset_id);
-
-      // Upload a test photo (1x1 pixel PNG)
-      const result = await frameioService.uploadPhoto(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-        'api-test.png',
-        testFolder.id,
-        'test-user'
-      );
-
-      res.json({
-        success: true,
-        message: "Frame.io photo integration working properly",
-        result
-      });
-    } catch (error: any) {
-      console.error("Frame.io photo test error:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Frame.io photo test failed"
-      });
-    }
-  });
+  // REMOVED: Legacy Frame.io photo test endpoint - functionality moved to V4 API
 
   // Serve Object Storage assets with HTTP Range support for video streaming
   app.get("/api/assets/*", async (req, res) => {
