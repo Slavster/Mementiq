@@ -37,6 +37,7 @@ import { trelloWebhookService, type TrelloWebhookPayload } from "./services/trel
 import "./types"; // Import session types
 import Stripe from "stripe";
 import multer from "multer";
+import { getAppBaseUrl, getDashboardUrl } from "./config/appUrl.js";
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -2728,12 +2729,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tierConfig =
           SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS];
         
-        // Use new Replit dev domain format, fallback to old format, then localhost
-        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-          : process.env.REPL_SLUG
-          ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-          : "http://localhost:5000";
+        // Use centralized URL configuration
+        const baseUrl = getAppBaseUrl();
 
         // Get the default price for the product
         const prices = await stripe.prices.list({
@@ -3556,7 +3553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Instead of Express redirect, send HTML with client-side redirect
     // This approach works better in development environments like Replit
-    const redirectUrl = `/dashboard?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
+    const redirectUrl = getDashboardUrl() + `?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
     console.log("🚀 Sending HTML redirect page to:", redirectUrl);
     
     res.send(`
@@ -3679,7 +3676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // We can't directly clear localStorage from server, but can send a signal
     
     // Send HTML with client-side redirect for better reliability
-    const redirectUrl = `/dashboard?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
+    const redirectUrl = getDashboardUrl() + `?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
     console.log("🚀 Sending HTML redirect page to:", redirectUrl);
     
     res.send(`
@@ -3773,7 +3770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/test-stripe-return/:projectId", (req, res) => {
     const projectId = req.params.projectId;
     const testSessionId = `cs_test_fake_${Date.now()}`;
-    const testUrl = `${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?revision_payment=success&session_id=${testSessionId}&project_id=${projectId}`;
+    const testUrl = getDashboardUrl() + `?revision_payment=success&session_id=${testSessionId}&project_id=${projectId}`;
     console.log("🧪 Simulating Stripe return redirect to:", testUrl);
     res.redirect(302, testUrl);
   });
@@ -6074,7 +6071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Frame.io V4 OAuth flow completed successfully with production persistence");
       
       // Redirect to success page
-      res.redirect(`${req.protocol}://${req.get('host')}/dashboard?frameio_connected=true`);
+      res.redirect(getDashboardUrl() + `?frameio_connected=true`);
     } catch (error) {
       console.error("OAuth callback error:", error);
       res.status(500).json({ 
