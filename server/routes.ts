@@ -1863,26 +1863,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the request if Trello update fails
       }
 
-      // Send completion confirmation email
+      // Send completion confirmation email using the same link as "video is ready" email
       try {
         const user = await storage.getUserById(userId);
         
-        // Get fresh project data to ensure we have the latest frameioReviewLink
-        const freshProject = await storage.getProject(projectId);
-        console.log(`🔍 Debug - Project frameioReviewLink: ${freshProject?.frameioReviewLink}`);
-        console.log(`🔍 Debug - Project object keys:`, Object.keys(freshProject || {}));
-        
-        if (user && freshProject?.frameioReviewLink) {
+        // Use the frameioReviewLink that was already set when "video is ready" email was sent
+        if (user && project.frameioReviewLink) {
           const emailTemplate = emailService.generateProjectCompletionEmail(
             user.email,
-            freshProject.title,
-            freshProject.frameioReviewLink
+            project.title,
+            project.frameioReviewLink  // This is the EXACT SAME link used in "video is ready" email
           );
           
           await emailService.sendEmail(emailTemplate);
-          console.log(`✅ Project completion email sent to ${user.email} for project ${projectId} with link: ${freshProject.frameioReviewLink}`);
+          console.log(`✅ Project completion email sent to ${user.email} for project ${projectId} with Frame.io share link: ${project.frameioReviewLink}`);
         } else {
-          console.log(`⚠️ Cannot send completion email: missing user (${!!user}) or Frame.io review link (${!!freshProject?.frameioReviewLink})`);
+          console.log(`⚠️ Cannot send completion email: missing user (${!!user}) or Frame.io review link (${!!project.frameioReviewLink})`);
         }
       } catch (emailError) {
         console.log(`⚠️ Failed to send completion email for project ${projectId}:`, emailError.message);
