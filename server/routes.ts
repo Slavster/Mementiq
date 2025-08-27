@@ -3051,20 +3051,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user details for completion email
       const user = await storage.getUserById(userId);
       
-      // Get the download link from project files
-      const projectFiles = await storage.getProjectFiles(projectId);
-      const completedVideo = projectFiles.find(file => file.mediaAssetUrl);
-      
-      if (user && completedVideo?.mediaAssetUrl) {
-        // Send completion confirmation email
+      // Use the frameioReviewLink that was already set when "video is ready" email was sent
+      if (user && project.frameioReviewLink) {
+        // Send completion confirmation email with the SAME link as "video is ready" email
         const emailTemplate = emailService.generateProjectCompletionEmail(
           user.email,
           project.title,
-          completedVideo.mediaAssetUrl
+          project.frameioReviewLink  // Use the exact same Frame.io share link
         );
         
         await emailService.sendEmail(emailTemplate);
-        console.log(`Project completion email sent to ${user.email} for project ${projectId}`);
+        console.log(`Project completion email sent to ${user.email} for project ${projectId} with Frame.io share link: ${project.frameioReviewLink}`);
+      } else {
+        console.log(`⚠️ Cannot send completion email: missing user or Frame.io review link`);
       }
       
       res.json({ 
