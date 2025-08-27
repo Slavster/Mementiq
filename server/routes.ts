@@ -1862,6 +1862,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`⚠️ Trello card update failed for project ${projectId}:`, trelloError.message);
         // Don't fail the request if Trello update fails
       }
+
+      // Send completion confirmation email
+      try {
+        const user = await storage.getUserById(userId);
+        const projectFiles = await storage.getProjectFiles(projectId);
+        const completedVideo = projectFiles.find(file => file.mediaAssetUrl);
+        
+        if (user && completedVideo?.mediaAssetUrl) {
+          const emailTemplate = emailService.generateProjectCompletionEmail(
+            user.email,
+            project.title,
+            completedVideo.mediaAssetUrl
+          );
+          
+          await emailService.sendEmail(emailTemplate);
+          console.log(`✅ Project completion email sent to ${user.email} for project ${projectId}`);
+        } else {
+          console.log(`⚠️ Cannot send completion email: missing user (${!!user}) or video URL (${!!completedVideo?.mediaAssetUrl})`);
+        }
+      } catch (emailError) {
+        console.log(`⚠️ Failed to send completion email for project ${projectId}:`, emailError.message);
+        // Don't fail the request if email fails
+      }
       
       res.json({ success: true, message: "Video accepted successfully" });
     } catch (error) {
