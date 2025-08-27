@@ -246,10 +246,6 @@ export function VideoViewingStep({
               <h2 className="text-2xl font-semibold text-white">
                 "{primaryVideo.filename}"
               </h2>
-              <div className="flex justify-center items-center gap-4 text-sm text-gray-400">
-                <span>📁 {formatFileSize(primaryVideo.fileSize)}</span>
-                <span>🎬 {primaryVideo.fileType}</span>
-              </div>
             </div>
 
             {/* Main Action Button */}
