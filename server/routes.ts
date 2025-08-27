@@ -306,18 +306,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let event: Stripe.Event;
 
-      // Skip signature verification for testing
-      if (sig === 'skip-verification') {
-        console.log("⚠️  TESTING MODE: Skipping webhook signature verification");
-        event = req.body as Stripe.Event;
-      } else {
-        try {
-          event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-          console.log("Webhook received:", event.type);
-        } catch (err: any) {
-          console.error("Webhook signature verification failed:", err.message);
-          return res.status(400).send(`Webhook Error: ${err.message}`);
-        }
+      // Always verify webhook signature for security
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+        console.log("Webhook received:", event.type);
+      } catch (err: any) {
+        console.error("Webhook signature verification failed:", err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
       }
 
       try {
