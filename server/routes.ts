@@ -1867,8 +1867,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const user = await storage.getUserById(userId);
         
+        // Debug logging to see what link we're using
+        console.log(`📧 DEBUG: Project frameioReviewLink value: ${project.frameioReviewLink}`);
+        console.log(`📧 DEBUG: Project object keys:`, Object.keys(project));
+        
         // Use the frameioReviewLink that was already set when "video is ready" email was sent
         if (user && project.frameioReviewLink) {
+          console.log(`📧 SENDING EMAIL with link: ${project.frameioReviewLink}`);
           const emailTemplate = emailService.generateProjectCompletionEmail(
             user.email,
             project.title,
