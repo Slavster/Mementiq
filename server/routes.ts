@@ -1866,20 +1866,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send completion confirmation email
       try {
         const user = await storage.getUserById(userId);
-        const projectFiles = await storage.getProjectFiles(projectId);
-        const completedVideo = projectFiles.find(file => file.mediaAssetUrl);
         
-        if (user && completedVideo?.mediaAssetUrl) {
+        if (user && project.frameioReviewLink) {
           const emailTemplate = emailService.generateProjectCompletionEmail(
             user.email,
             project.title,
-            completedVideo.mediaAssetUrl
+            project.frameioReviewLink
           );
           
           await emailService.sendEmail(emailTemplate);
           console.log(`✅ Project completion email sent to ${user.email} for project ${projectId}`);
         } else {
-          console.log(`⚠️ Cannot send completion email: missing user (${!!user}) or video URL (${!!completedVideo?.mediaAssetUrl})`);
+          console.log(`⚠️ Cannot send completion email: missing user (${!!user}) or Frame.io review link (${!!project.frameioReviewLink})`);
         }
       } catch (emailError) {
         console.log(`⚠️ Failed to send completion email for project ${projectId}:`, emailError.message);
