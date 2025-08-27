@@ -11,7 +11,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 
 ### UI/UX Decisions
 - **Color Scheme**: Emphasizes cyan (hsl(180, 85%, 55%)) with no blue. Uses pink for certain status indicators, yellow for hover states, and black backgrounds with colored borders and text for status badges.
-- **Components**: Utilizes Shadcn/ui built on Radix UI.
+- **Components**: Utilizes Shadcn/ui built on Radix UI (streamlined to 18 active components, 29 unused components removed for optimal bundle size).
 - **Styling**: Tailwind CSS with custom theming and dark mode.
 
 ### Technical Implementation
