@@ -407,7 +407,11 @@ export default function DashboardPage() {
   }, [toast, projectsData, projectsLoading]);
 
   // Get subscription status with more frequent checks
-  const { data: subscriptionData, isLoading: subscriptionLoading, refetch: refetchSubscription } = useQuery({
+  const {
+    data: subscriptionData,
+    isLoading: subscriptionLoading,
+    refetch: refetchSubscription,
+  } = useQuery({
     queryKey: ["/api/subscription/status"],
     enabled: isAuthenticated,
     staleTime: 30 * 1000, // Cache for only 30 seconds to catch subscription changes
@@ -421,11 +425,13 @@ export default function DashboardPage() {
   // Check if user just returned from Stripe payment and refresh subscription
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session_id');
-    const paymentReturn = urlParams.get('payment_return');
-    
-    if (sessionId || paymentReturn === 'success') {
-      console.log("💳 Detected return from Stripe payment, refreshing subscription status");
+    const sessionId = urlParams.get("session_id");
+    const paymentReturn = urlParams.get("payment_return");
+
+    if (sessionId || paymentReturn === "success") {
+      console.log(
+        "💳 Detected return from Stripe payment, refreshing subscription status",
+      );
       // Force refresh subscription data
       setTimeout(() => {
         refetchSubscription();
@@ -495,11 +501,11 @@ export default function DashboardPage() {
           description: "This project has already been sent to the editor.",
           variant: "destructive",
         });
-        
+
         // Close dialog and update UI to reflect current status
         setShowSendToEditorDialog(false);
         setPendingProject(null);
-        
+
         // Refresh projects to ensure we have latest status
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       } else {
@@ -722,9 +728,9 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img 
-                src={logoImage} 
-                alt="Mementiq" 
+              <img
+                src={logoImage}
+                alt="Mementiq"
                 className="h-10 object-contain"
               />
             </div>
@@ -784,8 +790,8 @@ export default function DashboardPage() {
                     <Badge
                       variant="outline"
                       className={`mt-1 ${
-                        mappedUser.verified 
-                          ? "bg-black border-green-400 text-green-400" 
+                        mappedUser.verified
+                          ? "bg-black border-green-400 text-green-400"
                           : "bg-black border-red-400 text-red-400"
                       }`}
                     >
@@ -811,8 +817,8 @@ export default function DashboardPage() {
                           <Badge
                             variant="outline"
                             className={`${
-                              subscription.hasReachedLimit 
-                                ? "bg-black border-pink-400 text-pink-400" 
+                              subscription.hasReachedLimit
+                                ? "bg-black border-pink-400 text-pink-400"
                                 : "bg-black border-purple-400 text-purple-400"
                             }`}
                           >
@@ -851,7 +857,7 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        <Badge 
+                        <Badge
                           variant="outline"
                           className="bg-black border-red-400 text-red-400"
                         >
@@ -1349,33 +1355,37 @@ export default function DashboardPage() {
                 <div
                   className={`flex items-center gap-2 ${
                     // Show as completed (green) if project has been submitted
-                    (selectedProject.status.toLowerCase() === "edit in progress" || 
-                     selectedProject.status.toLowerCase() === "video is ready" ||
-                     selectedProject.status.toLowerCase() === "delivered" ||
-                     selectedProject.status.toLowerCase() === "complete")
-                      ? "text-lime-400" 
-                      : currentStep === "confirmation" 
-                        ? "text-[#2abdee]" 
+                    selectedProject.status.toLowerCase() ===
+                      "edit in progress" ||
+                    selectedProject.status.toLowerCase() === "video is ready" ||
+                    selectedProject.status.toLowerCase() === "delivered" ||
+                    selectedProject.status.toLowerCase() === "complete"
+                      ? "text-lime-400"
+                      : currentStep === "confirmation"
+                        ? "text-[#2abdee]"
                         : "text-gray-400"
                   }`}
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                       // Show as completed (green) if project has been submitted
-                      (selectedProject.status.toLowerCase() === "edit in progress" || 
-                       selectedProject.status.toLowerCase() === "video is ready" ||
-                       selectedProject.status.toLowerCase() === "delivered" ||
-                       selectedProject.status.toLowerCase() === "complete")
-                        ? "bg-neon-green text-black" 
-                        : currentStep === "confirmation" 
-                          ? "bg-[#2abdee] text-white" 
+                      selectedProject.status.toLowerCase() ===
+                        "edit in progress" ||
+                      selectedProject.status.toLowerCase() ===
+                        "video is ready" ||
+                      selectedProject.status.toLowerCase() === "delivered" ||
+                      selectedProject.status.toLowerCase() === "complete"
+                        ? "bg-neon-green text-black"
+                        : currentStep === "confirmation"
+                          ? "bg-[#2abdee] text-white"
                           : "bg-gray-600"
                     }`}
                   >
-                    {(selectedProject.status.toLowerCase() === "edit in progress" ||
-                      selectedProject.status.toLowerCase() === "video is ready" ||
-                      selectedProject.status.toLowerCase() === "delivered" ||
-                      selectedProject.status.toLowerCase() === "complete")
+                    {selectedProject.status.toLowerCase() ===
+                      "edit in progress" ||
+                    selectedProject.status.toLowerCase() === "video is ready" ||
+                    selectedProject.status.toLowerCase() === "delivered" ||
+                    selectedProject.status.toLowerCase() === "complete"
                       ? "✓"
                       : "3"}
                   </div>
@@ -1444,20 +1454,22 @@ export default function DashboardPage() {
               ) : currentStep === "confirmation" ? (
                 <div className="space-y-4">
                   {/* Back to Previous Step Button - only show before submission */}
-                  {selectedProject.status.toLowerCase() !== "edit in progress" &&
-                   selectedProject.status.toLowerCase() !== "video is ready" && (
-                    <div className="flex justify-start mb-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setCurrentStep("form")}
-                        className="text-white border-gray-600 hover:bg-gray-700"
-                      >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Instructions
-                      </Button>
-                    </div>
-                  )}
-                  
+                  {selectedProject.status.toLowerCase() !==
+                    "edit in progress" &&
+                    selectedProject.status.toLowerCase() !==
+                      "video is ready" && (
+                      <div className="flex justify-start mb-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => setCurrentStep("form")}
+                          className="text-white border-gray-600 hover:bg-gray-700"
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-2" />
+                          Back to Instructions
+                        </Button>
+                      </div>
+                    )}
+
                   <Card className="bg-green-500/10 border-green-500/30">
                     <CardContent className="p-6 text-center">
                       <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
@@ -1534,7 +1546,7 @@ export default function DashboardPage() {
                       toast({
                         title: "Video Accepted!",
                         description:
-                          "Thank you for your feedback. The project is now complete.",
+                          "Thank you for your business! The project is now complete.",
                       });
                       setSelectedProject(null);
                       setCurrentStep("upload");
@@ -1641,17 +1653,17 @@ export default function DashboardPage() {
             <AlertDialogDescription className="text-gray-300">
               <div className="space-y-3">
                 <p>
-                  <strong>Important:</strong> Once you send this project to
-                  the editor, you will{" "}
+                  <strong>Important:</strong> Once you send this project to the
+                  editor, you will{" "}
                   <strong>
                     no longer be able to upload additional footage
                   </strong>
                   .
                 </p>
                 <p>
-                  You'll only be able to edit your project instructions
-                  through a new form. Make sure you've uploaded all the
-                  footage you need before proceeding.
+                  You'll only be able to edit your project instructions through
+                  a new form. Make sure you've uploaded all the footage you need
+                  before proceeding.
                 </p>
                 <p className="text-pink-400 font-medium">
                   Sure you're ready to send "{pendingProject?.title}" to the
