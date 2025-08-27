@@ -27,7 +27,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **User Authentication**: Supabase Auth (email/password, Google social login, JWT).
 - **Subscription Management**: Stripe integration (three-tier model: Creative Spark 1 video/month, Consistency Club 4 videos/month, Growth Accelerator 8 videos/month, usage tracking, project creation limits).
 - **Project Management Dashboard**: Comprehensive project lifecycle management (`draft`, `awaiting instructions`, `edit in progress`, `video is ready`, `complete`, `revision in progress`), with automatic status updates.
-- **Video & Photo Upload System**: Frame.io API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Frame.io folders are created only upon "New Video Request" and enforce a maximum 2-level hierarchy. Features a centralized, automatically refreshed token system for Frame.io V4 API.
+- **Video & Photo Upload System**: Frame.io V4 API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Frame.io folders are created only upon "New Video Request" and enforce a maximum 2-level hierarchy. Features a centralized, automatically refreshed OAuth token system for Frame.io V4 API.
 - **Tally Form Integration**: Mandatory for editing instructions.
 - **Video Delivery Detection**: Automatic background service detects new video uploads, transitions projects to "Video is Ready", and sends notifications.
 - **Public Share Creation**: Frame.io V4 public share system with intelligent share reuse. Share links are generated ONLY once during "Video is Ready" stage and reused throughout the project lifecycle. Share links expire after 30 days.
@@ -39,6 +39,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 ### System Design
 - **Database Schema**: Includes `users`, `email_signups`, `projects`, `project_files`, `photo_files`, `project_status_log`, `revision_payments`, `trello_cards`, and `trello_config`.
 - **API Design**: Share link retrieval endpoint checks for existing project-level share link first.
+- **Frame.io Integration**: Uses V4 API exclusively with OAuth authentication. Legacy V2/V3 API service (`frameioService.ts`) removed in favor of `frameioV4Service.ts` and `frameioUpload.ts`.
 
 ## External Dependencies
 
@@ -50,5 +51,5 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **Form Validation**: `zod`.
 - **Authentication**: `Supabase Auth` (`@supabase/supabase-js`).
 - **Payment Processing**: `Stripe`.
-- **Video & Photo Hosting/Upload**: `Frame.io API`.
+- **Video & Photo Hosting/Upload**: `Frame.io V4 API` via `frameioV4Service.ts` and `frameioUpload.ts`.
 - **Object Storage (Internal)**: `@replit/object-storage` SDK.
