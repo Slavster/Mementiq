@@ -670,17 +670,17 @@ export class DatabaseStorage implements IStorage {
       const expiresAt = new Date(Date.now() + (ttlSeconds * 1000));
 
       // Try to insert lock - will fail if already exists
-      await this.db.execute(
-        `INSERT INTO refresh_locks (lock_key, expires_at, created_at)
-         VALUES ('${lockKey}', '${expiresAt.toISOString()}', '${new Date().toISOString()}')
-         ON CONFLICT(lock_key) DO NOTHING`
-      );
+      await this.db.execute(sql`
+        INSERT INTO refresh_locks (lock_key, expires_at, created_at)
+        VALUES (${lockKey}, ${expiresAt.toISOString()}, ${new Date().toISOString()})
+        ON CONFLICT(lock_key) DO NOTHING
+      `);
 
       // Check if we successfully acquired the lock
-      const result = await this.db.execute(
-        `SELECT lock_key FROM refresh_locks
-         WHERE lock_key = '${lockKey}' AND expires_at > NOW()`
-      );
+      const result = await this.db.execute(sql`
+        SELECT lock_key FROM refresh_locks
+        WHERE lock_key = ${lockKey} AND expires_at > NOW()
+      `);
 
       return result.rows.length > 0;
     } catch (error) {
@@ -691,9 +691,9 @@ export class DatabaseStorage implements IStorage {
 
   async releaseRefreshLock(lockKey: string): Promise<void> {
     try {
-      await this.db.execute(
-        `DELETE FROM refresh_locks WHERE lock_key = '${lockKey}'`
-      );
+      await this.db.execute(sql`
+        DELETE FROM refresh_locks WHERE lock_key = ${lockKey}
+      `);
     } catch (error) {
       console.error('Failed to release refresh lock:', error);
     }
@@ -702,9 +702,9 @@ export class DatabaseStorage implements IStorage {
   // Clean up expired locks periodically
   async cleanupExpiredLocks(): Promise<void> {
     try {
-      await this.db.execute(
-        `DELETE FROM refresh_locks WHERE expires_at <= datetime('now')`
-      );
+      await this.db.execute(sql`
+        DELETE FROM refresh_locks WHERE expires_at <= datetime('now')
+      `);
     } catch (error) {
       console.error('Failed to cleanup expired locks:', error);
     }
