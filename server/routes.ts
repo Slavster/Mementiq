@@ -1,4 +1,5 @@
-import type { Express, Request, Response } from "express";
+import type { Express, NextFunction, Response } from "express";
+import type { Request } from "express-serve-static-core";
 import express from "express";
 import { createServer, type Server } from "http";
 import path from "path";
@@ -34,6 +35,7 @@ import { emailService } from "./emailService";
 import { trelloAutomation } from "./services/trello-automation";
 import { trelloService } from "./services/trello";
 import { trelloWebhookService, type TrelloWebhookPayload } from "./services/trello-webhook";
+import { assetDetectionService } from "./assetDetectionService";
 import "./types"; // Import session types
 import Stripe from "stripe";
 import multer from "multer";
@@ -59,7 +61,7 @@ async function updateProjectTimestamp(projectId: number, action?: string) {
 async function requireAuth(
   req: Request,
   res: Response,
-  next: Function,
+  next: NextFunction,
 ) {
   const authHeader = req.headers.authorization;
 

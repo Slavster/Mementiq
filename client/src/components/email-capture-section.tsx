@@ -85,7 +85,7 @@ export default function EmailCaptureSection() {
     }
 
     // Check for common typos in email domains
-    const commonDomainTypos = {
+    const commonDomainTypos: Record<string, string> = {
       "gmail.co": "gmail.com",
       "gmail.cm": "gmail.com",
       "gmial.com": "gmail.com",
@@ -97,10 +97,11 @@ export default function EmailCaptureSection() {
     const emailParts = email.trim().split("@");
     if (emailParts.length === 2) {
       const domain = emailParts[1].toLowerCase();
-      if (commonDomainTypos[domain]) {
+      const correctDomain = commonDomainTypos[domain];
+      if (correctDomain) {
         toast({
           title: "Email Typo?",
-          description: `Did you mean ${emailParts[0]}@${commonDomainTypos[domain]}?`,
+          description: `Did you mean ${emailParts[0]}@${correctDomain}?`,
           variant: "default",
         });
         return;
