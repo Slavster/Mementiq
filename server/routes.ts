@@ -38,7 +38,7 @@ import "./types"; // Import session types
 import Stripe from "stripe";
 import multer from "multer";
 import { getAppBaseUrl, getDashboardUrl } from "./config/appUrl.js";
-import * as geoip from "geoip-lite";
+import geoip from "geoip-lite";
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -2000,14 +2000,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       if (ipAddress && ipAddress !== 'unknown' && ipAddress !== '127.0.0.1' && ipAddress !== '::1') {
-        const geo = geoip.lookup(ipAddress);
-        if (geo) {
-          locationData = {
-            country: geo.country || null,
-            region: geo.region || null,
-            city: geo.city || null,
-            timezone: geo.timezone || null
-          };
+        try {
+          const geo = geoip.lookup(ipAddress);
+          if (geo) {
+            locationData = {
+              country: geo.country || null,
+              region: geo.region || null,
+              city: geo.city || null,
+              timezone: geo.timezone || null
+            };
+          }
+        } catch (geoError) {
+          console.warn(`Failed to get geolocation for IP ${ipAddress}:`, geoError);
+          // Continue without location data - not critical for signup
         }
       }
       
