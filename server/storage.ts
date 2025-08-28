@@ -72,6 +72,7 @@ export interface IStorage {
   // Email signup methods
   createEmailSignup(emailSignup: InsertEmailSignup): Promise<EmailSignup>;
   getEmailSignups(): Promise<EmailSignup[]>;
+  checkEmailExists(email: string): Promise<boolean>;
 
   // Tally form submission methods
   createTallyFormSubmission(submission: InsertTallyFormSubmission): Promise<TallyFormSubmission>;
@@ -380,6 +381,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Email signup methods
+  async checkEmailExists(email: string): Promise<boolean> {
+    // Check both users table and email_signups table for existing email
+    const userExists = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    
+    if (userExists.length > 0) {
+      return true;
+    }
+    
+    const emailSignupExists = await this.db
+      .select()
+      .from(emailSignups)
+      .where(eq(emailSignups.email, email))
+      .limit(1);
+    
+    return emailSignupExists.length > 0;
+  }
+
   async createEmailSignup(insertEmailSignup: InsertEmailSignup): Promise<EmailSignup> {
     try {
       const [emailSignup] = await this.db

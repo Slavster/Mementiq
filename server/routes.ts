@@ -1970,6 +1970,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertEmailSignupSchema.parse(req.body);
       
+      // Check if email already exists in either users or email_signups table
+      const emailExists = await storage.checkEmailExists(validatedData.email);
+      if (emailExists) {
+        return res.status(409).json({
+          success: false,
+          message: "You're already signed up! Check your inbox for updates from us.",
+        });
+      }
+      
       // Capture user's IP address from various possible headers
       const getClientIP = (req: Request) => {
         return req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
@@ -2034,7 +2043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ) {
         res.status(409).json({
           success: false,
-          message: "This email is already registered",
+          message: "You're already signed up! Check your inbox for updates from us.",
         });
       } else {
         res.status(500).json({

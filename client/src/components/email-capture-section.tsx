@@ -24,16 +24,36 @@ export default function EmailCaptureSection() {
       setEmail("");
     },
     onError: (error: any) => {
-      const errorMessage = error.message.includes("409")
-        ? "This email is already registered"
-        : error.message.includes("400")
-          ? "Please enter a valid email address"
-          : "Something went wrong. Please try again.";
+      let errorMessage = "Something went wrong. Please try again.";
+      let variant: "destructive" | "default" = "destructive";
+      let title = "Error";
+
+      if (error.message.includes("409")) {
+        // Extract the actual message from the API response if available
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.message) {
+            errorMessage = errorData.message;
+            title = "Already Signed Up";
+            variant = "default"; // Use default styling for "already signed up" message
+          } else {
+            errorMessage = "You're already signed up! Check your inbox for updates from us.";
+            title = "Already Signed Up";
+            variant = "default";
+          }
+        } catch {
+          errorMessage = "You're already signed up! Check your inbox for updates from us.";
+          title = "Already Signed Up";
+          variant = "default";
+        }
+      } else if (error.message.includes("400")) {
+        errorMessage = "Please enter a valid email address";
+      }
 
       toast({
-        title: "Error",
+        title,
         description: errorMessage,
-        variant: "destructive",
+        variant,
       });
     },
   });
