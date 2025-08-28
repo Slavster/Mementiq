@@ -10,5 +10,6 @@ declare module 'express-serve-static-core' {
       claims?: any;
     };
     session?: any;
+    file?: any; // for multer file uploads
   }
 }
