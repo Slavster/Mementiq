@@ -292,8 +292,11 @@ const getSubscriptionTierFromProductId = (productId: string): string => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Create router instance
+  const router = express.Router();
+
   // Stripe webhook endpoint - must be before other JSON middleware
-  app.post(
+  router.post(
     "/api/webhooks/stripe",
     express.raw({ type: "application/json" }),
     async (req, res) => {
@@ -577,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   // Frame.io webhook endpoint for video upload notifications
   // Generate Frame.io V4 public share link for project video  
-  app.get("/api/projects/:id/video-share-link", requireAuth, async (req: Request, res) => {
+  router.get("/api/projects/:id/video-share-link", requireAuth, async (req: Request, res) => {
     console.log(`🔥🔥🔥 NEW ROUTE CODE LOADED: /api/projects/${req.params.id}/video-share-link`);
     console.log(`🔥🔥🔥 THIS SHOULD ALWAYS APPEAR FIRST!`);
     try {
@@ -1097,7 +1100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Manual trigger for asset detection service
-  app.post("/api/debug/trigger-asset-detection", async (req, res) => {
+  router.post("/api/debug/trigger-asset-detection", async (req, res) => {
     try {
       console.log('🔧 Manual asset detection triggered via API');
       
@@ -1120,7 +1123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Debug endpoint to get current Frame.io folder structure
-  app.get("/api/frameio/debug/folders", async (req, res) => {
+  router.get("/api/frameio/debug/folders", async (req, res) => {
     try {
       await frameioV4Service.loadServiceAccountToken();
       const accountId = await frameioV4Service.getAccountId();
@@ -1149,7 +1152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Frame.io proxy endpoint for authenticated file access
-  app.get("/api/frameio/proxy/file/:assetId", async (req, res) => {
+  router.get("/api/frameio/proxy/file/:assetId", async (req, res) => {
     try {
       const { assetId } = req.params;
       console.log(`Proxying Frame.io file access for asset: ${assetId}`);
@@ -1188,7 +1191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Uncomment this section if you want to enable webhook-based detection in the future
   /*
   // Test endpoint to verify webhook configuration
-  app.get("/api/webhooks/frameio/test", requireAuth, async (req: Request, res) => {
+  router.get("/api/webhooks/frameio/test", requireAuth, async (req: Request, res) => {
     try {
       // Check if webhook secret is configured
       const webhookSecret = process.env.FRAMEIO_WEBHOOK_SECRET;
@@ -1227,7 +1230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Frame.io webhook endpoint with signature verification
-  app.post("/api/webhooks/frameio", 
+  router.post("/api/webhooks/frameio", 
     express.raw({ type: 'application/json' }), // Raw body for signature verification
     async (req, res) => {
       try {
@@ -1470,7 +1473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // END OF WEBHOOK HELPER FUNCTIONS
 
   // Get project files endpoint
-  app.get("/api/projects/:id/files", requireAuth, async (req, res) => {
+  router.get("/api/projects/:id/files", requireAuth, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const userId = req.user.id;
@@ -1587,7 +1590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate download link for video asset
-  app.get("/api/projects/:id/download/:assetId", requireAuth, async (req, res) => {
+  router.get("/api/projects/:id/download/:assetId", requireAuth, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const assetId = req.params.assetId;
@@ -1615,7 +1618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stream video from Frame.io V4 - Enhanced with better error handling
-  app.get("/api/files/:fileId/stream", requireAuth, async (req, res) => {
+  router.get("/api/files/:fileId/stream", requireAuth, async (req, res) => {
     try {
       const { fileId } = req.params;
       const userId = req.user.id;
@@ -1665,7 +1668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Verify revision payment success and get project details
-  app.get("/api/stripe/verify-revision-payment/:sessionId", requireAuth, async (req: Request, res) => {
+  router.get("/api/stripe/verify-revision-payment/:sessionId", requireAuth, async (req: Request, res) => {
     try {
       const { sessionId } = req.params;
       const userId = req.user!.id;
@@ -1782,7 +1785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Legacy endpoint for backward compatibility  
-  app.get("/api/projects/:id/video-stream/:assetId", requireAuth, async (req, res) => {
+  router.get("/api/projects/:id/video-stream/:assetId", requireAuth, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const assetId = req.params.assetId;
@@ -1820,7 +1823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Accept video endpoint - THE ONLY endpoint for accepting completed videos
-  app.post("/api/projects/:id/accept", requireAuth, async (req, res) => {
+  router.post("/api/projects/:id/accept", requireAuth, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const userId = req.user.id;
@@ -1894,7 +1897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Request revision endpoint (after payment)
-  app.post("/api/projects/:id/request-revision", requireAuth, async (req: Request, res) => {
+  router.post("/api/projects/:id/request-revision", requireAuth, async (req: Request, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const userId = req.user!.id;
@@ -1966,7 +1969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email signup endpoint
-  app.post("/api/email-signup", async (req, res) => {
+  router.post("/api/email-signup", async (req, res) => {
     try {
       const validatedData = insertEmailSignupSchema.parse(req.body);
       
@@ -2063,7 +2066,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all email signups (for admin purposes)
-  app.get("/api/email-signups", async (req, res) => {
+  router.get("/api/email-signups", async (req, res) => {
     try {
       const emailSignups = await storage.getEmailSignups();
       res.json(emailSignups);
@@ -2076,7 +2079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get current user (for Supabase auth)
-  app.get(
+  router.get(
     "/api/auth/me",
     requireAuth,
     async (req: Request, res) => {
@@ -2088,7 +2091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // User Logout
-  app.post("/api/auth/logout", (req, res) => {
+  router.post("/api/auth/logout", (req, res) => {
     req.session.destroy((err) => {
       if (err) {
         return res.status(500).json({
@@ -2104,7 +2107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email Verification
-  app.get("/api/auth/verify-email/:token", async (req, res) => {
+  router.get("/api/auth/verify-email/:token", async (req, res) => {
     try {
       const token = req.params.token;
 
@@ -2134,7 +2137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get Current User
-  app.get("/api/auth/me", async (req, res) => {
+  router.get("/api/auth/me", async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({
@@ -2174,7 +2177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Trello Integration API Routes
   
   // Get Trello boards (for setup)
-  app.get("/api/trello/boards", requireAuth, async (req: Request, res) => {
+  router.get("/api/trello/boards", requireAuth, async (req: Request, res) => {
     try {
       const boards = await trelloService.getBoards();
       res.json({ success: true, boards });
@@ -2188,7 +2191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get board lists (for configuration)
-  app.get("/api/trello/boards/:boardId/lists", requireAuth, async (req: Request, res) => {
+  router.get("/api/trello/boards/:boardId/lists", requireAuth, async (req: Request, res) => {
     try {
       const { boardId } = req.params;
       const lists = await trelloService.getBoardLists(boardId);
@@ -2203,7 +2206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Setup Trello configuration
-  app.post("/api/trello/config", requireAuth, async (req: Request, res) => {
+  router.post("/api/trello/config", requireAuth, async (req: Request, res) => {
     try {
       const { boardId, todoListId, doneListId, revisionListId } = req.body;
       
@@ -2230,7 +2233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get current Trello configuration
-  app.get("/api/trello/config", requireAuth, async (req: Request, res) => {
+  router.get("/api/trello/config", requireAuth, async (req: Request, res) => {
     try {
       const config = await trelloAutomation.getTrelloConfig();
       res.json({ success: true, config });
@@ -2244,7 +2247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test Trello integration - create a test card
-  app.post("/api/trello/test", requireAuth, async (req: Request, res) => {
+  router.post("/api/trello/test", requireAuth, async (req: Request, res) => {
     try {
       const config = await trelloAutomation.getTrelloConfig();
       if (!config) {
@@ -2275,7 +2278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Move project cards to Done (temporary admin endpoint)
-  app.post("/api/trello/move-to-done/:projectId", requireAuth, async (req: Request, res) => {
+  router.post("/api/trello/move-to-done/:projectId", requireAuth, async (req: Request, res) => {
     try {
       const projectId = parseInt(req.params.projectId);
       if (isNaN(projectId)) {
@@ -2302,7 +2305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Simple Trello connection test (no auth required for testing)
-  app.get("/api/trello/test-connection", async (req, res) => {
+  router.get("/api/trello/test-connection", async (req, res) => {
     try {
       console.log("Testing Trello connection...");
       const boards = await trelloService.getBoards();
@@ -2326,13 +2329,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Trello Webhook Routes
 
   // Webhook endpoint for Trello events (HEAD request for validation)
-  app.head("/api/trello/webhook", (req, res) => {
+  router.head("/api/trello/webhook", (req, res) => {
     console.log("🔍 Trello webhook HEAD validation request received");
     res.status(200).send();
   });
 
   // Webhook endpoint for Trello events (POST request for actual webhooks)
-  app.post("/api/trello/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
+  router.post("/api/trello/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
     try {
       const signature = req.headers['x-trello-webhook'] as string;
       const callbackUrl = `${req.protocol}://${req.get('host')}/api/trello/webhook`;
@@ -2386,7 +2389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create webhook for a board
-  app.post("/api/trello/webhook/create", requireAuth, async (req: Request, res) => {
+  router.post("/api/trello/webhook/create", requireAuth, async (req: Request, res) => {
     try {
       const { boardId } = req.body;
       
@@ -2423,7 +2426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get active webhooks
-  app.get("/api/trello/webhooks", requireAuth, async (req: Request, res) => {
+  router.get("/api/trello/webhooks", requireAuth, async (req: Request, res) => {
     try {
       const webhooks = await trelloWebhookService.getActiveWebhooks();
       res.json({ success: true, webhooks });
@@ -2437,7 +2440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete webhook
-  app.delete("/api/trello/webhooks/:webhookId", requireAuth, async (req: Request, res) => {
+  router.delete("/api/trello/webhooks/:webhookId", requireAuth, async (req: Request, res) => {
     try {
       const { webhookId } = req.params;
       const success = await trelloWebhookService.deleteWebhook(webhookId);
@@ -2459,7 +2462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Editor Management Routes
 
   // Add or update editor mapping
-  app.post("/api/trello/editors", requireAuth, async (req: Request, res) => {
+  router.post("/api/trello/editors", requireAuth, async (req: Request, res) => {
     try {
       const { trelloMemberId, editorName, editorEmail } = req.body;
       
@@ -2487,7 +2490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get active editors
-  app.get("/api/trello/editors", requireAuth, async (req: Request, res) => {
+  router.get("/api/trello/editors", requireAuth, async (req: Request, res) => {
     try {
       const editors = await trelloWebhookService.getActiveEditors();
       res.json({ success: true, editors });
@@ -2503,7 +2506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Revision API Routes
 
   // Generate media platform review link for revisions
-  app.post('/api/projects/:id/generate-review-link', requireAuth, async (req: Request, res) => {
+  router.post('/api/projects/:id/generate-review-link', requireAuth, async (req: Request, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const userId = req.user!.id;
@@ -2585,7 +2588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe Subscription Routes
 
   // Update existing Trello card with correct subscription tier
-  app.post("/api/trello/update-card-tier", requireAuth, async (req: any, res: any) => {
+  router.post("/api/trello/update-card-tier", requireAuth, async (req: any, res: any) => {
     try {
       const user = req.user!;
       console.log(`🔄 Updating Trello card for user ${user.id} with tier: ${user.subscriptionTier}`);
@@ -2621,7 +2624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check subscription status with Stripe metadata
-  app.get(
+  router.get(
     "/api/subscription/status",
     requireAuth,
     async (req: Request, res) => {
@@ -2775,7 +2778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Create or get subscription (redirect to Stripe checkout)
-  app.post(
+  router.post(
     "/api/subscription/create-checkout",
     requireAuth,
     async (req: Request, res) => {
@@ -2871,7 +2874,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Test webhook handler for development (bypasses signature verification)
-  app.post("/api/test-subscription-sync", async (req, res) => {
+  router.post("/api/test-subscription-sync", async (req, res) => {
     try {
       const { userId, tier, subscriptionId } = req.body;
 
@@ -2925,7 +2928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project Management Routes
 
   // Get user's projects
-  app.get(
+  router.get(
     "/api/projects",
     requireAuth,
     async (req: Request, res) => {
@@ -2949,7 +2952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Create new project with subscription check
-  app.post(
+  router.post(
     "/api/projects",
     requireAuth,
     async (req: Request, res) => {
@@ -3073,7 +3076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // REMOVED DUPLICATE: Project acceptance endpoint moved to line 1827
 
   // Get video download link endpoint
-  app.get("/api/projects/:id/download-link", requireAuth, async (req: Request, res) => {
+  router.get("/api/projects/:id/download-link", requireAuth, async (req: Request, res) => {
     try {
       const projectId = parseInt(req.params.id);
       
@@ -3147,7 +3150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Direct video download endpoint - triggers file download to user's device
-  app.get("/api/projects/:id/download-video", requireAuth, async (req: Request, res) => {
+  router.get("/api/projects/:id/download-video", requireAuth, async (req: Request, res) => {
     try {
       const projectId = parseInt(req.params.id);
       
@@ -3286,7 +3289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create revision payment session endpoint
-  app.post("/api/stripe/create-revision-session", requireAuth, async (req: Request, res) => {
+  router.post("/api/stripe/create-revision-session", requireAuth, async (req: Request, res) => {
     try {
       const { projectId } = req.body;
       console.log("Revision payment request body:", req.body);
@@ -3423,7 +3426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API endpoint to check revision payment status - UPDATED TO INCLUDE DATABASE UPDATES
-  app.get("/api/stripe/check-revision-payment", requireAuth, async (req: Request, res) => {
+  router.get("/api/stripe/check-revision-payment", requireAuth, async (req: Request, res) => {
     try {
       const sessionId = req.query.session_id as string;
       const userId = req.user!.id;
@@ -3518,7 +3521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // IMPORTANT: These routes MUST be defined before Vite middleware to ensure they work
   // Stripe revision payment success/cancel endpoints - these are hit by Stripe after checkout
-  app.get("/stripe/revision-payment-success", async (req, res) => {
+  router.get("/stripe/revision-payment-success", async (req, res) => {
     const sessionId = req.query.session_id as string;
     const projectId = req.query.project_id as string;
     
@@ -3674,7 +3677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     `);
   });
   
-  app.get("/stripe/revision-payment-cancel", async (req, res) => {
+  router.get("/stripe/revision-payment-cancel", async (req, res) => {
     const sessionId = req.query.session_id as string;
     const projectId = req.query.project_id as string;
     
@@ -3785,7 +3788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test endpoint to verify redirect mechanics - simulates Stripe return
-  app.get("/api/test-stripe-return/:projectId", (req, res) => {
+  router.get("/api/test-stripe-return/:projectId", (req, res) => {
     const projectId = req.params.projectId;
     const testSessionId = `cs_test_fake_${Date.now()}`;
     const testUrl = getDashboardUrl() + `?revision_payment=success&session_id=${testSessionId}&project_id=${projectId}`;
@@ -3794,7 +3797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test endpoint that serves dashboard HTML directly with embedded parameters
-  app.get("/api/test-dashboard-direct", async (req, res) => {
+  router.get("/api/test-dashboard-direct", async (req, res) => {
     const testParams = {
       revision_payment: 'success',
       session_id: 'cs_test_direct_embed',
@@ -3889,12 +3892,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve test HTML page
-  app.get("/test-stripe-redirect", (req, res) => {
+  router.get("/test-stripe-redirect", (req, res) => {
     res.sendFile(path.join(process.cwd(), 'test_stripe_redirect.html'));
   });
 
   // Test email endpoint 
-  app.get("/test-emails/:type", async (req, res) => {
+  router.get("/test-emails/:type", async (req, res) => {
     const { type } = req.params;
     const testEmail = req.query.email as string || "test@example.com";
     
@@ -3953,7 +3956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test endpoint to check URL parameter processing
-  app.get("/api/test-url-params", (req, res) => {
+  router.get("/api/test-url-params", (req, res) => {
     // Use relative URL instead of absolute URL
     const url = `/dashboard?revision_payment=success&session_id=cs_test_manual&project_id=16`;
     console.log("🧪 Test page generating RELATIVE URL:", url);
@@ -4027,7 +4030,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate media platform review link and start revision process
-  app.post("/api/projects/:id/generate-review-link", requireAuth, async (req: Request, res) => {
+  router.post("/api/projects/:id/generate-review-link", requireAuth, async (req: Request, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const userId = req.user!.id;
@@ -4124,7 +4127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Get project by ID
-  app.get("/api/projects/:id", async (req, res) => {
+  router.get("/api/projects/:id", async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({
@@ -4171,7 +4174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update project
-  app.put("/api/projects/:id", async (req, res) => {
+  router.put("/api/projects/:id", async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({
@@ -4227,7 +4230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update project status only
-  app.patch("/api/projects/:id/status", requireAuth, async (req: Request, res) => {
+  router.patch("/api/projects/:id/status", requireAuth, async (req: Request, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const { status } = req.body;
@@ -4311,7 +4314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sync project to Frame.io V4
-  app.post("/api/projects/:id/sync-frameio", async (req, res) => {
+  router.post("/api/projects/:id/sync-frameio", async (req, res) => {
     try {
       const authResult = await authenticateToken(req, res);
       if (!authResult.success || !authResult.user) {
@@ -4410,7 +4413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // List files endpoint for debugging
-  app.get("/api/list-files", async (req, res) => {
+  router.get("/api/list-files", async (req, res) => {
     try {
       console.log("Attempting to list Object Storage files...");
       const listResult = await objectStorageClient.list();
@@ -4427,7 +4430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get latest video from project folder
-  app.get("/api/projects/:id/latest-video", requireAuth, async (req: Request, res) => {
+  router.get("/api/projects/:id/latest-video", requireAuth, async (req: Request, res) => {
     try {
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
@@ -4511,7 +4514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test Frame.io asset API to check for asset details (for debugging)
-  app.get("/api/test-frameio-asset/:assetId", async (req, res) => {
+  router.get("/api/test-frameio-asset/:assetId", async (req, res) => {
     try {
       const { assetId } = req.params;
       console.log(`Testing Frame.io API for asset ${assetId}...`);
@@ -4537,7 +4540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test video delivery email (for debugging)
-  app.post("/api/test-delivery-email", async (req, res) => {
+  router.post("/api/test-delivery-email", async (req, res) => {
     try {
       console.log("Testing video delivery email...");
       const { userEmail, projectTitle, downloadLink, projectId } = req.body;
@@ -4576,7 +4579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test email integration (for debugging)
-  app.post("/api/test-email", async (req, res) => {
+  router.post("/api/test-email", async (req: Request, res: Response) => {
     try {
       console.log("Testing Resend email integration...");
       const { to, subject, message } = req.body;
@@ -4622,7 +4625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // REMOVED: Legacy Frame.io photo test endpoint - functionality moved to V4 API
 
   // Serve Object Storage assets with HTTP Range support for video streaming
-  app.get("/api/assets/*", async (req, res) => {
+  router.get("/api/assets/*", async (req: Request, res: Response) => {
     try {
       // Strip EditingPortfolioAssets prefix and keep the full Objects/ path
       let assetPath = req.params[0] || "";
@@ -4786,7 +4789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Legacy server upload route (removed - TUS direct upload only)
-  app.post(
+  router.post(
     "/api/projects/:id/upload",
     requireAuth,
     async (req: Request, res) => {
@@ -4801,7 +4804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Create direct media platform upload session
-  app.post(
+  router.post(
     "/api/projects/:id/upload-session",
     requireAuth,
     requireProjectAccess,
@@ -4879,7 +4882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Complete direct media platform upload
-  app.post(
+  router.post(
     "/api/projects/:id/complete-upload",
     requireAuth,
     requireProjectAccess,
@@ -4980,7 +4983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Get project files with media platform data and storage usage
-  app.get(
+  router.get(
     "/api/projects/:id/files",
     requireAuth,
     requireProjectAccess,
@@ -5176,7 +5179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Get user's Frame.io folders (security check)
-  app.get(
+  router.get(
     "/api/frameio/folders",
     requireAuth,
     async (req: Request, res) => {
@@ -5194,7 +5197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Verify video upload status
-  app.post(
+  router.post(
     "/api/upload/verify-video",
     requireAuth,
     async (req: Request, res) => {
@@ -5239,7 +5242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Tally form submission routes
-  app.post(
+  router.post(
     "/api/projects/:id/tally-submission",
     requireAuth,
     requireProjectAccess,
@@ -5316,7 +5319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Get Tally form submission for a project
-  app.get(
+  router.get(
     "/api/projects/:id/tally-submission",
     requireAuth,
     requireProjectAccess,
@@ -5356,7 +5359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Check if project folder has videos
-  app.get(
+  router.get(
     "/api/projects/:id/folder-status",
     requireAuth,
     async (req: Request, res) => {
@@ -5410,7 +5413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Ensure Frame.io folder structure exists for project
-  app.post(
+  router.post(
     "/api/projects/:id/ensure-folder-structure",
     (req, res, next) => {
       console.log(`🚨🚨🚨 MAJOR LOG: POST /api/projects/${req.params.id}/ensure-folder-structure ENDPOINT HIT! 🚨🚨🚨`);
@@ -5612,7 +5615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Frame.io video upload endpoint for direct uploads
-  app.post(
+  router.post(
     "/api/upload/frameio",
     requireAuth,
     upload.single('file'),
@@ -5722,7 +5725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Photo upload and album management endpoints using Frame.io
   
   // Upload photo to Frame.io
-  app.post(
+  router.post(
     "/api/photos/upload",
     requireAuth,
     async (req: Request, res) => {
@@ -5834,7 +5837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Get photos for a project with security verification
-  app.get(
+  router.get(
     "/api/projects/:id/photos",
     requireAuth,
     async (req: Request, res) => {
@@ -5937,9 +5940,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  const httpServer = createServer(app);
   // Frame.io V4 OAuth endpoints - Manual approach for Adobe's static URI requirement
-  app.get("/api/auth/frameio", async (req: Request, res: Response) => {
+  router.get("/api/auth/frameio", async (req: Request, res: Response) => {
     try {
       console.log('=== Manual Frame.io V4 OAuth URL Generation ===');
       
@@ -5993,7 +5995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/frameio/callback", async (req: Request, res: Response) => {
+  router.get("/api/auth/frameio/callback", async (req: Request, res: Response) => {
     try {
       const { code, state, error } = req.query;
 
@@ -6061,7 +6063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test Frame.io V4 connection
-  app.get("/api/frameio/test", requireAuth, async (req: Request, res: Response) => {
+  router.get("/api/frameio/test", requireAuth, async (req: Request, res: Response) => {
     try {
       console.log("Testing Frame.io V4 connection...");
       
@@ -6096,7 +6098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test Frame.io V4 core features with centralized token access
-  app.get("/api/frameio/v4/test-connection", async (req: Request, res: Response) => {
+  router.get("/api/frameio/v4/test-connection", async (req: Request, res: Response) => {
     try {
       // Get centralized service token
       const serviceToken = await storage.getServiceToken('frameio-v4');
@@ -6136,7 +6138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test folder creation (Feature 1)
-  app.post("/api/frameio/v4/test-folder", async (req: Request, res: Response) => {
+  router.post("/api/frameio/v4/test-folder", async (req: Request, res: Response) => {
     try {
       const { folderName, parentId } = req.body;
       console.log(`Testing folder creation: ${folderName}, parent: ${parentId || 'root'}`);
@@ -6159,7 +6161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test projects access (needed for uploads)
-  app.get("/api/frameio/v4/test-projects", async (req: Request, res: Response) => {
+  router.get("/api/frameio/v4/test-projects", async (req: Request, res: Response) => {
     try {
       console.log("Testing Frame.io V4 projects/workspaces access...");
       
@@ -6184,7 +6186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test review link creation (Feature 3)  
-  app.post("/api/frameio/v4/test-review", async (req: Request, res: Response) => {
+  router.post("/api/frameio/v4/test-review", async (req: Request, res: Response) => {
     try {
       const { assetId, name } = req.body;
       console.log(`Testing review link creation for asset: ${assetId}`);
@@ -6207,7 +6209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test all Frame.io V4 core features at once
-  app.get("/api/frameio/v4/test-all", async (req: Request, res: Response) => {
+  router.get("/api/frameio/v4/test-all", async (req: Request, res: Response) => {
     try {
       console.log("=== Starting Frame.io V4 comprehensive feature test ===");
       const results = await frameioV4Service.testAllFeatures();
@@ -6227,7 +6229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Direct Frame.io V4 API endpoints for testing the 3 core features
-  app.get("/api/frameio/v4/me", async (req: Request, res: Response) => {
+  router.get("/api/frameio/v4/me", async (req: Request, res: Response) => {
     try {
       await frameioV4Service.initialize();
       const accounts = await frameioV4Service.getAccounts();
@@ -6238,7 +6240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/frameio/v4/workspaces", async (req: Request, res: Response) => {
+  router.get("/api/frameio/v4/workspaces", async (req: Request, res: Response) => {
     try {
       await frameioV4Service.initialize();
       const accounts = await frameioV4Service.getAccounts();
@@ -6250,7 +6252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/frameio/v4/projects", async (req: Request, res: Response) => {
+  router.get("/api/frameio/v4/projects", async (req: Request, res: Response) => {
     try {
       await frameioV4Service.initialize();
       const rootProject = await frameioV4Service.getOrCreateRootProject();
@@ -6261,7 +6263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Feature 1: Test folder creation
-  app.post("/api/frameio/v4/create-folder", async (req: Request, res: Response) => {
+  router.post("/api/frameio/v4/create-folder", async (req: Request, res: Response) => {
     try {
       const { name, parentId } = req.body;
       await frameioV4Service.initialize();
@@ -6277,7 +6279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Feature 2: Test upload capability (check if we have access to upload endpoints)
-  app.get("/api/frameio/v4/upload-ready", async (req: Request, res: Response) => {
+  router.get("/api/frameio/v4/upload-ready", async (req: Request, res: Response) => {
     try {
       await frameioV4Service.initialize();
       const rootProject = await frameioV4Service.getOrCreateRootProject();
@@ -6312,7 +6314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Feature 3: Test review link creation capability
-  app.post("/api/frameio/v4/create-review-link", async (req: Request, res: Response) => {
+  router.post("/api/frameio/v4/create-review-link", async (req: Request, res: Response) => {
     try {
       const { assetId } = req.body;
       
@@ -6337,7 +6339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check Frame.io V4 OAuth status
-  app.get("/api/frameio/oauth-status", async (req: Request, res: Response) => {
+  router.get("/api/frameio/oauth-status", async (req: Request, res: Response) => {
     try {
       const hasCredentials = !!(process.env.ADOBE_CLIENT_ID || process.env.FRAMEIO_CLIENT_ID) && 
                             !!(process.env.ADOBE_CLIENT_SECRET || process.env.FRAMEIO_CLIENT_SECRET);
@@ -6359,7 +6361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Debug endpoint to manually trigger asset detection
-  app.post("/api/debug/run-asset-detection", async (req, res) => {
+  router.post("/api/debug/run-asset-detection", async (req, res) => {
     try {
       console.log("🔍 Manual asset detection triggered");
       const { AssetDetectionService } = await import('./assetDetectionService.js');
@@ -6373,7 +6375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoint to update existing Frame.io shares with 30-day expiration
-  app.post("/api/admin/update-share-expiration", async (req, res) => {
+  router.post("/api/admin/update-share-expiration", async (req, res) => {
     try {
       console.log("📅 Updating existing Frame.io shares with 30-day expiration");
       
@@ -6461,6 +6463,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mount the router to the app
+  app.use(router);
+
+  // Create HTTP server
+  const httpServer = createServer(app);
+  
   return httpServer;
 }
 
