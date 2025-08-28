@@ -42,21 +42,43 @@ try {
     fs.mkdirSync('dist');
   }
   
-  // Create a simple production entry point
+  // Create a simple production entry point that works in both CommonJS and ESM environments
   const serverEntryContent = `
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const path = require('path');
+const { spawn } = require('child_process');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+console.log('🚀 Starting production server...');
+console.log('Environment: Production');
+console.log('Port: ' + (process.env.PORT || 5000));
 
-// Import the main server setup
-import('../server/index.js').then(() => {
-  console.log('Production server started');
-}).catch(err => {
-  console.error('Failed to start production server:', err);
+// Start the server using tsx to handle TypeScript and ES modules
+const serverProcess = spawn('npx', ['tsx', 'server/index.ts'], {
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    NODE_ENV: 'production'
+  }
+});
+
+serverProcess.on('error', (err) => {
+  console.error('❌ Failed to start production server:', err);
   process.exit(1);
+});
+
+serverProcess.on('exit', (code) => {
+  console.log('Server process exited with code:', code);
+  process.exit(code);
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully');
+  serverProcess.kill('SIGTERM');
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down gracefully');
+  serverProcess.kill('SIGINT');
 });
 `;
 

@@ -8,7 +8,7 @@ packages = ["ffmpeg", "jq"]
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
+build = ["sh", "-c", "bash custom-build.sh"]
 run = ["npm", "run", "start"]
 
 [[ports]]
