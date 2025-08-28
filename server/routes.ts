@@ -1,4 +1,5 @@
-import type { Express, NextFunction, Request, Response } from "express";
+import type { Express } from "express";
+import type { Request, Response, NextFunction } from "express-serve-static-core";
 import express from "express";
 import { createServer, type Server } from "http";
 import path from "path";
@@ -96,7 +97,7 @@ async function requireAuth(
 async function requireProjectAccess(
   req: Request,
   res: Response,
-  next: Function,
+  next: NextFunction,
 ) {
   try {
     const projectId = parseInt(req.params.id);
@@ -300,7 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.post(
     "/api/webhooks/stripe",
     express.raw({ type: "application/json" }),
-    async (req, res) => {
+    async (req: Request, res: Response) => {
       const sig = req.headers["stripe-signature"];
       const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -1118,7 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('❌ Manual asset detection failed:', error);
       res.status(500).json({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       });
     }
   });
@@ -1148,7 +1149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error('Debug folders error:', error);
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' });
     }
   });
 
@@ -1233,7 +1234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Frame.io webhook endpoint with signature verification
   router.post("/api/webhooks/frameio", 
     express.raw({ type: 'application/json' }), // Raw body for signature verification
-    async (req, res) => {
+    async (req: Request, res: Response) => {
       try {
         // Step 1: Verify webhook signature (if secret is configured)
         const webhookSecret = process.env.FRAMEIO_WEBHOOK_SECRET;
@@ -1474,7 +1475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // END OF WEBHOOK HELPER FUNCTIONS
 
   // Get project files endpoint
-  router.get("/api/projects/:id/files", requireAuth, async (req, res) => {
+  router.get("/api/projects/:id/files", requireAuth, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.id);
       const userId = req.user.id;
@@ -1591,7 +1592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate download link for video asset
-  router.get("/api/projects/:id/download/:assetId", requireAuth, async (req, res) => {
+  router.get("/api/projects/:id/download/:assetId", requireAuth, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.id);
       const assetId = req.params.assetId;
@@ -1619,7 +1620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stream video from Frame.io V4 - Enhanced with better error handling
-  router.get("/api/files/:fileId/stream", requireAuth, async (req, res) => {
+  router.get("/api/files/:fileId/stream", requireAuth, async (req: Request, res: Response) => {
     try {
       const { fileId } = req.params;
       const userId = req.user.id;
@@ -1663,7 +1664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to get media stream URL:", error);
       res.status(500).json({ 
         error: "Failed to get media stream URL",
-        details: error.message
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
       });
     }
   });
@@ -1818,7 +1819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Legacy streaming endpoint error:", error);
       res.status(500).json({ 
         error: "Failed to get media stream URL",
-        details: error.message
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
       });
     }
   });
@@ -1856,7 +1857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await frameioV4Service.updateProjectAssetsStatus(projectId, 'Approved');
         console.log(`✅ Frame.io assets updated to "Approved" for project ${projectId}`);
       } catch (frameioError) {
-        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError.message);
+        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError instanceof Error ? frameioError.message : 'Unknown error');
         // Don't fail the request if Frame.io update fails
       }
 
@@ -1865,7 +1866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await trelloAutomation.markProjectComplete(projectId);
         console.log(`✅ Moved Trello card to Done for project ${projectId}`);
       } catch (trelloError) {
-        console.log(`⚠️ Trello card update failed for project ${projectId}:`, trelloError.message);
+        console.log(`⚠️ Trello card update failed for project ${projectId}:`, trelloError instanceof Error ? trelloError.message : 'Unknown error');
         // Don't fail the request if Trello update fails
       }
 
@@ -1886,7 +1887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`⚠️ Cannot send completion email: missing user or Frame.io review link`);
         }
       } catch (emailError) {
-        console.log(`⚠️ Failed to send completion email for project ${projectId}:`, emailError.message);
+        console.log(`⚠️ Failed to send completion email for project ${projectId}:`, emailError instanceof Error ? emailError.message : 'Unknown error');
         // Don't fail the request if email fails
       }
       
@@ -2067,7 +2068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all email signups (for admin purposes)
-  router.get("/api/email-signups", async (req, res) => {
+  router.get("/api/email-signups", async (req: Request, res: Response) => {
     try {
       const emailSignups = await storage.getEmailSignups();
       res.json(emailSignups);
@@ -2092,8 +2093,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // User Logout
-  router.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
+  router.post("/api/auth/logout", (req: Request, res: Response) => {
+    req.session.destroy((err: any) => {
       if (err) {
         return res.status(500).json({
           success: false,
@@ -2108,7 +2109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email Verification
-  router.get("/api/auth/verify-email/:token", async (req, res) => {
+  router.get("/api/auth/verify-email/:token", async (req: Request, res: Response) => {
     try {
       const token = req.params.token;
 
@@ -2138,7 +2139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get Current User
-  router.get("/api/auth/me", async (req, res) => {
+  router.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({
