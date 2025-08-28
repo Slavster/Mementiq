@@ -4,7 +4,7 @@
 echo "Starting custom build process..."
 
 # Ensure we're using the deployment build script
-node deployment-build.cjs
+node deployment-build.mjs
 
 # Check if build was successful
 if [ $? -eq 0 ]; then
