@@ -398,7 +398,7 @@ export class TrelloAutomationService {
       if (!user) return null;
 
       // Find the original project card to get assigned editor
-      let assignedEditorId = null;
+      let assignedEditorId: string | null = null;
       const originalCards = await db
         .select()
         .from(trelloCards)

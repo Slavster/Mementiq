@@ -728,7 +728,7 @@ export class FrameioV4Service {
       }
 
       let assetsUpdated = 0;
-      const foldersToCheck = [];
+      const foldersToCheck: any[] = [];
       
       // Add project folder if exists (this is where the actual video files are)
       if (project.mediaFolderId) {
