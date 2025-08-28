@@ -1,4 +1,4 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -7,7 +7,7 @@ import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 
-const app = express();
+const app: Express = express();
 
 // CORS configuration for Frame.io V4 direct uploads
 app.use(cors({
@@ -40,15 +40,15 @@ app.use(session({
   }
 }));
 
-app.use((req: any, res: any, next: any) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
-  const path = req.path;
+  const path = (req as any).path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   // Debug logging for dashboard requests with query parameters
-  if (path === '/dashboard' && req.query && Object.keys(req.query).length > 0) {
-    console.log(`🔍 Dashboard request with query params: ${req.url}`);
-    console.log('Query params:', req.query);
+  if (path === '/dashboard' && (req as any).query && Object.keys((req as any).query).length > 0) {
+    console.log(`🔍 Dashboard request with query params: ${(req as any).url}`);
+    console.log('Query params:', (req as any).query);
     console.log('Headers:', req.headers);
   }
 
@@ -93,8 +93,8 @@ app.use((req: any, res: any, next: any) => {
     // Serve Object Storage assets
     app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
 
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
+    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+      const status = (err as any).status || (err as any).statusCode || 500;
       const message = err.message || "Internal Server Error";
 
       (res as any).status(status).json({ message });

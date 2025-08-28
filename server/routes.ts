@@ -99,7 +99,7 @@ async function requireProjectAccess(
   next: AppNextFunction,
 ) {
   try {
-    const projectId = parseInt(req.params.id);
+    const projectId = Number(req.params.id);
     if (!projectId) {
       return res.status(400).json({
         success: false,
@@ -331,7 +331,7 @@ export async function registerRoutes(app: any): Promise<Server> {
               console.log("🎯 WEBHOOK: Processing revision payment completion");
               
               try {
-                const projectId = parseInt(session.metadata.projectId);
+                const projectId = Number(session.metadata.projectId);
                 
                 // Update revision payment status
                 await storage.updateRevisionPaymentStatus(
@@ -585,7 +585,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     console.log(`🔥🔥🔥 NEW ROUTE CODE LOADED: /api/projects/${req.params.id}/video-share-link`);
     console.log(`🔥🔥🔥 THIS SHOULD ALWAYS APPEAR FIRST!`);
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const project = await storage.getProject(projectId);
       
       if (!project) {
@@ -1476,7 +1476,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Get project files endpoint
   router.get("/api/projects/:id/files", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const userId = req.user.id;
       
       // Verify project ownership
@@ -1593,7 +1593,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Generate download link for video asset
   router.get("/api/projects/:id/download/:assetId", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const assetId = req.params.assetId;
       const userId = req.user.id;
       
@@ -1788,7 +1788,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Legacy endpoint for backward compatibility  
   router.get("/api/projects/:id/video-stream/:assetId", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const assetId = req.params.assetId;
       const userId = req.user.id;
       
@@ -1826,7 +1826,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Accept video endpoint - THE ONLY endpoint for accepting completed videos
   router.post("/api/projects/:id/accept", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const userId = req.user.id;
       
       // Verify project ownership
@@ -1900,7 +1900,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Request revision endpoint (after payment)
   router.post("/api/projects/:id/request-revision", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const userId = req.user!.id;
       
       console.log(`🎬 Submitting revision request for project ${projectId} by user ${userId}`);
@@ -2281,7 +2281,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Move project cards to Done (temporary admin endpoint)
   router.post("/api/trello/move-to-done/:projectId", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.projectId);
+      const projectId = Number(req.params.projectId);
       if (isNaN(projectId)) {
         return res.status(400).json({
           success: false,
@@ -2509,7 +2509,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Generate media platform review link for revisions
   router.post('/api/projects/:id/generate-review-link', requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const userId = req.user!.id;
 
       // Verify user owns the project
@@ -2709,7 +2709,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
               // Get allowance from Stripe product metadata (fallback to our config)
               if (product.metadata?.allowance) {
-                allowanceFromStripe = parseInt(product.metadata.allowance);
+                allowanceFromStripe = Number(product.metadata.allowance);
               } else {
                 allowanceFromStripe = correctAllowance;
               }
@@ -3077,7 +3077,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Get video download link endpoint
   router.get("/api/projects/:id/download-link", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       
       // Get user ID from authenticated request
       const userId = req.user?.id;
@@ -3151,7 +3151,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Direct video download endpoint - triggers file download to user's device
   router.get("/api/projects/:id/download-video", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       
       // Get user ID from authenticated request (handle both session and Supabase auth)
       const userId = req.session?.userId || req.user?.id;
@@ -3331,7 +3331,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       // Convert to number if it's a string
-      const numericProjectId = typeof projectId === 'string' ? parseInt(projectId, 10) : projectId;
+      const numericProjectId = typeof projectId === 'string' ? Number(projectId, 10) : projectId;
 
       if (!numericProjectId || typeof numericProjectId !== 'number' || isNaN(numericProjectId)) {
         console.log("Invalid project ID validation failed:", numericProjectId);
@@ -3553,7 +3553,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
       
       // Update project status to "awaiting revision instructions" after successful payment
-      const numericProjectId = parseInt(projectId);
+      const numericProjectId = Number(projectId);
       if (!isNaN(numericProjectId)) {
         try {
           await storage.updateProject(numericProjectId, {
@@ -4031,7 +4031,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Generate media platform review link and start revision process
   router.post("/api/projects/:id/generate-review-link", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const userId = req.user!.id;
 
       console.log(`Generating review link for project ${projectId} by user ${userId}`);
@@ -4135,7 +4135,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const project = await storage.getProject(projectId);
 
       if (!project) {
@@ -4182,7 +4182,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const project = await storage.getProject(projectId);
 
       if (!project) {
@@ -4231,7 +4231,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Update project status only
   router.patch("/api/projects/:id/status", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const { status } = req.body;
       
       if (!status) {
@@ -4324,7 +4324,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const project = await storage.getProject(projectId);
 
       if (!project) {
@@ -4432,7 +4432,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Get latest video from project folder
   router.get("/api/projects/:id/latest-video", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const projectId = parseInt(req.params.id);
+      const projectId = Number(req.params.id);
       const project = await storage.getProject(projectId);
 
       if (!project) {
@@ -4750,14 +4750,14 @@ export async function registerRoutes(app: any): Promise<Server> {
     content: Uint8Array,
     contentType: string,
   ) {
-    const range = req.headers.range!;
+    const range = (req.headers as any).range!;
     const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
+    const start = Number(parts[0], 10);
 
     // Optimize chunk size based on request
     let end: number;
     if (parts[1]) {
-      end = parseInt(parts[1], 10);
+      end = Number(parts[1], 10);
     } else {
       // For initial requests (start=0), send much larger chunk for immediate playback
       if (start === 0) {
@@ -4810,7 +4810,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireProjectAccess,
     async (req: AppRequest, res: AppResponse) => {
       try {
-        const projectId = parseInt(req.params.id);
+        const projectId = Number(req.params.id);
         const { fileName, fileSize } = req.body;
 
         if (!fileName || !fileSize) {
@@ -4892,7 +4892,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         console.log("Complete upload body keys:", Object.keys(req.body || {}));
         console.log("Auth user:", req.user?.id);
 
-        const projectId = parseInt(req.params.id);
+        const projectId = Number(req.params.id);
         const { completeUri, videoUri, fileName, fileSize } = req.body;
 
         console.log("Extracted values:", {
@@ -4989,7 +4989,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireProjectAccess,
     async (req: AppRequest, res: AppResponse) => {
       try {
-        const projectId = parseInt(req.params.id);
+        const projectId = Number(req.params.id);
 
         const project = await storage.getProject(projectId);
         if (!project) {
@@ -5212,7 +5212,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         }
 
         // Verify user owns the project
-        const project = await storage.getProject(parseInt(projectId));
+        const project = await storage.getProject(Number(projectId));
         if (!project || project.userId !== req.user!.id) {
           return res.status(403).json({
             success: false,
@@ -5248,7 +5248,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireProjectAccess,
     async (req: AppRequest, res: AppResponse) => {
       try {
-        const projectId = parseInt(req.params.id);
+        const projectId = Number(req.params.id);
         const { tallySubmissionId, submissionData } = req.body;
 
         // Verify project exists and user owns it
@@ -5325,7 +5325,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireProjectAccess,
     async (req: AppRequest, res: AppResponse) => {
       try {
-        const projectId = parseInt(req.params.id);
+        const projectId = Number(req.params.id);
 
         // Verify project exists and user owns it
         const project = await storage.getProject(projectId);
@@ -5364,7 +5364,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireAuth,
     async (req: AppRequest, res: AppResponse) => {
       try {
-        const projectId = parseInt(req.params.id);
+        const projectId = Number(req.params.id);
 
         // Verify project exists and user owns it
         const project = await storage.getProject(projectId);
@@ -5425,7 +5425,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     async (req: AppRequest, res: AppResponse) => {
       console.log(`🚨🚨🚨 AFTER AUTH: Authentication passed, proceeding with folder setup 🚨🚨🚨`);
       try {
-        const projectId = parseInt(req.params.id);
+        const projectId = Number(req.params.id);
         const userId = req.user!.id;
 
         console.log(`🔧 ROUTE CALLED: Ensuring Frame.io folder structure for project ${projectId}, user ${userId}`);
@@ -5533,12 +5533,12 @@ export async function registerRoutes(app: any): Promise<Server> {
             });
             
             // Log the status change
-            await storage.createProjectStatusLog({
-              projectId: projectId,
-              oldStatus: 'draft',
-              newStatus: 'awaiting instructions',
-              changedAt: new Date()
-            });
+            // await storage.createProjectStatusLog({ // TODO: Add method to storage
+            //   projectId: projectId,
+            //   oldStatus: 'draft',
+            //   newStatus: 'awaiting instructions',
+            //   changedAt: new Date()
+            // });
           }
 
           // Step 4: Get existing files in the project folder
@@ -5637,7 +5637,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         }
 
         // Verify project exists and user owns it
-        const project = await storage.getProject(parseInt(projectId));
+        const project = await storage.getProject(Number(projectId));
         if (!project) {
           return res.status(404).json({
             success: false,
@@ -5683,7 +5683,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         const frameioId = uploadResult.id;
         
         // Store file record in database
-        const parsedProjectId = parseInt(projectId, 10);
+        const parsedProjectId = Number(projectId, 10);
         if (isNaN(parsedProjectId)) {
           return res.status(400).json({
             success: false,
@@ -5842,7 +5842,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireAuth,
     async (req: AppRequest, res: AppResponse) => {
       try {
-        const projectId = parseInt(req.params.id);
+        const projectId = Number(req.params.id);
 
         // Verify project exists and user owns it
         const project = await storage.getProject(projectId);
@@ -6495,14 +6495,14 @@ async function downloadAsset(
     }
 
     // Check the actual structure of the response
-    console.log("(BytesResult as any).value type:", typeof bytesResult.value);
+    console.log("((BytesResult as any).value type:", typeof bytesResult.value);
     console.log(
-      "(BytesResult as any).value instanceof Uint8Array:",
+      "((BytesResult as any).value instanceof Uint8Array:",
       bytesResult.value instanceof Uint8Array,
     );
-    console.log("(BytesResult as any).value keys:", Object.keys(bytesResult.value));
+    console.log("((BytesResult as any).value keys:", Object.keys(bytesResult.value));
     console.log(
-      "(BytesResult as any).value constructor:",
+      "((BytesResult as any).value constructor:",
       bytesResult.value.constructor.name,
     );
 
@@ -6583,11 +6583,11 @@ async function downloadAsset(
         }
 
         console.log(
-          "Fallback (BytesResult as any).value type:",
+          "Fallback ((BytesResult as any).value type:",
           typeof fallbackResult.value,
         );
         console.log(
-          "Fallback (BytesResult as any).value keys:",
+          "Fallback ((BytesResult as any).value keys:",
           fallbackResult.value ? Object.keys(fallbackResult.value) : "null",
         );
         console.log(

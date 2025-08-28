@@ -718,7 +718,7 @@ export class TrelloAutomationService {
       
       // Get the card description from Trello
       try {
-        const cardData = await trelloService.makeRequest('GET', `/cards/${originalCardId}?fields=desc`);
+        const cardData = await (trelloService as any).makeRequest('GET', `/cards/${originalCardId}?fields=desc`);
         const description = cardData.desc || '';
         
         // Extract Frame.io link from description using regex
@@ -735,7 +735,7 @@ export class TrelloAutomationService {
         }
         
       } catch (trelloError) {
-        console.error('❌ FALLBACK: Failed to fetch original card from Trello:', trelloError.message);
+        console.error('❌ FALLBACK: Failed to fetch original card from Trello:', trelloError instanceof Error ? trelloError.message : trelloError);
         return 'Frame.io link unavailable - could not access original card';
       }
       
