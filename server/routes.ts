@@ -1980,12 +1980,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Capture user's IP address from various possible headers
-      const getClientIP = (req: Request) => {
+      const getClientIP = (req: any) => {
         return req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
                req.headers['x-real-ip']?.toString() ||
                req.headers['x-client-ip']?.toString() ||
-               req.connection.remoteAddress ||
-               req.socket.remoteAddress ||
+               req.connection?.remoteAddress ||
+               req.socket?.remoteAddress ||
                'unknown';
       };
       
@@ -2031,6 +2031,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ success: true, message: "Email successfully registered!" });
     } catch (error) {
+      console.error("Email signup error:", error);
+      
       if (error instanceof z.ZodError) {
         res.status(400).json({
           success: false,
@@ -2046,6 +2048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "You're already signed up! Check your inbox for updates from us.",
         });
       } else {
+        console.error("Unexpected email signup error:", error);
         res.status(500).json({
           success: false,
           message: "Internal server error",

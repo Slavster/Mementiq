@@ -270,7 +270,9 @@ export const insertEmailSignupSchema = createInsertSchema(emailSignups).pick({
   region: true,
   city: true,
   timezone: true,
-}).partial({ ipAddress: true, country: true, region: true, city: true, timezone: true }); // Location fields are optional since they're handled by the server
+}).partial({ ipAddress: true, country: true, region: true, city: true, timezone: true }).extend({
+  email: z.string().email("Please enter a valid email address").min(1, "Email is required")
+}); // Enhanced email validation with proper error messages
 
 // Tally form submission schema
 export const insertTallyFormSubmissionSchema = createInsertSchema(tallyFormSubmissions).pick({
