@@ -69,17 +69,41 @@ export default function EmailCaptureSection() {
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Enhanced email validation
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    if (!emailRegex.test(email.trim())) {
       toast({
-        title: "Error",
-        description: "Please enter a valid email address",
+        title: "Invalid Email",
+        description: "Please enter a valid email address (example: user@domain.com)",
         variant: "destructive",
       });
       return;
     }
+    
+    // Check for common typos in email domains
+    const commonDomainTypos = {
+      'gmail.co': 'gmail.com',
+      'gmail.cm': 'gmail.com', 
+      'gmial.com': 'gmail.com',
+      'yahoo.co': 'yahoo.com',
+      'hotmail.co': 'hotmail.com',
+      'outlook.co': 'outlook.com'
+    };
+    
+    const emailParts = email.trim().split('@');
+    if (emailParts.length === 2) {
+      const domain = emailParts[1].toLowerCase();
+      if (commonDomainTypos[domain]) {
+        toast({
+          title: "Did you mean?",
+          description: `Did you mean ${emailParts[0]}@${commonDomainTypos[domain]}?`,
+          variant: "default",
+        });
+        return;
+      }
+    }
 
-    emailSignupMutation.mutate(email);
+    emailSignupMutation.mutate(email.trim());
   };
 
   return (
