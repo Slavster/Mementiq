@@ -18,11 +18,22 @@ async function startProductionServer() {
 
   if (fs.existsSync(serverPath)) {
     console.log('✅ Build artifacts found. Starting server from dist...');
-    // Import and run the built server
-    await import(serverPath);
+    // Check if server/public exists (required by server/vite.ts)
+    const serverPublicPath = path.join(process.cwd(), 'server', 'public');
+    if (!fs.existsSync(serverPublicPath)) {
+      console.log('⚠️  server/public not found, starting server directly with tsx...');
+      // Fall back to running the server directly using tsx
+    } else {
+      console.log('✅ Static assets found at server/public');
+      // Import and run the built server
+      await import(serverPath);
+      return;
+    }
   } else {
     console.log('⚠️  No build artifacts found. Starting server directly...');
-    // Fall back to running the server directly using tsx
+  }
+  
+  // Fall back to running the server directly using tsx
     
     const serverProcess = spawn('npx', ['tsx', 'server/index.ts'], {
       stdio: 'inherit',
@@ -52,7 +63,6 @@ async function startProductionServer() {
       console.log('Received SIGINT, shutting down gracefully');
       serverProcess.kill('SIGINT');
     });
-  }
 }
 
 // Call the async function

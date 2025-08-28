@@ -34,6 +34,27 @@ if (!runCommand('npx vite build --mode production', 'Building production assets 
   process.exit(1);
 }
 
+// Step 2.5: Copy built assets to the location expected by server/vite.ts
+console.log('Copying build assets to server/public...');
+try {
+  // Ensure server directory exists
+  if (!fs.existsSync('server')) {
+    fs.mkdirSync('server');
+  }
+  
+  // Remove existing server/public if it exists
+  if (fs.existsSync('server/public')) {
+    execSync('rm -rf server/public', { stdio: 'inherit' });
+  }
+  
+  // Copy dist/public to server/public
+  execSync('cp -r dist/public server/', { stdio: 'inherit' });
+  console.log('✅ Build assets copied to server/public successfully!\n');
+} catch (error) {
+  console.error('❌ Failed to copy build assets:', error);
+  process.exit(1);
+}
+
 // Step 3: Copy server files (avoiding TypeScript compilation issues)
 console.log('Preparing server files for production...');
 try {
