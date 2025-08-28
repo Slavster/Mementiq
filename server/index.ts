@@ -41,7 +41,7 @@ app.use(session({
   }
 }));
 
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req: Request, res: Response, next: any) => {
   const start = Date.now();
   const path = (req as any).path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
@@ -94,7 +94,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     // Serve Object Storage assets
     app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
 
-    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    app.use((err: Error, _req: Request, res: Response, _next: any) => {
       const status = (err as any).status || (err as any).statusCode || 500;
       const message = err.message || "Internal Server Error";
 

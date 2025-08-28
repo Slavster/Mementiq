@@ -1,5 +1,5 @@
 import express from "express";
-import type { AppRequest, AppResponse, AppNextFunction } from "./express-types";
+import type { AppRequest, AppResponse, Appany } from "./express-types";
 import { createServer, type Server } from "http";
 import path from "path";
 import { storage } from "./storage";
@@ -60,12 +60,12 @@ async function updateProjectTimestamp(projectId: number, action?: string) {
 async function requireAuth(
   req: AppRequest,
   res: AppResponse,
-  next: AppNextFunction,
+  next: Appany,
 ) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.log("Missing or invalid auth header:", authHeader);
+    console.log(`${JSON.stringify("Missing or invalid auth header:")} ${JSON.stringify(authHeader)}`);
     return res
       .status(401)
       .json({ success: false, message: "Authentication required" });
@@ -74,17 +74,17 @@ async function requireAuth(
   const token = authHeader.split(" ")[1];
 
   if (!token || token.length < 10) {
-    console.log("Invalid token format:", token?.substring(0, 20) + "...");
+    console.log(`${JSON.stringify("Invalid token format:")} ${JSON.stringify(token?.substring(0, 20)}`) + "...");
     return res
       .status(401)
       .json({ success: false, message: "Invalid token format" });
   }
 
-  console.log("🔐 AUTH: Verifying token for request:", req.method, req.path);
+  console.log(`${JSON.stringify("🔐 AUTH: Verifying token for request:")} ${JSON.stringify(req.method, req.path)}`);
   const result = await verifySupabaseToken(token);
 
   if (!result.success) {
-    console.log("Token verification failed:", result.error);
+    console.log(`${JSON.stringify("Token verification failed:")} ${JSON.stringify(result.error)}`);
     return res.status(401).json({ success: false, message: result.error });
   }
 
@@ -96,7 +96,7 @@ async function requireAuth(
 async function requireProjectAccess(
   req: AppRequest,
   res: AppResponse,
-  next: AppNextFunction,
+  next: Appany,
 ) {
   try {
     const projectId = Number(req.params.id);
@@ -314,7 +314,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       // Always verify webhook signature for security
       try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-        console.log("Webhook received:", event.type);
+        console.log(`${JSON.stringify("Webhook received:")} ${JSON.stringify(event.type)}`);
       } catch (err: any) {
         console.error("Webhook signature verification failed:", err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -324,7 +324,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         switch (event.type) {
           case "checkout.session.completed": {
             const session = event.data.object as Stripe.Checkout.Session;
-            console.log("Checkout completed:", session.id);
+            console.log(`${JSON.stringify("Checkout completed:")} ${JSON.stringify(session.id)}`);
 
             // Handle revision payments
             if (session.metadata?.type === 'revision_payment') {
@@ -437,7 +437,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "invoice.payment_succeeded": {
             const invoice = event.data.object as Stripe.Invoice;
-            console.log("Payment succeeded:", invoice.id);
+            console.log(`${JSON.stringify("Payment succeeded:")} ${JSON.stringify(invoice.id)}`);
 
             if ((invoice as any).subscription) {
               const subscription = await stripe.subscriptions.retrieve(
@@ -484,7 +484,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "customer.subscription.updated": {
             const subscription = event.data.object as Stripe.Subscription;
-            console.log("Subscription updated:", subscription.id);
+            console.log(`${JSON.stringify("Subscription updated:")} ${JSON.stringify(subscription.id)}`);
 
             const user = await storage.getUserByStripeCustomerId(
               subscription.customer as string,
@@ -524,7 +524,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "customer.subscription.deleted": {
             const subscription = event.data.object as Stripe.Subscription;
-            console.log("Subscription canceled:", subscription.id);
+            console.log(`${JSON.stringify("Subscription canceled:")} ${JSON.stringify(subscription.id)}`);
 
             const user = await storage.getUserByStripeCustomerId(
               subscription.customer as string,
@@ -545,7 +545,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "invoice.payment_failed": {
             const invoice = event.data.object as Stripe.Invoice;
-            console.log("Payment failed:", invoice.id);
+            console.log(`${JSON.stringify("Payment failed:")} ${JSON.stringify(invoice.id)}`);
 
             if ((invoice as any).subscription) {
               const subscription = await stripe.subscriptions.retrieve(
@@ -636,7 +636,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             
             if (videoAssets.length > 0) {
               const latestVideo = videoAssets[0];
-              console.log(`🎯 For share creation, using detected Frame.io asset: ${latestVideo.name}`);
+              console.log(`${JSON.stringify(`🎯 For share creation)} ${JSON.stringify(using detected Frame.io asset: ${latestVideo.name}`)}`);
               
               // Format as expected by share creation logic
               videoFile = {
@@ -775,7 +775,7 @@ export async function registerRoutes(app: any): Promise<Server> {
                 }
               }
             } catch (discoveryError) {
-              console.log(`Dynamic folder discovery failed, using stored ID: ${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}`);
+              console.log(`${JSON.stringify(`Dynamic folder discovery failed)} ${JSON.stringify(using stored ID: ${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}`)}`);
               currentProjectFolderId = project.mediaFolderId;
             }
             
@@ -819,7 +819,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             }
               });
             } else {
-              console.log(`❌ No public share version found, will search more broadly...`);
+              console.log(`${JSON.stringify(`❌ No public share version found)} ${JSON.stringify(will search more broadly...`)}`);
             }
           } catch (error) {
             console.log(`❌ Error searching for public share version: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`);
@@ -883,7 +883,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         console.log(`🚨 ROUTE: Asset ID: ${videoFile.mediaAssetId}`);
         console.log(`🚨 ROUTE: Calling findExistingShareForAsset...`);
         const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, currentProjectFolderId, videoFile.mediaAssetId);
-        console.log(`🚨 ROUTE: findExistingShareForAsset returned:`, existingShare);
+        console.log(`${JSON.stringify(`🚨 ROUTE: findExistingShareForAsset returned:`)} ${JSON.stringify(existingShare)}`);
         
         if (existingShare) {
           // Ensure we only return public f.io URLs
@@ -1009,7 +1009,7 @@ export async function registerRoutes(app: any): Promise<Server> {
                 note: 'Recovered existing Frame.io share - no login required'
               });
             } else {
-              console.log(`🛡️ No existing shares found in Frame.io, will create new share`);
+              console.log(`${JSON.stringify(`🛡️ No existing shares found in Frame.io)} ${JSON.stringify(will create new share`)}`);
             }
           } catch (recoveryError) {
             console.log(`❌ Resilient recovery failed: ${recoveryError instanceof Error ? recoveryError.message : String(recoveryError)}`);
@@ -1023,7 +1023,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       if (!project.mediaFolderId) {
         return res.status(400).json({ error: 'Project has no media folder ID configured' });
       }
-      console.log(`🚨 CALLING createAssetShareLink with assetId: ${videoFile.mediaAssetId}, filename: ${videoFile.filename}`);
+      console.log(`${JSON.stringify(`🚨 CALLING createAssetShareLink with assetId: ${videoFile.mediaAssetId})} ${JSON.stringify(filename: ${videoFile.filename}`)}`);
       const shareLink = await frameioV4Service.createAssetShareLink(
         videoFile.mediaAssetId,
         videoFile.filename || 'Video Share',
@@ -1171,7 +1171,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
       
       // Frame.io V4 doesn't provide direct download URLs - return explanation
-      console.log('File data fields:', Object.keys(fileData));
+      console.log(`${JSON.stringify('File data fields:')} ${JSON.stringify(Object.keys(fileData)}`));
       console.log('Frame.io V4 limitation: No direct streaming URLs available');
       
       // Fallback: Return Frame.io web URL with explanation
@@ -1285,7 +1285,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           
           if (!project) {
             // Check if it's in a folder that's shared
-            console.log(`File ${fileId} not directly mapped, checking folder hierarchy...`);
+            console.log(`${JSON.stringify(`File ${fileId} not directly mapped)} ${JSON.stringify(checking folder hierarchy...`)}`);
             
             // Get file details to find parent folder
             try {
@@ -1548,7 +1548,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             
             if (videoAssets.length > 0) {
               const latestVideo = videoAssets[0];
-              console.log(`📁 For project ${projectId} (status: ${project.status}), returning Frame.io asset: ${latestVideo.name}`);
+              console.log(`${JSON.stringify(`📁 For project ${projectId} (status: ${project.status}))} ${JSON.stringify(returning Frame.io asset: ${latestVideo.name}`)}`);
               console.log(`📏 Frame.io file size: ${latestVideo.file_size} bytes (${(latestVideo.file_size / 1024 / 1024).toFixed(2)} MB)`);
               
               // Return in the format expected by VideoViewingStep
@@ -1567,7 +1567,7 @@ export async function registerRoutes(app: any): Promise<Server> {
               
               return res.json(frameioFileFormat);
             } else {
-              console.log(`⚠️ No video assets found in Frame.io folder, falling back to database`);
+              console.log(`${JSON.stringify(`⚠️ No video assets found in Frame.io folder)} ${JSON.stringify(falling back to database`)}`);
             }
           }
         } catch (frameioError) {
@@ -1641,7 +1641,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       
       if (mediaLink && mediaLink.available && mediaLink.url) {
         // Successfully got a streaming URL
-        console.log('Streaming URL obtained:', mediaLink.kind);
+        console.log(`${JSON.stringify('Streaming URL obtained:')} ${JSON.stringify(mediaLink.kind)}`);
         (res as any).setHeader('Cache-Control', 'no-store');
         res.json(mediaLink);
       } else if (mediaLink && !mediaLink.available) {
@@ -1674,11 +1674,11 @@ export async function registerRoutes(app: any): Promise<Server> {
       const { sessionId } = req.params;
       const userId = req.user!.id;
 
-      console.log(`🔍 Verifying revision payment - Session: ${sessionId}, User: ${userId}`);
+      console.log(`${JSON.stringify(`🔍 Verifying revision payment - Session: ${sessionId})} ${JSON.stringify(User: ${userId}`)}`);
 
       // Handle test/debug session IDs
       if (sessionId.startsWith('cs_test_') && (sessionId.includes('debug') || sessionId.includes('manual'))) {
-        console.log("🧪 Debug session detected, returning mock payment verification");
+        console.log(`${JSON.stringify("🧪 Debug session detected)} ${JSON.stringify(returning mock payment verification")}`);
         
         // For testing, use project 16 (Test 10)
         const project = await storage.getProject(16);
@@ -1719,7 +1719,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
       // Verify this payment belongs to the current user
       if (payment.userId !== userId) {
-        console.log(`❌ Payment access denied - Payment user: ${payment.userId}, Current user: ${userId}`);
+        console.log(`${JSON.stringify(`❌ Payment access denied - Payment user: ${payment.userId})} ${JSON.stringify(Current user: ${userId}`)}`);
         return res.status(403).json({
           success: false,
           message: "Access denied"
@@ -1755,7 +1755,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         console.log(`📊 Incremented revision count for project ${payment.projectId}`);
         
         // Log the revision for accounting/tracking
-        console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
+        console.log(`${JSON.stringify(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId})} ${JSON.stringify(Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`)}`);
       }
       
       console.log(`✅ Payment verification successful for session: ${sessionId}`);
@@ -1856,7 +1856,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         await frameioV4Service.updateProjectAssetsStatus(projectId, 'Approved');
         console.log(`✅ Frame.io assets updated to "Approved" for project ${projectId}`);
       } catch (frameioError) {
-        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError instanceof Error ? frameioError instanceof Error ? frameioError.message : String(frameioError) : 'Unknown error');
+        console.log(`${JSON.stringify(`⚠️ Frame.io status update failed for project ${projectId}:`)} ${JSON.stringify(frameioError instanceof Error ? frameioError instanceof Error ? frameioError.message : String(frameioError)}`) : 'Unknown error');
         // Don't fail the request if Frame.io update fails
       }
 
@@ -1865,7 +1865,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         await trelloAutomation.markProjectComplete(projectId);
         console.log(`✅ Moved Trello card to Done for project ${projectId}`);
       } catch (trelloError) {
-        console.log(`⚠️ Trello card update failed for project ${projectId}:`, trelloError instanceof Error ? trelloError.message : 'Unknown error');
+        console.log(`${JSON.stringify(`⚠️ Trello card update failed for project ${projectId}:`)} ${JSON.stringify(trelloError instanceof Error ? trelloError.message : 'Unknown error')}`);
         // Don't fail the request if Trello update fails
       }
 
@@ -1886,7 +1886,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           console.log(`⚠️ Cannot send completion email: missing user or Frame.io review link`);
         }
       } catch (emailError) {
-        console.log(`⚠️ Failed to send completion email for project ${projectId}:`, emailError instanceof Error ? emailError.message : 'Unknown error');
+        console.log(`${JSON.stringify(`⚠️ Failed to send completion email for project ${projectId}:`)} ${JSON.stringify(emailError instanceof Error ? emailError.message : 'Unknown error')}`);
         // Don't fail the request if email fails
       }
       
@@ -1934,7 +1934,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       });
       await updateProjectTimestamp(projectId, "revision requested");
       
-      console.log(`✅ Project ${projectId} status updated to "revision in progress", revision count: ${newRevisionCount}`);
+      console.log(`${JSON.stringify(`✅ Project ${projectId} status updated to "revision in progress")} ${JSON.stringify(revision count: ${newRevisionCount}`)}`);
       
       // Log status change
       await storage.logProjectStatusChange(projectId, project.status, 'revision in progress');
@@ -1943,7 +1943,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       try {
         const cardId = await trelloAutomation.createRevisionCard(projectId, newRevisionCount);
         if (cardId) {
-          console.log(`✅ Created Trello revision card for project ${projectId}, revision #${newRevisionCount}: ${cardId}`);
+          console.log(`${JSON.stringify(`✅ Created Trello revision card for project ${projectId})} ${JSON.stringify(revision #${newRevisionCount}: ${cardId}`)}`);
         } else {
           console.log(`⚠️ Failed to create Trello revision card for project ${projectId}`);
         }
@@ -2357,8 +2357,8 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       console.log("🔔 Trello webhook received");
-      console.log("Headers:", req.headers);
-      console.log("Action type:", payload.action?.type);
+      console.log(`${JSON.stringify("Headers:")} ${JSON.stringify(req.headers)}`);
+      console.log(`${JSON.stringify("Action type:")} ${JSON.stringify(payload.action?.type)}`);
       
       if (!signature) {
         console.log("❌ Missing webhook signature");
@@ -2374,7 +2374,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       // }
 
       console.log("✅ Webhook signature verified");
-      console.log("📋 Webhook action:", payload.action?.type);
+      console.log(`${JSON.stringify("📋 Webhook action:")} ${JSON.stringify(payload.action?.type)}`);
       
       const processed = await trelloWebhookService.processWebhook(payload);
       
@@ -2536,9 +2536,9 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       // Generate Frame.io review link
-      console.log(`🎬 Generating review link for project ${projectId}, folder: ${projectFolderId}`);
+      console.log(`${JSON.stringify(`🎬 Generating review link for project ${projectId})} ${JSON.stringify(folder: ${projectFolderId}`)}`);
       const reviewLink = await createFrameioReviewLink(projectFolderId);
-      console.log(`🔗 Review link result:`, reviewLink);
+      console.log(`${JSON.stringify(`🔗 Review link result:`)} ${JSON.stringify(reviewLink)}`);
       
       if (!reviewLink) {
         return res.status(400).json({ 
@@ -2655,7 +2655,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
             if (subscriptions.data.length > 0) {
               const latestSubscription = subscriptions.data[0];
-              console.log(`✅ Found active subscription in Stripe: ${latestSubscription.id}, status: ${latestSubscription.status}`);
+              console.log(`${JSON.stringify(`✅ Found active subscription in Stripe: ${latestSubscription.id})} ${JSON.stringify(status: ${latestSubscription.status}`)}`);
               
               // Update our records if they're out of sync
               if (actualSubscriptionStatus !== 'active' || stripeSubscriptionId !== latestSubscription.id) {
@@ -3291,9 +3291,9 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post("/api/stripe/create-revision-session", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const { projectId } = req.body;
-      console.log("Revision payment request body:", req.body);
-      console.log("ProjectId received:", projectId, "Type:", typeof projectId);
-      console.log("User ID:", req.user!.id);
+      console.log(`${JSON.stringify("Revision payment request body:")} ${JSON.stringify(req.body)}`);
+      console.log(`${JSON.stringify("ProjectId received:")} ${JSON.stringify(projectId, "Type:", typeof projectId)}`);
+      console.log(`${JSON.stringify("User ID:")} ${JSON.stringify(req.user!.id)}`);
 
       // Verify the price from Stripe
       let priceToUse = 'price_1Rt2ZhCp6pJe31oC6uMZuOev';
@@ -3323,7 +3323,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           const correctPrice = prices.data.find(p => p.unit_amount === 500);
           if (correctPrice) {
             priceToUse = correctPrice.id;
-            console.log("Found correct $5 price:", correctPrice.id);
+            console.log(`${JSON.stringify("Found correct $5 price:")} ${JSON.stringify(correctPrice.id)}`);
           }
         }
       } catch (error) {
@@ -3334,7 +3334,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       const numericProjectId = typeof projectId === 'string' ? Number(projectId, 10) : projectId;
 
       if (!numericProjectId || typeof numericProjectId !== 'number' || isNaN(numericProjectId)) {
-        console.log("Invalid project ID validation failed:", numericProjectId);
+        console.log(`${JSON.stringify("Invalid project ID validation failed:")} ${JSON.stringify(numericProjectId)}`);
         return res.status(400).json({
           success: false,
           message: "Valid project ID is required",
@@ -3362,7 +3362,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       // Check if project is in correct status for revision request
       const validRevisionStatuses = ["video is ready", "delivered", "complete"];
       if (!validRevisionStatuses.includes(project.status.toLowerCase())) {
-        console.log("Invalid project status for revision:", project.status);
+        console.log(`${JSON.stringify("Invalid project status for revision:")} ${JSON.stringify(project.status)}`);
         return res.status(400).json({
           success: false,
           message: "Project must be delivered or completed to request revisions",
@@ -3404,10 +3404,10 @@ export async function registerRoutes(app: any): Promise<Server> {
       });
 
       console.log("✅ Stripe session created successfully:");
-      console.log("- Session ID:", session.id);
-      console.log("- Session URL:", session.url);
-      console.log("- Success URL:", `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`);
-      console.log("- Cancel URL:", `${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`);
+      console.log(`${JSON.stringify("- Session ID:")} ${JSON.stringify(session.id)}`);
+      console.log(`${JSON.stringify("- Session URL:")} ${JSON.stringify(session.url)}`);
+      console.log(`${JSON.stringify("- Success URL:")} ${JSON.stringify(`${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`)}`);
+      console.log(`${JSON.stringify("- Cancel URL:")} ${JSON.stringify(`${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`)}`);
       
       res.json({
         success: true,
@@ -3483,7 +3483,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         console.log(`🔄 Updated project ${payment.projectId} status to "awaiting revision instructions"`);
         
         // Log the revision for accounting/tracking
-        console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
+        console.log(`${JSON.stringify(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId})} ${JSON.stringify(Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`)}`);
 
         // Move revision card to Done (revision request completes the current revision)
         try {
@@ -3525,14 +3525,14 @@ export async function registerRoutes(app: any): Promise<Server> {
     const projectId = req.query.project_id as string;
     
     console.log("✅ STRIPE REVISION PAYMENT SUCCESS ENDPOINT HIT!");
-    console.log("📍 Full URL:", req.url);
-    console.log("📍 Full path:", req.path);
-    console.log("📍 Query params:", req.query);
-    console.log("📍 Headers:", req.headers);
-    console.log("✅ Stripe revision payment success callback:", { sessionId, projectId });
+    console.log(`${JSON.stringify("📍 Full URL:")} ${JSON.stringify(req.url)}`);
+    console.log(`${JSON.stringify("📍 Full path:")} ${JSON.stringify(req.path)}`);
+    console.log(`${JSON.stringify("📍 Query params:")} ${JSON.stringify(req.query)}`);
+    console.log(`${JSON.stringify("📍 Headers:")} ${JSON.stringify(req.headers)}`);
+    console.log(`${JSON.stringify("✅ Stripe revision payment success callback:")} ${JSON.stringify({ sessionId, projectId })}`);
     
     if (!sessionId || !projectId) {
-      console.log("⚠️ Missing sessionId or projectId, redirecting to dashboard");
+      console.log(`${JSON.stringify("⚠️ Missing sessionId or projectId)} ${JSON.stringify(redirecting to dashboard")}`);
       return res.redirect("/dashboard");
     }
     
@@ -3548,7 +3548,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       });
       
       if (session.payment_status !== 'paid') {
-        console.log("⚠️ Payment not completed, status:", session.payment_status);
+        console.log(`${JSON.stringify("⚠️ Payment not completed)} ${JSON.stringify(status:", session.payment_status)}`);
         return res.redirect(`/dashboard?revision_payment=pending&session_id=${sessionId}&project_id=${projectId}`);
       }
       
@@ -3574,7 +3574,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     // Instead of Express redirect, send HTML with client-side redirect
     // This approach works better in development environments like Replit
     const redirectUrl = getDashboardUrl() + `?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
-    console.log("🚀 Sending HTML redirect page to:", redirectUrl);
+    console.log(`${JSON.stringify("🚀 Sending HTML redirect page to:")} ${JSON.stringify(redirectUrl)}`);
     
     (res as any).send(`
       <!DOCTYPE html>
@@ -3661,11 +3661,11 @@ export async function registerRoutes(app: any): Promise<Server> {
             timestamp: Date.now()
           };
           localStorage.setItem('stripe_revision_payment', JSON.stringify(paymentInfo));
-          console.log('Stored payment info in localStorage:', paymentInfo);
+          console.log(`${JSON.stringify('Stored payment info in localStorage:')} ${JSON.stringify(paymentInfo)}`);
           
           // Redirect to dashboard with parameters
           const redirectUrl = '${redirectUrl}';
-          console.log('Redirecting to:', redirectUrl);
+          console.log(`${JSON.stringify('Redirecting to:')} ${JSON.stringify(redirectUrl)}`);
           
           setTimeout(() => {
             window.location.href = redirectUrl;
@@ -3681,14 +3681,14 @@ export async function registerRoutes(app: any): Promise<Server> {
     const projectId = req.query.project_id as string;
     
     console.log("❌ STRIPE REVISION PAYMENT CANCEL ENDPOINT HIT!");
-    console.log("📍 Full URL:", req.url);
-    console.log("📍 Full path:", req.path);
-    console.log("📍 Query params:", req.query);
-    console.log("📍 Headers:", req.headers);
-    console.log("❌ Stripe revision payment cancelled:", { sessionId, projectId });
+    console.log(`${JSON.stringify("📍 Full URL:")} ${JSON.stringify(req.url)}`);
+    console.log(`${JSON.stringify("📍 Full path:")} ${JSON.stringify(req.path)}`);
+    console.log(`${JSON.stringify("📍 Query params:")} ${JSON.stringify(req.query)}`);
+    console.log(`${JSON.stringify("📍 Headers:")} ${JSON.stringify(req.headers)}`);
+    console.log(`${JSON.stringify("❌ Stripe revision payment cancelled:")} ${JSON.stringify({ sessionId, projectId })}`);
     
     if (!sessionId || !projectId) {
-      console.log("⚠️ Missing sessionId or projectId, redirecting to dashboard");
+      console.log(`${JSON.stringify("⚠️ Missing sessionId or projectId)} ${JSON.stringify(redirecting to dashboard")}`);
       return res.redirect("/dashboard");
     }
     
@@ -3697,7 +3697,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     
     // Send HTML with client-side redirect for better reliability
     const redirectUrl = getDashboardUrl() + `?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
-    console.log("🚀 Sending HTML redirect page to:", redirectUrl);
+    console.log(`${JSON.stringify("🚀 Sending HTML redirect page to:")} ${JSON.stringify(redirectUrl)}`);
     
     (res as any).send(`
       <!DOCTYPE html>
@@ -3775,7 +3775,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           
           // Redirect to dashboard
           const redirectUrl = '${redirectUrl}';
-          console.log('Redirecting to:', redirectUrl);
+          console.log(`${JSON.stringify('Redirecting to:')} ${JSON.stringify(redirectUrl)}`);
           
           setTimeout(() => {
             window.location.href = redirectUrl;
@@ -3791,7 +3791,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     const projectId = req.params.projectId;
     const testSessionId = `cs_test_fake_${Date.now()}`;
     const testUrl = getDashboardUrl() + `?revision_payment=success&session_id=${testSessionId}&project_id=${projectId}`;
-    console.log("🧪 Simulating Stripe return redirect to:", testUrl);
+    console.log(`${JSON.stringify("🧪 Simulating Stripe return redirect to:")} ${JSON.stringify(testUrl)}`);
     res.redirect(302, testUrl);
   });
 
@@ -3803,7 +3803,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       project_id: '16'
     };
     
-    console.log("🧪 Direct dashboard test with embedded parameters:", testParams);
+    console.log(`${JSON.stringify("🧪 Direct dashboard test with embedded parameters:")} ${JSON.stringify(testParams)}`);
     
     // Serve HTML with embedded script that immediately tests parameter detection
     (res as any).send(`
@@ -3958,7 +3958,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get("/api/test-url-params", (req: AppRequest, res: AppResponse) => {
     // Use relative URL instead of absolute URL
     const url = `/dashboard?revision_payment=success&session_id=cs_test_manual&project_id=16`;
-    console.log("🧪 Test page generating RELATIVE URL:", url);
+    console.log(`${JSON.stringify("🧪 Test page generating RELATIVE URL:")} ${JSON.stringify(url)}`);
     (res as any).send(`
       <html>
         <head>
@@ -4417,7 +4417,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     try {
       console.log("Attempting to list Object Storage files...");
       const listResult = await objectStorageClient.list();
-      console.log("List result:", JSON.stringify(listResult, null, 2));
+      console.log(`${JSON.stringify("List result:")} ${JSON.stringify(JSON.stringify(listResult, null, 2)}`));
       res.json(listResult);
     } catch (error) {
       console.error("Object Storage list error:", error);
@@ -4458,7 +4458,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())[0];
 
       if (latestVideo?.mediaAssetId) {
-        console.log(`Found video in DB for project ${projectId}:`, latestVideo.mediaAssetId);
+        console.log(`${JSON.stringify(`Found video in DB for project ${projectId}:`)} ${JSON.stringify(latestVideo.mediaAssetId)}`);
         res.json({
           success: true,
           videoId: latestVideo.mediaAssetId,
@@ -4467,7 +4467,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       } else {
         // If no video in DB, try to get from Frame.io folder directly
-        console.log(`No video in DB for project ${projectId}, checking Frame.io folder`);
+        console.log(`${JSON.stringify(`No video in DB for project ${projectId})} ${JSON.stringify(checking Frame.io folder`)}`);
         try {
           if (project.mediaFolderId) {
             await frameioV4Service.loadServiceAccountToken();
@@ -4475,7 +4475,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             if (frameioAssets && frameioAssets.length > 0) {
               // Get the most recent asset
               const latestAsset = frameioAssets[0]; // Already sorted by date
-              console.log(`Found asset in Frame.io folder:`, latestAsset.id);
+              console.log(`${JSON.stringify(`Found asset in Frame.io folder:`)} ${JSON.stringify(latestAsset.id)}`);
               
               res.json({
                 success: true,
@@ -4855,8 +4855,8 @@ export async function registerRoutes(app: any): Promise<Server> {
           project.mediaFolderId || '', // Frame.io folder ID
         );
 
-        console.log("Raw Frame.io uploadSession object:", uploadSession);
-        console.log("Upload session keys:", Object.keys(uploadSession));
+        console.log(`${JSON.stringify("Raw Frame.io uploadSession object:")} ${JSON.stringify(uploadSession)}`);
+        console.log(`${JSON.stringify("Upload session keys:")} ${JSON.stringify(Object.keys(uploadSession)}`));
 
         const sessionResponse = {
           uploadUrl: uploadSession.uploadUrl,
@@ -4865,7 +4865,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           assetId: uploadSession.assetId,
         };
 
-        console.log("Sending upload session response:", sessionResponse);
+        console.log(`${JSON.stringify("Sending upload session response:")} ${JSON.stringify(sessionResponse)}`);
 
         res.json({
           success: true,
@@ -4888,9 +4888,9 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireProjectAccess,
     async (req: AppRequest, res: AppResponse) => {
       try {
-        console.log("Complete upload request body:", req.body);
-        console.log("Complete upload body keys:", Object.keys(req.body || {}));
-        console.log("Auth user:", req.user?.id);
+        console.log(`${JSON.stringify("Complete upload request body:")} ${JSON.stringify(req.body)}`);
+        console.log(`${JSON.stringify("Complete upload body keys:")} ${JSON.stringify(Object.keys(req.body || {})}`));
+        console.log(`${JSON.stringify("Auth user:")} ${JSON.stringify(req.user?.id)}`);
 
         const projectId = Number(req.params.id);
         const { completeUri, videoUri, fileName, fileSize } = req.body;
@@ -5423,14 +5423,14 @@ export async function registerRoutes(app: any): Promise<Server> {
     },
     requireAuth,
     async (req: AppRequest, res: AppResponse) => {
-      console.log(`🚨🚨🚨 AFTER AUTH: Authentication passed, proceeding with folder setup 🚨🚨🚨`);
+      console.log(`${JSON.stringify(`🚨🚨🚨 AFTER AUTH: Authentication passed)} ${JSON.stringify(proceeding with folder setup 🚨🚨🚨`)}`);
       try {
         const projectId = Number(req.params.id);
         const userId = req.user!.id;
 
-        console.log(`🔧 ROUTE CALLED: Ensuring Frame.io folder structure for project ${projectId}, user ${userId}`);
+        console.log(`${JSON.stringify(`🔧 ROUTE CALLED: Ensuring Frame.io folder structure for project ${projectId})} ${JSON.stringify(user ${userId}`)}`);
         console.log(`🔍 DEBUG: Request received at ensure-folder-structure endpoint`);
-        console.log(`🔍 DEBUG: User authentication successful, proceeding with folder setup`);
+        console.log(`${JSON.stringify(`🔍 DEBUG: User authentication successful)} ${JSON.stringify(proceeding with folder setup`)}`);
 
         // Verify project exists and user owns it
         const project = await storage.getProject(projectId);
@@ -5557,7 +5557,7 @@ export async function registerRoutes(app: any): Promise<Server> {
               }
             });
             
-            console.log(`📊 Project storage: ${fileCount} files, ${totalStorageUsed} bytes total`);
+            console.log(`${JSON.stringify(`📊 Project storage: ${fileCount} files)} ${JSON.stringify(${totalStorageUsed} bytes total`)}`);
           } catch (error) {
             console.log(`⚠️ Could not fetch existing files from project folder: ${error instanceof Error ? error.message : String(error)}`);
             existingFiles = [];
@@ -5819,7 +5819,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         const updatedProject = await storage.updateProject(projectId, {
           updatedAt: new Date(),
         });
-        console.log(`Project ${projectId} updated timestamp:`, updatedProject?.updatedAt);
+        console.log(`${JSON.stringify(`Project ${projectId} updated timestamp:`)} ${JSON.stringify(updatedProject?.updatedAt)}`);
 
         res.json({
           success: true,
@@ -5920,7 +5920,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             }
           }
         } catch (error) {
-          console.log('Frame.io folder does not exist or is empty:', error);
+          console.log(`${JSON.stringify('Frame.io folder does not exist or is empty:')} ${JSON.stringify(error)}`);
           // Return empty results - no photos in Frame.io means no photos to display
         }
 
@@ -6141,7 +6141,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post("/api/frameio/v4/test-folder", async (req: AppRequest, res: AppResponse) => {
     try {
       const { folderName, parentId } = req.body;
-      console.log(`Testing folder creation: ${folderName}, parent: ${parentId || 'root'}`);
+      console.log(`${JSON.stringify(`Testing folder creation: ${folderName})} ${JSON.stringify(parent: ${parentId || 'root'}`)}`);
       
       await frameioV4Service.initialize();
       const folder = await frameioV4Service.createFolder(folderName, parentId);
@@ -6483,10 +6483,10 @@ async function downloadAsset(
 
   // Try direct path first (current structure)
   try {
-    console.log("Attempting downloadAsBytes for:", assetPath);
+    console.log(`${JSON.stringify("Attempting downloadAsBytes for:")} ${JSON.stringify(assetPath)}`);
     const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
-    console.log("BytesResult structure:", Object.keys(bytesResult));
-    console.log("BytesResult ok:", bytesResult.ok);
+    console.log(`${JSON.stringify("BytesResult structure:")} ${JSON.stringify(Object.keys(bytesResult)}`));
+    console.log(`${JSON.stringify("BytesResult ok:")} ${JSON.stringify(bytesResult.ok)}`);
 
     if (!bytesResult.ok) {
       throw new Error(
@@ -6495,12 +6495,12 @@ async function downloadAsset(
     }
 
     // Check the actual structure of the response
-    console.log("((BytesResult as any).value type:", typeof bytesResult.value);
+    console.log(`${JSON.stringify("((BytesResult as any).value type:")} ${JSON.stringify(typeof bytesResult.value)}`);
     console.log(
       "((BytesResult as any).value instanceof Uint8Array:",
       bytesResult.value instanceof Uint8Array,
     );
-    console.log("((BytesResult as any).value keys:", Object.keys(bytesResult.value));
+    console.log(`${JSON.stringify("((BytesResult as any).value keys:")} ${JSON.stringify(Object.keys(bytesResult.value)}`));
     console.log(
       "((BytesResult as any).value constructor:",
       bytesResult.value.constructor.name,
@@ -6510,8 +6510,8 @@ async function downloadAsset(
       content = bytesResult.value;
     } else if (Array.isArray(bytesResult.value)) {
       // Handle array case first - it's an array - let's check what's inside
-      console.log("Array detected, length:", bytesResult.value.length);
-      console.log("First element type:", typeof bytesResult.value[0]);
+      console.log(`${JSON.stringify("Array detected)} ${JSON.stringify(length:", bytesResult.value.length)}`);
+      console.log(`${JSON.stringify("First element type:")} ${JSON.stringify(typeof bytesResult.value[0])}`);
       console.log(
         "First element constructor:",
         bytesResult.value[0]?.constructor?.name,
@@ -6561,9 +6561,9 @@ async function downloadAsset(
       }
     }
 
-    console.log("Final content length:", content.length);
+    console.log(`${JSON.stringify("Final content length:")} ${JSON.stringify(content.length)}`);
   } catch (bytesError: any) {
-    console.log(`First attempt failed for ${assetPath}:`, bytesError.message);
+    console.log(`${JSON.stringify(`First attempt failed for ${assetPath}:`)} ${JSON.stringify(bytesError.message)}`);
 
     // Try fallback: remove Objects/ prefix if it exists (legacy structure)
     if (assetPath.startsWith("Objects/")) {
@@ -6571,10 +6571,10 @@ async function downloadAsset(
       console.log(`Trying fallback path: ${fallbackPath}`);
 
       try {
-        console.log("Attempting fallback downloadAsBytes for:", fallbackPath);
+        console.log(`${JSON.stringify("Attempting fallback downloadAsBytes for:")} ${JSON.stringify(fallbackPath)}`);
         const fallbackResult =
           await objectStorageClient.downloadAsBytes(fallbackPath);
-        console.log("Fallback BytesResult ok:", fallbackResult.ok);
+        console.log(`${JSON.stringify("Fallback BytesResult ok:")} ${JSON.stringify(fallbackResult.ok)}`);
 
         if (!fallbackResult.ok) {
           throw new Error(
@@ -6619,7 +6619,7 @@ async function downloadAsset(
           content?.length || "undefined",
         );
       } catch (fallbackError: any) {
-        console.log("Both paths failed:", fallbackError.message);
+        console.log(`${JSON.stringify("Both paths failed:")} ${JSON.stringify(fallbackError.message)}`);
         throw new Error(`Asset not found: ${assetPath}`);
       }
     } else {
