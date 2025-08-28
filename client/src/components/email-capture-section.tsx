@@ -123,7 +123,7 @@ export default function EmailCaptureSection() {
 
         <Card className="max-w-md mx-auto bg-dark-card/80 backdrop-blur-sm border border-gray-600">
           <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Input
                   type="email"
@@ -133,6 +133,8 @@ export default function EmailCaptureSection() {
                   required
                   className="flex-1 bg-gray-800 text-light placeholder-gray-400 border-gray-600 focus:border-accent"
                   disabled={emailSignupMutation.isPending}
+                  autoComplete="email"
+                  spellCheck="false"
                 />
                 <Button
                   type="submit"
