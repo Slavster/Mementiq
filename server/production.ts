@@ -2,7 +2,6 @@
 // This file provides a clean production server without development dependencies
 
 import express from 'express';
-import type { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { registerRoutes } from './routes';
 import path from 'path';
@@ -16,11 +15,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function createProductionServer() {
-  const app = express() as Express;
+  const app = express();
   const PORT = process.env.PORT || 5000;
 
   // Security headers (helmet-like protection)
-  app.use((req: Request, res: Response, next: NextFunction) => {
+  app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
@@ -33,7 +32,7 @@ export async function createProductionServer() {
   });
 
   // Health check endpoint
-  app.get('/healthz', (_req: Request, res: Response) => {
+  app.get('/healthz', (_req, res) => {
     res.status(200).json({ 
       status: 'healthy', 
       timestamp: new Date().toISOString(),
@@ -75,7 +74,7 @@ export async function createProductionServer() {
   }));
 
   // Simple request logging
-  app.use((req: Request, res: Response, next: NextFunction) => {
+  app.use((req, res, next) => {
     const start = Date.now();
     const originalEnd = res.end;
     
@@ -117,7 +116,7 @@ export async function createProductionServer() {
   // Serve other static files
   app.use(express.static(staticPath, {
     index: false,
-    setHeaders: (res: Response, filePath: string) => {
+    setHeaders: (res: any, filePath: string) => {
       // No cache for HTML files
       if (filePath.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -128,16 +127,16 @@ export async function createProductionServer() {
         res.setHeader('Cache-Control', 'public, max-age=3600');
       }
     }
-  }));
+  } as any));
 
   // Fallback to index.html for client-side routing
-  app.get('*', (_req: Request, res: Response) => {
+  app.get('*', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(staticPath, 'index.html'));
   });
 
   // Error handler
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, _req, res, _next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || 'Internal Server Error';
     
