@@ -1968,7 +1968,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/email-signup", async (req, res) => {
     try {
       const validatedData = insertEmailSignupSchema.parse(req.body);
-      const emailSignup = await storage.createEmailSignup(validatedData);
+      
+      // Capture user's IP address from various possible headers
+      const getClientIP = (req: Request) => {
+        return req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
+               req.headers['x-real-ip']?.toString() ||
+               req.headers['x-client-ip']?.toString() ||
+               req.connection.remoteAddress ||
+               req.socket.remoteAddress ||
+               'unknown';
+      };
+      
+      const ipAddress = getClientIP(req);
+      
+      // Add IP address to the data before storing
+      const emailSignupData = {
+        ...validatedData,
+        ipAddress: ipAddress
+      };
+      
+      const emailSignup = await storage.createEmailSignup(emailSignupData);
+      
+      console.log(`📧 New email signup: ${validatedData.email} from IP: ${ipAddress}`);
+      
       res.json({ success: true, message: "Email successfully registered!" });
     } catch (error) {
       if (error instanceof z.ZodError) {
