@@ -8,8 +8,8 @@ packages = ["ffmpeg", "jq"]
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["sh", "-c", "bash custom-build.sh"]
-run = ["sh", "-c", "node start.js"]
+build = ["sh", "-c", "./custom-build.sh"]
+run = ["sh", "-c", "NODE_ENV=production node dist/server.js"]
 
 [[ports]]
 localPort = 5000
