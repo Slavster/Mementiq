@@ -38,6 +38,7 @@ import "./types"; // Import session types
 import Stripe from "stripe";
 import multer from "multer";
 import { getAppBaseUrl, getDashboardUrl } from "./config/appUrl.js";
+import * as geoip from "geoip-lite";
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -1981,15 +1982,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const ipAddress = getClientIP(req);
       
-      // Add IP address to the data before storing
+      // Get geolocation data from IP address using geoip-lite
+      let locationData = {
+        country: null as string | null,
+        region: null as string | null,
+        city: null as string | null,
+        timezone: null as string | null
+      };
+      
+      if (ipAddress && ipAddress !== 'unknown' && ipAddress !== '127.0.0.1' && ipAddress !== '::1') {
+        const geo = geoip.lookup(ipAddress);
+        if (geo) {
+          locationData = {
+            country: geo.country || null,
+            region: geo.region || null,
+            city: geo.city || null,
+            timezone: geo.timezone || null
+          };
+        }
+      }
+      
+      // Add IP address and location data to the data before storing
       const emailSignupData = {
         ...validatedData,
-        ipAddress: ipAddress
+        ipAddress: ipAddress,
+        country: locationData.country,
+        region: locationData.region,
+        city: locationData.city,
+        timezone: locationData.timezone
       };
       
       const emailSignup = await storage.createEmailSignup(emailSignupData);
       
-      console.log(`📧 New email signup: ${validatedData.email} from IP: ${ipAddress}`);
+      const locationInfo = locationData.city && locationData.region && locationData.country
+        ? `${locationData.city}, ${locationData.region}, ${locationData.country}`
+        : locationData.country || 'Unknown location';
+      
+      console.log(`📧 New email signup: ${validatedData.email} from ${ipAddress} (${locationInfo})`);
       
       res.json({ success: true, message: "Email successfully registered!" });
     } catch (error) {
