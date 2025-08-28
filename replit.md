@@ -31,7 +31,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **Tally Form Integration**: Mandatory for editing instructions.
 - **Video Delivery Detection**: Automatic background service detects new video uploads, transitions projects to "Video is Ready", and sends notifications.
 - **Public Share Creation**: Frame.io V4 public share system with intelligent share reuse. Share links are generated ONLY once during "Video is Ready" stage and reused throughout the project lifecycle. Share links expire after 30 days.
-- **Email Capture**: Persistent storage for lead generation.
+- **Email Capture**: Comprehensive lead generation system with IP address tracking, geolocation data (country, region, city, timezone), duplicate prevention across users and email_signups tables, and enhanced email format validation with typo detection.
 - **Revision Payment Flow**: Popup-based payment via Stripe with immediate UI feedback and project status updates.
 - **Revision Instructions Interface**: 4-step workflow integrated into video viewing stage: Video Review (Frame.io comments), Optional Footage Upload, Submit to Editor, Video Ready (placeholder).
 - **Trello Integration**: Workflow automation for creating and managing Trello cards for project tracking. Includes initial project cards, revision cards, editor assignment inheritance, and status updates (one-way communication from app to Trello). Subscription tiers are labeled with color-coded labels.
