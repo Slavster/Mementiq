@@ -74,6 +74,10 @@ export const emailSignups = pgTable("email_signups", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   ipAddress: text("ip_address"), // Store user's IP address for analytics
+  country: text("country"), // Country from IP geolocation
+  region: text("region"), // State/Region from IP geolocation
+  city: text("city"), // City from IP geolocation
+  timezone: text("timezone"), // Timezone from IP geolocation
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -262,7 +266,11 @@ export const insertProjectFileSchema = createInsertSchema(projectFiles).pick({
 export const insertEmailSignupSchema = createInsertSchema(emailSignups).pick({
   email: true,
   ipAddress: true,
-}).partial({ ipAddress: true }); // IP address is optional since it's handled by the server
+  country: true,
+  region: true,
+  city: true,
+  timezone: true,
+}).partial({ ipAddress: true, country: true, region: true, city: true, timezone: true }); // Location fields are optional since they're handled by the server
 
 // Tally form submission schema
 export const insertTallyFormSubmissionSchema = createInsertSchema(tallyFormSubmissions).pick({
