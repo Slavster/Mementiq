@@ -73,6 +73,7 @@ export const projectStatusLog = pgTable("project_status_log", {
 export const emailSignups = pgTable("email_signups", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
+  ipAddress: text("ip_address"), // Store user's IP address for analytics
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -257,10 +258,11 @@ export const insertProjectFileSchema = createInsertSchema(projectFiles).pick({
   uploadProgress: true,
 });
 
-// Email signup schema
+// Email signup schema  
 export const insertEmailSignupSchema = createInsertSchema(emailSignups).pick({
   email: true,
-});
+  ipAddress: true,
+}).partial({ ipAddress: true }); // IP address is optional since it's handled by the server
 
 // Tally form submission schema
 export const insertTallyFormSubmissionSchema = createInsertSchema(tallyFormSubmissions).pick({
