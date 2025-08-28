@@ -9,7 +9,7 @@ packages = ["ffmpeg", "jq"]
 [deployment]
 deploymentTarget = "autoscale"
 build = ["sh", "-c", "bash custom-build.sh"]
-run = ["npm", "run", "start"]
+run = ["sh", "-c", "node start.js"]
 
 [[ports]]
 localPort = 5000
