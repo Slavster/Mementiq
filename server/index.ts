@@ -1,4 +1,5 @@
-import express, { type Express, type Request, type Response, type NextFunction } from "express";
+import express from "express";
+import type { Request, Response, NextFunction, Express } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -7,7 +8,7 @@ import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 
-const app: Express = express();
+const app = express();
 
 // CORS configuration for Frame.io V4 direct uploads
 app.use(cors({
@@ -49,28 +50,28 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   if (path === '/dashboard' && (req as any).query && Object.keys((req as any).query).length > 0) {
     console.log(`🔍 Dashboard request with query params: ${(req as any).url}`);
     console.log('Query params:', (req as any).query);
-    console.log('Headers:', req.headers);
+    console.log('Headers:', (req as any).headers);
   }
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson: any, ...args: any[]) {
+  const originalResJson = (res as any).json;
+  (res as any).json = function (bodyJson: any, ...args: any[]) {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
 
-  res.on("finish", () => {
+  (res as any).on("finish", () => {
     const duration = Date.now() - start;
     
     // Log all dashboard requests
     if (path === '/dashboard') {
-      console.log(`🏠 Dashboard ${req.method} ${req.url} ${res.statusCode} in ${duration}ms`);
-      if (res.statusCode >= 400) {
+      console.log(`🏠 Dashboard ${(req as any).method} ${(req as any).url} ${(res as any).statusCode} in ${duration}ms`);
+      if ((res as any).statusCode >= 400) {
         console.log('❌ Dashboard error response:', capturedJsonResponse);
       }
     }
     
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      let logLine = `${(req as any).method} ${path} ${(res as any).statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -88,7 +89,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 (async () => {
   try {
-    const server = await registerRoutes(app);
+    const server = await (registerRoutes as any)(app);
 
     // Serve Object Storage assets
     app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
