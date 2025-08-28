@@ -129,14 +129,14 @@ export class TrelloAutomationService {
                   .where(eq(projects.id, projectId));
                 console.log('💾 Stored Frame.io project link in database for future use');
               } catch (storeError) {
-                console.log('⚠️ Failed to store Frame.io project link:', storeError.message);
+                console.log('⚠️ Failed to store Frame.io project link:', storeError instanceof Error ? storeError.message : storeError);
               }
             } else {
               console.log('❌ Could not determine Frame.io project ID');
               frameioLink = 'Frame.io project link unavailable - please check project setup';
             }
           } catch (error) {
-            console.error('❌ Failed to get Frame.io project ID:', error.message);
+            console.error('❌ Failed to get Frame.io project ID:', error instanceof Error ? error instanceof Error ? error.message : error : error);
             frameioLink = 'Frame.io project link unavailable - authentication required';
           }
         }
@@ -233,7 +233,7 @@ export class TrelloAutomationService {
               console.log(`✅ Moved original card to Done for project ${projectId}`);
             } catch (error: any) {
               // Check if error indicates card is archived
-              if (error.message && (error.message.includes('archived') || error.message.includes('closed') || error.message.includes('not found'))) {
+              if (error instanceof Error ? error.message : error && (error instanceof Error ? error.message : error.includes('archived') || error instanceof Error ? error.message : error.includes('closed') || error instanceof Error ? error.message : error.includes('not found'))) {
                 console.log(`📁 Original card appears to be archived for project ${projectId} - leaving archived`);
               } else {
                 console.error(`Failed to move original card for project ${projectId}:`, error);
@@ -271,7 +271,7 @@ export class TrelloAutomationService {
               console.log(`✅ Moved revision card #${revisionCard.revisionNumber} to Done for project ${projectId}`);
             } catch (error: any) {
               // Check if error indicates card is archived
-              if (error.message && (error.message.includes('archived') || error.message.includes('closed') || error.message.includes('not found'))) {
+              if (error instanceof Error ? error.message : error && (error instanceof Error ? error.message : error.includes('archived') || error instanceof Error ? error.message : error.includes('closed') || error instanceof Error ? error.message : error.includes('not found'))) {
                 console.log(`📁 Revision card #${revisionCard.revisionNumber} appears to be archived for project ${projectId} - leaving archived`);
               } else {
                 console.error(`Failed to move revision card #${revisionCard.revisionNumber} for project ${projectId}:`, error);
@@ -315,7 +315,7 @@ export class TrelloAutomationService {
               console.log(`✅ Moved initial card to Done for project ${projectId}`);
             } catch (error: any) {
               // Check if error indicates card is archived
-              if (error.message && (error.message.includes('archived') || error.message.includes('closed') || error.message.includes('not found'))) {
+              if (error instanceof Error ? error.message : error && (error instanceof Error ? error.message : error.includes('archived') || error instanceof Error ? error.message : error.includes('closed') || error instanceof Error ? error.message : error.includes('not found'))) {
                 console.log(`📁 Initial card appears to be archived for project ${projectId} - leaving archived`);
               } else {
                 console.error(`Failed to move initial card for project ${projectId}:`, error);
@@ -355,7 +355,7 @@ export class TrelloAutomationService {
               console.log(`✅ Moved pending revision card #${revisionCard.revisionNumber} to Done for project ${projectId}`);
             } catch (error: any) {
               // Check if error indicates card is archived
-              if (error.message && (error.message.includes('archived') || error.message.includes('closed') || error.message.includes('not found'))) {
+              if (error instanceof Error ? error.message : error && (error instanceof Error ? error.message : error.includes('archived') || error instanceof Error ? error.message : error.includes('closed') || error instanceof Error ? error.message : error.includes('not found'))) {
                 console.log(`📁 Revision card #${revisionCard.revisionNumber} appears to be archived for project ${projectId} - leaving archived`);
               } else {
                 console.error(`Failed to move revision card #${revisionCard.revisionNumber} for project ${projectId}:`, error);
@@ -740,7 +740,7 @@ export class TrelloAutomationService {
       }
       
     } catch (error) {
-      console.error('❌ FALLBACK: Error extracting Frame.io link from original card:', error.message);
+      console.error('❌ FALLBACK: Error extracting Frame.io link from original card:', error instanceof Error ? error.message : error);
       return 'Frame.io link unavailable - extraction failed';
     }
   }
