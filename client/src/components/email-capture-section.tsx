@@ -37,12 +37,14 @@ export default function EmailCaptureSection() {
             title = "Already Signed Up";
             variant = "default"; // Use default styling for "already signed up" message
           } else {
-            errorMessage = "You're already signed up! Check your inbox for updates from us.";
+            errorMessage =
+              "You're already signed up! Check your inbox for updates from us.";
             title = "Already Signed Up";
             variant = "default";
           }
         } catch {
-          errorMessage = "You're already signed up! Check your inbox for updates from us.";
+          errorMessage =
+            "You're already signed up! Check your inbox for updates from us.";
           title = "Already Signed Up";
           variant = "default";
         }
@@ -70,32 +72,34 @@ export default function EmailCaptureSection() {
     }
 
     // Enhanced email validation
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    const emailRegex =
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!emailRegex.test(email.trim())) {
       toast({
         title: "Invalid Email",
-        description: "Please enter a valid email address (example: user@domain.com)",
+        description:
+          "Please enter a valid email address (example: user@domain.com)",
         variant: "destructive",
       });
       return;
     }
-    
+
     // Check for common typos in email domains
     const commonDomainTypos = {
-      'gmail.co': 'gmail.com',
-      'gmail.cm': 'gmail.com', 
-      'gmial.com': 'gmail.com',
-      'yahoo.co': 'yahoo.com',
-      'hotmail.co': 'hotmail.com',
-      'outlook.co': 'outlook.com'
+      "gmail.co": "gmail.com",
+      "gmail.cm": "gmail.com",
+      "gmial.com": "gmail.com",
+      "yahoo.co": "yahoo.com",
+      "hotmail.co": "hotmail.com",
+      "outlook.co": "outlook.com",
     };
-    
-    const emailParts = email.trim().split('@');
+
+    const emailParts = email.trim().split("@");
     if (emailParts.length === 2) {
       const domain = emailParts[1].toLowerCase();
       if (commonDomainTypos[domain]) {
         toast({
-          title: "Did you mean?",
+          title: "Email Typo?",
           description: `Did you mean ${emailParts[0]}@${commonDomainTypos[domain]}?`,
           variant: "default",
         });
