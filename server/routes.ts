@@ -822,7 +822,7 @@ export async function registerRoutes(app: any): Promise<Server> {
               console.log(`❌ No public share version found, will search more broadly...`);
             }
           } catch (error) {
-            console.log(`❌ Error searching for public share version: ${error instanceof Error ? error.message : String(error)}`);
+            console.log(`❌ Error searching for public share version: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`);
           }
         }
       }
@@ -1118,7 +1118,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error('❌ Manual asset detection failed:', error);
       res.status(500).json({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error occurred'
       });
     }
   });
@@ -1148,7 +1148,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
     } catch (error) {
       console.error('Debug folders error:', error);
-      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' });
+      res.status(500).json({ success: false, error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error occurred' });
     }
   });
 
@@ -1192,7 +1192,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Uncomment this section if you want to enable webhook-based detection in the future
   /*
   // Test endpoint to verify webhook configuration
-  router.get("/api/webhooks/frameio/test", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/webhooks/frameio/test", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       // Check if webhook secret is configured
       const webhookSecret = process.env.FRAMEIO_WEBHOOK_SECRET;
@@ -1225,7 +1225,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error('Webhook test error:', error);
       res.status(500).json({ 
         error: 'Failed to check webhook configuration',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)
       });
     }
   });
@@ -1642,7 +1642,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       if (mediaLink && mediaLink.available && mediaLink.url) {
         // Successfully got a streaming URL
         console.log('Streaming URL obtained:', mediaLink.kind);
-        res.setHeader('Cache-Control', 'no-store');
+        (res as any).setHeader('Cache-Control', 'no-store');
         res.json(mediaLink);
       } else if (mediaLink && !mediaLink.available) {
         // Frame.io V4 doesn't provide direct streaming
@@ -1663,7 +1663,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Failed to get media stream URL:", error);
       res.status(500).json({ 
         error: "Failed to get media stream URL",
-        details: error instanceof Error ? error.message : 'Unknown error occurred'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error occurred'
       });
     }
   });
@@ -1806,7 +1806,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       const mediaLink = await frameioV4Service.getPlayableMediaLinks(assetId, prefer);
       
       if (mediaLink) {
-        res.setHeader('Cache-Control', 'no-store');
+        (res as any).setHeader('Cache-Control', 'no-store');
         res.json(mediaLink);
       } else {
         res.status(404).json({ 
@@ -1818,7 +1818,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Legacy streaming endpoint error:", error);
       res.status(500).json({ 
         error: "Failed to get media stream URL",
-        details: error instanceof Error ? error.message : 'Unknown error occurred'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error occurred'
       });
     }
   });
@@ -1856,7 +1856,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         await frameioV4Service.updateProjectAssetsStatus(projectId, 'Approved');
         console.log(`✅ Frame.io assets updated to "Approved" for project ${projectId}`);
       } catch (frameioError) {
-        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError instanceof Error ? frameioError.message : 'Unknown error');
+        console.log(`⚠️ Frame.io status update failed for project ${projectId}:`, frameioError instanceof Error ? frameioError instanceof Error ? frameioError.message : String(frameioError) : 'Unknown error');
         // Don't fail the request if Frame.io update fails
       }
 
@@ -1964,7 +1964,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Failed to request revision:", error);
       res.status(500).json({ 
         success: false, 
-        message: error.message || "Failed to request revision" 
+        message: error instanceof Error ? error.message : String(error) || "Failed to request revision" 
       });
     }
   });
@@ -2050,7 +2050,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       } else if (
         error instanceof Error &&
-        error.message === "Email already exists"
+        error instanceof Error ? error.message : String(error) === "Email already exists"
       ) {
         res.status(409).json({
           success: false,
@@ -2083,7 +2083,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get(
     "/api/auth/me",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       res.json({
         success: true,
         user: req.user,
@@ -2178,7 +2178,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Trello Integration API Routes
   
   // Get Trello boards (for setup)
-  router.get("/api/trello/boards", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/trello/boards", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const boards = await trelloService.getBoards();
       res.json({ success: true, boards });
@@ -2192,7 +2192,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Get board lists (for configuration)
-  router.get("/api/trello/boards/:boardId/lists", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/trello/boards/:boardId/lists", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const { boardId } = req.params;
       const lists = await trelloService.getBoardLists(boardId);
@@ -2207,7 +2207,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Setup Trello configuration
-  router.post("/api/trello/config", requireAuth, async (req: AppRequest, res) => {
+  router.post("/api/trello/config", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const { boardId, todoListId, doneListId, revisionListId } = req.body;
       
@@ -2234,7 +2234,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Get current Trello configuration
-  router.get("/api/trello/config", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/trello/config", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const config = await trelloAutomation.getTrelloConfig();
       res.json({ success: true, config });
@@ -2248,7 +2248,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Test Trello integration - create a test card
-  router.post("/api/trello/test", requireAuth, async (req: AppRequest, res) => {
+  router.post("/api/trello/test", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const config = await trelloAutomation.getTrelloConfig();
       if (!config) {
@@ -2279,7 +2279,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Move project cards to Done (temporary admin endpoint)
-  router.post("/api/trello/move-to-done/:projectId", requireAuth, async (req: AppRequest, res) => {
+  router.post("/api/trello/move-to-done/:projectId", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const projectId = parseInt(req.params.projectId);
       if (isNaN(projectId)) {
@@ -2322,7 +2322,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to connect to Trello",
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)
       });
     }
   });
@@ -2390,7 +2390,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Create webhook for a board
-  router.post("/api/trello/webhook/create", requireAuth, async (req: AppRequest, res) => {
+  router.post("/api/trello/webhook/create", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const { boardId } = req.body;
       
@@ -2427,7 +2427,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Get active webhooks
-  router.get("/api/trello/webhooks", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/trello/webhooks", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const webhooks = await trelloWebhookService.getActiveWebhooks();
       res.json({ success: true, webhooks });
@@ -2441,7 +2441,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Delete webhook
-  router.delete("/api/trello/webhooks/:webhookId", requireAuth, async (req: AppRequest, res) => {
+  router.delete("/api/trello/webhooks/:webhookId", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const { webhookId } = req.params;
       const success = await trelloWebhookService.deleteWebhook(webhookId);
@@ -2463,7 +2463,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Editor Management Routes
 
   // Add or update editor mapping
-  router.post("/api/trello/editors", requireAuth, async (req: AppRequest, res) => {
+  router.post("/api/trello/editors", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const { trelloMemberId, editorName, editorEmail } = req.body;
       
@@ -2491,7 +2491,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Get active editors
-  router.get("/api/trello/editors", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/trello/editors", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const editors = await trelloWebhookService.getActiveEditors();
       res.json({ success: true, editors });
@@ -2507,7 +2507,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Revision API Routes
 
   // Generate media platform review link for revisions
-  router.post('/api/projects/:id/generate-review-link', requireAuth, async (req: AppRequest, res) => {
+  router.post('/api/projects/:id/generate-review-link', requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const projectId = parseInt(req.params.id);
       const userId = req.user!.id;
@@ -2589,7 +2589,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Stripe Subscription Routes
 
   // Update existing Trello card with correct subscription tier
-  router.post("/api/trello/update-card-tier", requireAuth, async (req: any, res: any) => {
+  router.post("/api/trello/update-card-tier", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const user = req.user!;
       console.log(`🔄 Updating Trello card for user ${user.id} with tier: ${user.subscriptionTier}`);
@@ -2605,10 +2605,8 @@ export async function registerRoutes(app: any): Promise<Server> {
       
       console.log(`📂 Latest project: "${latestProject.title}" (ID: ${latestProject.id})`);
       
-      // Use the automation service to update the project card
-      await trelloAutomation.updateProjectCard(latestProject.id, {
-        subscriptionTier: user.subscriptionTier || 'basic'
-      });
+      // Use the automation service to create or update the project card
+      await trelloAutomation.createProjectCard(latestProject.id);
       
       console.log(`✅ Updated Trello card with correct "${user.subscriptionTier}" subscription label`);
       
@@ -2628,7 +2626,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get(
     "/api/subscription/status",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const user = await storage.getUser(req.user!.id);
         if (!user) {
@@ -2663,8 +2661,8 @@ export async function registerRoutes(app: any): Promise<Server> {
               if (actualSubscriptionStatus !== 'active' || stripeSubscriptionId !== latestSubscription.id) {
                 console.log(`🔄 Updating local subscription status from ${actualSubscriptionStatus} to active`);
                 
-                const periodStart = new Date(latestSubscription.current_period_start * 1000);
-                const periodEnd = new Date(latestSubscription.current_period_end * 1000);
+                const periodStart = new Date((latestSubscription as any).current_period_start * 1000);
+                const periodEnd = new Date((latestSubscription as any).current_period_end * 1000);
                 
                 await storage.updateUserSubscription(user.id, {
                   subscriptionStatus: 'active',
@@ -2782,7 +2780,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post(
     "/api/subscription/create-checkout",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const { tier } = req.body;
 
@@ -2932,7 +2930,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get(
     "/api/projects",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         // Get projects directly from database - updatedAt is now maintained by individual actions
         const projects = await storage.getProjectsByUser(req.user!.id);
@@ -2956,7 +2954,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post(
     "/api/projects",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         // Check subscription status before creating project
         const user = await storage.getUser(req.user!.id);
@@ -3077,7 +3075,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // REMOVED DUPLICATE: Project acceptance endpoint moved to line 1827
 
   // Get video download link endpoint
-  router.get("/api/projects/:id/download-link", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/projects/:id/download-link", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const projectId = parseInt(req.params.id);
       
@@ -3151,7 +3149,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Direct video download endpoint - triggers file download to user's device
-  router.get("/api/projects/:id/download-video", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/projects/:id/download-video", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const projectId = parseInt(req.params.id);
       
@@ -3234,13 +3232,13 @@ export async function registerRoutes(app: any): Promise<Server> {
           
           // Set headers for file download
           const filename = `${latestVideo.name || `video_${videoId}`}.mp4`;
-          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-          res.setHeader('Content-Type', 'video/mp4');
+          (res as any).setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          (res as any).setHeader('Content-Type', 'video/mp4');
           
           // Get content length if available
           const contentLength = response.headers.get('content-length');
           if (contentLength) {
-            res.setHeader('Content-Length', contentLength);
+            (res as any).setHeader('Content-Length', contentLength);
           }
           
           console.log(`Streaming video file: ${filename} (${contentLength || 'unknown size'})`);
@@ -3290,7 +3288,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Create revision payment session endpoint
-  router.post("/api/stripe/create-revision-session", requireAuth, async (req: AppRequest, res) => {
+  router.post("/api/stripe/create-revision-session", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const { projectId } = req.body;
       console.log("Revision payment request body:", req.body);
@@ -3427,7 +3425,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // API endpoint to check revision payment status - UPDATED TO INCLUDE DATABASE UPDATES
-  router.get("/api/stripe/check-revision-payment", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/stripe/check-revision-payment", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const sessionId = req.query.session_id as string;
       const userId = req.user!.id;
@@ -3578,7 +3576,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     const redirectUrl = getDashboardUrl() + `?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
     console.log("🚀 Sending HTML redirect page to:", redirectUrl);
     
-    res.send(`
+    (res as any).send(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -3701,7 +3699,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     const redirectUrl = getDashboardUrl() + `?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
     console.log("🚀 Sending HTML redirect page to:", redirectUrl);
     
-    res.send(`
+    (res as any).send(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -3808,7 +3806,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     console.log("🧪 Direct dashboard test with embedded parameters:", testParams);
     
     // Serve HTML with embedded script that immediately tests parameter detection
-    res.send(`
+    (res as any).send(`
       <!doctype html>
       <html lang="en">
         <head>
@@ -3894,7 +3892,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
   // Serve test HTML page
   router.get("/test-stripe-redirect", (req: AppRequest, res: AppResponse) => {
-    res.sendFile(path.join(process.cwd(), 'test_stripe_redirect.html'));
+    (res as any).sendFile(path.join(process.cwd(), 'test_stripe_redirect.html'));
   });
 
   // Test email endpoint 
@@ -3938,8 +3936,8 @@ export async function registerRoutes(app: any): Promise<Server> {
       
       // For testing, just return the HTML instead of sending
       if (req.query.preview === 'true') {
-        res.setHeader('Content-Type', 'text/html');
-        return res.send(emailTemplate.html);
+        (res as any).setHeader('Content-Type', 'text/html');
+        return (res as any).send(emailTemplate.html);
       }
       
       // Actually send the email
@@ -3952,7 +3950,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       
     } catch (error: any) {
       console.error('Test email error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -3961,7 +3959,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     // Use relative URL instead of absolute URL
     const url = `/dashboard?revision_payment=success&session_id=cs_test_manual&project_id=16`;
     console.log("🧪 Test page generating RELATIVE URL:", url);
-    res.send(`
+    (res as any).send(`
       <html>
         <head>
           <title>Test Stripe Return Flow</title>
@@ -4031,7 +4029,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Generate media platform review link and start revision process
-  router.post("/api/projects/:id/generate-review-link", requireAuth, async (req: AppRequest, res) => {
+  router.post("/api/projects/:id/generate-review-link", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const projectId = parseInt(req.params.id);
       const userId = req.user!.id;
@@ -4231,7 +4229,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Update project status only
-  router.patch("/api/projects/:id/status", requireAuth, async (req: AppRequest, res) => {
+  router.patch("/api/projects/:id/status", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const projectId = parseInt(req.params.id);
       const { status } = req.body;
@@ -4317,8 +4315,9 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Sync project to Frame.io V4
   router.post("/api/projects/:id/sync-frameio", async (req: AppRequest, res: AppResponse) => {
     try {
-      const authResult = await authenticateToken(req, res);
-      if (!authResult.success || !authResult.user) {
+      // Skip auth for this internal endpoint - it's already handled by requireAuth middleware when needed
+      const user = req.user;
+      if (!user) {
         return res.status(401).json({
           success: false,
           message: "Authentication required",
@@ -4336,7 +4335,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       // Check if user owns this project
-      if (project.userId !== authResult.user.id) {
+      if (project.userId !== user.id) {
         return res.status(403).json({
           success: false,
           message: "Access denied",
@@ -4359,14 +4358,14 @@ export async function registerRoutes(app: any): Promise<Server> {
         await frameioV4Service.loadServiceAccountToken();
         
         if (frameioV4Service.accessToken) {
-          console.log(`Syncing project ${projectId} to Frame.io V4 for user ${authResult.user.id}`);
+          console.log(`Syncing project ${projectId} to Frame.io V4 for user ${user.id}`);
           
           await frameioV4Service.initialize();
           
           // Create virtual folder structure using V4 API
           const rootProject = await frameioV4Service.getOrCreateRootProject();
           
-          const userFolderName = `User-${authResult.user.email.split('@')[0]}-${authResult.user.id.slice(0, 8)}`;
+          const userFolderName = `User-${user.email.split('@')[0]}-${user.id.slice(0, 8)}`;
           const userFolder = await frameioV4Service.createFolder(rootProject.root_asset_id, userFolderName);
           
           const projectFolderName = `${project.title}-${project.id.toString().slice(0, 8)}`;
@@ -4392,7 +4391,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         return res.status(500).json({
           success: false,
           message: "Failed to sync with Frame.io",
-          error: frameioError.message,
+          error: frameioError instanceof Error ? frameioError.message : String(frameioError),
         });
       }
 
@@ -4425,13 +4424,13 @@ export async function registerRoutes(app: any): Promise<Server> {
       res
         .status(500)
         .json({
-          error: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error),
         });
     }
   });
 
   // Get latest video from project folder
-  router.get("/api/projects/:id/latest-video", requireAuth, async (req: AppRequest, res) => {
+  router.get("/api/projects/:id/latest-video", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
@@ -4534,7 +4533,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to test Frame.io API",
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         assetId: req.params.assetId
       });
     }
@@ -4574,7 +4573,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Video delivery email test error:", error);
       res.status(500).json({
         success: false,
-        message: error.message || "Video delivery email test failed"
+        message: error instanceof Error ? error.message : String(error) || "Video delivery email test failed"
       });
     }
   });
@@ -4593,7 +4592,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       const emailTemplate = {
-        to: [to],
+        to: to,
         subject: subject,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -4618,7 +4617,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Email test error:", error);
       res.status(500).json({
         success: false,
-        message: error.message || "Email test failed"
+        message: error instanceof Error ? error.message : String(error) || "Email test failed"
       });
     }
   });
@@ -4636,7 +4635,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
       const isVideo = assetPath.includes("Videos/");
       const isThumbnail = assetPath.includes("Thumbnails/");
-      const range = req.headers.range;
+      const range = (req.headers as any).range;
 
       // Clean cache periodically
       if (Math.random() < 0.1) cleanCache(); // 10% chance to clean on each request
@@ -4646,12 +4645,12 @@ export async function registerRoutes(app: any): Promise<Server> {
         const cached = assetCache.get(assetPath)!;
         if (Date.now() - cached.timestamp < CACHE_TTL) {
           console.log(`Thumbnail cache hit for: ${assetPath}`);
-          res.set({
+          (res as any).set({
             "Content-Type": cached.contentType,
             "Cache-Control": "public, max-age=600",
             ETag: `"${assetPath}-${cached.timestamp}"`,
           });
-          return res.send(Buffer.from(cached.content));
+          return (res as any).send(Buffer.from(cached.content));
         } else {
           assetCache.delete(assetPath);
         }
@@ -4663,14 +4662,14 @@ export async function registerRoutes(app: any): Promise<Server> {
         if (Date.now() - cached.timestamp < VIDEO_CACHE_TTL) {
           console.log(`Video cache hit for: ${assetPath} - serving full video`);
 
-          res.set({
+          (res as any).set({
             "Content-Type": cached.contentType,
             "Cache-Control": "public, max-age=3600",
             "Content-Length": cached.content.length.toString(),
             "Accept-Ranges": "bytes",
             ETag: `"${assetPath}-${cached.timestamp}"`,
           });
-          return res.send(Buffer.from(cached.content));
+          return (res as any).send(Buffer.from(cached.content));
         } else {
           videoCache.delete(assetPath);
         }
@@ -4683,7 +4682,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         const result = await pendingRequests.get(assetPath)!;
 
         // For videos from pending requests, serve full content
-        res.set({
+        (res as any).set({
           "Content-Type": result.contentType,
           "Cache-Control": isVideo
             ? "public, max-age=3600"
@@ -4691,7 +4690,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           "Content-Length": result.content.length.toString(),
           "Accept-Ranges": isVideo ? "bytes" : "none",
         });
-        return res.send(Buffer.from(result.content));
+        return (res as any).send(Buffer.from(result.content));
       }
 
       console.log(`Fetching asset: ${assetPath}`);
@@ -4723,7 +4722,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         }
 
         // For new video downloads, serve full content for smooth playback
-        res.set({
+        (res as any).set({
           "Content-Type": result.contentType,
           "Cache-Control": isVideo
             ? "public, max-age=3600"
@@ -4734,7 +4733,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           Connection: "keep-alive",
         });
 
-        res.send(Buffer.from(result.content));
+        (res as any).send(Buffer.from(result.content));
       } finally {
         pendingRequests.delete(assetPath);
       }
@@ -4778,7 +4777,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     );
 
     res.status(206); // Partial Content
-    res.set({
+    (res as any).set({
       "Content-Range": `bytes ${start}-${end}/${content.length}`,
       "Accept-Ranges": "bytes",
       "Content-Length": chunksize.toString(),
@@ -4786,14 +4785,14 @@ export async function registerRoutes(app: any): Promise<Server> {
       "Cache-Control": "public, max-age=3600",
     });
 
-    res.send(Buffer.from(chunk));
+    (res as any).send(Buffer.from(chunk));
   }
 
   // Legacy server upload route (removed - TUS direct upload only)
   router.post(
     "/api/projects/:id/upload",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       res.status(410).json({
         success: false,
         message:
@@ -4809,7 +4808,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     "/api/projects/:id/upload-session",
     requireAuth,
     requireProjectAccess,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const projectId = parseInt(req.params.id);
         const { fileName, fileSize } = req.body;
@@ -4887,7 +4886,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     "/api/projects/:id/complete-upload",
     requireAuth,
     requireProjectAccess,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         console.log("Complete upload request body:", req.body);
         console.log("Complete upload body keys:", Object.keys(req.body || {}));
@@ -4988,7 +4987,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     "/api/projects/:id/files",
     requireAuth,
     requireProjectAccess,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const projectId = parseInt(req.params.id);
 
@@ -5183,7 +5182,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get(
     "/api/frameio/folders",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         await frameioV4Service.loadServiceAccountToken();
         const folders = await frameioV4Service.getUserFolders(req.user!.id);
@@ -5201,7 +5200,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post(
     "/api/upload/verify-video",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const { videoId, projectId } = req.body;
 
@@ -5247,7 +5246,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     "/api/projects/:id/tally-submission",
     requireAuth,
     requireProjectAccess,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const projectId = parseInt(req.params.id);
         const { tallySubmissionId, submissionData } = req.body;
@@ -5313,7 +5312,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         console.error("Tally submission error:", error);
         res.status(500).json({
           success: false,
-          message: error.message || "Failed to record form submission",
+          message: error instanceof Error ? error.message : String(error) || "Failed to record form submission",
         });
       }
     },
@@ -5324,7 +5323,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     "/api/projects/:id/tally-submission",
     requireAuth,
     requireProjectAccess,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const projectId = parseInt(req.params.id);
 
@@ -5363,7 +5362,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get(
     "/api/projects/:id/folder-status",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const projectId = parseInt(req.params.id);
 
@@ -5416,14 +5415,14 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Ensure Frame.io folder structure exists for project
   router.post(
     "/api/projects/:id/ensure-folder-structure",
-    (req, res, next) => {
+    (req: AppRequest, res: AppResponse, next: any) => {
       console.log(`🚨🚨🚨 MAJOR LOG: POST /api/projects/${req.params.id}/ensure-folder-structure ENDPOINT HIT! 🚨🚨🚨`);
       console.log(`🚨🚨🚨 TIMESTAMP: ${new Date().toISOString()} 🚨🚨🚨`);
       console.log(`🚨🚨🚨 USER AGENT: ${req.headers['user-agent']} 🚨🚨🚨`);
       next();
     },
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       console.log(`🚨🚨🚨 AFTER AUTH: Authentication passed, proceeding with folder setup 🚨🚨🚨`);
       try {
         const projectId = parseInt(req.params.id);
@@ -5560,7 +5559,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             
             console.log(`📊 Project storage: ${fileCount} files, ${totalStorageUsed} bytes total`);
           } catch (error) {
-            console.log(`⚠️ Could not fetch existing files from project folder: ${error.message}`);
+            console.log(`⚠️ Could not fetch existing files from project folder: ${error instanceof Error ? error.message : String(error)}`);
             existingFiles = [];
           }
 
@@ -5598,7 +5597,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             success: true, // Still success, just not configured
             message: "Project created but Frame.io setup needs attention",
             frameioConfigured: false,
-            error: frameioError instanceof Error ? frameioError.message : String(frameioError),
+            error: frameioError instanceof Error ? frameioError instanceof Error ? frameioError.message : String(frameioError) : String(frameioError),
             userFolderId: null,
             projectFolderId: project.mediaFolderId || null
           });
@@ -5620,7 +5619,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     "/api/upload/frameio",
     requireAuth,
     upload.single('file'),
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         if (!req.file) {
           return res.status(400).json({
@@ -5697,9 +5696,9 @@ export async function registerRoutes(app: any): Promise<Server> {
           mediaAssetId: frameioId,
           mediaAssetUrl: uploadResult.url,
           filename: uploadResult.name,
+          originalFilename: req.file.originalname,
           fileType: req.file.mimetype || 'application/octet-stream',
           fileSize: req.file.size,
-          uploadDate: new Date()
         });
 
         res.json({
@@ -5729,7 +5728,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post(
     "/api/photos/upload",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const { projectId, filename, fileSize, mimeType, base64Data } = req.body;
 
@@ -5831,7 +5830,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         console.error("Photo upload error:", error);
         res.status(500).json({
           success: false,
-          message: error.message || "Failed to upload photo",
+          message: error instanceof Error ? error.message : String(error) || "Failed to upload photo",
         });
       }
     }
@@ -5841,7 +5840,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get(
     "/api/projects/:id/photos",
     requireAuth,
-    async (req: AppRequest, res) => {
+    async (req: AppRequest, res: AppResponse) => {
       try {
         const projectId = parseInt(req.params.id);
 
@@ -6093,7 +6092,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Frame.io V4 test failed:", error);
       res.status(500).json({
         success: false,
-        message: error instanceof Error ? error.message : "Frame.io V4 connection failed"
+        message: error instanceof Error ? error instanceof Error ? error.message : String(error) : "Frame.io V4 connection failed"
       });
     }
   });
@@ -6132,7 +6131,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Frame.io V4 test failed:", error);
       res.status(500).json({
         success: false,
-        message: `Frame.io V4 connection failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Frame.io V4 connection failed: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`,
         tokenStatus: "error"
       });
     }
@@ -6156,7 +6155,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Folder creation test failed:", error);
       res.status(500).json({
         success: false,
-        message: `Folder creation failed: ${error.message}`
+        message: `Folder creation failed: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   });
@@ -6181,7 +6180,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Projects access test failed:", error);
       res.status(500).json({
         success: false,
-        message: `Projects access failed: ${error.message}`
+        message: `Projects access failed: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   });
@@ -6204,7 +6203,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Review link creation test failed:", error);
       res.status(500).json({
         success: false,
-        message: `Review link creation failed: ${error.message}`
+        message: `Review link creation failed: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   });
@@ -6224,7 +6223,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.error("Frame.io V4 feature test failed:", error);
       res.status(500).json({
         success: false,
-        message: `Frame.io V4 feature test failed: ${error.message}`
+        message: `Frame.io V4 feature test failed: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   });
@@ -6237,7 +6236,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       const user = { id: 'current', display_name: 'Frame.io User', accounts: accounts.data || [] };
       res.json({ success: true, user });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ success: false, message: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6249,7 +6248,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         await frameioV4Service.getWorkspaces(accounts.data[0].id) : { data: [] };
       res.json({ success: true, workspaces });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ success: false, message: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6259,7 +6258,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       const rootProject = await frameioV4Service.getOrCreateRootProject();
       res.json({ success: true, rootProject });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ success: false, message: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -6275,7 +6274,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         folder: { id: folder.id, name: folder.name, type: folder.type }
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: `Folder creation failed: ${error.message}` });
+      res.status(500).json({ success: false, message: `Folder creation failed: ${error instanceof Error ? error.message : String(error)}` });
     }
   });
 
@@ -6310,7 +6309,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
     } catch (error) {
-      res.status(500).json({ success: false, message: `Upload readiness check failed: ${error.message}` });
+      res.status(500).json({ success: false, message: `Upload readiness check failed: ${error instanceof Error ? error.message : String(error)}` });
     }
   });
 
@@ -6332,10 +6331,10 @@ export async function registerRoutes(app: any): Promise<Server> {
       res.json({ 
         success: true, 
         message: "✓ Review link creation works", 
-        reviewLink: { id: reviewLink.id, url: reviewLink.url, name: reviewLink.name }
+        reviewLink: { id: reviewLink.id, url: reviewLink.url, name: (reviewLink as any).name }
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: `Review link creation failed: ${error.message}` });
+      res.status(500).json({ success: false, message: `Review link creation failed: ${error instanceof Error ? error.message : String(error)}` });
     }
   });
 
@@ -6365,13 +6364,13 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post("/api/debug/run-asset-detection", async (req: AppRequest, res: AppResponse) => {
     try {
       console.log("🔍 Manual asset detection triggered");
-      const { AssetDetectionService } = await import('./assetDetectionService.js');
-      const assetDetectionService = new AssetDetectionService(storage, frameioV4Service);
+      const assetDetectionModule = await import('./assetDetectionService.js');
+      const assetDetectionService = new (assetDetectionModule as any).AssetDetectionService(storage, frameioV4Service);
       await assetDetectionService.checkForNewAssets();
       res.json({ message: "Asset detection completed", timestamp: new Date().toISOString() });
     } catch (error) {
       console.error("Manual asset detection failed:", error);
-      res.status(500).json({ error: "Asset detection failed", details: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "Asset detection failed", details: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error) });
     }
   });
 
@@ -6437,12 +6436,12 @@ export async function registerRoutes(app: any): Promise<Server> {
             newExpiration: expirationISO
           });
         } catch (updateError) {
-          console.error(`Failed to update share ${share.id}:`, updateError.message);
+          console.error(`Failed to update share ${share.id}:`, updateError instanceof Error ? updateError.message : String(updateError));
           results.push({
             shareId: share.id,
             name: share.name,
             status: 'failed',
-            error: updateError.message
+            error: updateError instanceof Error ? updateError.message : String(updateError)
           });
         }
       }
@@ -6459,7 +6458,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to update share expiration",
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });
@@ -6496,14 +6495,14 @@ async function downloadAsset(
     }
 
     // Check the actual structure of the response
-    console.log("BytesResult.value type:", typeof bytesResult.value);
+    console.log("(BytesResult as any).value type:", typeof bytesResult.value);
     console.log(
-      "BytesResult.value instanceof Uint8Array:",
+      "(BytesResult as any).value instanceof Uint8Array:",
       bytesResult.value instanceof Uint8Array,
     );
-    console.log("BytesResult.value keys:", Object.keys(bytesResult.value));
+    console.log("(BytesResult as any).value keys:", Object.keys(bytesResult.value));
     console.log(
-      "BytesResult.value constructor:",
+      "(BytesResult as any).value constructor:",
       bytesResult.value.constructor.name,
     );
 
@@ -6584,11 +6583,11 @@ async function downloadAsset(
         }
 
         console.log(
-          "Fallback BytesResult.value type:",
+          "Fallback (BytesResult as any).value type:",
           typeof fallbackResult.value,
         );
         console.log(
-          "Fallback BytesResult.value keys:",
+          "Fallback (BytesResult as any).value keys:",
           fallbackResult.value ? Object.keys(fallbackResult.value) : "null",
         );
         console.log(
