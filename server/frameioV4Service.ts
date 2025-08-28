@@ -238,8 +238,8 @@ export class FrameioV4Service {
       await storage.updateServiceToken(
         'frameio-v4',
         this.accessTokenValue!,
-        this.refreshTokenValue || null,
-        this.tokenExpiresAt,
+        this.refreshTokenValue || undefined,
+        this.tokenExpiresAt || undefined,
         'openid' // Assuming scope remains the same
       );
       console.log('✅ Refreshed token stored in centralized service storage');
@@ -352,7 +352,7 @@ export class FrameioV4Service {
           }
           console.log('✅ Service token refreshed automatically');
         } catch (error) {
-          console.log('❌ Failed to refresh token automatically:', error instanceof Error ? error.message : String(error));
+          console.log('❌ Failed to refresh token automatically:', error instanceof Error ? error instanceof Error ? error.message : error : String(error));
           console.log('Manual OAuth re-authentication may be required.');
           // Clear potentially invalid tokens if refresh failed
           this.accessTokenValue = null;
@@ -462,7 +462,7 @@ export class FrameioV4Service {
 
     } catch (error) {
       console.error('❌ Organization/profile verification failed:', error);
-      throw new Error(`Frame.io access verification failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Frame.io access verification failed: ${error instanceof Error ? error instanceof Error ? error.message : error : String(error)}`);
     }
   }
 
@@ -771,7 +771,7 @@ export class FrameioV4Service {
             }
           }
         } catch (folderError) {
-          console.log(`⚠️ Could not update assets in folder ${folderId}:`, folderError.message);
+          console.log(`⚠️ Could not update assets in folder ${folderId}:`, folderError instanceof Error ? folderError.message : folderError);
         }
       }
 
@@ -1250,7 +1250,7 @@ export class FrameioV4Service {
         console.log(`✅ Share expiration set successfully to ${expirationISO}`);
         console.log(`📊 Expiration update response:`, JSON.stringify(expirationResponse, null, 2));
       } catch (expirationError) {
-        console.error(`⚠️ Failed to set share expiration:`, expirationError.message);
+        console.error(`⚠️ Failed to set share expiration:`, expirationError instanceof Error ? expirationError.message : expirationError);
         // Continue anyway - share will work without expiration
       }
       
@@ -1270,7 +1270,7 @@ export class FrameioV4Service {
         );
         console.log(`✅ Asset ${assetId} added to share ${shareId}`);
       } catch (addError) {
-        console.error(`⚠️ Failed to add asset to share:`, addError.message);
+        console.error(`⚠️ Failed to add asset to share:`, addError instanceof Error ? addError.message : addError);
         // Continue anyway - share might still work
       }
       
@@ -1306,12 +1306,13 @@ export class FrameioV4Service {
 
     } catch (error) {
       console.error(`🚨 MAJOR ERROR IN createAssetShareLink:`, error);
-      console.error(`🚨 Error message:`, error.message);
+      console.error(`🚨 Error message:`, error instanceof Error ? error instanceof Error ? error.message : error : error);
       
       // Try to extract useful error info
-      if (error.response) {
-        console.error(`🚨 Response status:`, error.response.status);
-        console.error(`🚨 Response data:`, JSON.stringify(error.response.data));
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorObj = error as any;
+        console.error(`🚨 Response status:`, errorObj.response?.status);
+        console.error(`🚨 Response data:`, JSON.stringify(errorObj.response?.data));
       }
 
       // Don't return a fallback URL - throw the error so we can handle it properly
@@ -1390,7 +1391,7 @@ export class FrameioV4Service {
                 console.log(`🚫 SECURITY: Collection ${share.collection_id} not in project ${projectId} - skipping`);
               }
             } catch (collectionError) {
-              console.log(`❌ Could not verify collection security: ${collectionError.message}`);
+              console.log(`❌ Could not verify collection security: ${collectionError instanceof Error ? collectionError.message : collectionError}`);
             }
           } else {
             console.log(`❓ Share ${share.id} has no collection_id, trying direct project-scoped asset check...`);
@@ -1426,7 +1427,7 @@ export class FrameioV4Service {
             }
           }
         } catch (shareCheckError) {
-          console.log(`❌ Failed to check share ${share.id}: ${shareCheckError.message}`);
+          console.log(`❌ Failed to check share ${share.id}: ${shareCheckError instanceof Error ? shareCheckError.message : shareCheckError}`);
           continue;
         }
       }
@@ -1450,7 +1451,7 @@ export class FrameioV4Service {
       };
 
     } catch (error) {
-      console.error('❌ Resilient share search failed:', error.message);
+      console.error('❌ Resilient share search failed:', error instanceof Error ? error instanceof Error ? error.message : error : error);
       return null;
     }
   }
@@ -1555,7 +1556,7 @@ export class FrameioV4Service {
           };
         }
       } catch (dlError) {
-        console.log('Could not generate download link:', dlError.message);
+        console.log('Could not generate download link:', dlError instanceof Error ? dlError.message : dlError);
       }
 
       // Frame.io V4 limitation - use web interface
@@ -1577,7 +1578,7 @@ export class FrameioV4Service {
       return {
         available: false,
         reason: 'Failed to get media links',
-        error: error.message
+        error: error instanceof Error ? error instanceof Error ? error.message : error : error
       };
     }
   }
@@ -2159,33 +2160,33 @@ export class FrameioV4Service {
       const accounts = await this.getAccounts();
       results.connection = true;
       results.accountAccess = true;
-      results.details.accounts = accounts.data?.length || 0;
+      (results.details as any).accounts = accounts.data?.length || 0;
       console.log(`✓ Found ${accounts.data?.length || 0} accounts`);
 
       if (accounts.data && accounts.data.length > 0) {
         const accountId = accounts.data[0].id;
-        results.details.selectedAccount = { id: accountId, name: accounts.data[0].name };
+        (results.details as any).selectedAccount = { id: accountId, name: accounts.data[0].name };
 
         // Step 2: Get workspaces for first account
         console.log(`2. Testing /v4/accounts/${accountId}/workspaces...`);
         const workspaces = await this.getWorkspaces(accountId);
         results.workspaceAccess = true;
-        results.details.workspaces = workspaces.data?.length || 0;
+        (results.details as any).workspaces = workspaces.data?.length || 0;
         console.log(`✓ Found ${workspaces.data?.length || 0} workspaces`);
 
         if (workspaces.data && workspaces.data.length > 0) {
           const workspaceId = workspaces.data[0].id;
-          results.details.selectedWorkspace = { id: workspaceId, name: workspaces.data[0].name };
+          (results.details as any).selectedWorkspace = { id: workspaceId, name: workspaces.data[0].name };
 
           // Step 3: Get projects for first workspace
           console.log(`3. Testing /v4/accounts/${accountId}/workspaces/${workspaceId}/projects...`);
           const projects = await this.getProjects(accountId, workspaceId);
           results.projectAccess = true;
-          results.details.projects = projects.data?.length || 0;
+          (results.details as any).projects = projects.data?.length || 0;
           console.log(`✓ Found ${projects.data?.length || 0} projects`);
 
           if (projects.data && projects.data.length > 0) {
-            results.details.selectedProject = { 
+            (results.details as any).selectedProject = { 
               id: projects.data[0].id, 
               name: projects.data[0].name 
             };
@@ -2197,8 +2198,8 @@ export class FrameioV4Service {
       return results;
 
     } catch (error) {
-      console.error(`✗ V4 hierarchy test failed:`, error.message);
-      results.details.error = error.message;
+      console.error(`✗ V4 hierarchy test failed:`, error instanceof Error ? error.message : error);
+      (results.details as any).error = error instanceof Error ? error.message : String(error);
       throw error;
     }
   }
@@ -2224,8 +2225,8 @@ export class FrameioV4Service {
       const workspaces = accounts.data && accounts.data.length > 0 ? 
         await this.getWorkspaces(accounts.data[0].id) : { data: [] };
       results.connection = true;
-      results.details.user = { name: 'Frame.io User', email: 'authenticated' };
-      results.details.workspaces = workspaces?.data?.length || 0;
+      (results.details as any).user = { name: 'Frame.io User', email: 'authenticated' };
+      (results.details as any).workspaces = workspaces?.data?.length || 0;
       console.log(`✓ Connected successfully (${workspaces?.data?.length || 0} workspaces)`);
 
       // Feature Test 2: Folder creation (Users and Projects)
@@ -2234,13 +2235,13 @@ export class FrameioV4Service {
       const rootProject = await this.getOrCreateRootProject();
       const folder = await this.createFolder(testFolderName, rootProject.root_asset_id);
       results.folderCreation = true;
-      results.details.folderCreated = { name: folder.name, id: folder.id };
+      (results.details as any).folderCreated = { name: folder.name, id: folder.id };
       console.log(`✓ Created folder: ${folder.name} (${folder.id})`);
 
       // Feature Test 3: Upload readiness (verify we have root project access)
       console.log('3. Testing upload readiness...');
       results.uploadReady = true;
-      results.details.rootProject = { 
+      (results.details as any).rootProject = { 
         name: rootProject.name, 
         id: rootProject.id, 
         rootAssetId: rootProject.root_asset_id 
@@ -2255,8 +2256,8 @@ export class FrameioV4Service {
       return results;
 
     } catch (error) {
-      console.error(`✗ Feature test failed:`, error.message);
-      results.details.error = error.message;
+      console.error(`✗ Feature test failed:`, error instanceof Error ? error.message : error);
+      (results.details as any).error = error instanceof Error ? error.message : String(error);
       throw error;
     }
   }
