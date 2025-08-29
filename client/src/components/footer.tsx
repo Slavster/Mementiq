@@ -54,7 +54,7 @@ export default function Footer() {
           <p>
             &copy; {currentYear} Seraph Ventures LLC. All rights reserved. |{" "}
             <a
-              href="#"
+              href="/privacy-policy"
               className="hover:text-accent transition-colors duration-200"
             >
               Privacy Policy
