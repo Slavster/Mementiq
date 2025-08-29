@@ -9,6 +9,7 @@ import DashboardPage from "@/pages/dashboard";
 import Subscribe from "@/pages/subscribe";
 import PaymentCancelledPage from "@/pages/payment-cancelled";
 import PaymentSuccessPage from "@/pages/payment-success";
+import PrivacyPolicyPage from "@/pages/privacy-policy";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/payment-cancelled" component={PaymentCancelledPage} />
       <Route path="/payment-success" component={PaymentSuccessPage} />
+      <Route path="/privacy-policy" component={PrivacyPolicyPage} />
       <Route component={NotFound} />
     </Switch>
   );
