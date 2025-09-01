@@ -732,7 +732,7 @@ export default function DashboardPage() {
               <img
                 src={logoImage}
                 alt="Mementiq"
-                className="h-10 object-contain"
+                className="h-14 object-contain"
               />
             </div>
             <div className="flex items-center space-x-4">
