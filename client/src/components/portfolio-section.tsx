@@ -205,6 +205,16 @@ export default function PortfolioSection() {
   const nextVideo = () => {
     if (isNavigating.current) return; // Prevent multiple rapid moves
     
+    // Pause any currently playing video when navigating
+    if (playingVideo !== null) {
+      const video = videoRefs.current[playingVideo];
+      if (video && !video.paused) {
+        video.pause();
+        setPlayingVideo(null);
+        console.log(`Auto-paused video ${playingVideo} - navigation to next`);
+      }
+    }
+    
     isNavigating.current = true;
     setSelectedVideo((prev) => {
       const next = (prev + 1) % portfolioItems.length;
@@ -220,6 +230,16 @@ export default function PortfolioSection() {
 
   const prevVideo = () => {
     if (isNavigating.current) return; // Prevent multiple rapid moves
+    
+    // Pause any currently playing video when navigating
+    if (playingVideo !== null) {
+      const video = videoRefs.current[playingVideo];
+      if (video && !video.paused) {
+        video.pause();
+        setPlayingVideo(null);
+        console.log(`Auto-paused video ${playingVideo} - navigation to previous`);
+      }
+    }
     
     isNavigating.current = true;
     setSelectedVideo((prev) => {
@@ -470,7 +490,18 @@ export default function PortfolioSection() {
             {portfolioItems.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setSelectedVideo(index)}
+                onClick={() => {
+                  // Pause any currently playing video when navigating via dots
+                  if (playingVideo !== null) {
+                    const video = videoRefs.current[playingVideo];
+                    if (video && !video.paused) {
+                      video.pause();
+                      setPlayingVideo(null);
+                      console.log(`Auto-paused video ${playingVideo} - dot navigation to video ${index}`);
+                    }
+                  }
+                  setSelectedVideo(index);
+                }}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
                   index === selectedVideo
                     ? "bg-accent"
