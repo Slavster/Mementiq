@@ -53,6 +53,7 @@ import {
   ExternalLink,
   RotateCcw,
   ArrowLeft,
+  Shield,
 } from "lucide-react";
 
 import TallyFormStep from "@/components/TallyFormStep";
@@ -875,6 +876,18 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
+              </div>
+              
+              {/* Privacy Settings Button */}
+              <div className="mt-6 pt-4 border-t border-gray-700/50">
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/privacy-settings")}
+                  className="w-full md:w-auto bg-charcoal/20 border-gray-600 text-light hover:bg-charcoal/40 hover:border-accent"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Data Privacy Settings
+                </Button>
               </div>
             </CardContent>
           </Card>

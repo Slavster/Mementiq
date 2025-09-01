@@ -10,6 +10,7 @@ import Subscribe from "@/pages/subscribe";
 import PaymentCancelledPage from "@/pages/payment-cancelled";
 import PaymentSuccessPage from "@/pages/payment-success";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
+import PrivacySettingsPage from "@/pages/privacy-settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/payment-cancelled" component={PaymentCancelledPage} />
       <Route path="/payment-success" component={PaymentSuccessPage} />
       <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+      <Route path="/privacy-settings" component={PrivacySettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );
