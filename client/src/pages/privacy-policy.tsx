@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
             href="/"
             className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
           >
-            ← Back to Mementiq
+            ← Back to Home
           </a>
         </div>
       </header>
@@ -338,7 +338,7 @@ export default function PrivacyPolicyPage() {
               <p className="text-zinc-300">
                 By default, we do not sell personal information or share it for
                 cross-context behavioral advertising. If you opt in to our
-                Research, Development, and Curated Dataset Program (§8B), we may
+                Research, Development, and Curated Dataset Program (§89), we may
                 license or sell curated, de-identified datasets to trusted
                 partners under strict terms. We honor Global Privacy Control
                 (GPC) signals for sale/share choices. Manage your choices at
@@ -377,7 +377,7 @@ export default function PrivacyPolicyPage() {
                   Retained for active projects. If you do not opt in to the
                   Research, Development, and Curated Dataset Program, we delete
                   Client Content within 90 days of final delivery. If you opt in
-                  (§8B), we may retain copies in R&D corpora and/or curated
+                  (§9), we may retain copies in R&D corpora and/or curated
                   datasets until you withdraw consent or until our R&D program
                   ends; existing model parameters may not be reversible.
                 </div>
@@ -919,7 +919,7 @@ export default function PrivacyPolicyPage() {
             href="/"
             className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
           >
-            Return to Mementiq
+            Return to Home
           </a>
         </div>
       </footer>

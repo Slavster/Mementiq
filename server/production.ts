@@ -64,10 +64,10 @@ export async function createProductionServer() {
     const cspDirectives = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://*.supabase.co https://api.frame.io https://*.frame.io wss://*.supabase.co https://api.trello.com",
+      "font-src 'self' data: https://fonts.gstatic.com https://r2cdn.perplexity.ai",
+      "connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://*.supabase.co https://api.frame.io https://*.frame.io wss://*.supabase.co https://api.trello.com https://fonts.googleapis.com https://fonts.gstatic.com",
       "frame-src https://js.stripe.com https://checkout.stripe.com https://*.frame.io",
       "media-src 'self' blob: https://*.frame.io https://*.frameio.com",
       "object-src 'none'",
@@ -200,10 +200,16 @@ export async function createProductionServer() {
     immutable: true,
     etag: false,
     lastModified: false,
-    setHeaders: (res: any) => {
+    setHeaders: (res: any, filePath: string) => {
+      // Ensure proper MIME types
+      if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      }
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
-  }));
+  }))
 
   // Serve other static files
   app.use(express.static(staticPath, {
@@ -237,16 +243,22 @@ export async function createProductionServer() {
 
   // Fallback to index.html for client-side routing (SPA)
   app.get('*', (req, res) => {
-    // Never serve index.html for API routes
-    if (req.path.startsWith('/api')) {
-      return res.status(404).json({ error: 'Not found' });
+    // Never serve index.html for API routes or asset paths
+    if (req.path.startsWith('/api') || req.path.startsWith('/assets')) {
+      return res.status(404).send('Not found');
     }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(staticPath, 'index.html'));
   });
 
-  // Error handler
-  app.use((err: any, _req, res, _next) => {
+  // Error handler - must be last
+  app.use((err: any, req: any, res: any, _next: any) => {
+    // Don't send JSON for static file errors
+    if (req.path.startsWith('/assets') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+      const status = err.status || err.statusCode || 500;
+      return res.status(status).send('Error loading resource');
+    }
+    
     const status = err.status || err.statusCode || 500;
     const message = err.message || 'Internal Server Error';
     
