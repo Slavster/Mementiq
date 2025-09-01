@@ -803,6 +803,17 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm text-gray-400">Email</p>
                   <p className="text-lg">{mappedUser.email}</p>
+                  <div className="mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLocation("/privacy-settings")}
+                      className="bg-charcoal/20 border-gray-600 text-light hover:bg-charcoal/40 hover:border-accent"
+                    >
+                      <Shield className="h-3 w-3 mr-2" />
+                      Data Privacy Settings
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Videos Created</p>
@@ -876,18 +887,6 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
-              </div>
-              
-              {/* Privacy Settings Button */}
-              <div className="mt-6 pt-4 border-t border-gray-700/50">
-                <Button
-                  variant="outline"
-                  onClick={() => setLocation("/privacy-settings")}
-                  className="w-full md:w-auto bg-charcoal/20 border-gray-600 text-light hover:bg-charcoal/40 hover:border-accent"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Data Privacy Settings
-                </Button>
               </div>
             </CardContent>
           </Card>
