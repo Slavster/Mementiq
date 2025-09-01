@@ -18,8 +18,8 @@ export default function Footer() {
           <div className="flex-1">
             <h3 className="text-2xl font-bold mb-4 text-primary">Mementiq</h3>
             <p className="text-gray-300 mb-6 max-w-md">
-              Professional video editing services. <br />
-              Everyone deserves to have their story told.
+              Professional video editing services made simple; <br />
+              becasue everyone deserves to have their story told.
             </p>
             <div className="flex space-x-4">
               <a
