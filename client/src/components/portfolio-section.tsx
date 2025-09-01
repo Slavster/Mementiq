@@ -11,7 +11,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/tu_lan_cover.jpg",
     alt: "Highlighting beautiful travel destinations and moments",
     category: "Travel Reel",
-    preview: "/api/assets/Videos/Travel video.mp4",
+    preview: "/videos/travel-video.mp4",
   },
   {
     id: 2,
@@ -21,7 +21,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/Coaching Ad Cover.png",
     alt: "Engaging ad reel for coaching services",
     category: "Services Ad",
-    preview: "/api/assets/Videos/Coaching Ad 1 - 720.mp4",
+    preview: "/videos/coaching-ad.mp4",
   },
   {
     id: 3,
@@ -31,7 +31,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/conference cover.png",
     alt: "Conference Interviews",
     category: "Interview",
-    preview: "/api/assets/Videos/Conference Interviews.mp4",
+    preview: "/videos/conference-interviews.mp4",
   },
   {
     id: 4,
@@ -41,7 +41,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/Swap_in_city_cover.png",
     alt: "Fun highlight reel of a clothing swap event",
     category: "Events Highlights",
-    preview: "/api/assets/Videos/Event promo video.mp4",
+    preview: "/videos/event-promo.mp4",
   },
   {
     id: 5,
@@ -51,7 +51,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/Sun a wear cover.png",
     alt: "Product video ad",
     category: "Commercial",
-    preview: "/api/assets/Videos/Product Ad.mp4",
+    preview: "/videos/product-ad.mp4",
   },
 ];
 
