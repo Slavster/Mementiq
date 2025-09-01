@@ -67,6 +67,7 @@ export default function PortfolioSection() {
   const lastScrollTime = useRef<number>(0);
   const isNavigating = useRef<boolean>(false);
   const scrollThreshold = 100; // Faster scrolling response
+  const intersectionRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
@@ -162,6 +163,43 @@ export default function PortfolioSection() {
     }, 1000); // Update every second
 
     return () => clearInterval(interval);
+  }, [playingVideo]);
+
+  // Auto-pause videos when they scroll out of view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const videoId = parseInt(entry.target.getAttribute('data-video-id') || '0');
+          
+          // If video is not visible and currently playing, pause it
+          if (!entry.isIntersecting && playingVideo === videoId) {
+            const video = videoRefs.current[videoId];
+            if (video && !video.paused) {
+              video.pause();
+              setPlayingVideo(null);
+              console.log(`Auto-paused video ${videoId} - scrolled out of view`);
+            }
+          }
+        });
+      },
+      {
+        threshold: 0.3, // Pause when less than 30% of video is visible
+        rootMargin: '-50px 0px' // Add some margin for better UX
+      }
+    );
+
+    // Observe all video containers
+    portfolioItems.forEach((item) => {
+      const element = intersectionRefs.current[item.id];
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    return () => {
+      observer.disconnect();
+    };
   }, [playingVideo]);
 
   const nextVideo = () => {
@@ -280,6 +318,10 @@ export default function PortfolioSection() {
               return (
                 <div
                   key={item.id}
+                  ref={(el) => {
+                    intersectionRefs.current[item.id] = el;
+                  }}
+                  data-video-id={item.id}
                   className={`absolute transition-all duration-500 ease-out cursor-pointer ${
                     isActive ? "scale-100" : "scale-60"
                   }`}
