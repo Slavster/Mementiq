@@ -56,7 +56,7 @@ console.log('Starting production server...');
 console.log('Environment:', process.env.NODE_ENV || 'production');
 
 // Use tsx to run the TypeScript production server
-const serverProcess = spawn('npx', ['tsx', join(__dirname, '..', 'server', 'production.ts')], {
+const serverProcess = spawn('npx', ['tsx', join(__dirname, '..', 'server', 'production-server.ts')], {
   stdio: 'inherit',
   env: {
     ...process.env,

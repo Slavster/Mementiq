@@ -7,8 +7,47 @@ import path from "path";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
+import fs from "fs";
 
 const app = express();
+
+// Trust proxy for correct IP addresses behind reverse proxies
+app.set('trust proxy', 1);
+
+// Enhanced security headers with proper CSP for production
+if (process.env.NODE_ENV === 'production' || app.get('env') === 'production') {
+  app.use((req, res, next) => {
+    // Basic security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
+    // Content Security Policy with Google Fonts support
+    const cspDirectives = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https: http:",
+      "font-src 'self' data: https://fonts.gstatic.com https://r2cdn.perplexity.ai",
+      "connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://*.supabase.co https://api.frame.io https://*.frame.io wss://*.supabase.co https://api.trello.com https://fonts.googleapis.com https://fonts.gstatic.com",
+      "frame-src https://js.stripe.com https://checkout.stripe.com https://*.frame.io",
+      "media-src 'self' blob: https://*.frame.io https://*.frameio.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'"
+    ];
+    
+    // Only add upgrade-insecure-requests on HTTPS
+    if (req.secure || req.header('x-forwarded-proto') === 'https') {
+      cspDirectives.push('upgrade-insecure-requests');
+    }
+    
+    res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
+    next();
+  });
+}
 
 // CORS configuration for Frame.io V4 direct uploads
 app.use(cors({
@@ -94,22 +133,53 @@ app.use((req: Request, res: Response, next: any) => {
     // Serve Object Storage assets
     app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
 
-    app.use((err: Error, _req: Request, res: Response, _next: any) => {
-      const status = (err as any).status || (err as any).statusCode || 500;
-      const message = err.message || "Internal Server Error";
-
-      (res as any).status(status).json({ message });
-      throw err;
-    });
-
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
     // doesn't interfere with the other routes
     if (app.get("env") === "development") {
       await setupVite(app, server);
     } else {
+      // Production static file serving with proper MIME types
+      const distPath = path.resolve(process.cwd(), 'server/public');
+      
+      // Check if production build exists
+      if (fs.existsSync(distPath)) {
+        // Serve /assets with proper MIME types and long cache
+        app.use('/assets', express.static(path.join(distPath, 'assets'), {
+          maxAge: '31536000000', // 1 year
+          immutable: true,
+          setHeaders: (res: any, filePath: string) => {
+            // Set proper MIME types
+            if (filePath.endsWith('.css')) {
+              res.setHeader('Content-Type', 'text/css; charset=UTF-8');
+            } else if (filePath.endsWith('.js')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+            } else if (filePath.endsWith('.mjs')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+            }
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        } as any));
+      }
+      
+      // Use the standard serveStatic function for other files
       serveStatic(app);
     }
+
+    // Error handler should be AFTER static file serving
+    app.use((err: Error, req: Request, res: Response, _next: any) => {
+      // Don't send JSON for static file errors
+      if ((req as any).path && ((req as any).path.startsWith('/assets') || (req as any).path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/))) {
+        const status = (err as any).status || (err as any).statusCode || 500;
+        return (res as any).status(status).send('Error loading resource');
+      }
+      
+      const status = (err as any).status || (err as any).statusCode || 500;
+      const message = err.message || "Internal Server Error";
+
+      (res as any).status(status).json({ message });
+      throw err;
+    });
 
     // ALWAYS serve the app on port 5000
     // this serves both the API and the client.
