@@ -806,9 +806,8 @@ export default function DashboardPage() {
                   <div className="mt-2">
                     <Button
                       variant="outline"
-                      size="sm"
                       onClick={() => setLocation("/privacy-settings")}
-                      className="bg-charcoal/20 border-gray-600 text-light hover:bg-charcoal/40 hover:border-accent"
+                      className="bg-charcoal/20 border-gray-600 text-light hover:bg-charcoal/40 hover:border-accent h-8"
                     >
                       <Shield className="h-3 w-3 mr-2" />
                       Data Privacy Settings
