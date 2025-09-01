@@ -232,6 +232,15 @@ export async function createProductionServer() {
       } else if (filePath.match(/\.(jpg|jpeg|png|gif|svg|webp|ico)$/)) {
         // Images get moderate cache
         res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 days
+      } else if (filePath.match(/\.(mp4|webm|ogg|ogv)$/)) {
+        // Videos get long cache and proper content type
+        res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+        res.setHeader('Accept-Ranges', 'bytes'); // Enable byte-range requests for video streaming
+        if (filePath.endsWith('.mp4')) {
+          res.setHeader('Content-Type', 'video/mp4');
+        } else if (filePath.endsWith('.webm')) {
+          res.setHeader('Content-Type', 'video/webm');
+        }
       }
     }
   } as any));
