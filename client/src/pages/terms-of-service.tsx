@@ -41,10 +41,22 @@ export default function TermsOfServicePage() {
               use the Services.
             </p>
             <p className="text-zinc-400 leading-relaxed mb-4">
-              <strong>Related policies:</strong> Our Privacy Policy is
-              incorporated by reference. In case of a conflict between the Terms
-              and the Privacy Policy about how we handle personal data, the
-              Privacy Policy controls; otherwise, these Terms control.
+              <strong>Related policies:</strong> Our{" "}
+              <a
+                href="/privacy-policy"
+                className="text-cyan-400 hover:text-cyan-300"
+              >
+                Privacy Policy
+              </a>{" "}
+              is incorporated by reference. In case of a conflict between the Terms
+              and the{" "}
+              <a
+                href="/privacy-policy"
+                className="text-cyan-400 hover:text-cyan-300"
+              >
+                Privacy Policy
+              </a>{" "}
+              about how we handle personal data, the Privacy Policy controls; otherwise, these Terms control.
             </p>
           </section>
 
@@ -361,7 +373,13 @@ export default function TermsOfServicePage() {
               <li>
                 <strong>Payment processor (Stripe).</strong> We use Stripe to
                 process payments. By paying, you agree to Stripe's Services
-                Agreement and Privacy Policy. Stripe processes and stores your
+                Agreement and{" "}
+                <a
+                  href="/privacy-policy"
+                  className="text-cyan-400 hover:text-cyan-300"
+                >
+                  Privacy Policy
+                </a>. Stripe processes and stores your
                 payment credentials; we do not store full card numbers.
               </li>
               <li>
@@ -417,7 +435,13 @@ export default function TermsOfServicePage() {
                 <strong>Controller role & consent.</strong> Participation is off
                 by default and requires your explicit consent. For this Program,
                 Company acts as an independent controller/business of the data
-                used, as described in the Privacy Policy.
+                used, as described in the{" "}
+                <a
+                  href="/privacy-policy"
+                  className="text-cyan-400 hover:text-cyan-300"
+                >
+                  Privacy Policy
+                </a>.
               </li>
               <li>
                 <strong>License for Program.</strong> If you opt in, you grant
@@ -453,7 +477,13 @@ export default function TermsOfServicePage() {
               </li>
               <li>
                 <strong>Retention.</strong> We retain Client Content and Edited
-                Outputs consistent with our Privacy Policy. If you do not opt
+                Outputs consistent with our{" "}
+                <a
+                  href="/privacy-policy"
+                  className="text-cyan-400 hover:text-cyan-300"
+                >
+                  Privacy Policy
+                </a>. If you do not opt
                 into the Program, we delete Client Content after the standard
                 window; if you opt in, we may retain copies for Program purposes
                 subject to withdrawal and retention limits.
