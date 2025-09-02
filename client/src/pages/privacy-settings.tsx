@@ -1,65 +1,48 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Shield, Check } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { ArrowLeft, Shield } from "lucide-react";
 
 interface PrivacySettings {
   portfolioShowcase: boolean;
   modelTraining: boolean;
 }
 
+// Simple toggle component
+function Toggle({ checked, onToggle, disabled = false }: { 
+  checked: boolean; 
+  onToggle: (checked: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={() => !disabled && onToggle(!checked)}
+      className={`
+        relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out
+        ${checked ? 'bg-cyan-400' : 'bg-gray-600'}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+      `}
+      disabled={disabled}
+    >
+      <span
+        className={`
+          inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out
+          ${checked ? 'translate-x-6' : 'translate-x-1'}
+        `}
+      />
+    </button>
+  );
+}
+
 export default function PrivacySettings() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [settings, setSettings] = useState<PrivacySettings>({
     portfolioShowcase: false,
     modelTraining: false,
   });
 
-  // Fetch current privacy settings
-  const { data: currentSettings } = useQuery({
-    queryKey: ["/api/privacy-settings"],
-    enabled: true,
-  });
-
-  // Update settings when data is loaded
-  useEffect(() => {
-    if (currentSettings?.success) {
-      setSettings(currentSettings.settings);
-    }
-  }, [currentSettings]);
-
-  // Mutation to save settings
-  const updateSettingsMutation = useMutation({
-    mutationFn: (newSettings: PrivacySettings) =>
-      apiRequest("/api/privacy-settings", {
-        method: "POST",
-        body: JSON.stringify(newSettings),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/privacy-settings"] });
-      toast({
-        title: "Settings saved",
-        description: "Your privacy preferences have been updated.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to save settings. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleToggleChange = (setting: keyof PrivacySettings, value: boolean) => {
-    const newSettings = { ...settings, [setting]: value };
-    setSettings(newSettings);
-    updateSettingsMutation.mutate(newSettings);
+    setSettings(prev => ({ ...prev, [setting]: value }));
+    // TODO: API call will be added later
   };
 
   return (
@@ -104,10 +87,9 @@ export default function PrivacySettings() {
                 </p>
               </div>
               <div className="flex items-center ml-6">
-                <Switch
+                <Toggle
                   checked={settings.portfolioShowcase}
-                  onCheckedChange={(checked) => handleToggleChange('portfolioShowcase', checked)}
-                  className="data-[state=checked]:bg-accent"
+                  onToggle={(checked) => handleToggleChange('portfolioShowcase', checked)}
                 />
                 <span className="ml-3 text-sm text-charcoal">
                   {settings.portfolioShowcase ? 'On' : 'Off'}
@@ -168,10 +150,9 @@ export default function PrivacySettings() {
                 </p>
               </div>
               <div className="flex items-center ml-6">
-                <Switch
+                <Toggle
                   checked={settings.modelTraining}
-                  onCheckedChange={(checked) => handleToggleChange('modelTraining', checked)}
-                  className="data-[state=checked]:bg-accent"
+                  onToggle={(checked) => handleToggleChange('modelTraining', checked)}
                 />
                 <span className="ml-3 text-sm text-charcoal">
                   {settings.modelTraining ? 'On' : 'Off'}
@@ -216,21 +197,6 @@ export default function PrivacySettings() {
               </div>
             </div>
           </div>
-
-          {/* Auto-save indicator */}
-          {updateSettingsMutation.isPending && (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent mr-2"></div>
-              <span className="text-charcoal text-sm">Saving...</span>
-            </div>
-          )}
-
-          {updateSettingsMutation.isSuccess && (
-            <div className="flex items-center justify-center py-4">
-              <Check className="h-4 w-4 text-green-500 mr-2" />
-              <span className="text-green-500 text-sm">Settings saved</span>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
