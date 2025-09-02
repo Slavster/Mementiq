@@ -11,6 +11,7 @@ import PaymentCancelledPage from "@/pages/payment-cancelled";
 import PaymentSuccessPage from "@/pages/payment-success";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
 import PrivacySettingsPage from "@/pages/privacy-settings";
+import TermsOfServicePage from "@/pages/terms-of-service";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/payment-success" component={PaymentSuccessPage} />
       <Route path="/privacy-policy" component={PrivacyPolicyPage} />
       <Route path="/privacy-settings" component={PrivacySettingsPage} />
+      <Route path="/terms-of-service" component={TermsOfServicePage} />
       <Route component={NotFound} />
     </Switch>
   );
