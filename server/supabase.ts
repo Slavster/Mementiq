@@ -53,9 +53,9 @@ export async function verifySupabaseToken(token: string) {
       
       // Create default privacy settings for new user
       const defaultPrivacySettings = [
-        { userId: user.id, toggleName: 'portfolio', isEnabled: false },
-        { userId: user.id, toggleName: 'R&D', isEnabled: false },
-        { userId: user.id, toggleName: 'no_sell', isEnabled: true },
+        { userId: user.id, toggleName: 'portfolio', isEnabled: false, source: 'account_creation' },
+        { userId: user.id, toggleName: 'R&D', isEnabled: false, source: 'account_creation' },
+        { userId: user.id, toggleName: 'no_sell', isEnabled: true, source: 'account_creation' },
       ];
       
       await db.insert(userPrivacy).values(defaultPrivacySettings);
