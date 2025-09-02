@@ -83,7 +83,7 @@ export default function TermsOfServicePage() {
                 account. Do not share your password or allow unauthorized use.
                 Notify us immediately at{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20ToS%20-%201.Account%20Security"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
@@ -268,7 +268,7 @@ export default function TermsOfServicePage() {
               <li>
                 <strong>Withdrawal.</strong> You may withdraw at any time via{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20ToS%20-%205.Optional%20Showcase%20Withdrawal"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
@@ -398,7 +398,7 @@ export default function TermsOfServicePage() {
                 <strong>Chargebacks.</strong> If you dispute a charge, contact
                 us first at{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20ToS%20-%208.Payment%20Chargebacks"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
@@ -512,7 +512,7 @@ export default function TermsOfServicePage() {
                 <strong>Notices.</strong> Send DMCA notices with the elements of
                 §512(c)(3) to:{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20ToS%20-%2011.DMCA%20Notices"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
@@ -662,7 +662,7 @@ export default function TermsOfServicePage() {
                 <strong>Informal resolution.</strong> Before filing a claim, you
                 agree to try to resolve the dispute informally by contacting{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20ToS%20-%2018.Informal%20Resolution"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
@@ -697,7 +697,7 @@ export default function TermsOfServicePage() {
                 <strong>30‑day opt‑out.</strong> You may opt out of this
                 arbitration agreement by emailing{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20ToS%20-%2018.Arbitration%20Opt-out"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
@@ -748,7 +748,7 @@ export default function TermsOfServicePage() {
                 Service, email, or your account dashboard. Legal notices to us
                 should be sent to{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20ToS%20-%2019.Legal%20Notices"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net

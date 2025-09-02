@@ -291,7 +291,7 @@ export default function PrivacyPolicyPage() {
                   contract and our instructions. A current list of our data
                   subprocessors is available on request at{" "}
                   <a
-                    href="mailto:mementiq@seraphventures.net"
+                    href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20Privacy%20Policy%20-%203.Service%20Providers%20List"
                     className="text-cyan-400 hover:text-cyan-300"
                   >
                     mementiq@seraphventures.net
@@ -515,7 +515,7 @@ export default function PrivacyPolicyPage() {
                 <div>
                   <span className="font-semibold">Change your mind:</span> Email{" "}
                   <a
-                    href="mailto:mementiq@seraphventures.net"
+                    href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20Privacy%20Policy%20-%205.Showcase%20Withdrawal"
                     className="text-cyan-400 hover:text-cyan-300"
                   >
                     mementiq@seraphventures.net
@@ -695,7 +695,7 @@ export default function PrivacyPolicyPage() {
               <p className="text-zinc-300">
                 Email{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20Privacy%20Policy%20-%2011.Exercising%20Rights"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
@@ -723,7 +723,7 @@ export default function PrivacyPolicyPage() {
               are legally required to preserve specific information (e.g., for
               safety investigations or to comply with law). Please contact{" "}
               <a
-                href="mailto:mementiq@seraphventures.net"
+                href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20Privacy%20Policy%20-%2012.Children%20Privacy%20Report"
                 className="text-cyan-400 hover:text-cyan-300"
               >
                 mementiq@seraphventures.net
@@ -772,7 +772,7 @@ export default function PrivacyPolicyPage() {
               <p>
                 Email:{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20Privacy%20Policy%20-%2015.General%20Contact"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
@@ -825,7 +825,7 @@ export default function PrivacyPolicyPage() {
                 sale/sharing and targeted advertising (where applicable), and
                 appeal. Submit requests via{" "}
                 <a
-                  href="mailto:mementiq@seraphventures.net"
+                  href="mailto:mementiq@seraphventures.net?subject=Legal%20Request:%20Privacy%20Policy%20-%2016.State%20Rights%20Request"
                   className="text-cyan-400 hover:text-cyan-300"
                 >
                   mementiq@seraphventures.net
