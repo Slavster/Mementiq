@@ -13,10 +13,12 @@ import {
   insertPhotoAlbumSchema,
   insertPhotoFileSchema,
   insertRevisionPaymentSchema,
+  insertUserPrivacySchema,
+  userPrivacy,
 } from "../shared/schema";
 import { db } from "./db";
 import { revisionPayments } from "../shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 import { Client } from "@replit/object-storage";
 import { verifySupabaseToken } from "./supabase";
@@ -2072,6 +2074,113 @@ export async function registerRoutes(app: any): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to retrieve email signups",
+      });
+    }
+  });
+
+  // Get user privacy settings - returns latest setting for each toggle type
+  router.get("/api/privacy-settings", requireAuth, async (req: AppRequest, res: AppResponse) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get latest setting for each toggle type
+      const latestSettings = await db
+        .select()
+        .from(userPrivacy)
+        .where(eq(userPrivacy.userId, userId))
+        .orderBy(desc(userPrivacy.createdAt));
+
+      // Group by toggle name and get the most recent setting for each
+      const settingsMap = new Map();
+      for (const setting of latestSettings) {
+        if (!settingsMap.has(setting.toggleName)) {
+          settingsMap.set(setting.toggleName, setting.isEnabled);
+        }
+      }
+
+      // Set defaults if no settings exist
+      const privacySettings = {
+        portfolioShowcase: settingsMap.get('portfolio') ?? false,
+        modelTraining: settingsMap.get('R&D') ?? false,
+        doNotSell: settingsMap.get('no_sell') ?? true,
+      };
+
+      res.json({ success: true, settings: privacySettings });
+    } catch (error) {
+      console.error('Error fetching privacy settings:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch privacy settings",
+        // Fallback to defaults on error
+        settings: {
+          portfolioShowcase: false,
+          modelTraining: false,
+          doNotSell: true,
+        }
+      });
+    }
+  });
+
+  // Update user privacy settings - creates new rows with timestamps
+  router.post("/api/privacy-settings", requireAuth, async (req: AppRequest, res: AppResponse) => {
+    try {
+      const userId = req.user!.id;
+      const { settings } = req.body;
+
+      if (!settings || typeof settings !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid settings format"
+        });
+      }
+
+      const { portfolioShowcase, modelTraining, doNotSell } = settings;
+
+      // Validate setting values
+      if (
+        typeof portfolioShowcase !== 'boolean' ||
+        typeof modelTraining !== 'boolean' ||
+        typeof doNotSell !== 'boolean'
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "All settings must be boolean values"
+        });
+      }
+
+      // Automatic logic: if doNotSell is true, set modelTraining to false
+      const finalModelTraining = doNotSell ? false : modelTraining;
+
+      // Create new records for each setting change
+      const settingsToInsert = [
+        { userId, toggleName: 'portfolio', isEnabled: portfolioShowcase },
+        { userId, toggleName: 'R&D', isEnabled: finalModelTraining },
+        { userId, toggleName: 'no_sell', isEnabled: doNotSell },
+      ];
+
+      await db.insert(userPrivacy).values(settingsToInsert);
+
+      console.log(`📋 Privacy settings updated for user ${userId}:`, {
+        portfolio: portfolioShowcase,
+        'R&D': finalModelTraining,
+        no_sell: doNotSell,
+        automatic_adjustment: doNotSell && modelTraining ? 'R&D disabled due to do_not_sell=true' : 'none'
+      });
+
+      res.json({
+        success: true,
+        message: "Privacy settings updated successfully",
+        settings: {
+          portfolioShowcase,
+          modelTraining: finalModelTraining,
+          doNotSell,
+        }
+      });
+    } catch (error) {
+      console.error('Error updating privacy settings:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to update privacy settings",
       });
     }
   });
