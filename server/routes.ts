@@ -2148,17 +2148,25 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
-      // Automatic logic: if doNotSell is true, set modelTraining to false
-      const finalModelTraining = doNotSell ? false : modelTraining;
-
-      // Create new records for each setting change
+      // Create new records for each setting change with manual_selection source
       const settingsToInsert = [
-        { userId, toggleName: 'portfolio', isEnabled: portfolioShowcase },
-        { userId, toggleName: 'R&D', isEnabled: finalModelTraining },
-        { userId, toggleName: 'no_sell', isEnabled: doNotSell },
+        { userId, toggleName: 'portfolio', isEnabled: portfolioShowcase, source: 'manual_selection' },
+        { userId, toggleName: 'R&D', isEnabled: modelTraining, source: 'manual_selection' },
+        { userId, toggleName: 'no_sell', isEnabled: doNotSell, source: 'manual_selection' },
       ];
 
       await db.insert(userPrivacy).values(settingsToInsert);
+
+      // Automatic logic: if doNotSell is true, automatically set R&D to false with automated_selection source
+      if (doNotSell && modelTraining) {
+        await db.insert(userPrivacy).values([
+          { userId, toggleName: 'R&D', isEnabled: false, source: 'automated_selection' }
+        ]);
+        
+        console.log(`🤖 Automatically disabled R&D for user ${userId} due to do_not_sell=true`);
+      }
+
+      const finalModelTraining = (doNotSell && modelTraining) ? false : modelTraining;
 
       console.log(`📋 Privacy settings updated for user ${userId}:`, {
         portfolio: portfolioShowcase,

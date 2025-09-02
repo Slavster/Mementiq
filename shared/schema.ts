@@ -218,6 +218,7 @@ export const userPrivacy = pgTable("user_privacy", {
   userId: text("user_id").references(() => users.id).notNull(),
   toggleName: text("toggle_name").notNull(), // 'portfolio', 'R&D', 'no_sell'
   isEnabled: boolean("is_enabled").notNull(),
+  source: text("source").notNull(), // 'account_creation', 'manual_selection', 'automated_selection'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -401,6 +402,7 @@ export const insertUserPrivacySchema = createInsertSchema(userPrivacy).pick({
   userId: true,
   toggleName: true,
   isEnabled: true,
+  source: true,
 });
 
 export type UserPrivacy = typeof userPrivacy.$inferSelect;

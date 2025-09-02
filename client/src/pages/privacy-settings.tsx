@@ -101,11 +101,6 @@ export default function PrivacySettings() {
   ) => {
     const newSettings = { ...settings, [setting]: value };
     
-    // Automatic logic: if doNotSell is set to true, disable modelTraining
-    if (setting === 'doNotSell' && value === true) {
-      newSettings.modelTraining = false;
-    }
-    
     setSettings(newSettings);
     updatePrivacyMutation.mutate(newSettings);
   };
@@ -245,15 +240,9 @@ export default function PrivacySettings() {
                   onToggle={(checked) =>
                     handleToggleChange("modelTraining", checked)
                   }
-                  disabled={settings.doNotSell}
                 />
                 <span className="ml-3 text-sm text-charcoal">
                   {settings.modelTraining ? "On" : "Off"}
-                  {settings.doNotSell && (
-                    <span className="text-xs text-charcoal/60 ml-2">
-                      (Disabled when "Do Not Sell" is on)
-                    </span>
-                  )}
                 </span>
               </div>
             </div>
