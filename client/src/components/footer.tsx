@@ -61,7 +61,7 @@ export default function Footer() {
             </a>{" "}
             |{" "}
             <a
-              href="#"
+              href="/terms-of-service"
               className="hover:text-accent transition-colors duration-200"
             >
               Terms of Service
