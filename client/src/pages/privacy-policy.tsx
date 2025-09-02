@@ -289,8 +289,13 @@ export default function PrivacyPolicyPage() {
                   Hosting/storage, payment processing, email delivery,
                   analytics, project management, error monitoring—acting under
                   contract and our instructions. A current list of our data
-                  subprocessors is available on request at
-                  mementiq@seraphventures.net.
+                  subprocessors is available on request at{" "}
+                  <a
+                    href="mailto:mementiq@seraphventures.net"
+                    className="text-cyan-400 hover:text-cyan-300"
+                  >
+                    mementiq@seraphventures.net
+                  </a>.
                 </div>
               </li>
               <li className="flex items-start">
@@ -508,8 +513,13 @@ export default function PrivacyPolicyPage() {
               <li className="flex items-start">
                 <span className="text-cyan-400 mr-2">•</span>
                 <div>
-                  <span className="font-semibold">Change your mind:</span> Email
-                  mementiq@seraphventures.net; we'll stop future uses and remove
+                  <span className="font-semibold">Change your mind:</span> Email{" "}
+                  <a
+                    href="mailto:mementiq@seraphventures.net"
+                    className="text-cyan-400 hover:text-cyan-300"
+                  >
+                    mementiq@seraphventures.net
+                  </a>; we'll stop future uses and remove
                   the piece from active showcases within a reasonable window (no
                   recall of printed materials or past award submissions).
                 </div>
