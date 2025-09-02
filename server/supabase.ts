@@ -16,6 +16,8 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 // Import storage for user creation
 import { storage } from './storage.js'
+import { db } from './db.js'
+import { userPrivacy } from '../shared/schema.js'
 
 // Middleware to verify Supabase JWT tokens
 export async function verifySupabaseToken(token: string) {
@@ -48,6 +50,21 @@ export async function verifySupabaseToken(token: string) {
         lastName: lastName,
         company: user.user_metadata?.company || ''
       })
+      
+      // Create default privacy settings for new user
+      const defaultPrivacySettings = [
+        { userId: user.id, toggleName: 'portfolio', isEnabled: false },
+        { userId: user.id, toggleName: 'R&D', isEnabled: false },
+        { userId: user.id, toggleName: 'no_sell', isEnabled: true },
+      ];
+      
+      await db.insert(userPrivacy).values(defaultPrivacySettings);
+      
+      console.log(`🔒 Created default privacy settings for new user ${user.id}:`, {
+        portfolio: false,
+        'R&D': false,
+        no_sell: true
+      });
     }
     
     return { 

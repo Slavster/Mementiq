@@ -212,6 +212,15 @@ export const trelloWebhooks = pgTable("trello_webhooks", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// User privacy settings tracking
+export const userPrivacy = pgTable("user_privacy", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id).notNull(),
+  toggleName: text("toggle_name").notNull(), // 'portfolio', 'R&D', 'no_sell'
+  isEnabled: boolean("is_enabled").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -386,3 +395,13 @@ export const insertTrelloConfigSchema = createInsertSchema(trelloConfig).pick({
 
 export type TrelloConfig = typeof trelloConfig.$inferSelect;
 export type InsertTrelloConfig = z.infer<typeof insertTrelloConfigSchema>;
+
+// User privacy schemas
+export const insertUserPrivacySchema = createInsertSchema(userPrivacy).pick({
+  userId: true,
+  toggleName: true,
+  isEnabled: true,
+});
+
+export type UserPrivacy = typeof userPrivacy.$inferSelect;
+export type InsertUserPrivacy = z.infer<typeof insertUserPrivacySchema>;
