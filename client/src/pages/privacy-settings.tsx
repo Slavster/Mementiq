@@ -6,6 +6,7 @@ import { ArrowLeft, Shield } from "lucide-react";
 interface PrivacySettings {
   portfolioShowcase: boolean;
   modelTraining: boolean;
+  doNotSell: boolean;
 }
 
 // Simple toggle component
@@ -38,6 +39,7 @@ export default function PrivacySettings() {
   const [settings, setSettings] = useState<PrivacySettings>({
     portfolioShowcase: false,
     modelTraining: false,
+    doNotSell: true, // Default: On (do not sell/share)
   });
 
   const handleToggleChange = (setting: keyof PrivacySettings, value: boolean) => {
@@ -194,6 +196,61 @@ export default function PrivacySettings() {
                   <span className="font-semibold">Notes:</span> We commit not to re-identify de-identified data 
                   and require partners not to do so.
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-charcoal/30 my-8"></div>
+
+          {/* Do Not Sell Setting */}
+          <div className="bg-charcoal/20 rounded-lg border border-gray-700/50 p-8">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold text-light mb-2">
+                  3) Do Not Sell or Share My Personal Information
+                </h2>
+                <p className="text-accent text-base font-medium mb-4">
+                  Do not sell or share my personal information
+                </p>
+              </div>
+              <div className="flex items-center ml-6">
+                <Toggle
+                  checked={settings.doNotSell}
+                  onToggle={(checked) => handleToggleChange('doNotSell', checked)}
+                />
+                <span className="ml-3 text-sm text-charcoal">
+                  {settings.doNotSell ? 'On' : 'Off'}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-light">What this does (plain English):</h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-start">
+                  <span className="text-accent mr-3 mt-1">•</span>
+                  <div>
+                    <span className="font-semibold text-light">When On (default):</span>
+                    <span className="text-charcoal ml-2">
+                      We do not sell your personal information or share it for cross-context behavioral advertising. 
+                      If you had the training/dataset toggle On, we'll automatically disable/withdraw that for 
+                      sale/share purposes going forward.
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <span className="text-accent mr-3 mt-1">•</span>
+                  <div>
+                    <span className="font-semibold text-light">When Off:</span>
+                    <span className="text-charcoal ml-2">
+                      You're allowing sale/share as defined by applicable law. (This is not required to use Mementiq; 
+                      you can keep it On.)
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
