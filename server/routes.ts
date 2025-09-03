@@ -2253,22 +2253,23 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Get Current User
-  router.get("/api/auth/me", async (req: AppRequest, res: AppResponse) => {
+  router.get("/api/auth/me", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Not authenticated",
-        });
-      }
+      const userId = req.user!.id;
+      console.log(`🔍 DEBUG: Fetching user data for ID: ${userId}`);
 
-      const user = await storage.getUser(String(req.session.userId));
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({
           success: false,
           message: "User not found",
         });
       }
+
+      // Debug logging
+      console.log(`🔍 DEBUG: Raw user object from DB:`, user);
+      console.log(`🔍 DEBUG: user.tosPpAccepted value:`, user.tosPpAccepted);
+      console.log(`🔍 DEBUG: user.tosPpAccepted type:`, typeof user.tosPpAccepted);
 
       // Prevent caching of user data to ensure ToS acceptance is always fresh
       res.set({
@@ -2277,7 +2278,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         'Expires': '0'
       });
 
-      res.json({
+      const responseData = {
         success: true,
         user: {
           id: user.id,
@@ -2288,7 +2289,10 @@ export async function registerRoutes(app: any): Promise<Server> {
           verified: !!user.verifiedAt,
           tosPpAccepted: user.tosPpAccepted,
         },
-      });
+      };
+
+      console.log(`🔍 DEBUG: API response data:`, responseData);
+      res.json(responseData);
     } catch (error) {
       console.error("Get current user error:", error);
       res.status(500).json({
