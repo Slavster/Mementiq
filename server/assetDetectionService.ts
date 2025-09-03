@@ -386,7 +386,6 @@ class AssetDetectionService {
       mediaAssetId: videoAsset.id,
       mediaAssetUrl: videoAsset.view_url || '',
       filename: videoAsset.name,
-      originalFilename: videoAsset.name,
       fileType: videoAsset.media_type,
       fileSize: videoAsset.filesize || 0,
       uploadStatus: 'completed'

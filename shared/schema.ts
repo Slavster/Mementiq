@@ -55,7 +55,6 @@ export const projectFiles = pgTable("project_files", {
   mediaAssetUrl: text("media_asset_url"), // Frame.io public share link (f.io format)
   frameioShareId: text("frameio_share_id"), // Frame.io share UUID for API operations
   filename: text("filename").notNull(),
-  originalFilename: text("original_filename").notNull(),
   fileType: text("file_type").notNull(),
   fileSize: bigint("file_size", { mode: "number" }).notNull(),
   uploadStatus: text("upload_status").notNull().default("pending"), // pending, uploading, completed, failed
@@ -244,7 +243,6 @@ export const insertProjectFileSchema = createInsertSchema(projectFiles).pick({
   mediaAssetId: true,
   mediaAssetUrl: true,
   filename: true,
-  originalFilename: true,
   fileType: true,
   fileSize: true,
   uploadStatus: true,
