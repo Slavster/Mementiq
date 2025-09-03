@@ -187,7 +187,7 @@ export default function DashboardPage() {
   });
 
   // Get backend user data including ToS/PP acceptance status
-  const { data: backendUserData } = useQuery({
+  const { data: backendUserData, refetch: refetchUserData } = useQuery({
     queryKey: ["/api/auth/me"],
     enabled: isAuthenticated,
     staleTime: 0, // No caching - always fresh data for ToS checking
@@ -622,11 +622,19 @@ export default function DashboardPage() {
   };
 
   const handleCreateProject = () => {
+    // Debug logging to see what's being returned
+    console.log('🔍 DEBUG: Backend user data:', backendUserData);
+    console.log('🔍 DEBUG: TosPpAccepted value:', backendUserData?.user?.tosPpAccepted);
+    console.log('🔍 DEBUG: TosPpAccepted type:', typeof backendUserData?.user?.tosPpAccepted);
+    
     // Check ToS/PP acceptance first
     if (backendUserData?.user?.tosPpAccepted === null || !backendUserData?.user?.tosPpAccepted) {
+      console.log('🔍 DEBUG: Showing consent popup because ToS not accepted');
       setShowConsentPopup(true);
       return;
     }
+    
+    console.log('🔍 DEBUG: ToS accepted, proceeding with project creation');
 
     if (!canCreateProject()) {
       if (!subscription?.hasActiveSubscription) {
