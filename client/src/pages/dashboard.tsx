@@ -190,8 +190,10 @@ export default function DashboardPage() {
   const { data: backendUserData } = useQuery({
     queryKey: ["/api/auth/me"],
     enabled: isAuthenticated,
-    staleTime: 30 * 1000, // Cache for only 30 seconds - important for ToS checking
+    staleTime: 0, // No caching - always fresh data for ToS checking
+    cacheTime: 0, // Don't keep in cache
     refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnMount: true, // Always refetch on component mount
   });
 
   // Consent popup state
