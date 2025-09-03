@@ -755,7 +755,7 @@ export default function DashboardPage() {
       user.user_metadata?.full_name?.split(" ").slice(1).join(" ") ||
       user.user_metadata?.name?.split(" ").slice(1).join(" ") ||
       "",
-    company: user.user_metadata?.company || "",
+    company: user.user_metadata?.company || null,
     verified: user.email_confirmed_at !== null,
   };
 

@@ -66,7 +66,7 @@ export async function verifySupabaseToken(token: string) {
         email: user.email || '',
         firstName: firstName,
         lastName: lastName,
-        company: user.user_metadata?.company || ''
+        company: user.user_metadata?.company || null
       })
       
       // Create default privacy settings for new user
@@ -92,7 +92,7 @@ export async function verifySupabaseToken(token: string) {
         email: user.email || '',
         firstName: firstName,
         lastName: lastName,
-        company: user.user_metadata?.company || '',
+        company: user.user_metadata?.company || null,
         verified: user.email_confirmed_at !== null,
         tosPpAccepted: dbUser.tosPpAccepted // Include ToS acceptance status
       }
