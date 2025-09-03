@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { X, ExternalLink } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from "react";
+import { X, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ConsentPopupProps {
   isOpen: boolean;
@@ -16,7 +16,11 @@ interface ConsentData {
   rdConsent: boolean;
 }
 
-export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps) {
+export function ConsentPopup({
+  isOpen,
+  onClose,
+  onAccepted,
+}: ConsentPopupProps) {
   const [tosAccepted, setTosAccepted] = useState(false);
   const [ppAccepted, setPpAccepted] = useState(false);
   const [portfolioConsent, setPortfolioConsent] = useState(false);
@@ -25,24 +29,26 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
   const queryClient = useQueryClient();
 
   const acceptConsentMutation = useMutation({
-    mutationFn: (data: ConsentData) => 
-      apiRequest('/api/auth/accept-tos-pp', { 
-        method: 'POST', 
-        body: JSON.stringify(data) 
+    mutationFn: (data: ConsentData) =>
+      apiRequest("/api/auth/accept-tos-pp", {
+        method: "POST",
+        body: data,
       }),
     onSuccess: () => {
       toast({
         title: "Consent Recorded",
-        description: "Your terms acceptance and privacy preferences have been saved.",
+        description:
+          "Your terms acceptance and privacy preferences have been saved.",
       });
       // Invalidate user query to refresh ToS acceptance status
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       onAccepted();
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to record consent. Please try again.",
+        description:
+          error.message || "Failed to record consent. Please try again.",
         variant: "destructive",
       });
     },
@@ -52,7 +58,8 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
     if (!tosAccepted || !ppAccepted) {
       toast({
         title: "Required Agreement",
-        description: "You must accept both the Terms of Service and Privacy Policy to continue.",
+        description:
+          "You must accept both the Terms of Service and Privacy Policy to continue.",
         variant: "destructive",
       });
       return;
@@ -83,13 +90,16 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
         {/* Content */}
         <div className="p-6 space-y-6">
           <p className="text-charcoal text-sm">
-            Before creating your first project, please review and accept our terms.
+            Before creating your first project, please review and accept our
+            terms.
           </p>
 
           {/* Required Terms */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-light">Required</h3>
-            
+            <h3 className="text-lg font-medium text-light">
+              Terms of Service & Privacy Policy
+            </h3>
+
             {/* Terms of Service */}
             <div className="flex items-start space-x-3">
               <input
@@ -100,7 +110,7 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
                 className="mt-1 h-4 w-4 rounded border border-charcoal/30 bg-dark text-accent focus:ring-accent focus:ring-offset-0"
               />
               <label htmlFor="tos" className="text-sm text-charcoal flex-1">
-                I agree to the{' '}
+                I agree to the{" "}
                 <a
                   href="/terms-of-service"
                   target="_blank"
@@ -123,7 +133,7 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
                 className="mt-1 h-4 w-4 rounded border border-charcoal/30 bg-dark text-accent focus:ring-accent focus:ring-offset-0"
               />
               <label htmlFor="pp" className="text-sm text-charcoal flex-1">
-                I agree to the{' '}
+                I agree to the{" "}
                 <a
                   href="/privacy-policy"
                   target="_blank"
@@ -139,8 +149,6 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
 
           {/* Optional Consents */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-light">Privacy Preferences</h3>
-            
             {/* Portfolio Showcase */}
             <div className="flex items-start space-x-3">
               <input
@@ -150,8 +158,12 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
                 onChange={(e) => setPortfolioConsent(e.target.checked)}
                 className="mt-1 h-4 w-4 rounded border border-charcoal/30 bg-dark text-accent focus:ring-accent focus:ring-offset-0"
               />
-              <label htmlFor="portfolio" className="text-sm text-charcoal flex-1">
-                Allow Mementiq to showcase my video projects in marketing materials
+              <label
+                htmlFor="portfolio"
+                className="text-sm text-charcoal flex-1"
+              >
+                (Section 8) I allow Mementiq to showcase my video projects
+                online (Section 8)
               </label>
             </div>
 
@@ -165,7 +177,8 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
                 className="mt-1 h-4 w-4 rounded border border-charcoal/30 bg-dark text-accent focus:ring-accent focus:ring-offset-0"
               />
               <label htmlFor="rd" className="text-sm text-charcoal flex-1">
-                Allow Mementiq to use my data for research and development to improve our services
+                (Section 9) I allow Mementiq to use my data for research and
+                development to improve our services
               </label>
             </div>
           </div>
@@ -183,9 +196,11 @@ export function ConsentPopup({ isOpen, onClose, onAccepted }: ConsentPopupProps)
             <Button
               onClick={handleSubmit}
               className="flex-1 bg-accent hover:bg-accent/90 text-dark"
-              disabled={!tosAccepted || !ppAccepted || acceptConsentMutation.isPending}
+              disabled={
+                !tosAccepted || !ppAccepted || acceptConsentMutation.isPending
+              }
             >
-              {acceptConsentMutation.isPending ? 'Saving...' : 'Continue'}
+              {acceptConsentMutation.isPending ? "Saving..." : "Continue"}
             </Button>
           </div>
         </div>
