@@ -15,6 +15,7 @@ import {
   insertRevisionPaymentSchema,
   insertUserPrivacySchema,
   userPrivacy,
+  users,
 } from "../shared/schema";
 import { db } from "./db";
 import { revisionPayments } from "../shared/schema";
