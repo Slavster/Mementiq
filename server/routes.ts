@@ -2204,35 +2204,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     });
   });
 
-  // Email Verification
-  router.get("/api/auth/verify-email/:token", async (req: AppRequest, res: AppResponse) => {
-    try {
-      const token = req.params.token;
-
-      // Find user with this token
-      const user = await storage.verifyUser(token);
-      if (!user) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid or expired verification token",
-        });
-      }
-
-      // Update user verification status
-      await storage.updateUserVerification(user.id, new Date());
-
-      res.json({
-        success: true,
-        message: "Email verified successfully! You can now log in.",
-      });
-    } catch (error) {
-      console.error("Email verification error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Email verification failed",
-      });
-    }
-  });
+  // Email Verification endpoint removed - handled by Supabase
 
   // Get Current User
   router.get("/api/auth/me", requireAuth, async (req: AppRequest, res: AppResponse) => {
@@ -2275,7 +2247,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           firstName: user.firstName,
           lastName: user.lastName,
           company: user.company,
-          verified: !!user.verifiedAt,
+          verified: true, // Verification handled by Supabase
           tosPpAccepted: user.tosPpAccepted,
         },
       };

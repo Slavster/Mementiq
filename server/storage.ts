@@ -36,8 +36,6 @@ export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  verifyUser(token: string): Promise<User | undefined>;
-  updateUserVerification(userId: string, verifiedAt: Date): Promise<void>;
   updateFrameioV4Token(userId: string, accessToken: string, refreshToken?: string, expiresAt?: Date): Promise<void>;
 
   // Project methods
@@ -139,17 +137,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async verifyUser(token: string): Promise<User | undefined> {
-    // This method is used for email verification, but with Supabase auth
-    // we don't need custom token verification. Return undefined to skip.
-    return undefined;
-  }
-
-  async updateUserVerification(userId: string, verifiedAt: Date): Promise<void> {
-    // This method is used for email verification, but with Supabase auth
-    // verification is handled by Supabase. Skip this operation.
-    return;
-  }
 
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {

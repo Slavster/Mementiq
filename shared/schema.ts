@@ -9,7 +9,6 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   company: text("company"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  verifiedAt: timestamp("verified_at"),
   tosPpAccepted: timestamp("tos_pp_accepted"), // When user accepted Terms of Service and Privacy Policy
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
