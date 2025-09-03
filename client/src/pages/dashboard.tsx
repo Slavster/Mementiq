@@ -179,7 +179,7 @@ export default function DashboardPage() {
   }, [isAuthenticated, authLoading, setLocation]);
 
   // Get user projects - reasonable cache to improve performance
-  const { data: projectsData, isLoading: projectsLoading } = useQuery({
+  const { data: projectsData, isLoading: projectsLoading, refetch: refetchProjects } = useQuery({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
