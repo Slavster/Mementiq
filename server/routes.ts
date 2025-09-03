@@ -368,7 +368,6 @@ export async function registerRoutes(app: any): Promise<Server> {
                     if (reviewLink) {
                       // Save review link to database
                       await storage.updateProject(projectId, {
-                        mediaReviewLink: reviewLink,
                         updatedAt: new Date()
                       });
 
@@ -2728,7 +2727,6 @@ export async function registerRoutes(app: any): Promise<Server> {
 
       // Save review link to database
       await storage.updateProject(projectId, {
-        mediaReviewLink: reviewLink,
         updatedAt: new Date()
       });
 
@@ -4264,7 +4262,6 @@ export async function registerRoutes(app: any): Promise<Server> {
 
       // Store review link in project
       await storage.updateProject(projectId, {
-        mediaReviewLink: reviewLink,
         updatedAt: new Date(),
       });
 
