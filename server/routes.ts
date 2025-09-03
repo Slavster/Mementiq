@@ -2651,7 +2651,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Add or update editor mapping
   router.post("/api/trello/editors", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const { trelloMemberId, editorName, editorEmail } = req.body;
+      const { trelloMemberId, editorName } = req.body;
       
       if (!trelloMemberId || !editorName) {
         return res.status(400).json({
@@ -2660,7 +2660,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
-      const success = await trelloWebhookService.addEditor(trelloMemberId, editorName, editorEmail);
+      const success = await trelloWebhookService.addEditor(trelloMemberId, editorName);
       
       if (success) {
         res.json({ success: true, message: "Editor mapping added/updated successfully" });
@@ -2676,10 +2676,10 @@ export async function registerRoutes(app: any): Promise<Server> {
     }
   });
 
-  // Get active editors
+  // Get all editors
   router.get("/api/trello/editors", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      const editors = await trelloWebhookService.getActiveEditors();
+      const editors = await trelloWebhookService.getAllEditors();
       res.json({ success: true, editors });
     } catch (error) {
       console.error("Get editors error:", error);
