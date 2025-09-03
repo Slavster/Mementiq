@@ -52,6 +52,7 @@ export function ConsentPopup({
       });
       // Invalidate user query to refresh ToS acceptance status
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      // Close popup and proceed immediately
       onAccepted();
     },
     onError: (error: any) => {
