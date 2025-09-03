@@ -174,7 +174,6 @@ export const trelloWebhooks = pgTable("trello_webhooks", {
   webhookId: text("webhook_id").notNull().unique(),
   boardId: text("board_id").notNull(),
   callbackUrl: text("callback_url").notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
