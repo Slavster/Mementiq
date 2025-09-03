@@ -80,7 +80,6 @@ export const tallyFormSubmissions = pgTable("tally_form_submissions", {
   tallySubmissionId: text("tally_submission_id").notNull().unique(), // Tally's unique submission ID
   submissionData: text("submission_data"), // JSON string of form responses
   submittedAt: timestamp("submitted_at").defaultNow().notNull(),
-  verifiedAt: timestamp("verified_at"), // When we confirmed it exists in Tally
 });
 
 export const oauthStates = pgTable("oauth_states", {
