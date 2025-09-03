@@ -5,8 +5,6 @@ import {
   projectStatusLog,
   emailSignups,
   tallyFormSubmissions,
-  photoAlbums,
-  photoFiles,
   revisionPayments,
   frameioShareAssets,
   oauthStates,
@@ -23,11 +21,6 @@ import {
   type InsertEmailSignup,
   type TallyFormSubmission,
   type InsertTallyFormSubmission,
-  type PhotoAlbum,
-  type InsertPhotoAlbum,
-  type UpdatePhotoAlbum,
-  type PhotoFile,
-  type InsertPhotoFile,
   type RevisionPayment,
   type InsertRevisionPayment,
   type FrameioShareAsset,
@@ -79,21 +72,6 @@ export interface IStorage {
   getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined>;
   updateTallyFormSubmission(projectId: number, updates: Partial<Pick<TallyFormSubmission, 'tallySubmissionId' | 'submissionData' | 'submittedAt'>>): Promise<TallyFormSubmission>;
   updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void>;
-
-  // Photo album methods
-  getPhotoAlbum(projectId: number): Promise<PhotoAlbum | undefined>;
-  getPhotoAlbumsByUser(userId: string): Promise<PhotoAlbum[]>;
-  createPhotoAlbum(userId: string, album: InsertPhotoAlbum): Promise<PhotoAlbum>;
-  updatePhotoAlbum(id: number, updates: UpdatePhotoAlbum): Promise<PhotoAlbum | undefined>;
-  deletePhotoAlbum(id: number): Promise<void>;
-
-  // Photo file methods
-  getPhotoFiles(albumId: number): Promise<PhotoFile[]>;
-  getPhotoFilesByProject(projectId: number): Promise<PhotoFile[]>;
-  getPhotoFileByMediaId(mediaFileId: string): Promise<PhotoFile | undefined>;
-  createPhotoFile(userId: string, file: InsertPhotoFile): Promise<PhotoFile>;
-  updatePhotoFile(id: number, updates: Partial<PhotoFile>): Promise<PhotoFile | undefined>;
-  deletePhotoFile(id: number): Promise<void>;
 
   // Stripe subscription methods
   updateUserStripeInfo(userId: string, stripeCustomerId?: string, stripeSubscriptionId?: string): Promise<User | undefined>;
@@ -543,103 +521,6 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  // Photo album methods
-  async getPhotoAlbum(projectId: number): Promise<PhotoAlbum | undefined> {
-    const [album] = await this.db
-      .select()
-      .from(photoAlbums)
-      .where(eq(photoAlbums.projectId, projectId));
-    return album || undefined;
-  }
-
-  async getPhotoAlbumsByUser(userId: string): Promise<PhotoAlbum[]> {
-    return await this.db
-      .select()
-      .from(photoAlbums)
-      .where(eq(photoAlbums.userId, userId))
-      .orderBy(desc(photoAlbums.createdAt));
-  }
-
-  async createPhotoAlbum(userId: string, album: InsertPhotoAlbum): Promise<PhotoAlbum> {
-    const [createdAlbum] = await this.db
-      .insert(photoAlbums)
-      .values({
-        ...album,
-        userId,
-      })
-      .returning();
-    return createdAlbum;
-  }
-
-  async updatePhotoAlbum(id: number, updates: UpdatePhotoAlbum): Promise<PhotoAlbum | undefined> {
-    const [updatedAlbum] = await this.db
-      .update(photoAlbums)
-      .set({
-        ...updates,
-        updatedAt: new Date(),
-      })
-      .where(eq(photoAlbums.id, id))
-      .returning();
-    return updatedAlbum || undefined;
-  }
-
-  async deletePhotoAlbum(id: number): Promise<void> {
-    await this.db
-      .delete(photoAlbums)
-      .where(eq(photoAlbums.id, id));
-  }
-
-  // Photo file methods
-  async getPhotoFiles(albumId: number): Promise<PhotoFile[]> {
-    return await this.db
-      .select()
-      .from(photoFiles)
-      .where(eq(photoFiles.albumId, albumId))
-      .orderBy(desc(photoFiles.uploadDate));
-  }
-
-  async getPhotoFilesByProject(projectId: number): Promise<PhotoFile[]> {
-    return await this.db
-      .select()
-      .from(photoFiles)
-      .where(eq(photoFiles.projectId, projectId))
-      .orderBy(desc(photoFiles.uploadDate));
-  }
-
-  async getPhotoFileByMediaId(mediaFileId: string): Promise<PhotoFile | undefined> {
-    const [file] = await this.db
-      .select()
-      .from(photoFiles)
-      .where(eq(photoFiles.mediaFileId, mediaFileId));
-    return file || undefined;
-  }
-
-  async createPhotoFile(userId: string, file: InsertPhotoFile): Promise<PhotoFile> {
-    const [createdFile] = await this.db
-      .insert(photoFiles)
-      .values({
-        ...file,
-        userId,
-      })
-      .returning();
-    return createdFile;
-  }
-
-  async updatePhotoFile(id: number, updates: Partial<PhotoFile>): Promise<PhotoFile | undefined> {
-    const [updatedFile] = await this.db
-      .update(photoFiles)
-      .set(updates)
-      .where(eq(photoFiles.id, id))
-      .returning();
-    return updatedFile || undefined;
-  }
-
-  async deletePhotoFile(id: number): Promise<void> {
-    await this.db
-      .delete(photoFiles)
-      .where(eq(photoFiles.id, id));
-  }
-
   // Revision payment methods
   async createRevisionPayment(userId: string, payment: InsertRevisionPayment): Promise<RevisionPayment> {
     const [createdPayment] = await this.db
@@ -725,7 +606,7 @@ export class DatabaseStorage implements IStorage {
   async cleanupExpiredLocks(): Promise<void> {
     try {
       await this.db.execute(sql`
-        DELETE FROM refresh_locks WHERE expires_at <= datetime('now')
+        DELETE FROM refresh_locks WHERE expires_at <= NOW()
       `);
     } catch (error) {
       console.error('Failed to cleanup expired locks:', error);

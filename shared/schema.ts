@@ -100,6 +100,12 @@ export const oauthStates = pgTable("oauth_states", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+// Token refresh locks to prevent concurrent refresh operations
+export const refreshLocks = pgTable("refresh_locks", {
+  lockKey: varchar("lock_key", { length: 255 }).primaryKey(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 // Centralized service tokens (Frame.io, etc.) - single source of truth for all users
 export const serviceTokens = pgTable("service_tokens", {
@@ -346,3 +352,6 @@ export const insertUserPrivacySchema = createInsertSchema(userPrivacy).pick({
 
 export type UserPrivacy = typeof userPrivacy.$inferSelect;
 export type InsertUserPrivacy = z.infer<typeof insertUserPrivacySchema>;
+
+// Refresh lock type
+export type RefreshLock = typeof refreshLocks.$inferSelect;
