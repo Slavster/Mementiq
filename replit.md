@@ -165,7 +165,7 @@ Successfully resolved critical TypeScript compilation errors preventing deployme
 
 5. **Schema & Database Compatibility**: 
    - Fixed uploadDate property issues by commenting out schema-incompatible fields
-   - Added originalFilename to createProjectFile calls
+   - Removed redundant originalFilename field from project_files table (Sep 3, 2025)
    - Resolved object storage BytesResult type access issues
 
 **Final Status**: ✅ **DEPLOYMENT READY** - Application restored and running successfully after fixing corrupted routes.ts file. All critical Express type errors, syntax issues, and deployment-blocking problems resolved.

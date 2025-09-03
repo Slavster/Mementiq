@@ -646,7 +646,6 @@ export async function registerRoutes(app: any): Promise<Server> {
                 mediaAssetId: latestVideo.id,
                 mediaAssetUrl: latestVideo.view_url || '',
                 filename: latestVideo.name,
-                originalFilename: latestVideo.name,
                 fileType: latestVideo.media_type,
                 fileSize: latestVideo.file_size || 0,
                 uploadStatus: 'completed'
@@ -1377,7 +1376,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         mediaAssetId: assetId,
         mediaAssetUrl: fileData.view_url || '',
         filename: `${fileName} (Revision ${(project.revisionCount || 0) + 1})`,
-        originalFilename: fileName,
+
         fileType: mediaType,
         fileSize: fileSize,
         uploadStatus: 'completed',
@@ -1455,7 +1454,6 @@ export async function registerRoutes(app: any): Promise<Server> {
               mediaAssetId: assetId,
               mediaAssetUrl: foundAsset.view_url || '',
               filename: assetName,
-              originalFilename: assetName,
               fileType: foundAsset.media_type || 'video/mp4',
               fileSize: foundAsset.file_size || 0,
               uploadStatus: 'completed',
@@ -1494,7 +1492,6 @@ export async function registerRoutes(app: any): Promise<Server> {
           mediaAssetId: project.frameioVideoAssetId,
           mediaAssetUrl: project.frameioReviewLink,
           filename: project.frameioVideoFilename,
-          originalFilename: project.frameioVideoFilename,
           fileType: project.frameioVideoFileType || 'video/mp4',
           fileSize: project.frameioVideoFileSize || 0,
           uploadStatus: 'completed',
@@ -1558,7 +1555,6 @@ export async function registerRoutes(app: any): Promise<Server> {
                 mediaAssetId: latestVideo.id,
                 mediaAssetUrl: latestVideo.view_url || '',
                 filename: latestVideo.name,
-                originalFilename: latestVideo.name,
                 fileType: latestVideo.media_type,
                 fileSize: latestVideo.file_size || 0,
                 uploadStatus: 'completed',
@@ -5140,7 +5136,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         const fileRecord = await storage.createProjectFile(projectId, {
           mediaAssetId: videoUri.replace("/videos/", ""),
           filename: fileName,
-          originalFilename: fileName,
+  
           fileType: "video",
           fileSize: fileSize || 0,
         });
@@ -5885,7 +5881,6 @@ export async function registerRoutes(app: any): Promise<Server> {
           mediaAssetId: frameioId,
           mediaAssetUrl: uploadResult.url,
           filename: uploadResult.name,
-          originalFilename: req.file.originalname,
           fileType: req.file.mimetype || 'application/octet-stream',
           fileSize: req.file.size,
         });
@@ -5991,7 +5986,6 @@ export async function registerRoutes(app: any): Promise<Server> {
           mediaThumbnailUrl: uploadResult.thumbnailUrl,
           mediaFolderPath: folderPath,
           filename: filename,
-          originalFilename: filename,
           fileSize,
           mimeType,
           uploadStatus: "completed",
@@ -6090,7 +6084,6 @@ export async function registerRoutes(app: any): Promise<Server> {
                     mediaThumbnailUrl: frameioAsset.thumb_url || frameioAsset.download_url || '',
                     mediaFolderPath: project.mediaFolderId,
                     filename: frameioAsset.name,
-                    originalFilename: frameioAsset.name,
                     fileSize: frameioAsset.filesize || 0,
                     mimeType: frameioAsset.filetype || 'image/jpeg',
                     uploadStatus: "completed",
