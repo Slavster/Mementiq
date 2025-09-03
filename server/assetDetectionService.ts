@@ -387,8 +387,7 @@ class AssetDetectionService {
       mediaAssetUrl: videoAsset.view_url || '',
       filename: videoAsset.name,
       fileType: videoAsset.media_type,
-      fileSize: videoAsset.filesize || 0,
-      uploadStatus: 'completed'
+      fileSize: videoAsset.filesize || 0
     };
 
     console.log(`🚨 ASSET DETECTION: Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);

@@ -57,8 +57,6 @@ export const projectFiles = pgTable("project_files", {
   filename: text("filename").notNull(),
   fileType: text("file_type").notNull(),
   fileSize: bigint("file_size", { mode: "number" }).notNull(),
-  uploadStatus: text("upload_status").notNull().default("pending"), // pending, uploading, completed, failed
-  uploadProgress: integer("upload_progress").default(0), // 0-100
   uploadDate: timestamp("upload_date").defaultNow().notNull(),
 });
 
@@ -245,8 +243,6 @@ export const insertProjectFileSchema = createInsertSchema(projectFiles).pick({
   filename: true,
   fileType: true,
   fileSize: true,
-  uploadStatus: true,
-  uploadProgress: true,
 });
 
 // Email signup schema  
