@@ -203,7 +203,7 @@ export class TrelloWebhookService {
             .limit(1);
 
           if (editor.length > 0) {
-            console.log(`👤 Editor: ${editor[0].editorName} (${editor[0].editorEmail || 'no email'})`);
+            console.log(`👤 Editor: ${editor[0].editorName}`);
           } else {
             console.log(`⚠️  Unknown editor with Trello ID: ${assignedEditorId}`);
           }
@@ -220,7 +220,7 @@ export class TrelloWebhookService {
   /**
    * Add or update editor mapping
    */
-  async addEditor(trelloMemberId: string, editorName: string, editorEmail?: string): Promise<boolean> {
+  async addEditor(trelloMemberId: string, editorName: string): Promise<boolean> {
     try {
       // Try to update existing editor first
       const existingEditor = await db
@@ -234,8 +234,6 @@ export class TrelloWebhookService {
           .update(trelloEditors)
           .set({ 
             editorName,
-            editorEmail,
-            isActive: true,
             updatedAt: new Date()
           })
           .where(eq(trelloEditors.trelloMemberId, trelloMemberId));
@@ -244,9 +242,7 @@ export class TrelloWebhookService {
       } else {
         await db.insert(trelloEditors).values({
           trelloMemberId,
-          editorName,
-          editorEmail,
-          isActive: true
+          editorName
         });
 
         console.log(`✅ Added new editor mapping: ${editorName} (${trelloMemberId})`);
@@ -260,13 +256,12 @@ export class TrelloWebhookService {
   }
 
   /**
-   * Get all active editors
+   * Get all editors
    */
-  async getActiveEditors() {
+  async getAllEditors() {
     return await db
       .select()
-      .from(trelloEditors)
-      .where(eq(trelloEditors.isActive, true));
+      .from(trelloEditors);
   }
 
   /**

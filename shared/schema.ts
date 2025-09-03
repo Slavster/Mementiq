@@ -165,8 +165,6 @@ export const trelloEditors = pgTable("trello_editors", {
   id: serial("id").primaryKey(),
   trelloMemberId: text("trello_member_id").notNull().unique(),
   editorName: text("editor_name").notNull(),
-  editorEmail: text("editor_email"),
-  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
