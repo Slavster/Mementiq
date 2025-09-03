@@ -2196,17 +2196,11 @@ export async function registerRoutes(app: any): Promise<Server> {
 
   // User Logout
   router.post("/api/auth/logout", (req: AppRequest, res: AppResponse) => {
-    req.session.destroy((err: any) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Logout failed",
-        });
-      }
-      res.json({
-        success: true,
-        message: "Logged out successfully",
-      });
+    // With JWT auth, logout is handled client-side by removing the token
+    // No server-side session to destroy
+    res.json({
+      success: true,
+      message: "Logged out successfully",
     });
   });
 
@@ -4302,15 +4296,8 @@ export async function registerRoutes(app: any): Promise<Server> {
 
 
   // Get project by ID
-  router.get("/api/projects/:id", async (req: AppRequest, res: AppResponse) => {
+  router.get("/api/projects/:id", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Not authenticated",
-        });
-      }
-
       const projectId = Number(req.params.id);
       const project = await storage.getProject(projectId);
 
@@ -4322,7 +4309,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       // Check if user owns this project
-      if (project.userId !== String(req.session.userId)) {
+      if (project.userId !== req.user!.id) {
         return res.status(403).json({
           success: false,
           message: "Access denied",
@@ -4349,15 +4336,8 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Update project
-  router.put("/api/projects/:id", async (req: AppRequest, res: AppResponse) => {
+  router.put("/api/projects/:id", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Not authenticated",
-        });
-      }
-
       const projectId = Number(req.params.id);
       const project = await storage.getProject(projectId);
 
@@ -4369,7 +4349,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       // Check if user owns this project
-      if (project.userId !== String(req.session.userId)) {
+      if (project.userId !== req.user!.id) {
         return res.status(403).json({
           success: false,
           message: "Access denied",
