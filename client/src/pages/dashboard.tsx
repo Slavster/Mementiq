@@ -1751,7 +1751,10 @@ export default function DashboardPage() {
         onAccepted={() => {
           setShowConsentPopup(false);
           // After consent is accepted, proceed with project creation
-          handleCreateProject();
+          // The user data will be refreshed automatically by the query invalidation
+          setTimeout(() => {
+            setShowCreateForm(true);
+          }, 100);
         }}
       />
     </div>
