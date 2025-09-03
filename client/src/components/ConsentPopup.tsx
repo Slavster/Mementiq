@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,6 +27,16 @@ export function ConsentPopup({
   const [rdConsent, setRdConsent] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Reset form state when popup opens
+  useEffect(() => {
+    if (isOpen) {
+      setTosAccepted(false);
+      setPpAccepted(false);
+      setPortfolioConsent(false);
+      setRdConsent(false);
+    }
+  }, [isOpen]);
 
   const acceptConsentMutation = useMutation({
     mutationFn: (data: ConsentData) =>
