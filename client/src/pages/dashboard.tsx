@@ -194,6 +194,18 @@ export default function DashboardPage() {
     refetchOnWindowFocus: false,
   });
 
+  // Listen for token refresh events and refetch user data
+  useEffect(() => {
+    const handleTokenRefresh = () => {
+      console.log('Token refreshed, refetching user data...');
+      refetchUserData();
+      refetchProjects();
+    };
+
+    window.addEventListener('tokenRefreshed', handleTokenRefresh);
+    return () => window.removeEventListener('tokenRefreshed', handleTokenRefresh);
+  }, [refetchUserData, refetchProjects]);
+
   // Consent popup state
   const [showConsentPopup, setShowConsentPopup] = useState(false);
 
