@@ -188,13 +188,10 @@ export default function DashboardPage() {
 
   // Get backend user data including ToS/PP acceptance status
   const { data: backendUserData, refetch: refetchUserData } = useQuery({
-    queryKey: ["/api/auth/me", Math.random()], // Random key to force fresh requests
-    queryFn: () => apiRequest(`/api/auth/me?_=${Date.now()}`), // Add timestamp to URL to bust all caching
+    queryKey: ["/api/auth/me"],
     enabled: isAuthenticated,
     staleTime: 0, // No caching - always fresh data for ToS checking
-    cacheTime: 0, // Don't keep in cache
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
-    refetchOnMount: true, // Always refetch on component mount
+    refetchOnWindowFocus: false,
   });
 
   // Consent popup state

@@ -75,7 +75,8 @@ export async function verifySupabaseToken(token: string) {
         firstName: firstName,
         lastName: lastName,
         company: user.user_metadata?.company || '',
-        verified: user.email_confirmed_at !== null
+        verified: user.email_confirmed_at !== null,
+        tosPpAccepted: dbUser.tosPpAccepted // Include ToS acceptance status
       }
     }
   } catch (error) {
