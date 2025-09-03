@@ -5,8 +5,6 @@ import express from 'express';
 import cors from 'cors';
 import { registerRoutes } from './routes';
 import path from 'path';
-import session from 'express-session';
-import ConnectPgSimple from 'connect-pg-simple';
 import { pool } from './db';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
@@ -142,24 +140,7 @@ export async function createProductionServer() {
     parameterLimit: 1000 // Prevent DoS via parameter pollution
   }));
 
-  // Session configuration
-  const PgSession = ConnectPgSimple(session);
-  app.use(session({
-    store: new PgSession({
-      pool: pool,
-      tableName: 'user_sessions',
-      createTableIfMissing: true
-    }),
-    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: 'lax'
-    }
-  }));
+  // Session configuration removed - using JWT authentication via Supabase
 
   // Simple request logging
   app.use((req, res, next) => {
