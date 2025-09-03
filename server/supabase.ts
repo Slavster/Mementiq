@@ -25,8 +25,12 @@ export async function verifySupabaseToken(token: string) {
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
     
     if (error || !user) {
+      console.log('Token verification failed:', error?.message || 'Invalid token')
       return { success: false, error: error?.message || 'Invalid token' }
     }
+    
+    // Log token details for debugging
+    console.log(`Token verified for user ID: ${user.id}, email: ${user.email}`)
     
     // Extract user info from Google/Supabase metadata
     const firstName = user.user_metadata?.firstName || 
@@ -41,8 +45,22 @@ export async function verifySupabaseToken(token: string) {
     
     // Ensure user exists in our database
     let dbUser = await storage.getUser(user.id)
+    
+    // If user not found by ID, check by email (handles ID mismatch cases)
+    if (!dbUser && user.email) {
+      console.log(`User not found by ID ${user.id}, checking by email ${user.email}`)
+      const userByEmail = await storage.getUserByEmail(user.email)
+      
+      if (userByEmail) {
+        // User exists but with different ID - this is the mismatch case
+        console.log(`⚠️ User ID mismatch detected! Token ID: ${user.id}, DB ID: ${userByEmail.id}`)
+        dbUser = userByEmail
+      }
+    }
+    
     if (!dbUser) {
-      // Create user in our database with Google account info
+      // Create new user in our database with Supabase ID
+      console.log(`Creating new user with ID ${user.id}`)
       dbUser = await storage.createUser({
         id: user.id,
         email: user.email || '',

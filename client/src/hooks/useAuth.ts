@@ -21,6 +21,28 @@ export function useAuth() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state change:', event, session)
+      
+      // Handle token refresh events
+      if (event === 'TOKEN_REFRESHED' && session) {
+        console.log('Token refreshed successfully, new expiry:', session.expires_at)
+        // Dispatch event for components that need to refetch data with new token
+        window.dispatchEvent(new CustomEvent('tokenRefreshed', { detail: { session } }))
+      }
+      
+      // Handle session expiry or sign out
+      if (event === 'SIGNED_OUT' || (!session && (event === 'TOKEN_REFRESHED' || event === 'USER_DELETED'))) {
+        console.log('Session expired or user signed out')
+        setSession(null)
+        setUser(null)
+        setLoading(false)
+        // Redirect to auth page if not already there
+        if (window.location.pathname !== '/auth') {
+          window.location.href = '/auth'
+        }
+        return
+      }
+      
+      // Update state with new session
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
