@@ -2137,6 +2137,23 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
+      // Get current settings to determine what changed
+      const latestSettings = await db
+        .select()
+        .from(userPrivacy)
+        .where(eq(userPrivacy.userId, userId))
+        .orderBy(desc(userPrivacy.createdAt));
+
+      const settingsMap = new Map();
+      for (const setting of latestSettings) {
+        if (!settingsMap.has(setting.toggleName)) {
+          settingsMap.set(setting.toggleName, setting.isEnabled);
+        }
+      }
+
+      const currentModelTraining = settingsMap.get('R&D') ?? false;
+      const currentDoNotSell = settingsMap.get('no_sell') ?? true;
+
       // Create new records for each setting change with manual_selection source
       const settingsToInsert = [
         { userId, toggleName: 'portfolio', isEnabled: portfolioShowcase, source: 'manual_selection' },
@@ -2146,22 +2163,36 @@ export async function registerRoutes(app: any): Promise<Server> {
 
       await db.insert(userPrivacy).values(settingsToInsert);
 
-      // Automatic logic: if doNotSell is true, automatically set R&D to false with automated_selection source
-      if (doNotSell && modelTraining) {
+      // Inverse relationship logic: R&D and "Do Not Sell" are mutually exclusive
+      let finalModelTraining = modelTraining;
+      let finalDoNotSell = doNotSell;
+      
+      // If user just enabled R&D (changed from false to true) and "Do Not Sell" is true, disable "Do Not Sell"
+      if (modelTraining && !currentModelTraining && doNotSell) {
+        await db.insert(userPrivacy).values([
+          { userId, toggleName: 'no_sell', isEnabled: false, source: 'automated_selection' }
+        ]);
+        finalDoNotSell = false;
+        console.log(`🤖 Automatically disabled "Do Not Sell" for user ${userId} because they enabled R&D`);
+      }
+      
+      // If user just enabled "Do Not Sell" (changed from false to true) and R&D is true, disable R&D
+      if (doNotSell && !currentDoNotSell && modelTraining) {
         await db.insert(userPrivacy).values([
           { userId, toggleName: 'R&D', isEnabled: false, source: 'automated_selection' }
         ]);
-        
-        console.log(`🤖 Automatically disabled R&D for user ${userId} due to do_not_sell=true`);
+        finalModelTraining = false;
+        console.log(`🤖 Automatically disabled R&D for user ${userId} because they enabled "Do Not Sell"`);
       }
-
-      const finalModelTraining = (doNotSell && modelTraining) ? false : modelTraining;
 
       console.log(`📋 Privacy settings updated for user ${userId}:`, {
         portfolio: portfolioShowcase,
         'R&D': finalModelTraining,
-        no_sell: doNotSell,
-        automatic_adjustment: doNotSell && modelTraining ? 'R&D disabled due to do_not_sell=true' : 'none'
+        no_sell: finalDoNotSell,
+        adjustments: {
+          modelTraining: finalModelTraining !== modelTraining ? 'auto-adjusted' : 'unchanged',
+          doNotSell: finalDoNotSell !== doNotSell ? 'auto-adjusted' : 'unchanged'
+        }
       });
 
       res.json({
@@ -2170,7 +2201,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         settings: {
           portfolioShowcase,
           modelTraining: finalModelTraining,
-          doNotSell,
+          doNotSell: finalDoNotSell,
         }
       });
     } catch (error) {
@@ -2298,6 +2329,17 @@ export async function registerRoutes(app: any): Promise<Server> {
       // Insert privacy settings if any were consented to
       if (privacySettingsToCreate.length > 0) {
         await db.insert(userPrivacy).values(privacySettingsToCreate);
+      }
+
+      // Inverse relationship logic: If user opts INTO R&D, automatically opt them OUT of "Do Not Sell"
+      if (rdConsent === true) {
+        await db.insert(userPrivacy).values([{
+          userId,
+          toggleName: 'no_sell',
+          isEnabled: false, // Disable "Do Not Sell" when R&D is enabled
+          source: 'automated_selection'
+        }]);
+        console.log(`🤖 Automatically disabled "Do Not Sell" for user ${userId} because they opted into R&D`);
       }
 
       console.log(`✅ User ${userId} accepted ToS/PP with consent: portfolio=${portfolioConsent}, R&D=${rdConsent}`);
