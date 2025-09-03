@@ -1771,7 +1771,8 @@ export class FrameioV4Service {
       console.log(`Project root_folder_id: ${mementiqProject.root_folder_id}`);
 
       // Look for existing user folder using V4 children endpoint
-      const userFolderName = `User-${userId.slice(0, 8)}`;
+      // Use full UUID to prevent any possibility of collision between users
+      const userFolderName = `User-${userId}`;
       console.log(`Looking for existing user folder: ${userFolderName}`);
 
       const rootChildren = await this.getFolderChildren(mementiqProject.root_folder_id);
