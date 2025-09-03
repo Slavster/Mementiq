@@ -297,17 +297,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   /**
-   * Update both Frame.io share ID and public URL as a synchronized pair
-   * Ensures 1:1 relationship between share UUID and f.io URL
+   * Update media asset URL for backward compatibility
+   * Note: This is a legacy method - shares are now handled at project level
    */
-  async updateProjectFileShareInfo(id: number, shareId: string, shareUrl: string, additionalUpdates?: Partial<ProjectFile>): Promise<ProjectFile | undefined> {
+  async updateProjectFileUrl(id: number, shareUrl: string): Promise<ProjectFile | undefined> {
     const updates = {
-      frameioShareId: shareId,
-      mediaAssetUrl: shareUrl,
-      ...additionalUpdates
+      mediaAssetUrl: shareUrl
     };
 
-    console.log(`📊 Synchronized share update for file ${id}: shareId=${shareId}, shareUrl=${shareUrl}`);
+    console.log(`📊 Updating file ${id} URL for backward compatibility: ${shareUrl}`);
 
     const [updatedFile] = await this.db
       .update(projectFiles)
