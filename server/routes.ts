@@ -647,8 +647,7 @@ export async function registerRoutes(app: any): Promise<Server> {
                 mediaAssetUrl: latestVideo.view_url || '',
                 filename: latestVideo.name,
                 fileType: latestVideo.media_type,
-                fileSize: latestVideo.file_size || 0,
-                uploadStatus: 'completed'
+                fileSize: latestVideo.file_size || 0
               };
             }
           }
@@ -1379,8 +1378,6 @@ export async function registerRoutes(app: any): Promise<Server> {
 
         fileType: mediaType,
         fileSize: fileSize,
-        uploadStatus: 'completed',
-        uploadProgress: 100,
       });
       
       // Send notification email
@@ -1456,8 +1453,6 @@ export async function registerRoutes(app: any): Promise<Server> {
               filename: assetName,
               fileType: foundAsset.media_type || 'video/mp4',
               fileSize: foundAsset.file_size || 0,
-              uploadStatus: 'completed',
-              uploadProgress: 100,
             });
             
             break;
@@ -1494,7 +1489,6 @@ export async function registerRoutes(app: any): Promise<Server> {
           filename: project.frameioVideoFilename,
           fileType: project.frameioVideoFileType || 'video/mp4',
           fileSize: project.frameioVideoFileSize || 0,
-          uploadStatus: 'completed',
           uploadDate: project.updatedAt
         }];
         return res.json(storedVideoFile);
@@ -1557,7 +1551,6 @@ export async function registerRoutes(app: any): Promise<Server> {
                 filename: latestVideo.name,
                 fileType: latestVideo.media_type,
                 fileSize: latestVideo.file_size || 0,
-                uploadStatus: 'completed',
                 uploadDate: latestVideo.created_at
               }];
               
@@ -5988,7 +5981,6 @@ export async function registerRoutes(app: any): Promise<Server> {
           filename: filename,
           fileSize,
           mimeType,
-          uploadStatus: "completed",
         });
 
         // Update album stats
@@ -6086,7 +6078,6 @@ export async function registerRoutes(app: any): Promise<Server> {
                     filename: frameioAsset.name,
                     fileSize: frameioAsset.filesize || 0,
                     mimeType: frameioAsset.filetype || 'image/jpeg',
-                    uploadStatus: "completed",
                   });
                 }
                 
