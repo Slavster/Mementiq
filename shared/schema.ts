@@ -30,7 +30,6 @@ export const projects = pgTable("projects", {
   submittedToEditorAt: timestamp("submitted_to_editor_at"), // When project was sent to editor (edit in progress)
   mediaFolderId: text("media_folder_id"), // Media platform folder ID (Frame.io, etc.)
   mediaUserFolderId: text("media_user_folder_id"), // User's main folder ID on media platform
-  mediaReviewLink: text("media_review_link"), // Media platform review link for revisions
   frameioReviewLink: text("frameio_review_link"), // Frame.io public share URL (full format)
   frameioReviewShareId: text("frameio_review_share_id"), // Frame.io share UUID for the public link
   frameioProjectLink: text("frameio_project_link"), // Frame.io V4 project folder URL for footage access
@@ -41,8 +40,6 @@ export const projects = pgTable("projects", {
   revisionCount: integer("revision_count").default(0), // Number of revisions requested for this project
   trelloCardId: text("trello_card_id"), // Initial project card ID in Trello
   trelloRevisionCardId: text("trello_revision_card_id"), // Current revision card ID in Trello
-  uploadSizeLimit: bigint("upload_size_limit", { mode: "number" }).default(10737418240), // 10GB default
-  currentUploadSize: bigint("current_upload_size", { mode: "number" }).default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -221,14 +218,12 @@ export const updateProjectSchema = createInsertSchema(projects).pick({
   status: true,
   mediaFolderId: true,
   mediaUserFolderId: true,
-  mediaReviewLink: true,
   frameioReviewLink: true,
   frameioReviewShareId: true,
   frameioVideoAssetId: true,
   frameioVideoFilename: true,
   frameioVideoFileSize: true,
   frameioVideoFileType: true,
-  currentUploadSize: true,
   updatedAt: true,
 }).partial();
 

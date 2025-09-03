@@ -201,18 +201,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projects.id, projectId));
   }
 
-  async updateProjectMediaReviewLink(projectId: number, mediaReviewLink: string): Promise<Project | null> {
-    const [result] = await this.db
-      .update(projects)
-      .set({
-        mediaReviewLink: mediaReviewLink,
-        updatedAt: new Date()
-      })
-      .where(eq(projects.id, projectId))
-      .returning();
-
-    return result || null;
-  }
 
   async updateProject(id: number, updates: UpdateProject): Promise<Project | undefined> {
     const [project] = await this.db.select().from(projects).where(eq(projects.id, id));
