@@ -2256,9 +2256,16 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get("/api/auth/me", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const userId = req.user!.id;
-      console.log(`🔍 DEBUG: Fetching user data for ID: ${userId}`);
+      const userEmail = req.user!.email;
+      console.log(`🔍 DEBUG: Fetching user data for ID: ${userId}, email: ${userEmail}`);
 
-      const user = await storage.getUser(userId);
+      // Try to get user by ID first, then fall back to email (for legacy users)
+      let user = await storage.getUser(userId);
+      if (!user && userEmail) {
+        console.log(`🔍 DEBUG: User not found by ID, trying email: ${userEmail}`);
+        user = await storage.getUserByEmail(userEmail);
+      }
+      
       if (!user) {
         return res.status(404).json({
           success: false,
