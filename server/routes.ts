@@ -2270,6 +2270,13 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
+      // Prevent caching of user data to ensure ToS acceptance is always fresh
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+
       res.json({
         success: true,
         user: {
