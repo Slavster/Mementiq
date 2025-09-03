@@ -32,7 +32,6 @@ interface TallySubmission {
   tallySubmissionId: string;
   submissionData: string;
   submittedAt: string;
-  verifiedAt: string | null;
 }
 
 interface TallySubmissionResponse {

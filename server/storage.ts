@@ -71,7 +71,6 @@ export interface IStorage {
   createTallyFormSubmission(submission: InsertTallyFormSubmission): Promise<TallyFormSubmission>;
   getTallyFormSubmission(projectId: number): Promise<TallyFormSubmission | undefined>;
   updateTallyFormSubmission(projectId: number, updates: Partial<Pick<TallyFormSubmission, 'tallySubmissionId' | 'submissionData' | 'submittedAt'>>): Promise<TallyFormSubmission>;
-  updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void>;
 
   // Stripe subscription methods
   updateUserStripeInfo(userId: string, stripeCustomerId?: string, stripeSubscriptionId?: string): Promise<User | undefined>;
@@ -428,13 +427,6 @@ export class DatabaseStorage implements IStorage {
     }
 
     return updatedSubmission;
-  }
-
-  async updateTallyFormSubmissionVerification(submissionId: string, verifiedAt: Date): Promise<void> {
-    await this.db
-      .update(tallyFormSubmissions)
-      .set({ verifiedAt })
-      .where(eq(tallyFormSubmissions.tallySubmissionId, submissionId));
   }
 
   // Stripe subscription methods
