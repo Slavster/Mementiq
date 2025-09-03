@@ -39,7 +39,6 @@ export const projects = pgTable("projects", {
   frameioVideoAssetId: text("frameio_video_asset_id"), // Asset ID of the video in Frame.io
   revisionCount: integer("revision_count").default(0), // Number of revisions requested for this project
   trelloCardId: text("trello_card_id"), // Initial project card ID in Trello
-  trelloRevisionCardId: text("trello_revision_card_id"), // Current revision card ID in Trello
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
