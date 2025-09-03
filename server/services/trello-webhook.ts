@@ -84,8 +84,7 @@ export class TrelloWebhookService {
       await db.insert(trelloWebhooks).values({
         webhookId: webhookId,
         boardId: boardId,
-        callbackUrl: callbackUrl,
-        isActive: true
+        callbackUrl: callbackUrl
       });
 
       console.log(`✅ Webhook created: ${webhookId} for board ${boardId}`);
@@ -265,13 +264,12 @@ export class TrelloWebhookService {
   }
 
   /**
-   * Get all active webhooks
+   * Get all webhooks
    */
   async getActiveWebhooks() {
     return await db
       .select()
-      .from(trelloWebhooks)
-      .where(eq(trelloWebhooks.isActive, true));
+      .from(trelloWebhooks);
   }
 }
 
