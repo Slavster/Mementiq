@@ -801,8 +801,8 @@ export async function registerRoutes(app: any): Promise<Server> {
                 console.log(`⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
               }
               
-              // Update database with correct public URL and share ID
-              await storage.updateProjectFileShareInfo(videoFile.id, existingShare.id, existingShare.url);
+              // Update database with correct public URL for backward compatibility
+              await storage.updateProjectFileUrl(videoFile.id, existingShare.url);
               
               return res.json({
                 shareUrl: existingShare.url,
@@ -905,8 +905,8 @@ export async function registerRoutes(app: any): Promise<Server> {
             
             console.log(`💾 Updating database cache with public share: ${existingShare.url}`);
             
-            // Update database with existing public share URL and share ID
-            await storage.updateProjectFileShareInfo(videoFile.id, existingShare.id, existingShare.url);
+            // Update database with existing public share URL for backward compatibility
+            await storage.updateProjectFileUrl(videoFile.id, existingShare.url);
             
             // Store existing share at project level for consistency
             await storage.updateProjectShareLink(projectId, existingShare.id, existingShare.url);
@@ -1048,8 +1048,8 @@ export async function registerRoutes(app: any): Promise<Server> {
       
       // Only update file-level info if we have a database record (not Frame.io direct asset)
       if (typeof videoFile.id === 'number') {
-        await storage.updateProjectFileShareInfo(videoFile.id, shareLink.id, shareLink.url);
-        console.log(`📊 Updated file-level database record ${videoFile.id} with share info`);
+        await storage.updateProjectFileUrl(videoFile.id, shareLink.url);
+        console.log(`📊 Updated file-level database record ${videoFile.id} with share URL for backward compatibility`);
       } else {
         console.log(`📊 Skipping file-level update - using Frame.io asset directly (${videoFile.id})`);
       }
