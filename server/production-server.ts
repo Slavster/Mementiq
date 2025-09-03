@@ -11,6 +11,36 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Rate limiting implementation
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 100; // max requests per window
+
+function simpleRateLimit(req: any, res: any, next: any) {
+  const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+  const now = Date.now();
+  
+  if (!rateLimitMap.has(ip)) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return next();
+  }
+  
+  const limit = rateLimitMap.get(ip)!;
+  if (now > limit.resetTime) {
+    limit.count = 1;
+    limit.resetTime = now + RATE_LIMIT_WINDOW;
+    return next();
+  }
+  
+  limit.count++;
+  if (limit.count > RATE_LIMIT_MAX) {
+    res.status(429).json({ error: 'Too many requests' });
+    return;
+  }
+  
+  next();
+}
+
 async function startProductionServer() {
   const app = express();
   const PORT = process.env.PORT || 5000;
@@ -114,7 +144,7 @@ async function startProductionServer() {
     next();
   });
 
-  // Health check endpoint
+  // Health check endpoint (before rate limiting)
   app.get('/healthz', (_req, res) => {
     res.status(200).json({ 
       status: 'healthy', 
@@ -123,6 +153,9 @@ async function startProductionServer() {
       staticPath: fs.existsSync(staticPath) ? 'configured' : 'missing'
     });
   });
+
+  // Apply rate limiting to API routes
+  app.use('/api', simpleRateLimit);
 
   // CORS configuration
   const allowedOrigins = [
