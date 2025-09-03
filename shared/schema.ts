@@ -30,7 +30,6 @@ export const projects = pgTable("projects", {
   submittedToEditorAt: timestamp("submitted_to_editor_at"), // When project was sent to editor (edit in progress)
   mediaFolderId: text("media_folder_id"), // Media platform folder ID (Frame.io, etc.)
   mediaUserFolderId: text("media_user_folder_id"), // User's main folder ID on media platform
-  tallyFormUrl: text("tally_form_url"),
   mediaReviewLink: text("media_review_link"), // Media platform review link for revisions
   frameioReviewLink: text("frameio_review_link"), // Frame.io public share URL (full format)
   frameioReviewShareId: text("frameio_review_share_id"), // Frame.io share UUID for the public link
@@ -215,7 +214,6 @@ export const loginUserSchema = z.object({
 // Project schemas
 export const insertProjectSchema = createInsertSchema(projects).pick({
   title: true,
-  tallyFormUrl: true,
 });
 
 export const updateProjectSchema = createInsertSchema(projects).pick({
@@ -231,7 +229,6 @@ export const updateProjectSchema = createInsertSchema(projects).pick({
   frameioVideoFileSize: true,
   frameioVideoFileType: true,
   currentUploadSize: true,
-  tallyFormUrl: true,
   updatedAt: true,
 }).partial();
 

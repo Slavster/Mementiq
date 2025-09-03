@@ -554,7 +554,6 @@ export default function DashboardPage() {
   const createProjectMutation = useMutation({
     mutationFn: async (projectData: {
       title: string;
-      tallyFormUrl?: string;
     }) => {
       const response = await apiRequest("POST", "/api/projects", projectData);
       return response; // apiRequest already returns parsed JSON data
