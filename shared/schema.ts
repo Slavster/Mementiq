@@ -100,34 +100,6 @@ export const oauthStates = pgTable("oauth_states", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
-export const photoAlbums = pgTable("photo_albums", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id").references(() => projects.id).notNull().unique(), // One album per project
-  userId: text("user_id").references(() => users.id).notNull(),
-  albumName: text("album_name").notNull(),
-  totalSizeLimit: bigint("total_size_limit", { mode: "number" }).default(524288000), // 500MB default for images
-  currentSize: bigint("current_size", { mode: "number" }).default(0),
-  photoCount: integer("photo_count").default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const photoFiles = pgTable("photo_files", {
-  id: serial("id").primaryKey(),
-  albumId: integer("album_id").references(() => photoAlbums.id).notNull(),
-  projectId: integer("project_id").references(() => projects.id).notNull(),
-  userId: text("user_id").references(() => users.id).notNull(),
-  mediaFileId: text("media_file_id"), // Media platform file ID (Frame.io, etc.)
-  mediaUrl: text("media_url"), // Direct media platform URL
-  mediaThumbnailUrl: text("media_thumbnail_url"), // Media platform thumbnail URL
-  mediaFolderPath: text("media_folder_path"), // Folder path on media platform
-  filename: text("filename").notNull(),
-  originalFilename: text("original_filename").notNull(),
-  fileSize: bigint("file_size", { mode: "number" }).notNull(),
-  mimeType: text("mime_type").notNull(),
-  uploadStatus: text("upload_status").notNull().default("pending"), // pending, uploading, completed, failed
-  uploadDate: timestamp("upload_date").defaultNow().notNull(),
-});
 
 // Centralized service tokens (Frame.io, etc.) - single source of truth for all users
 export const serviceTokens = pgTable("service_tokens", {
@@ -293,34 +265,6 @@ export const insertTallyFormSubmissionSchema = createInsertSchema(tallyFormSubmi
   submissionData: true,
 });
 
-// Photo album schemas
-export const insertPhotoAlbumSchema = createInsertSchema(photoAlbums).pick({
-  projectId: true,
-  albumName: true,
-  totalSizeLimit: true,
-});
-
-export const updatePhotoAlbumSchema = createInsertSchema(photoAlbums).pick({
-  albumName: true,
-  currentSize: true,
-  photoCount: true,
-  totalSizeLimit: true,
-}).partial();
-
-// Photo file schemas
-export const insertPhotoFileSchema = createInsertSchema(photoFiles).pick({
-  albumId: true,
-  projectId: true,
-  mediaFileId: true,
-  mediaUrl: true,
-  mediaThumbnailUrl: true,
-  mediaFolderPath: true,
-  filename: true,
-  originalFilename: true,
-  fileSize: true,
-  mimeType: true,
-  uploadStatus: true,
-});
 
 // Revision payment schemas
 export const insertRevisionPaymentSchema = createInsertSchema(revisionPayments).pick({
@@ -359,12 +303,6 @@ export type EmailSignup = typeof emailSignups.$inferSelect;
 export type InsertTallyFormSubmission = z.infer<typeof insertTallyFormSubmissionSchema>;
 export type TallyFormSubmission = typeof tallyFormSubmissions.$inferSelect;
 
-export type PhotoAlbum = typeof photoAlbums.$inferSelect;
-export type InsertPhotoAlbum = z.infer<typeof insertPhotoAlbumSchema>;
-export type UpdatePhotoAlbum = z.infer<typeof updatePhotoAlbumSchema>;
-
-export type PhotoFile = typeof photoFiles.$inferSelect;
-export type InsertPhotoFile = z.infer<typeof insertPhotoFileSchema>;
 
 export type RevisionPayment = typeof revisionPayments.$inferSelect;
 export type InsertRevisionPayment = z.infer<typeof insertRevisionPaymentSchema>;
