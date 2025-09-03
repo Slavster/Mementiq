@@ -2278,6 +2278,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           lastName: user.lastName,
           company: user.company,
           verified: !!user.verifiedAt,
+          tosPpAccepted: user.tosPpAccepted,
         },
       });
     } catch (error) {
@@ -2285,6 +2286,62 @@ export async function registerRoutes(app: any): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to get user data",
+      });
+    }
+  });
+
+  // Accept Terms of Service and Privacy Policy
+  router.post("/api/auth/accept-tos-pp", requireAuth, async (req: AppRequest, res: AppResponse) => {
+    try {
+      const userId = req.user!.id;
+      const { portfolioConsent, rdConsent } = req.body;
+
+      // Update the user's tos_pp_accepted timestamp
+      await db.update(users)
+        .set({ tosPpAccepted: new Date() })
+        .where(eq(users.id, userId));
+
+      // Create privacy settings if consent was given for Portfolio or R&D
+      const privacySettingsToCreate = [];
+      
+      if (portfolioConsent === true) {
+        privacySettingsToCreate.push({
+          userId,
+          toggleName: 'portfolio',
+          isEnabled: true,
+          source: 'signup'
+        });
+      }
+      
+      if (rdConsent === true) {
+        privacySettingsToCreate.push({
+          userId,
+          toggleName: 'R&D',
+          isEnabled: true,
+          source: 'signup'
+        });
+      }
+
+      // Insert privacy settings if any were consented to
+      if (privacySettingsToCreate.length > 0) {
+        await db.insert(userPrivacy).values(privacySettingsToCreate);
+      }
+
+      console.log(`✅ User ${userId} accepted ToS/PP with consent: portfolio=${portfolioConsent}, R&D=${rdConsent}`);
+
+      res.json({
+        success: true,
+        message: "Terms of Service and Privacy Policy acceptance recorded",
+        consents: {
+          portfolio: portfolioConsent,
+          rd: rdConsent
+        }
+      });
+    } catch (error) {
+      console.error('Error recording ToS/PP acceptance:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to record acceptance"
       });
     }
   });

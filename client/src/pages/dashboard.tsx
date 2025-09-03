@@ -62,6 +62,7 @@ import { RevisionConfirmationModal } from "@/components/RevisionConfirmationModa
 import { FrameioUploadInterface } from "@/components/FrameioUploadInterface";
 import { VideoViewingStep } from "@/components/VideoViewingStep";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ConsentPopup } from "@/components/ConsentPopup";
 import type { Project } from "@/../../shared/schema";
 import logoImage from "@assets/Mementiq logo - small border_1755766751477.png";
 
@@ -184,6 +185,17 @@ export default function DashboardPage() {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchOnWindowFocus: false, // Reduce unnecessary refetches
   });
+
+  // Get backend user data including ToS/PP acceptance status
+  const { data: backendUserData } = useQuery({
+    queryKey: ["/api/auth/me"],
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
+  });
+
+  // Consent popup state
+  const [showConsentPopup, setShowConsentPopup] = useState(false);
 
   // Check for pending revision payments on mount
   useEffect(() => {
@@ -608,6 +620,12 @@ export default function DashboardPage() {
   };
 
   const handleCreateProject = () => {
+    // Check ToS/PP acceptance first
+    if (backendUserData?.user?.tosPpAccepted === null || !backendUserData?.user?.tosPpAccepted) {
+      setShowConsentPopup(true);
+      return;
+    }
+
     if (!canCreateProject()) {
       if (!subscription?.hasActiveSubscription) {
         toast({
@@ -1724,6 +1742,17 @@ export default function DashboardPage() {
         onOpenChange={setRevisionConfirmationOpen}
         sessionId={revisionSessionId}
         onRevisionSubmitted={handleRevisionSubmitted}
+      />
+
+      {/* Consent Popup for ToS/PP Acceptance */}
+      <ConsentPopup
+        isOpen={showConsentPopup}
+        onClose={() => setShowConsentPopup(false)}
+        onAccepted={() => {
+          setShowConsentPopup(false);
+          // After consent is accepted, proceed with project creation
+          handleCreateProject();
+        }}
       />
     </div>
   );
