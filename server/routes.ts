@@ -5434,15 +5434,13 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.log(`Current host: ${host}`);
       console.log(`Generated state: ${state}`);
       
-      // Use REPLIT_DEV_DOMAIN for more stable OAuth redirect URI
-      const replitDevDomain = process.env.REPLIT_DEV_DOMAIN;
-      const stableRedirectUri = replitDevDomain 
-        ? `https://${replitDevDomain}/api/auth/frameio/callback`
-        : `https://${host}/api/auth/frameio/callback`;
+      // Use centralized URL configuration for consistent redirect URIs
+      const baseUrl = getAppBaseUrl();
+      const stableRedirectUri = `${baseUrl}/api/auth/frameio/callback`;
       
       const manualAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(stableRedirectUri)}&response_type=code&scope=openid profile offline_access email additional_info.roles&state=${state}`;
       
-      console.log(`Using REPLIT_DEV_DOMAIN: ${replitDevDomain || 'not available'}`);
+      console.log(`Using base URL: ${baseUrl}`);
       console.log(`Current host: ${host}`);
       console.log(`Stable redirect URI: ${stableRedirectUri}`);
       console.log(`Manual OAuth URL: ${manualAuthUrl}`);
@@ -5501,7 +5499,9 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/frameio/callback`;
+      // Use centralized URL configuration for consistent redirect URI
+      const baseUrl = getAppBaseUrl();
+      const redirectUri = `${baseUrl}/api/auth/frameio/callback`;
       
       // Exchange code for access token
       await frameioV4Service.exchangeCodeForToken(code as string, redirectUri);
@@ -5656,7 +5656,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         success: true,
         oauthConfigured: hasCredentials,
         authenticated: hasAccessToken,
-        authUrl: hasCredentials ? `${req.protocol}://${req.get('host')}/api/auth/frameio` : null
+        authUrl: hasCredentials ? `${getAppBaseUrl()}/api/auth/frameio` : null
       });
     } catch (error) {
       console.error("OAuth status check failed:", error);
