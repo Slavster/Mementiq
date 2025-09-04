@@ -43,7 +43,7 @@ import Stripe from "stripe";
 import multer from "multer";
 import { getAppBaseUrl, getDashboardUrl } from "./config/appUrl.js";
 import geoip from "geoip-lite";
-import { resolvePriceByLookupKey, tierToPlanKey, type PlanKey } from "./services/stripe-price-resolver.js";
+import { resolvePriceByLookupKey, tierToPlanKey, PLAN_LOOKUP_KEYS, type PlanKey } from "./services/stripe-price-resolver.js";
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -5896,6 +5896,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       });
     }
   });
+
 
   // Mount the router to the app
   app.use(router);

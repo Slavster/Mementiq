@@ -8,16 +8,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 // These lookup_keys must match across test and live environments in Stripe
 export const PLAN_LOOKUP_KEYS = {
   // Subscription plans
-  basic_monthly: 'creative_spark_monthly',
-  standard_monthly: 'consistency_club_monthly',
-  premium_monthly: 'growth_accelerator_monthly',
+  basic_monthly: 'tier_1_launch',
+  standard_monthly: 'tier_2_launch',
+  premium_monthly: 'tier_3_launch',
   
   // Prepaid packages (for future use)
   package_5: 'package_5_videos',
   package_10: 'package_10_videos',
   
   // One-time payments
-  revision_payment: 'revision_payment',
+  revision_payment: 'revision_launch',
 } as const;
 
 // Type for plan keys
