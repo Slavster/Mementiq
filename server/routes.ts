@@ -323,22 +323,9 @@ export async function registerRoutes(app: any): Promise<Server> {
         return res.status(400).send(`Webhook Error: ${err.message}`);
       }
 
-      // Environment guard: Check if webhook matches our environment
-      const isProduction = process.env.NODE_ENV === 'production';
-      const isLiveEvent = event.livemode === true;
-      
-      console.log(`📬 Webhook received: ${event.type}, livemode: ${event.livemode}, env: ${process.env.NODE_ENV}`);
-      
-      // Skip processing if environment doesn't match
-      if (isProduction && !isLiveEvent) {
-        console.warn(`⚠️ Skipping test webhook in production environment: ${event.type}`);
-        return res.status(200).send('Test webhook ignored in production');
-      }
-      
-      if (!isProduction && isLiveEvent) {
-        console.warn(`⚠️ Skipping live webhook in development environment: ${event.type}`);
-        return res.status(200).send('Live webhook ignored in development');
-      }
+      // Log webhook receipt (works with any environment)
+      console.log(`📬 Webhook received: ${event.type}`);
+      console.log(`Event ID: ${event.id}, Created: ${new Date(event.created * 1000).toISOString()}`);
 
       try {
         switch (event.type) {
@@ -5897,7 +5884,6 @@ export async function registerRoutes(app: any): Promise<Server> {
     }
   });
 
-
   // Mount the router to the app
   app.use(router);
 
@@ -6073,5 +6059,4 @@ async function downloadAsset(
 
   return { content, contentType };
 }
-
 
