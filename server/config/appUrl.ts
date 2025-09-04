@@ -1,7 +1,10 @@
 // Application URL configuration - centralized URL management for emails and redirects
 export function getAppBaseUrl(): string {
-  // Production check - if environment suggests production deployment
-  if (process.env.NODE_ENV === 'production' || process.env.VERCEL_URL || process.env.NETLIFY_URL) {
+  // Production check - includes Replit deployment detection
+  if (process.env.NODE_ENV === 'production' || 
+      process.env.REPLIT_DEPLOYMENT === '1' ||
+      process.env.VERCEL_URL || 
+      process.env.NETLIFY_URL) {
     // Use production URL when available
     if (process.env.PRODUCTION_URL) {
       return process.env.PRODUCTION_URL;
