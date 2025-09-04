@@ -33,14 +33,14 @@ export class TrelloWebhookService {
   private readonly baseUrl = 'https://api.trello.com/1';
   private readonly key = process.env.TRELLO_KEY;
   private readonly token = process.env.TRELLO_TOKEN;
-  private readonly webhookSecret = process.env.TRELLO_WEBHOOK_SECRET;
+  private readonly appSecret = process.env.TRELLO_SECRET;
 
   constructor() {
     if (!this.key || !this.token) {
       throw new Error('Missing TRELLO_KEY or TRELLO_TOKEN environment variables');
     }
-    if (!this.webhookSecret) {
-      throw new Error('Missing TRELLO_WEBHOOK_SECRET environment variable');
+    if (!this.appSecret) {
+      throw new Error('Missing TRELLO_SECRET environment variable (required for webhook signature verification)');
     }
   }
 
@@ -49,9 +49,9 @@ export class TrelloWebhookService {
    */
   verifyWebhookSignature(body: string, callbackUrl: string, signature: string): boolean {
     try {
-      // Trello uses HMAC-SHA1 of body + callbackURL with the webhook secret
+      // Trello uses HMAC-SHA1 of body + callbackURL with the application secret
       const expectedSignature = crypto
-        .createHmac('sha1', this.webhookSecret!)
+        .createHmac('sha1', this.appSecret!)
         .update(body + callbackUrl, 'utf8')
         .digest('base64');
 
@@ -107,10 +107,9 @@ export class TrelloWebhookService {
         }
       });
 
-      // Update database
+      // Remove webhook record from database
       await db
-        .update(trelloWebhooks)
-        .set({ isActive: false })
+        .delete(trelloWebhooks)
         .where(eq(trelloWebhooks.webhookId, webhookId));
 
       console.log(`✅ Webhook deleted: ${webhookId}`);

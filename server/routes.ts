@@ -2498,13 +2498,12 @@ export async function registerRoutes(app: any): Promise<Server> {
         return res.status(400).json({ success: false, message: "Missing signature" });
       }
 
-      // Verify webhook signature (temporarily disabled for testing)
-      // TODO: Re-enable signature verification in production
-      // const isValid = trelloWebhookService.verifyWebhookSignature(body, callbackUrl, signature);
-      // if (!isValid) {
-      //   console.log("❌ Invalid webhook signature");
-      //   return res.status(403).json({ success: false, message: "Invalid signature" });
-      // }
+      // Verify webhook signature using Trello's application secret
+      const isValid = trelloWebhookService.verifyWebhookSignature(body, callbackUrl, signature);
+      if (!isValid) {
+        console.log("❌ Invalid webhook signature");
+        return res.status(403).json({ success: false, message: "Invalid signature" });
+      }
 
       console.log("✅ Webhook signature verified");
       console.log("Processing...");
