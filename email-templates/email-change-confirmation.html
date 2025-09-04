@@ -1,229 +1,209 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Confirm Email Change - Mementiq</title>
-        <style>
-            body {
-                font-family:
-                    "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-                line-height: 1.6;
-                color: #f5f5f5;
-                background-color: #0f0f0f;
-                margin: 0;
-                padding: 0;
-                -webkit-font-smoothing: antialiased;
-            }
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Address Update - Mementiq</title>
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #f5f5f5;
+            background-color: #0f0f0f;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #1a1625 0%, #2a1f3d  50%, #1a1625 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .header {
+            background: linear-gradient(45deg, hsl(270, 50%, 65%) 0%, hsl(180, 85%, 55%) 100%);
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 2px solid hsl(180, 85%, 55%);
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: #0f0f0f;
+            letter-spacing: -0.5px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 24px;
+            font-weight: 600;
+            color: hsl(180, 85%, 55%);
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #e5e5e5;
+            margin-bottom: 30px;
+            line-height: 1.7;
+        }
+        
+        .email-change-box {
+            background: rgba(180, 85%, 55%, 0.1);
+            border: 2px solid hsl(180, 85%, 55%);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        
+        .email-display {
+            font-size: 16px;
+            font-weight: 500;
+            margin: 8px 0;
+        }
+        
+        .old-email {
+            color: #a0a0a0;
+            text-decoration: line-through;
+        }
+        
+        .new-email {
+            color: hsl(180, 85%, 55%);
+            font-weight: 600;
+        }
+        
+        .arrow {
+            color: hsl(180, 85%, 55%);
+            font-size: 20px;
+            margin: 0 16px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: hsl(180, 85%, 55%);
+            color: #0f0f0f;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 18px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.3);
+        }
+        
+        .cta-button:hover {
+            background: hsl(45, 93%, 58%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 255, 0, 0.4);
+        }
+        
+        .footer {
+            padding: 30px;
+            background-color: rgba(0,0,0,0.3);
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .footer-text {
+            font-size: 14px;
+            color: #a0a0a0;
+        }
+        
+        .info-note {
+            background: rgba(180, 85%, 55%, 0.1);
+            border-left: 4px solid hsl(180, 85%, 55%);
+            padding: 16px;
+            margin: 25px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #d0d0d0;
+        }
+        
+        .emoji {
+            font-size: 20px;
+            margin: 0 4px;
+        }
+        
+        @media (max-width: 600px) {
             .container {
-                max-width: 600px;
-                margin: 0 auto;
-                background: linear-gradient(
-                    135deg,
-                    #1a1625 0%,
-                    #2a1f3d 50%,
-                    #1a1625 100%
-                );
-                border-radius: 16px;
-                overflow: hidden;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                margin: 0 15px;
             }
-
-            .header {
-                background: linear-gradient(
-                    45deg,
-                    hsl(270, 50%, 65%) 0%,
-                    hsl(180, 85%, 55%) 100%
-                );
-                padding: 40px 30px;
-                text-align: center;
-                border-bottom: 2px solid hsl(180, 85%, 55%);
-            }
-
-            .logo {
-                font-size: 32px;
-                font-weight: 800;
-                color: #0f0f0f;
-                letter-spacing: -0.5px;
-            }
-
+            
             .content {
-                padding: 40px 30px;
+                padding: 30px 20px;
             }
-
-            .greeting {
-                font-size: 24px;
-                font-weight: 600;
-                color: hsl(180, 85%, 55%);
-                margin-bottom: 20px;
+            
+            .header {
+                padding: 30px 20px;
             }
-
-            .message {
-                font-size: 16px;
-                color: #e5e5e5;
-                margin-bottom: 30px;
-                line-height: 1.7;
-            }
-
+            
             .email-change-box {
-                background: rgba(180, 85%, 55%, 0.1);
-                border: 2px solid hsl(180, 85%, 55%);
-                border-radius: 12px;
-                padding: 24px;
-                margin: 25px 0;
-                text-align: center;
+                padding: 20px;
             }
-
-            .email-display {
-                font-size: 16px;
-                font-weight: 500;
-                margin: 8px 0;
-            }
-
-            .old-email {
-                color: #a0a0a0;
-                text-decoration: line-through;
-            }
-
-            .new-email {
-                color: hsl(180, 85%, 55%);
-                font-weight: 600;
-            }
-
+            
             .arrow {
-                color: hsl(180, 85%, 55%);
-                font-size: 20px;
-                margin: 0 16px;
+                display: block;
+                margin: 12px 0;
             }
-
-            .cta-button {
-                display: inline-block;
-                background: hsl(180, 85%, 55%);
-                color: #0f0f0f;
-                text-decoration: none;
-                padding: 16px 32px;
-                border-radius: 12px;
-                font-weight: 600;
-                font-size: 18px;
-                text-align: center;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 20px rgba(0, 255, 255, 0.3);
-            }
-
-            .cta-button:hover {
-                background: hsl(45, 93%, 58%);
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(255, 255, 0, 0.4);
-            }
-
-            .footer {
-                padding: 30px;
-                background-color: rgba(0, 0, 0, 0.3);
-                text-align: center;
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
-            }
-
-            .footer-text {
-                font-size: 14px;
-                color: #a0a0a0;
-            }
-
-            .security-note {
-                background: rgba(180, 85%, 55%, 0.1);
-                border-left: 4px solid hsl(180, 85%, 55%);
-                padding: 16px;
-                margin: 25px 0;
-                border-radius: 8px;
-                font-size: 14px;
-                color: #d0d0d0;
-            }
-
-            .emoji {
-                font-size: 20px;
-                margin: 0 4px;
-            }
-
-            @media (max-width: 600px) {
-                .container {
-                    margin: 0 15px;
-                }
-
-                .content {
-                    padding: 30px 20px;
-                }
-
-                .header {
-                    padding: 30px 20px;
-                }
-
-                .email-change-box {
-                    padding: 20px;
-                }
-
-                .arrow {
-                    display: block;
-                    margin: 12px 0;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <div class="logo">Mementiq</div>
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Mementiq</div>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Email Address Update <span class="emoji">📬</span>
             </div>
-
-            <div class="content">
-                <div class="greeting">Email Change Request</div>
-
-                <div class="message">
-                    We received a request to change the email address associated
-                    with your Mementiq account. To complete this change and
-                    ensure your account security, please confirm the update
-                    below.
-                </div>
-
-                <div class="email-change-box">
-                    <div class="email-display">
-                        <span class="old-email">{{ .Email }}</span>
-                        <span class="arrow">→</span>
-                        <span class="new-email">{{ .NewEmail }}</span>
-                    </div>
-                </div>
-
-                <div style="text-align: center; margin: 35px 0">
-                    <a href="{{ .ConfirmationURL }}" class="cta-button">
-                        Confirm Email Change
-                    </a>
-                </div>
-
-                <div class="security-note">
-                    <strong>Important:</strong> If you didn't request this email
-                    change, please ignore this message and your account will
-                    remain unchanged. For additional security, consider updating
-                    your password.
-                </div>
-
-                <div class="message">
-                    Once confirmed, you'll receive all future notifications and
-                    project updates at your new email address. Your video
-                    projects and subscription will remain unaffected.
-                    <span class="emoji">✅</span>
+            
+            <div class="message">
+                Hello! You've requested to change your email address on Mementiq. To apply this change, please click the button below to proceed.
+            </div>
+            
+            <div class="email-change-box">
+                <div class="email-display">
+                    <span class="old-email">{{ .Email }}</span>
+                    <span class="arrow">→</span>
+                    <span class="new-email">{{ .NewEmail }}</span>
                 </div>
             </div>
-
-            <div class="footer">
-                <div class="footer-text">
-                    Have questions? We're here to help!
-                    <span class="emoji">💬</span> <br />
-                    <a href="mailto:mementiq@seraphventures.net"
-                        >mementiq@seraphventures.net</a
-                    ><br /><br />
-                    <strong>Mementiq</strong><br />
-                    Professional Video Editing Services
-                </div>
+            
+            <div style="text-align: center; margin: 35px 0;">
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    Apply Email Change <span class="emoji">✨</span>
+                </a>
+            </div>
+            
+            <div class="info-note">
+                <strong>Heads up:</strong> If this wasn't you, no worries - just ignore this message and nothing will change.
+            </div>
+            
+            <div class="message">
+                Once you click the button above, you'll receive all future project updates and notifications at your new email address. Your video editing projects and subscription will continue as normal. <span class="emoji">🎬</span>
             </div>
         </div>
-    </body>
+        
+        <div class="footer">
+            <div class="footer-text">
+                Need help? Drop us a line! <span class="emoji">📩</span>
+                <br><br>
+                <strong>The Mementiq Team</strong><br>
+                Video Editing Made Simple
+            </div>
+        </div>
+    </div>
+</body>
 </html>
