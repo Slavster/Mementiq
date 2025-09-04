@@ -1,5 +1,5 @@
 import express from "express";
-import type { AppRequest, AppResponse, Appany } from "./express-types";
+import type { AppRequest, AppResponse } from "./express-types";
 import { createServer, type Server } from "http";
 import path from "path";
 import { storage } from "./storage";
@@ -10,8 +10,6 @@ import {
   insertProjectSchema,
   updateProjectSchema,
   insertProjectFileSchema,
-  insertPhotoAlbumSchema,
-  insertPhotoFileSchema,
   insertRevisionPaymentSchema,
   insertUserPrivacySchema,
   userPrivacy,
@@ -64,7 +62,7 @@ async function updateProjectTimestamp(projectId: number, action?: string) {
 async function requireAuth(
   req: AppRequest,
   res: AppResponse,
-  next: Appany,
+  next: any,
 ) {
   const authHeader = req.headers.authorization;
 
@@ -100,7 +98,7 @@ async function requireAuth(
 async function requireProjectAccess(
   req: AppRequest,
   res: AppResponse,
-  next: Appany,
+  next: any,
 ) {
   try {
     const projectId = Number(req.params.id);
@@ -615,7 +613,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
       
       // Get the completed video file - for "video is ready" projects, use Frame.io assets directly
-      let videoFile = null;
+      let videoFile: any = null;
       
       if (project.status.toLowerCase() === "video is ready" && project.mediaFolderId) {
         try {
@@ -641,7 +639,6 @@ export async function registerRoutes(app: any): Promise<Server> {
             
             if (videoAssets.length > 0) {
               const latestVideo = videoAssets[0];
-        console.log("Email signup detected from user", userId, "for email:", email);
               
               // Format as expected by share creation logic
               videoFile = {
@@ -779,7 +776,7 @@ export async function registerRoutes(app: any): Promise<Server> {
               }
             } catch (discoveryError) {
               console.log(`Discovery error: ${discoveryError}`);
-              currentProjectFolderId = project.mediaFolderId;
+              currentProjectFolderId = project.mediaFolderId || null;
             }
             
             if (!currentProjectFolderId) {
@@ -3402,7 +3399,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       // Convert to number if it's a string
-      const numericProjectId = typeof projectId === 'string' ? Number(projectId, 10) : projectId;
+      const numericProjectId = typeof projectId === 'string' ? parseInt(projectId, 10) : projectId;
 
       if (!numericProjectId || typeof numericProjectId !== 'number' || isNaN(numericProjectId)) {
         console.log("Processing...");
@@ -4448,12 +4445,12 @@ export async function registerRoutes(app: any): Promise<Server> {
   ) {
     const range = (req.headers as any).range!;
     const parts = range.replace(/bytes=/, "").split("-");
-    const start = Number(parts[0], 10);
+    const start = parseInt(parts[0], 10);
 
     // Optimize chunk size based on request
     let end: number;
     if (parts[1]) {
-      end = Number(parts[1], 10);
+      end = parseInt(parts[1], 10);
     } else {
       // For initial requests (start=0), send much larger chunk for immediate playback
       if (start === 0) {
@@ -5378,7 +5375,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         const frameioId = uploadResult.id;
         
         // Store file record in database
-        const parsedProjectId = Number(projectId, 10);
+        const parsedProjectId = parseInt(projectId, 10);
         if (isNaN(parsedProjectId)) {
           return res.status(400).json({
             success: false,
@@ -5411,220 +5408,6 @@ export async function registerRoutes(app: any): Promise<Server> {
         res.status(500).json({
           success: false,
           message: "Upload failed"
-        });
-      }
-    }
-  );
-
-  // Photo upload and album management endpoints using Frame.io
-  
-  // Upload photo to Frame.io
-  router.post(
-    "/api/photos/upload",
-    requireAuth,
-    async (req: AppRequest, res: AppResponse) => {
-      try {
-        const { projectId, filename, fileSize, mimeType, base64Data } = req.body;
-
-        if (!projectId || !filename || !fileSize || !mimeType || !base64Data) {
-          return res.status(400).json({
-            success: false,
-            message: "Missing required upload parameters",
-          });
-        }
-
-        // Check file size limit (500MB)
-        const maxFileSize = 524288000; // 500MB in bytes
-        if (fileSize > maxFileSize) {
-          return res.status(413).json({
-            success: false,
-            message: `File too large. Maximum size is 500MB.`,
-          });
-        }
-
-        // Verify project exists and user owns it
-        const project = await storage.getProject(projectId);
-        if (!project) {
-          return res
-            .status(404)
-            .json({ success: false, message: "Project not found" });
-        }
-
-        if (project.userId !== req.user!.id) {
-          return res
-            .status(403)
-            .json({ success: false, message: "Access denied" });
-        }
-
-        // Get or create photo album for this project
-        let album = await storage.getPhotoAlbum(projectId);
-        if (!album) {
-          album = await storage.createPhotoAlbum(req.user!.id, {
-            projectId,
-            albumName: `${project.title} - Photos`,
-            totalSizeLimit: 524288000, // 500MB default for images
-          });
-        }
-
-        // Check album size limit (500MB)
-        const albumSizeLimit = album.totalSizeLimit || 524288000; // 500MB default
-        if (album.currentSize + fileSize > albumSizeLimit) {
-          return res.status(413).json({
-            success: false,
-            message: `Album size limit exceeded. Maximum 500MB allowed per project.`,
-          });
-        }
-
-        // Create Frame.io V4 folder structure for photos
-        await frameioV4Service.loadServiceAccountToken();
-        const folderPath = await frameioV4Service.createUserProjectPhotoFolder(req.user!.id, projectId);
-        
-        // Upload to Frame.io V4
-        const uploadResult = await frameioV4Service.uploadPhoto(
-          base64Data,
-          filename,
-          folderPath,
-          req.user!.id
-        );
-        
-        // Create photo file record
-        const photoFile = await storage.createPhotoFile(req.user!.id, {
-          albumId: album.id,
-          projectId,
-          mediaFileId: uploadResult.fileId,
-          mediaUrl: uploadResult.url,
-          mediaThumbnailUrl: uploadResult.thumbnailUrl,
-          mediaFolderPath: folderPath,
-          filename: filename,
-          fileSize,
-          mimeType,
-        });
-
-        // Update album stats
-        await storage.updatePhotoAlbum(album.id, {
-          currentSize: album.currentSize + fileSize,
-          photoCount: (album.photoCount || 0) + 1,
-        });
-
-        // Update project's updatedAt timestamp to reflect the photo upload
-        console.log(`Updating project ${projectId} timestamp after photo upload`);
-        const updatedProject = await storage.updateProject(projectId, {
-          updatedAt: new Date(),
-        });
-        console.log(`Project ${projectId} updated timestamp: ${updatedProject?.updatedAt}`);
-
-        res.json({
-          success: true,
-          message: "Photo uploaded successfully to Frame.io",
-          photo: photoFile,
-        });
-      } catch (error: any) {
-        console.error("Photo upload error:", error);
-        res.status(500).json({
-          success: false,
-          message: error instanceof Error ? error.message : String(error) || "Failed to upload photo",
-        });
-      }
-    }
-  );
-
-  // Get photos for a project with security verification
-  router.get(
-    "/api/projects/:id/photos",
-    requireAuth,
-    async (req: AppRequest, res: AppResponse) => {
-      try {
-        const projectId = Number(req.params.id);
-
-        // Verify project exists and user owns it
-        const project = await storage.getProject(projectId);
-        if (!project) {
-          return res
-            .status(404)
-            .json({ success: false, message: "Project not found" });
-        }
-
-        if (project.userId !== req.user!.id) {
-          return res
-            .status(403)
-            .json({ success: false, message: "Access denied" });
-        }
-
-        // Fetch photos ONLY from Frame.io media library for this user/project
-        let photos: any[] = [];
-        let album = null;
-        let currentSize = 0;
-        
-        try {
-          const project = await storage.getProject(projectId);
-          if (project?.mediaFolderId) {
-            console.log(`Fetching photos from Frame.io folder: ${project.mediaFolderId}`);
-            await frameioV4Service.loadServiceAccountToken();
-            const frameioAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-            const frameioPhotos = frameioAssets.filter(asset => 
-              asset.type === 'file' && 
-              asset.filetype && 
-              asset.filetype.startsWith('image/')
-            );
-            console.log(`Found ${frameioPhotos.length} photo files in Frame.io folder`);
-          
-            if (frameioPhotos.length > 0) {
-              // Get or create album only if there are actual photos in Frame.io
-              album = await storage.getPhotoAlbum(projectId);
-              if (!album) {
-                album = await storage.createPhotoAlbum(req.user!.id, {
-                  projectId,
-                  albumName: `${project.title} - Photos`,
-                  totalSizeLimit: 524288000, // 500MB default for images
-                });
-              }
-
-              // Convert Frame.io assets to photo objects and sync to database
-              for (const frameioAsset of frameioPhotos) {
-                let existingPhoto = await storage.getPhotoFileByMediaId(frameioAsset.id);
-                
-                if (!existingPhoto) {
-                  // Create database record for photos that exist in Frame.io but not in DB
-                  existingPhoto = await storage.createPhotoFile(req.user!.id, {
-                    albumId: album.id,
-                    projectId,
-                    mediaFileId: frameioAsset.id,
-                    mediaUrl: frameioAsset.download_url || '',
-                    mediaThumbnailUrl: frameioAsset.thumb_url || frameioAsset.download_url || '',
-                    mediaFolderPath: project.mediaFolderId,
-                    filename: frameioAsset.name,
-                    fileSize: frameioAsset.filesize || 0,
-                    mimeType: frameioAsset.filetype || 'image/jpeg',
-                  });
-                }
-                
-                photos.push(existingPhoto);
-                currentSize += frameioAsset.filesize || 0;
-              }
-
-              // Update album with current stats from Frame.io
-              await storage.updatePhotoAlbum(album.id, {
-                currentSize,
-                photoCount: frameioPhotos.length,
-              });
-            }
-          }
-        } catch (error) {
-          console.log("Error logged");
-          // Return empty results - no photos in Frame.io means no photos to display
-        }
-
-        res.json({
-          success: true,
-          album: album || null,
-          photos,
-          photoCount: photos.length,
-        });
-      } catch (error: any) {
-        console.error("Error fetching photos:", error);
-        res.status(500).json({
-          success: false,
-          message: "Failed to fetch photos",
         });
       }
     }
