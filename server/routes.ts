@@ -43,6 +43,7 @@ import Stripe from "stripe";
 import multer from "multer";
 import { getAppBaseUrl, getDashboardUrl } from "./config/appUrl.js";
 import geoip from "geoip-lite";
+import { resolvePriceByLookupKey, tierToPlanKey, type PlanKey } from "./services/stripe-price-resolver.js";
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -320,6 +321,23 @@ export async function registerRoutes(app: any): Promise<Server> {
       } catch (err: any) {
         console.error("Webhook signature verification failed:", err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
+      }
+
+      // Environment guard: Check if webhook matches our environment
+      const isProduction = process.env.NODE_ENV === 'production';
+      const isLiveEvent = event.livemode === true;
+      
+      console.log(`📬 Webhook received: ${event.type}, livemode: ${event.livemode}, env: ${process.env.NODE_ENV}`);
+      
+      // Skip processing if environment doesn't match
+      if (isProduction && !isLiveEvent) {
+        console.warn(`⚠️ Skipping test webhook in production environment: ${event.type}`);
+        return res.status(200).send('Test webhook ignored in production');
+      }
+      
+      if (!isProduction && isLiveEvent) {
+        console.warn(`⚠️ Skipping live webhook in development environment: ${event.type}`);
+        return res.status(200).send('Live webhook ignored in development');
       }
 
       try {
@@ -2937,12 +2955,16 @@ export async function registerRoutes(app: any): Promise<Server> {
 
         // Create Stripe customer if doesn't exist
         if (!customerId) {
+          // Generate idempotency key for customer creation based on user email
+          const customerIdempotencyKey = `customer_${user.email}`;
           const customer = await stripe.customers.create({
             email: user.email,
             name: `${user.firstName} ${user.lastName}`,
             metadata: {
               userId: user.id,
             },
+          }, {
+            idempotencyKey: customerIdempotencyKey,
           });
           customerId = customer.id;
           await storage.updateUserStripeInfo(user.id, customerId);
@@ -2955,17 +2977,15 @@ export async function registerRoutes(app: any): Promise<Server> {
         // Use centralized URL configuration
         const baseUrl = getAppBaseUrl();
 
-        // Get the default price for the product
-        const prices = await stripe.prices.list({
-          product: tierConfig.stripeProductId,
-          active: true,
-        });
+        // Resolve price using lookup_key instead of product ID
+        const planKey = tierToPlanKey(tier);
+        const price = await resolvePriceByLookupKey(planKey);
+        console.log(`✅ Using price ${price.id} for tier ${tier} via lookup_key`);
 
-        if (prices.data.length === 0) {
-          throw new Error(
-            `No active prices found for product ${tierConfig.stripeProductId}`,
-          );
-        }
+        // Generate idempotency key for checkout session creation
+        // Use combination of user ID, tier, and timestamp (rounded to hour) for reasonable retry window
+        const idempotencyKey = `checkout_${user.id}_${tier}_${Math.floor(Date.now() / 3600000)}`;
+        console.log(`🔑 Using idempotency key: ${idempotencyKey}`);
 
         const session = await stripe.checkout.sessions.create({
           customer: customerId,
@@ -2973,7 +2993,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           mode: "subscription",
           line_items: [
             {
-              price: prices.data[0].id, // Use the first active price
+              price: price.id, // Use the resolved price ID
               quantity: 1,
             },
           ],
@@ -2984,6 +3004,8 @@ export async function registerRoutes(app: any): Promise<Server> {
             tier: tier,
             productId: tierConfig.stripeProductId,
           },
+        }, {
+          idempotencyKey: idempotencyKey,
         });
 
         res.json({
@@ -3374,39 +3396,22 @@ export async function registerRoutes(app: any): Promise<Server> {
       console.log("Processing...");
       console.log("Processing...");
 
-      // Verify the price from Stripe
-      let priceToUse = 'price_1Rt2ZhCp6pJe31oC6uMZuOev';
+      // Resolve revision price using lookup_key
+      let priceToUse: string;
       try {
-        const priceInfo = await stripe.prices.retrieve(priceToUse);
-        console.log("Stripe price verification:", {
-          id: priceInfo.id,
-          unit_amount: priceInfo.unit_amount,
-          currency: priceInfo.currency,
-          product: priceInfo.product,
-          active: priceInfo.active
-        });
+        const revisionPrice = await resolvePriceByLookupKey('revision_payment');
+        priceToUse = revisionPrice.id;
+        console.log(`✅ Using revision price ${priceToUse} via lookup_key`);
         
-        // If this price is not $5, let's find the correct one
-        if (priceInfo.unit_amount !== 500) {
-          console.log("Price amount mismatch. Looking for correct $5 price...");
-          const prices = await stripe.prices.list({
-            product: 'prod_Sofv7gScQiz672',
-            active: true
-          });
-          console.log("All prices for product:", prices.data.map(p => ({
-            id: p.id,
-            unit_amount: p.unit_amount,
-            currency: p.currency
-          })));
-          
-          const correctPrice = prices.data.find(p => p.unit_amount === 500);
-          if (correctPrice) {
-            priceToUse = correctPrice.id;
-            console.log("Processing...");
-          }
+        // Verify it's the expected amount ($5)
+        if (revisionPrice.unit_amount !== 500) {
+          console.warn(`⚠️ Revision price amount is ${revisionPrice.unit_amount} cents, expected 500`);
         }
       } catch (error) {
-        console.error("Error verifying price:", error);
+        console.error("Error resolving revision price:", error);
+        // Fallback to hard-coded price as last resort
+        priceToUse = 'price_1Rt2ZhCp6pJe31oC6uMZuOev';
+        console.warn("⚠️ Using fallback hard-coded price ID");
       }
 
       // Convert to number if it's a string
@@ -3455,6 +3460,11 @@ export async function registerRoutes(app: any): Promise<Server> {
         ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
         : "http://localhost:5000";
 
+      // Generate idempotency key for revision payment
+      // Use combination of project ID and timestamp (rounded to hour) for retry window
+      const idempotencyKey = `revision_${numericProjectId}_${Math.floor(Date.now() / 3600000)}`;
+      console.log(`🔑 Using idempotency key: ${idempotencyKey}`);
+
       // Create Stripe checkout session for revision payment
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -3472,6 +3482,8 @@ export async function registerRoutes(app: any): Promise<Server> {
           userId: req.user!.id,
           type: 'revision_payment',
         },
+      }, {
+        idempotencyKey: idempotencyKey,
       });
 
       // Store revision payment record
