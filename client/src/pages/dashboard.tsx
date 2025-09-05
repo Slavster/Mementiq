@@ -838,9 +838,23 @@ export default function DashboardPage() {
                       <Button
                         onClick={async () => {
                           try {
+                            // Get auth token first
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session?.access_token) {
+                              toast({
+                                title: "Authentication Required",
+                                description: "Please sign in to manage your subscription",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+
                             const response = await fetch('/api/subscription/create-portal-session', {
                               method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session.access_token}`
+                              },
                               credentials: 'include',
                             });
                             const data = await response.json();
