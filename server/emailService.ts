@@ -3,6 +3,24 @@ import { getAppBaseUrl, getDashboardUrl, getProjectUrl } from "./config/appUrl.j
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Determine sender email based on environment
+const getFromEmail = (): string => {
+  // Check if we're in production (deployed on Replit or with NODE_ENV=production)
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                       process.env.REPLIT_DEPLOYMENT === '1' ||
+                       process.env.PRODUCTION_URL;
+  
+  if (isProduction) {
+    // Use production email with verified domain
+    console.log('📧 Using production email sender: support@mail.mementiq.co');
+    return "Mementiq <support@mail.mementiq.co>";
+  } else {
+    // Use Resend test email for development
+    console.log('📧 Using development email sender: onboarding@resend.dev');
+    return "Mementiq <onboarding@resend.dev>";
+  }
+};
+
 export interface EmailTemplate {
   to: string;
   subject: string;
@@ -12,19 +30,30 @@ export interface EmailTemplate {
 export class EmailService {
   async sendEmail(template: EmailTemplate): Promise<void> {
     try {
+      const fromEmail = getFromEmail();
       const { data, error } = await resend.emails.send({
-        from: "Mementiq <onboarding@resend.dev>",
+        from: fromEmail,
         to: template.to,
         subject: template.subject,
         html: template.html,
       });
 
       if (error) {
-        console.error("Email sending error:", error);
+        console.error("❌ Email sending error:", error);
+        console.error("Failed email details:", {
+          from: fromEmail,
+          to: template.to,
+          subject: template.subject,
+          apiKeyExists: !!process.env.RESEND_API_KEY,
+          apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10)
+        });
         throw new Error(`Failed to send email: ${error.message}`);
       }
 
-      console.log("Email sent successfully:", data?.id);
+      console.log(`✅ Email sent successfully! ID: ${data?.id}`);
+      console.log(`   From: ${fromEmail}`);
+      console.log(`   To: ${template.to}`);
+      console.log(`   Subject: ${template.subject}`);
     } catch (error) {
       console.error("Email service error:", error);
       throw error;
