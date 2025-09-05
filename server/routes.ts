@@ -3009,6 +3009,52 @@ export async function registerRoutes(app: any): Promise<Server> {
     },
   );
 
+  // Create Stripe customer portal session for subscription management
+  router.post(
+    "/api/subscription/create-portal-session",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const user = await storage.getUser(req.user!.id);
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: "User not found",
+          });
+        }
+
+        if (!user.stripeCustomerId) {
+          return res.status(400).json({
+            success: false,
+            message: "No Stripe customer found for this user",
+          });
+        }
+
+        // Create a Stripe customer portal session
+        // This will use the appropriate environment (test/live) based on your STRIPE_SECRET_KEY
+        const baseUrl = getAppBaseUrl();
+        const session = await stripe.billingPortal.sessions.create({
+          customer: user.stripeCustomerId,
+          return_url: `${baseUrl}/dashboard`,
+        });
+
+        console.log(`✅ Customer portal session created for user ${user.id}`);
+        console.log(`Portal URL: ${session.url}`);
+
+        res.json({
+          success: true,
+          portalUrl: session.url,
+        });
+      } catch (error) {
+        console.error("Create customer portal session error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to create customer portal session",
+        });
+      }
+    },
+  );
+
   // Project Management Routes
 
   // Get user's projects

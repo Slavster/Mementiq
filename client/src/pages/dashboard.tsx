@@ -836,12 +836,33 @@ export default function DashboardPage() {
                   {subscription && (
                     <div className="mt-2">
                       <Button
-                        onClick={() =>
-                          window.open(
-                            "https://billing.stripe.com/p/login/test_4gMdR81Z2fYr6m9aOd6wE00",
-                            "_blank",
-                          )
-                        }
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/subscription/create-portal-session', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                            });
+                            const data = await response.json();
+                            if (data.success && data.portalUrl) {
+                              window.open(data.portalUrl, '_blank');
+                            } else {
+                              console.error('Failed to create portal session:', data.message);
+                              toast({
+                                title: "Error",
+                                description: data.message || "Failed to open billing portal",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Error creating portal session:', error);
+                            toast({
+                              title: "Error",
+                              description: "Failed to open billing portal",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
                         variant="outline"
                         className="bg-charcoal/20 border-gray-600 text-light hover:bg-charcoal/40 hover:border-accent h-8"
                       >
