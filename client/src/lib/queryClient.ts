@@ -4,14 +4,25 @@ import { supabase } from './supabase';
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let message;
+    
+    // Check content type to determine how to parse
+    const contentType = res.headers.get('content-type');
+    
     try {
-      // Try to parse as JSON first for structured errors
-      const errorData = await res.json();
-      message = errorData.message || errorData.error || JSON.stringify(errorData);
-    } catch {
-      // Fallback to text if JSON parsing fails
-      message = await res.text() || res.statusText;
+      if (contentType && contentType.includes('application/json')) {
+        // Parse as JSON
+        const errorData = await res.json();
+        message = errorData.message || errorData.error || JSON.stringify(errorData);
+      } else {
+        // Parse as text
+        message = await res.text() || res.statusText;
+      }
+    } catch (e) {
+      // If parsing fails entirely, use status text
+      console.error("Error parsing response:", e);
+      message = res.statusText || `HTTP ${res.status} Error`;
     }
+    
     throw new Error(`${res.status}: ${message}`);
   }
 }

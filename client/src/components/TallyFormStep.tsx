@@ -74,13 +74,24 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
       tallySubmissionId: string;
       submissionData: any;
     }) => {
-      return apiRequest(
-        "POST",
-        `/api/projects/${projectId}/tally-submission`,
-        data,
-      );
+      console.log("Attempting to save Tally submission to database:", data);
+      
+      try {
+        const response = await apiRequest(
+          "POST",
+          `/api/projects/${projectId}/tally-submission`,
+          data,
+        );
+        console.log("Submission saved successfully:", response);
+        return response;
+      } catch (error) {
+        console.error("API request failed:", error);
+        // Re-throw to trigger onError
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log("Submission mutation successful:", response);
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({
         queryKey: [`/api/projects/${projectId}/tally-submission`],
@@ -88,15 +99,27 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
 
       // Call onFormComplete to automatically close dialog and move to next step
       if (onFormComplete) {
+        console.log("Calling onFormComplete to move to next step");
         onFormComplete();
       }
     },
     onError: (error: any) => {
-      console.error("Form submission error:", error);
+      console.error("Form submission error details:", {
+        error: error,
+        message: error.message,
+        response: error.response,
+        data: error.data
+      });
+      
+      // More descriptive error message
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          "Failed to record form submission. Please try again.";
+      
       toast({
         variant: "destructive",
         title: "Submission Failed",
-        description: error.message || "Failed to record form submission",
+        description: errorMessage,
       });
     },
   });
@@ -112,36 +135,57 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
 
     // Listen for messages from Tally iframe
     const handleMessage = (event: MessageEvent) => {
+      // Log all messages for debugging in production
+      console.log("Message received from:", event.origin, "Data:", event.data);
+      
       // Only accept messages from Tally
       if (!event.origin.includes("tally.so")) {
         return;
       }
 
       const data = event.data;
-      console.log("Message received from Tally:", data);
+      console.log("Tally message received:", data);
 
       // Handle Tally form submission - check for various possible event types
+      // Also check for Tally's completion event format
       if (
         data.type === "tally_form_submission" ||
         data.type === "form_submission" ||
         (data.payload && data.payload.type === "form_submission") ||
-        data.includes?.("Tally.FormSubmitted")
+        (typeof data === "string" && data.includes && data.includes("Tally.FormSubmitted")) ||
+        data.event === "Tally.FormSubmitted" ||
+        (data.event && data.event.includes && data.event.includes("FormSubmitted"))
       ) {
         console.log("Tally form submission detected:", data);
 
         // Parse the data if it's a string
         let parsedData = data;
-        if (typeof data === "string" && data.includes("Tally.FormSubmitted")) {
+        if (typeof data === "string") {
           try {
-            parsedData = JSON.parse(data).payload;
+            // Try to parse as JSON
+            if (data.includes("Tally.FormSubmitted")) {
+              parsedData = JSON.parse(data);
+              if (parsedData.payload) {
+                parsedData = parsedData.payload;
+              }
+            } else {
+              parsedData = JSON.parse(data);
+            }
           } catch (e) {
-            console.error("Failed to parse Tally submission data:", e);
-            return;
+            console.error("Failed to parse Tally submission data as JSON:", e);
+            // If parsing fails, use the data as-is
+            parsedData = { submissionId: `tally_${Date.now()}_${projectId}`, data: data };
           }
         }
 
+        // Extract submission data from various possible structures
         const submissionData =
-          parsedData.payload || parsedData.submission || parsedData;
+          parsedData.payload || 
+          parsedData.submission || 
+          parsedData.data ||
+          parsedData;
+
+        console.log("Processed submission data:", submissionData);
 
         // Record the submission in our database with latest submission ID
         recordSubmissionMutation.mutate({
@@ -149,6 +193,8 @@ const TallyFormStep: React.FC<TallyFormStepProps> = ({
             submissionData.submissionId ||
             submissionData.responseId ||
             submissionData.id ||
+            parsedData.submissionId ||
+            parsedData.responseId ||
             `tally_${Date.now()}_${projectId}`,
           submissionData: submissionData,
         });
