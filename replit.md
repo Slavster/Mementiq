@@ -1,7 +1,7 @@
 # replit.md
 
 ## Overview
-Mementiq is a full-stack web application serving as a professional video editing services website. It functions as a landing page and lead generation platform, offering subscription-based pricing with integrated email capture. Its core purpose is to provide a comprehensive platform for users to manage video projects, track subscription usage, and seamlessly interact with video editing services.
+Mementiq is a full-stack web application designed as a professional video editing services platform. It serves as a landing page and lead generation tool, offering subscription-based pricing with integrated email capture. Its primary purpose is to enable users to manage video projects, track subscription usage, and interact seamlessly with video editing services.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -11,7 +11,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 
 ### UI/UX Decisions
 - **Color Scheme**: Emphasizes cyan (hsl(180, 85%, 55%)) with no blue. Uses pink for certain status indicators, yellow for hover states, and black backgrounds with colored borders and text for status badges.
-- **Components**: Utilizes Shadcn/ui built on Radix UI (streamlined to 18 active components, 29 unused components removed for optimal bundle size).
+- **Components**: Utilizes Shadcn/ui built on Radix UI.
 - **Styling**: Tailwind CSS with custom theming and dark mode.
 
 ### Technical Implementation
@@ -25,21 +25,21 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 
 ### Feature Specifications
 - **User Authentication**: Supabase Auth (email/password, Google social login, JWT).
-- **Subscription Management**: Stripe integration (three-tier model: Creative Spark 1 video/month, Consistency Club 4 videos/month, Growth Accelerator 8 videos/month, usage tracking, project creation limits).
+- **Subscription Management**: Stripe integration (three-tier model with usage tracking and project creation limits).
 - **Project Management Dashboard**: Comprehensive project lifecycle management (`draft`, `awaiting instructions`, `edit in progress`, `video is ready`, `complete`, `revision in progress`), with automatic status updates.
-- **Video & Photo Upload System**: Frame.io V4 API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Frame.io folders are created only upon "New Video Request" and enforce a maximum 2-level hierarchy. Features a centralized, automatically refreshed OAuth token system for Frame.io V4 API.
+- **Video & Photo Upload System**: Frame.io V4 API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Features a centralized, automatically refreshed OAuth token system.
 - **Tally Form Integration**: Mandatory for editing instructions.
 - **Video Delivery Detection**: Automatic background service detects new video uploads, transitions projects to "Video is Ready", and sends notifications.
-- **Public Share Creation**: Frame.io V4 public share system with intelligent share reuse. Share links are generated ONLY once during "Video is Ready" stage and reused throughout the project lifecycle. Share links expire after 30 days.
-- **Email Capture**: Comprehensive lead generation system with IP address tracking, geolocation data (country, region, city, timezone), duplicate prevention across users and email_signups tables, and enhanced email format validation with typo detection.
+- **Public Share Creation**: Frame.io V4 public share system with intelligent share reuse. Share links are generated once during "Video is Ready" and expire after 30 days.
+- **Email Capture**: Comprehensive lead generation system with IP address tracking, geolocation data, duplicate prevention, and enhanced email format validation.
 - **Revision Payment Flow**: Popup-based payment via Stripe with immediate UI feedback and project status updates.
-- **Revision Instructions Interface**: 4-step workflow integrated into video viewing stage: Video Review (Frame.io comments), Optional Footage Upload, Submit to Editor, Video Ready (placeholder).
-- **Trello Integration**: Workflow automation for creating and managing Trello cards for project tracking. Includes initial project cards, revision cards, editor assignment inheritance, and status updates (one-way communication from app to Trello). Subscription tiers are labeled with color-coded labels.
+- **Revision Instructions Interface**: 4-step workflow integrated into video viewing stage.
+- **Trello Integration**: Workflow automation for creating and managing Trello cards for project tracking, including initial project cards, revision cards, editor assignment inheritance, and status updates.
 
 ### System Design
 - **Database Schema**: Includes `users`, `email_signups`, `projects`, `project_files`, `photo_files`, `project_status_log`, `revision_payments`, `trello_cards`, and `trello_config`.
 - **API Design**: Share link retrieval endpoint checks for existing project-level share link first.
-- **Frame.io Integration**: Uses V4 API exclusively with OAuth authentication. Legacy V2/V3 API service (`frameioService.ts`) removed in favor of `frameioV4Service.ts` and `frameioUpload.ts`.
+- **Frame.io Integration**: Uses V4 API exclusively with OAuth authentication.
 
 ## External Dependencies
 
@@ -53,158 +53,3 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **Payment Processing**: `Stripe`.
 - **Video & Photo Hosting/Upload**: `Frame.io V4 API` via `frameioV4Service.ts` and `frameioUpload.ts`.
 - **Object Storage (Internal)**: `@replit/object-storage` SDK.
-
-## Recent Changes
-
-### Video Playback Reliability Fix (Sep 1, 2025)
-Successfully resolved video playback reliability issues across all browsers and devices:
-
-**Problem Identified**:
-- Videos served through API endpoint `/api/assets/Videos/` caused reliability issues
-- API sometimes returned JSON errors instead of video content
-- Filenames with spaces (e.g., "Conference Interviews.mp4") caused additional problems
-- Browser video players couldn't handle improper MIME types or missing byte-range support
-
-**Solution Implemented**:
-1. **Static File Serving**: Migrated all portfolio videos from Object Storage API to static file serving
-   - Created `/client/public/videos/` directory for video assets
-   - Downloaded and renamed videos with kebab-case naming convention
-   - Updated portfolio component to use static URLs (`/videos/` instead of `/api/assets/Videos/`)
-
-2. **Video Files Migrated**:
-   - `travel-video.mp4` (25MB) - Travel Vlog Magic
-   - `coaching-ad.mp4` (31MB) - Coaching Ad
-   - `conference-interviews.mp4` (45MB) - Captivating Interviews
-   - `event-promo.mp4` (26MB) - Event Highlights
-   - `product-ad.mp4` (6MB) - Product Showcase
-
-3. **Server Configuration Enhanced**:
-   - Added proper video MIME types (`video/mp4`, `video/webm`)
-   - Enabled byte-range requests with `Accept-Ranges: bytes` header
-   - Set appropriate cache headers for video content (1 year cache)
-   - Ensured production server properly serves static video files
-
-**Benefits**:
-- Eliminated API-related failures and 500 errors
-- Improved video loading speed with direct static file serving
-- Better browser compatibility with proper MIME types
-- Enhanced streaming support with byte-range requests
-- Reduced server load by bypassing API processing
-
-### Safe Workaround Deployment Configuration (Aug 28, 2025)
-Analyzed and improved deployment configuration following safe workaround principles:
-
-**Critical Analysis Findings**:
-1. **Current Workarounds**: Build process bypasses TypeScript compilation using tsx runtime wrapper
-2. **Security Gaps**: Missing helmet, compression, rate limiting middleware
-3. **Production Readiness**: No health check endpoint, graceful shutdown, or proper port configuration
-4. **Cache Strategy**: Missing differentiated cache headers for static assets
-
-**Improvements Implemented**:
-1. **Build System**:
-   - Updated `custom-build.sh` with clean → vite build → tsc → atomic copy workflow
-   - Added automatic source map removal from production builds
-   - Created tsx-based wrapper for TypeScript compatibility without full compilation
-
-2. **Production Server** (`server/production.ts`):
-   - Added security headers (X-Content-Type-Options, X-Frame-Options, etc.)
-   - Implemented `/healthz` endpoint for deployment monitoring
-   - Added graceful shutdown handling for SIGTERM/SIGINT
-   - Configured proper cache headers (long-cache for hashed assets, no-cache for HTML)
-   - Uses `process.env.PORT` with fallback to 5000
-
-3. **TypeScript Configuration**:
-   - Updated `tsconfig.production.json` to exclude client code and vite.ts
-   - Configured for ESNext module output without source maps
-   - Added proper module resolution for production builds
-
-4. **Deployment Structure**:
-   - Build outputs to `server/public/` for static assets
-   - Production server wrapper at `dist/server.js`
-   - Start script: `NODE_ENV=production node dist/server.js`
-
-**Status**: Production deployment configuration follows safe workaround approach while maintaining TypeScript protection file restrictions. System ready for deployment with improved security, monitoring, and performance features.
-
-### Previous: ES Module Deployment Compatibility Complete (Aug 28, 2025)
-Successfully resolved ES module syntax errors blocking deployment:
-
-**Major Achievements**:
-- Converted all CommonJS require() statements to ES module imports across build scripts
-- Updated TypeScript compilation to generate ES module compatible code
-- Fixed package.json "type": "module" compatibility issues
-- Deployment build process now generates proper ES module syntax
-
-### Previous: Deployment TypeScript Fixes Complete (Aug 28, 2025)
-Successfully resolved critical TypeScript compilation errors preventing deployment:
-
-**Major Achievements**:
-- Reduced TypeScript errors from ~100 to ~15 remaining (96% improvement)
-- Fixed all critical deployment-blocking issues including Express type definitions, missing service methods, and authentication middleware
-- Application runs successfully with enhanced type safety
-
-**Key Fixes Applied**:
-1. **Express Route Handler Types**: 
-   - Applied comprehensive AppRequest/AppResponse type fixes across all route handlers
-   - Fixed implicit 'any' parameter types with mass replacement techniques
-   - Resolved missing NextFunction middleware parameter typing
-
-2. **Service Method & Authentication**: 
-   - Replaced missing updateProjectCard method with createProjectCard in TrelloAutomationService
-   - Fixed authenticateToken function references by using req.user directly
-   - Added proper authentication flow for Frame.io sync endpoints
-
-3. **Error Handling & Type Guards**: 
-   - Applied systematic error instanceof Error type guards throughout codebase
-   - Fixed all "error is of type 'unknown'" TypeScript errors with mass replacement
-   - Enhanced error message handling for deployment environments
-
-4. **Stripe & Property Access**: 
-   - Fixed Stripe subscription property access with proper type casting
-   - Resolved Frame.io API property access issues using type assertions
-   - Added type guards for complex object property access
-
-5. **Schema & Database Compatibility**: 
-   - Fixed uploadDate property issues by commenting out schema-incompatible fields
-   - Removed redundant originalFilename field from project_files table (Sep 3, 2025)
-   - Resolved object storage BytesResult type access issues
-
-**Final Status**: ✅ **DEPLOYMENT READY** - Application restored and running successfully after fixing corrupted routes.ts file. All critical Express type errors, syntax issues, and deployment-blocking problems resolved.
-
-**Deployment Solution Applied**: Created custom build process that bypasses TypeScript checking for protected `server/vite.ts` file. Production build completes successfully with all assets generated. The remaining TypeScript warnings in protected files do not affect runtime functionality or deployment capability.
-
-**Deployment Workaround Scripts Created**:
-- `custom-build.sh` - Main deployment script using `tsc --noEmit || vite build` pattern
-- `deploy-build.sh` - Alternative script that filters protected file errors
-- `deployment-build.mjs` - ES module build script that bypasses TypeScript entirely
-- All scripts successfully generate production assets despite protected file restrictions
-
-**Express Type Fixes Applied**:
-- Fixed Express import to use default import instead of named import
-- Created Express app instance with correct typing using type assertions
-- Applied comprehensive type casting for Request/Response properties
-- All Express middleware and routing functionality working correctly
-
-**Deployment Readiness**: Application successfully compiles and runs with enhanced type safety. Critical fixes include Express typing, service methods, authentication middleware, error handling, and database compatibility. Remaining ~10 errors from protected Vite configuration file (cannot be edited) and ~5 minor schema property warnings that do not prevent deployment or affect runtime functionality.
-
-**Application Status**: ✅ Running successfully on port 5000 with full functionality including Frame.io integration, Trello automation, video streaming, and user authentication.
-
-### Deployment Configuration Complete (Aug 28, 2025)
-Successfully resolved all deployment requirements identified by the security scan and deployment error analysis:
-
-**Deployment Fixes Applied**:
-1. **Missing 'start' Script**: Created `start.js` executable production start script with fallback capability
-2. **Build Command Issues**: Created `custom-build.sh` executable script that references `deployment-build.cjs` (renamed for CommonJS compatibility)
-3. **Script Permissions**: Applied proper executable permissions to all deployment scripts
-4. **Production Environment**: Configured NODE_ENV settings and graceful shutdown handling
-
-**Deployment Files Created**:
-- `custom-build.sh` - Main build script (executable)
-- `deployment-build.cjs` - Build logic (renamed from .js for ES module compatibility)
-- `start.js` - Production start script with build artifact detection and fallback
-- `DEPLOYMENT_READY.md` - Complete deployment documentation
-
-**Build Process Verification**: ✅ Build command executes successfully, generating:
-- Client assets in `dist/public/` (CSS, JS bundles, static files)  
-- Server entry point at `dist/server.js` (production startup script)
-
-**Production Readiness**: Application is fully configured for deployment with proper build and start commands, executable scripts, and production environment handling.
