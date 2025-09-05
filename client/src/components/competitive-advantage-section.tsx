@@ -64,8 +64,8 @@ export default function CompetitiveAdvantageSection() {
             {/* Agencies Card */}
             <Card className="bg-red-900/20 border-2 border-red-800/50 rounded-2xl hover:border-red-600/70 transition-all duration-300">
               <CardContent className="p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-red-800/30 p-3 rounded-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 text-center sm:text-left">
+                  <div className="bg-red-800/30 p-3 rounded-xl mx-auto sm:mx-0 w-fit">
                     <Building className="h-8 w-8 text-red-400" />
                   </div>
                   <h3 className="text-2xl font-semibold text-light">
@@ -86,8 +86,8 @@ export default function CompetitiveAdvantageSection() {
             {/* Freelancers Card */}
             <Card className="bg-amber-900/25 border-2 border-amber-700/60 rounded-2xl hover:border-amber-500/80 transition-all duration-300">
               <CardContent className="p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-amber-700/40 p-3 rounded-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 text-center sm:text-left">
+                  <div className="bg-amber-700/40 p-3 rounded-xl mx-auto sm:mx-0 w-fit">
                     <User className="h-8 w-8 text-amber-300" />
                   </div>
                   <h3 className="text-2xl font-semibold text-light">
