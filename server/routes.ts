@@ -3483,12 +3483,10 @@ export async function registerRoutes(app: any): Promise<Server> {
         });
       }
 
-      // Use same baseUrl construction as subscription flow
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-        : process.env.REPL_SLUG
-        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-        : "http://localhost:5000";
+      // Use centralized URL configuration (same as subscription flow)
+      const baseUrl = getAppBaseUrl();
+      console.log(`🔗 Revision payment will redirect to: ${baseUrl}`);
+      console.log(`   Environment: NODE_ENV=${process.env.NODE_ENV}, PRODUCTION_URL=${process.env.PRODUCTION_URL}`);
 
       // Generate idempotency key for revision payment
       // Use combination of project ID and timestamp (rounded to hour) for retry window
