@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface ConsentPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onAccepted: () => void;
+  redirectToSubscription?: boolean;
 }
 
 interface ConsentData {
@@ -20,6 +22,7 @@ export function ConsentPopup({
   isOpen,
   onClose,
   onAccepted,
+  redirectToSubscription = false,
 }: ConsentPopupProps) {
   const [tosAccepted, setTosAccepted] = useState(false);
   const [ppAccepted, setPpAccepted] = useState(false);
@@ -27,6 +30,7 @@ export function ConsentPopup({
   const [rdConsent, setRdConsent] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Reset form state when popup opens
   useEffect(() => {
@@ -47,13 +51,22 @@ export function ConsentPopup({
     onSuccess: () => {
       toast({
         title: "Consent Recorded",
-        description:
-          "Your terms acceptance and privacy preferences have been saved.",
+        description: redirectToSubscription 
+          ? "Your terms acceptance and privacy preferences have been saved. You'll now be taken to choose your plan."
+          : "Your terms acceptance and privacy preferences have been saved.",
       });
       // Invalidate user query to refresh ToS acceptance status
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      // Close popup and proceed immediately
-      onAccepted();
+      
+      // Redirect to subscription for new users, or continue with normal flow
+      if (redirectToSubscription) {
+        setTimeout(() => {
+          setLocation("/subscribe");
+        }, 1500); // Give user time to read the success message
+      } else {
+        // Close popup and proceed immediately
+        onAccepted();
+      }
     },
     onError: (error: any) => {
       toast({

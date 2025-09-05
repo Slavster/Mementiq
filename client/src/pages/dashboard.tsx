@@ -1767,10 +1767,16 @@ export default function DashboardPage() {
       <ConsentPopup
         isOpen={showConsentPopup}
         onClose={() => setShowConsentPopup(false)}
+        redirectToSubscription={!subscription?.hasActiveSubscription}
         onAccepted={() => {
           setShowConsentPopup(false);
-          // Immediately proceed to project creation - no need to wait for query refresh
-          setShowCreateForm(true);
+          // After consent is accepted, proceed with project creation only if they have subscription
+          if (canCreateProject()) {
+            setShowCreateForm(true);
+          } else if (!subscription?.hasActiveSubscription) {
+            // User will be redirected to subscription by the consent popup automatically
+            console.log("User will be redirected to subscription page after consent");
+          }
         }}
       />
     </div>
