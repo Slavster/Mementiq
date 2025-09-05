@@ -633,11 +633,11 @@ export default function DashboardPage() {
   const handleCreateProject = () => {
     // Debug logging to see what's being returned
     console.log('🔍 DEBUG: Backend user data:', backendUserData);
-    console.log('🔍 DEBUG: TosPpAccepted value:', backendUserData?.user?.tosPpAccepted);
-    console.log('🔍 DEBUG: TosPpAccepted type:', typeof backendUserData?.user?.tosPpAccepted);
+    console.log('🔍 DEBUG: TosPpAccepted value:', (backendUserData as any)?.user?.tosPpAccepted);
+    console.log('🔍 DEBUG: TosPpAccepted type:', typeof (backendUserData as any)?.user?.tosPpAccepted);
     
     // Check ToS/PP acceptance first
-    if (backendUserData?.user?.tosPpAccepted === null || !backendUserData?.user?.tosPpAccepted) {
+    if ((backendUserData as any)?.user?.tosPpAccepted === null || !(backendUserData as any)?.user?.tosPpAccepted) {
       console.log('🔍 DEBUG: Showing consent popup because ToS not accepted');
       setShowConsentPopup(true);
       return;
