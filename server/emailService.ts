@@ -1,22 +1,27 @@
 import { Resend } from "resend";
-import { getAppBaseUrl, getDashboardUrl, getProjectUrl } from "./config/appUrl.js";
+import {
+  getAppBaseUrl,
+  getDashboardUrl,
+  getProjectUrl,
+} from "./config/appUrl.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Determine sender email based on environment
 const getFromEmail = (): string => {
   // Check if we're in production (deployed on Replit or with NODE_ENV=production)
-  const isProduction = process.env.NODE_ENV === 'production' || 
-                       process.env.REPLIT_DEPLOYMENT === '1' ||
-                       process.env.PRODUCTION_URL;
-  
+  const isProduction =
+    process.env.NODE_ENV === "production" ||
+    process.env.REPLIT_DEPLOYMENT === "1" ||
+    process.env.PRODUCTION_URL;
+
   if (isProduction) {
     // Use production email with verified domain
-    console.log('📧 Using production email sender: support@mail.mementiq.co');
-    return "Mementiq <support@mail.mementiq.co>";
+    console.log("📧 Using production email sender: noreply@mail.mementiq.co");
+    return "Mementiq <noreply@mail.mementiq.co>";
   } else {
     // Use Resend test email for development
-    console.log('📧 Using development email sender: onboarding@resend.dev');
+    console.log("📧 Using development email sender: onboarding@resend.dev");
     return "Mementiq <onboarding@resend.dev>";
   }
 };
@@ -45,7 +50,7 @@ export class EmailService {
           to: template.to,
           subject: template.subject,
           apiKeyExists: !!process.env.RESEND_API_KEY,
-          apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10)
+          apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10),
         });
         throw new Error(`Failed to send email: ${error.message}`);
       }
