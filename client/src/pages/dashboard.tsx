@@ -630,7 +630,7 @@ export default function DashboardPage() {
     return true;
   };
 
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     // Debug logging to see what's being returned
     console.log('🔍 DEBUG: Backend user data:', backendUserData);
     console.log('🔍 DEBUG: TosPpAccepted value:', (backendUserData as any)?.user?.tosPpAccepted);
@@ -658,21 +658,45 @@ export default function DashboardPage() {
         subscription.hasActiveSubscription &&
         subscription.hasReachedLimit
       ) {
-        // Show upgrade popup for users who reached their limit (only if they have active subscription)
-        toast({
-          title: "Reached your limit? Upgrade your plan for more videos.",
-          description: `You've used all ${subscription.allowance} videos in your ${subscription.productName || subscription.tier} plan.`,
-          variant: "destructive",
-          action: (
-            <Button
-              size="sm"
-              onClick={() => setLocation("/subscribe")}
-              className="bg-pink-600 hover:bg-pink-700"
-            >
-              Upgrade Plan
-            </Button>
-          ),
-        });
+        // When limit is reached and user clicks Upgrade, open Stripe customer portal
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.access_token) {
+            toast({
+              title: "Authentication Required",
+              description: "Please sign in to manage your subscription",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const response = await fetch('/api/subscription/create-portal-session', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            credentials: 'include',
+          });
+          const data = await response.json();
+          if (data.success && data.portalUrl) {
+            window.location.href = data.portalUrl;
+          } else {
+            console.error('Failed to create portal session:', data.message);
+            toast({
+              title: "Error",
+              description: data.message || "Failed to open billing portal",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Error creating portal session:', error);
+          toast({
+            title: "Error",
+            description: "Failed to open billing portal",
+            variant: "destructive",
+          });
+        }
         return;
       }
       return;
@@ -926,17 +950,6 @@ export default function DashboardPage() {
                               ).toLocaleDateString()}
                             </p>
                           )}
-                          {subscription.hasActiveSubscription &&
-                            subscription.hasReachedLimit && (
-                              <Button
-                                size="sm"
-                                onClick={() => setLocation("/subscribe")}
-                                className="mt-1 bg-pink-600 hover:bg-pink-700"
-                              >
-                                <Crown className="h-3 w-3 mr-1" />
-                                Upgrade
-                              </Button>
-                            )}
                         </div>
                       </div>
                     ) : (
