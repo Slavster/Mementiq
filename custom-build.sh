@@ -28,6 +28,14 @@ if [ -d "dist/public" ]; then
     mkdir -p server
     cp -r dist/public server/
     
+    # Copy portfolio videos to server/public/videos for production
+    if [ -d "client/public/videos" ]; then
+        echo "📹 Copying portfolio videos..."
+        mkdir -p server/public/videos
+        cp -r client/public/videos/* server/public/videos/
+        echo "✅ Portfolio videos copied ($(ls -1 server/public/videos/*.mp4 2>/dev/null | wc -l) files)"
+    fi
+    
     # Remove source maps from production
     find server/public -name "*.map" -type f -delete
     

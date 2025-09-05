@@ -115,6 +115,24 @@ app.use((req: Request, res: Response, next: any) => {
     // Serve Object Storage assets
     app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
 
+    // Serve portfolio videos from client/public/videos
+    const videosPath = path.resolve(process.cwd(), 'client/public/videos');
+    if (fs.existsSync(videosPath)) {
+      app.use('/videos', express.static(videosPath, {
+        maxAge: '31536000000', // 1 year cache for videos
+        setHeaders: (res: any, filePath: string) => {
+          if (filePath.endsWith('.mp4')) {
+            res.setHeader('Content-Type', 'video/mp4');
+            res.setHeader('Accept-Ranges', 'bytes'); // Enable byte-range requests for video streaming
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        }
+      } as any));
+      console.log('✅ Portfolio videos served from:', videosPath);
+    } else {
+      console.warn('⚠️ Portfolio videos directory not found:', videosPath);
+    }
+
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
     // doesn't interfere with the other routes
