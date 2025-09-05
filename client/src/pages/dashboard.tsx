@@ -777,21 +777,14 @@ export default function DashboardPage() {
                 Welcome, {mappedUser.firstName}
               </span>
 
-              {subscription && (
-                <Button
-                  onClick={() =>
-                    window.open(
-                      "https://billing.stripe.com/p/login/test_4gMdR81Z2fYr6m9aOd6wE00",
-                      "_blank",
-                    )
-                  }
-                  variant="outline"
-                  className="border-2 border-accent text-accent px-6 py-2 font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Manage Subscription
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/privacy-settings")}
+                className="border-2 border-accent text-accent px-6 py-2 font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200"
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Data Privacy Settings
+              </Button>
               <Button
                 onClick={handleLogout}
                 variant="outline"
@@ -840,16 +833,23 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm text-gray-400">Email</p>
                   <p className="text-lg">{mappedUser.email}</p>
-                  <div className="mt-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setLocation("/privacy-settings")}
-                      className="bg-charcoal/20 border-gray-600 text-light hover:bg-charcoal/40 hover:border-accent h-8"
-                    >
-                      <Shield className="h-3 w-3 mr-2" />
-                      Data Privacy Settings
-                    </Button>
-                  </div>
+                  {subscription && (
+                    <div className="mt-2">
+                      <Button
+                        onClick={() =>
+                          window.open(
+                            "https://billing.stripe.com/p/login/test_4gMdR81Z2fYr6m9aOd6wE00",
+                            "_blank",
+                          )
+                        }
+                        variant="outline"
+                        className="bg-charcoal/20 border-gray-600 text-light hover:bg-charcoal/40 hover:border-accent h-8"
+                      >
+                        <Settings className="h-3 w-3 mr-2" />
+                        Manage Subscription
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Videos Created</p>
