@@ -133,12 +133,12 @@ async function startProductionServer() {
     // Content Security Policy with Google Fonts and external resources
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com https://tally.so https://*.tally.so",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com https://r2cdn.perplexity.ai",
-      "connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://*.supabase.co https://api.frame.io https://*.frame.io wss://*.supabase.co https://api.trello.com https://fonts.googleapis.com https://fonts.gstatic.com",
-      "frame-src https://js.stripe.com https://checkout.stripe.com https://*.frame.io",
+      "connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://*.supabase.co https://api.frame.io https://*.frame.io wss://*.supabase.co https://api.trello.com https://fonts.googleapis.com https://fonts.gstatic.com https://tally.so https://*.tally.so",
+      "frame-src https://js.stripe.com https://checkout.stripe.com https://*.frame.io https://tally.so https://*.tally.so",
       "media-src 'self' blob: https://*.frame.io https://*.frameio.com",
       "object-src 'none'",
       "base-uri 'self'",
