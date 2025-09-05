@@ -6,6 +6,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     // Get initial session
@@ -14,6 +15,8 @@ export function useAuth() {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      // Mark auth as ready after initial load
+      setIsReady(true)
     })
 
     // Listen for auth changes
@@ -35,6 +38,7 @@ export function useAuth() {
         setSession(null)
         setUser(null)
         setLoading(false)
+        setIsReady(true)
         // Redirect to auth page if not already there
         if (window.location.pathname !== '/auth') {
           window.location.href = '/auth'
@@ -46,6 +50,7 @@ export function useAuth() {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      setIsReady(true)
       
       // Handle OAuth redirects
       if (event === 'SIGNED_IN' && session && window.location.pathname === '/auth') {
@@ -61,5 +66,6 @@ export function useAuth() {
     session,
     loading,
     isAuthenticated: !!user,
+    isReady,
   }
 }
