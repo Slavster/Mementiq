@@ -1,4 +1,5 @@
 import { trelloService } from './trello.js';
+import { trelloWebhookService } from './trello-webhook.js';
 import { db } from '../db.js';
 import { trelloCards, trelloConfig, projects, users, tallyFormSubmissions } from '../../shared/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
@@ -397,7 +398,7 @@ export class TrelloAutomationService {
       const { project, user } = projectData[0];
       if (!user) return null;
 
-      // Find the original project card to get assigned editor
+      // Find the original project card and refresh editor assignment from Trello
       let assignedEditorId: string | null = null;
       const originalCards = await db
         .select()
@@ -410,7 +411,32 @@ export class TrelloAutomationService {
         );
 
       if (originalCards.length > 0) {
-        assignedEditorId = originalCards[0].assignedEditorId;
+        const originalCard = originalCards[0];
+        
+        // Refresh editor assignment from Trello API to ensure we have current data
+        console.log(`🔄 Refreshing editor assignment from Trello for card ${originalCard.cardId}`);
+        try {
+          const currentMembers = await trelloWebhookService.getCardMembers(originalCard.cardId);
+          const memberIds = currentMembers.map((member: any) => member.id);
+          
+          // Update database with current assignment
+          assignedEditorId = memberIds.length > 0 ? memberIds[0] : null;
+          
+          if (assignedEditorId !== originalCard.assignedEditorId) {
+            // Update database to reflect current state
+            await db
+              .update(trelloCards)
+              .set({ assignedEditorId })
+              .where(eq(trelloCards.id, originalCard.id));
+            console.log(`✅ Updated editor assignment in database: ${assignedEditorId || 'none'}`);
+          }
+          
+          console.log(`📋 Current editor for parent card: ${assignedEditorId || 'none'}`);
+        } catch (error) {
+          console.error('⚠️ Failed to refresh editor assignment from Trello, using cached value:', error);
+          // Fall back to database value if API call fails
+          assignedEditorId = originalCard.assignedEditorId;
+        }
       }
 
       // Build Frame.io link for revision with triple fallback system
@@ -490,6 +516,9 @@ export class TrelloAutomationService {
       // Add assigned editor if we have one
       if (assignedEditorId) {
         cardCreateData.idMembers = [assignedEditorId];
+        console.log(`👤 Assigning revision card to editor: ${assignedEditorId}`);
+      } else {
+        console.log(`⚠️ No editor assigned to parent card, creating revision card without assignment`);
       }
 
       const card = await trelloService.createCard(cardCreateData);
