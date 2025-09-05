@@ -12,25 +12,42 @@ export default function PaymentSuccessPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
+  // Get payment type and project ID from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const paymentType = urlParams.get('type');
+  const projectId = urlParams.get('project_id');
+  const isRevisionPayment = paymentType === 'revision' && projectId;
+
   // Invalidate subscription status on success to refresh data
   useEffect(() => {
     console.log("💳 Payment success page - invalidating subscription queries");
     // Force refetch with longer stale time to ensure fresh data
     queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
     queryClient.refetchQueries({ queryKey: ["/api/subscription/status"] });
-  }, [queryClient]);
+    
+    // Also invalidate project data for revision payments
+    if (isRevisionPayment) {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    }
+  }, [queryClient, isRevisionPayment]);
 
-  // Auto-redirect to dashboard after a short delay if authenticated
+  // Auto-redirect based on payment type
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       const timer = setTimeout(() => {
         setIsRedirecting(true);
-        setLocation("/dashboard");
-      }, 3000); // 3-second delay to show success message
+        // For revision payments, redirect to the specific project
+        if (isRevisionPayment) {
+          setLocation(`/dashboard?project=${projectId}`);
+        } else {
+          // For subscription payments, redirect to dashboard
+          setLocation("/dashboard");
+        }
+      }, isRevisionPayment ? 2000 : 3000); // Shorter delay for revision payments
 
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, authLoading, setLocation]);
+  }, [isAuthenticated, authLoading, setLocation, isRevisionPayment, projectId]);
 
   // If not authenticated, redirect to auth page
   useEffect(() => {
@@ -47,7 +64,8 @@ export default function PaymentSuccessPage() {
           <CardContent className="p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-accent" />
             <p className="text-gray-300">
-              {authLoading ? "Verifying your account..." : "Redirecting to dashboard..."}
+              {authLoading ? "Verifying your account..." : 
+               isRevisionPayment ? "Redirecting to your project..." : "Redirecting to dashboard..."}
             </p>
           </CardContent>
         </Card>
@@ -55,6 +73,26 @@ export default function PaymentSuccessPage() {
     );
   }
 
+  // Show different content for revision payments
+  if (isRevisionPayment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-black/20 backdrop-blur-xl border-gray-800/30 text-white">
+          <CardContent className="p-8 text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-green-400" />
+            </div>
+            <h2 className="text-2xl font-semibold mb-2">Payment Successful!</h2>
+            <p className="text-gray-300">
+              Redirecting you to your project to finalize revision instructions...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Original subscription payment success content
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-black/20 backdrop-blur-xl border-gray-800/30 text-white">
