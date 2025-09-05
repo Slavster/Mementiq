@@ -168,7 +168,7 @@ export default function DashboardPage() {
   // Track if URL parameters have been processed to prevent premature cleanup
   const hasProcessedParams = useRef(false);
 
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, isReady: authReady } = useAuth();
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -181,7 +181,7 @@ export default function DashboardPage() {
   // Get user projects - reasonable cache to improve performance
   const { data: projectsData, isLoading: projectsLoading, refetch: refetchProjects } = useQuery({
     queryKey: ["/api/projects"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && authReady, // Wait for auth to be ready
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchOnWindowFocus: false, // Reduce unnecessary refetches
   });
@@ -189,7 +189,7 @@ export default function DashboardPage() {
   // Get backend user data including ToS/PP acceptance status
   const { data: backendUserData, refetch: refetchUserData } = useQuery({
     queryKey: ["/api/auth/me"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && authReady, // Wait for auth to be ready
     staleTime: 0, // No caching - always fresh data for ToS checking
     refetchOnWindowFocus: false,
   });
@@ -438,7 +438,7 @@ export default function DashboardPage() {
     refetch: refetchSubscription,
   } = useQuery({
     queryKey: ["/api/subscription/status"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && authReady, // Wait for auth to be ready
     staleTime: 30 * 1000, // Cache for only 30 seconds to catch subscription changes
     refetchOnWindowFocus: true, // Allow refetch on window focus for subscription updates
     refetchInterval: 60 * 1000, // Poll every minute for subscription updates
@@ -714,18 +714,19 @@ export default function DashboardPage() {
     }
   };
 
-  // Only show loading screen for auth, let dashboard show with individual loading states
-  if (authLoading) {
+  // Show loading screen while auth is initializing or not ready
+  if (authLoading || !authReady) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <div className="text-white text-xl">Authenticating...</div>
+          <div className="text-white text-xl">Initializing...</div>
         </div>
       </div>
     );
   }
 
+  // Redirect if not authenticated after auth is ready
   if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
