@@ -2,6 +2,29 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 
+// Use Object Storage URLs in production for better performance and no size limits
+const isProduction = window.location.hostname === 'mementiq.co' || 
+                     window.location.hostname.includes('mementiq') ||
+                     window.location.hostname.includes('.replit.app');
+
+// Map local video names to Object Storage paths
+const getVideoUrl = (localPath: string) => {
+  if (!isProduction) {
+    return localPath; // Use local videos in development
+  }
+  
+  // Map to Object Storage URLs for production
+  const videoMap: { [key: string]: string } = {
+    "/videos/travel-video.mp4": "/api/assets/EditingPortfolioAssets/Videos/Tu Lan Cave Final.mp4",
+    "/videos/coaching-ad.mp4": "/api/assets/EditingPortfolioAssets/Videos/Coaching Ad Final.mp4",
+    "/videos/conference-interviews.mp4": "/api/assets/EditingPortfolioAssets/Videos/Conference Interviews.mp4",
+    "/videos/event-promo.mp4": "/api/assets/EditingPortfolioAssets/Videos/Swap in the City Final.mp4",
+    "/videos/product-ad.mp4": "/api/assets/EditingPortfolioAssets/Videos/Sun n Sea-FINAL.mp4",
+  };
+  
+  return videoMap[localPath] || localPath;
+};
+
 const portfolioItems = [
   {
     id: 1,
@@ -11,7 +34,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/tu_lan_cover.jpg",
     alt: "Highlighting beautiful travel destinations and moments",
     category: "Travel Reel",
-    preview: "/videos/travel-video.mp4",
+    preview: getVideoUrl("/videos/travel-video.mp4"),
   },
   {
     id: 2,
@@ -21,7 +44,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/Coaching Ad Cover.png",
     alt: "Engaging ad reel for coaching services",
     category: "Services Ad",
-    preview: "/videos/coaching-ad.mp4",
+    preview: getVideoUrl("/videos/coaching-ad.mp4"),
   },
   {
     id: 3,
@@ -31,7 +54,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/conference cover.png",
     alt: "Conference Interviews",
     category: "Interview",
-    preview: "/videos/conference-interviews.mp4",
+    preview: getVideoUrl("/videos/conference-interviews.mp4"),
   },
   {
     id: 4,
@@ -41,7 +64,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/Swap_in_city_cover.png",
     alt: "Fun highlight reel of a clothing swap event",
     category: "Events Highlights",
-    preview: "/videos/event-promo.mp4",
+    preview: getVideoUrl("/videos/event-promo.mp4"),
   },
   {
     id: 5,
@@ -51,7 +74,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/Sun a wear cover.png",
     alt: "Product video ad",
     category: "Commercial",
-    preview: "/videos/product-ad.mp4",
+    preview: getVideoUrl("/videos/product-ad.mp4"),
   },
 ];
 
