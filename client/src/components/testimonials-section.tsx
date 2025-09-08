@@ -93,49 +93,51 @@ export default function TestimonialsSection() {
           </p>
         </div>
 
-        <div className="relative mx-8">
+        <div className="relative mx-2 sm:mx-8">
           <Button
             onClick={scrollLeft}
-            className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
+            className="absolute -left-1 sm:-left-4 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-2 sm:p-3 rounded-full shadow-xl backdrop-blur-sm"
             size="sm"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
           <Button
             onClick={scrollRight}
-            className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-3 rounded-full shadow-xl backdrop-blur-sm"
+            className="absolute -right-1 sm:-right-4 top-1/2 -translate-y-1/2 z-10 bg-dark-card/80 hover:bg-dark-card border border-gray-600 text-light p-2 sm:p-3 rounded-full shadow-xl backdrop-blur-sm"
             size="sm"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
           <div
             ref={scrollRef}
-            className="flex gap-6 overflow-x-auto pb-4"
+            className="flex gap-3 sm:gap-6 overflow-x-auto pb-4"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
             {testimonials.map((testimonial) => (
               <Card
                 key={testimonial.id}
-                className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 flex-shrink-0 w-80 h-96"
+                className="bg-dark-card border border-gray-700 rounded-xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-300 flex-shrink-0 w-72 sm:w-80 min-h-[400px] sm:h-96"
               >
-                <CardContent className="p-6 h-full flex flex-col justify-center">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex text-accent">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-current" />
-                      ))}
+                <CardContent className="p-4 sm:p-6 h-full flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex text-accent">
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Star key={i} className="h-4 w-4 fill-current" />
+                        ))}
+                      </div>
                     </div>
+                    <p className="text-charcoal mb-4 italic text-sm sm:text-sm leading-relaxed">
+                      "{testimonial.content}"
+                    </p>
                   </div>
-                  <p className="text-charcoal mb-4 italic text-sm leading-relaxed">
-                    "{testimonial.content}"
-                  </p>
-                  <div className="flex items-center">
+                  <div className="flex items-center mt-auto">
                     <img
                       src={testimonial.avatar}
                       alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover mr-3 border-2 border-primary/30"
+                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover mr-3 border-2 border-primary/30 flex-shrink-0"
                     />
                     <div>
                       <p className="font-semibold text-light text-sm">
@@ -144,7 +146,7 @@ export default function TestimonialsSection() {
                       <p className="text-xs text-charcoal">
                         {testimonial.title}
                       </p>
-                      <p className="text-lg">{testimonial.country}</p>
+                      <p className="text-base sm:text-lg">{testimonial.country}</p>
                     </div>
                   </div>
                 </CardContent>
