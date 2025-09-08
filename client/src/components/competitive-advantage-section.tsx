@@ -60,15 +60,15 @@ export default function CompetitiveAdvantageSection() {
           <h3 className="text-3xl font-bold text-light text-center mb-8">
             The Competition
           </h3>
-          <div className="grid grid-cols-2 gap-4 md:gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 max-w-6xl mx-auto">
             {/* Agencies Card */}
             <Card className="bg-red-900/20 border-2 border-red-800/50 rounded-2xl hover:border-red-600/70 transition-all duration-300">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 md:p-8">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 text-center sm:text-left">
                   <div className="bg-red-800/30 p-3 rounded-xl mx-auto sm:mx-0 w-fit">
                     <Building className="h-8 w-8 text-red-400" />
                   </div>
-                  <h3 className="text-2xl font-semibold text-light">
+                  <h3 className="text-xl sm:text-2xl font-semibold text-light">
                     Agencies
                   </h3>
                 </div>
@@ -85,12 +85,12 @@ export default function CompetitiveAdvantageSection() {
 
             {/* Freelancers Card */}
             <Card className="bg-amber-900/25 border-2 border-amber-700/60 rounded-2xl hover:border-amber-500/80 transition-all duration-300">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 md:p-8">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 text-center sm:text-left">
                   <div className="bg-amber-700/40 p-3 rounded-xl mx-auto sm:mx-0 w-fit">
                     <User className="h-8 w-8 text-amber-300" />
                   </div>
-                  <h3 className="text-2xl font-semibold text-light">
+                  <h3 className="text-xl sm:text-2xl font-semibold text-light">
                     Freelancers
                   </h3>
                 </div>
