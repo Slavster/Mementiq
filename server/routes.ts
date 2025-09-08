@@ -5734,7 +5734,10 @@ async function downloadAsset(
   if (searchPaths) {
     const paths = searchPaths.split(',').map(p => p.trim());
     for (const searchPath of paths) {
-      const fullPath = `${searchPath}/${assetPath}`;
+      // Remove leading slash from searchPath if present and trailing slash
+      const cleanSearchPath = searchPath.replace(/^\//, '').replace(/\/$/, '');
+      // Build the full path - searchPath already includes EditingPortfolioAssets
+      const fullPath = `${cleanSearchPath}/${assetPath}`;
       try {
         console.log(`Trying path with search path: ${fullPath}`);
         const bytesResult = await objectStorageClient.downloadAsBytes(fullPath);
