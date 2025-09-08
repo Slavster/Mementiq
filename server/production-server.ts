@@ -204,8 +204,16 @@ async function startProductionServer() {
     maxAge: 86400
   }));
 
-  // Body parsing
-  app.use(express.json({ limit: '10mb' }));
+  // Body parsing - exclude webhook endpoints that need raw bodies
+  app.use((req, res, next) => {
+    // Skip JSON parsing for webhook endpoints that need raw body for signature verification
+    if (req.path === '/api/webhooks/stripe' || 
+        req.path === '/api/webhooks/frameio' || 
+        req.path === '/api/trello/webhook') {
+      return next();
+    }
+    express.json({ limit: '10mb' })(req, res, next);
+  });
   app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
   // Session configuration removed - using JWT authentication via Supabase
