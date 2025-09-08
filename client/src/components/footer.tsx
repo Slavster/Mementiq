@@ -14,7 +14,7 @@ export default function Footer() {
   return (
     <footer className="bg-secondary text-white py-12 border-t border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start space-y-8 md:space-y-0">
+        <div className="flex justify-between items-start">
           <div className="flex-1">
             <h3 className="text-2xl font-bold mb-4 text-primary">Mementiq</h3>
             <p className="text-gray-300 mb-6 max-w-md">
@@ -41,11 +41,11 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="text-left md:text-right">
+          <div className="text-right">
             <h4 className="text-lg font-semibold mb-4 text-light">Contact</h4>
-            <div className="flex items-center md:justify-end space-x-2">
-              <Mail className="h-6 w-6 text-gray-300 hover:text-accent transition-colors duration-200 flex-shrink-0" />
-              <span className="text-gray-300 break-all">mementiq@seraphventures.net</span>
+            <div className="flex items-center justify-end space-x-2">
+              <Mail className="h-6 w-6 text-gray-300 hover:text-accent transition-colors duration-200" />
+              <span className="text-gray-300">mementiq@seraphventures.net</span>
             </div>
           </div>
         </div>
