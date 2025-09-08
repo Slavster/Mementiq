@@ -5743,7 +5743,7 @@ async function downloadAsset(
         const bytesResult = await objectStorageClient.downloadAsBytes(fullPath);
         console.log("BytesResult retrieved successfully from search path");
         
-        if (bytesResult.ok) {
+        if (bytesResult.ok && bytesResult.value && bytesResult.value.length > 0) {
           // Successfully found the asset, now process it
           console.log("Processing...");
           
