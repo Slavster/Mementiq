@@ -5729,9 +5729,124 @@ async function downloadAsset(
   let content: Uint8Array;
   let finalPath = assetPath;
 
-  // Try direct path first (current structure)
+  // Try using PUBLIC_OBJECT_SEARCH_PATHS environment variable first
+  const searchPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS;
+  if (searchPaths) {
+    const paths = searchPaths.split(',').map(p => p.trim());
+    for (const searchPath of paths) {
+      const fullPath = `${searchPath}/${assetPath}`;
+      try {
+        console.log(`Trying path with search path: ${fullPath}`);
+        const bytesResult = await objectStorageClient.downloadAsBytes(fullPath);
+        console.log("BytesResult retrieved successfully from search path");
+        
+        if (bytesResult.ok) {
+          // Successfully found the asset, now process it
+          console.log("Processing...");
+          
+          if (!bytesResult.ok) {
+            throw new Error(
+              `Object Storage error: bytesResult.error`,
+            );
+          }
+
+          // Check the actual structure of the response
+          console.log("Processing...");
+          console.log(
+            "((BytesResult as any).value instanceof Uint8Array:",
+            bytesResult.value instanceof Uint8Array,
+          );
+          console.log("Checking value type");
+          console.log(
+            "((BytesResult as any).value constructor:",
+            bytesResult.value.constructor.name,
+          );
+
+          if (bytesResult.value instanceof Uint8Array) {
+            content = bytesResult.value;
+          } else if (Array.isArray(bytesResult.value)) {
+            // Handle array case first - it's an array - let's check what's inside
+            console.log("Processing...");
+            console.log("Processing...");
+            console.log(
+              "First element constructor:",
+              bytesResult.value[0]?.constructor?.name,
+            );
+
+            if (bytesResult.value[0] instanceof Uint8Array) {
+              content = bytesResult.value[0];
+            } else if (
+              bytesResult.value[0] &&
+              typeof (bytesResult.value[0] as any).arrayBuffer === "function"
+            ) {
+              const arrayBuffer = await (bytesResult.value[0] as any).arrayBuffer();
+              content = new Uint8Array(arrayBuffer);
+            } else {
+              // Try converting the array itself to Uint8Array
+              content = new Uint8Array(bytesResult.value as any);
+            }
+          } else if (typeof bytesResult.value === "string") {
+            content = new TextEncoder().encode(bytesResult.value as string);
+          } else if (
+            bytesResult.value &&
+            typeof (bytesResult.value as any).arrayBuffer === "function"
+          ) {
+            // Handle Response-like object
+            const arrayBuffer = await (bytesResult.value as any).arrayBuffer();
+            content = new Uint8Array(arrayBuffer);
+          } else if (
+            bytesResult.value &&
+            typeof (bytesResult.value as any).stream === "function"
+          ) {
+            // Handle stream response
+            const response = new Response((bytesResult.value as any).stream());
+            const arrayBuffer = await response.arrayBuffer();
+            content = new Uint8Array(arrayBuffer);
+          } else if (bytesResult.value && (bytesResult.value as any).bytes) {
+            // Maybe bytes field?
+            content = (bytesResult.value as any).bytes;
+          } else {
+            // Last resort: try converting whatever we got to Uint8Array
+            try {
+              content = new Uint8Array(bytesResult.value as any);
+            } catch (e) {
+              console.error("Failed to convert to Uint8Array:", e);
+              throw new Error(
+                `Unsupported bytesResult.value format: ${typeof bytesResult.value}`,
+              );
+            }
+          }
+
+          console.log("Processing...");
+          
+          // Determine content type based on file extension
+          let contentType = "application/octet-stream";
+          if (assetPath.toLowerCase().endsWith(".mp4")) {
+            contentType = "video/mp4";
+          } else if (assetPath.toLowerCase().endsWith(".webm")) {
+            contentType = "video/webm";
+          } else if (assetPath.toLowerCase().endsWith(".png")) {
+            contentType = "image/png";
+          } else if (assetPath.toLowerCase().endsWith(".jpg") || assetPath.toLowerCase().endsWith(".jpeg")) {
+            contentType = "image/jpeg";
+          } else if (assetPath.toLowerCase().endsWith(".gif")) {
+            contentType = "image/gif";
+          } else if (assetPath.toLowerCase().endsWith(".svg")) {
+            contentType = "image/svg+xml";
+          }
+
+          return { content, contentType };
+        }
+      } catch (error) {
+        console.log(`Failed to download from ${fullPath}:`, error);
+        // Continue to next search path
+      }
+    }
+  }
+
+  // Fallback to direct path (for backwards compatibility)
   try {
-    console.log("Processing...");
+    console.log("Trying direct path (fallback):", assetPath);
     const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
     console.log("BytesResult retrieved successfully");
     console.log("Processing...");
