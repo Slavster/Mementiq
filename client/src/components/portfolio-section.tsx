@@ -13,13 +13,13 @@ const getVideoUrl = (localPath: string) => {
     return localPath; // Use local videos in development
   }
   
-  // Map to Object Storage URLs for production
+  // Map to Object Storage URLs for production - using actual filenames from bucket
   const videoMap: { [key: string]: string } = {
-    "/videos/travel-video.mp4": "/api/assets/EditingPortfolioAssets/Videos/Tu Lan Cave Final.mp4",
-    "/videos/coaching-ad.mp4": "/api/assets/EditingPortfolioAssets/Videos/Coaching Ad Final.mp4",
+    "/videos/travel-video.mp4": "/api/assets/EditingPortfolioAssets/Videos/Travel video.mp4",
+    "/videos/coaching-ad.mp4": "/api/assets/EditingPortfolioAssets/Videos/Coaching Ad 1 - 720.mp4",
     "/videos/conference-interviews.mp4": "/api/assets/EditingPortfolioAssets/Videos/Conference Interviews.mp4",
-    "/videos/event-promo.mp4": "/api/assets/EditingPortfolioAssets/Videos/Swap in the City Final.mp4",
-    "/videos/product-ad.mp4": "/api/assets/EditingPortfolioAssets/Videos/Sun n Sea-FINAL.mp4",
+    "/videos/event-promo.mp4": "/api/assets/EditingPortfolioAssets/Videos/Event promo video.mp4",
+    "/videos/product-ad.mp4": "/api/assets/EditingPortfolioAssets/Videos/Product Ad.mp4",
   };
   
   return videoMap[localPath] || localPath;
