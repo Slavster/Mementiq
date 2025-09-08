@@ -1,0 +1,174 @@
+{
+  "id": "evt_1S3uSoCp6pJe31oClY5BJgqW",
+  "object": "event",
+  "api_version": "2025-06-30.basil",
+  "created": 1757058821,
+  "data": {
+    "object": {
+      "id": "in_1S3uSlCp6pJe31oC9qqJCFWw",
+      "object": "invoice",
+      "account_country": "US",
+      "account_name": "Mementiq",
+      "account_tax_ids": null,
+      "amount_due": 2000,
+      "amount_overpaid": 0,
+      "amount_paid": 0,
+      "amount_remaining": 2000,
+      "amount_shipping": 0,
+      "application": null,
+      "attempt_count": 0,
+      "attempted": true,
+      "auto_advance": false,
+      "automatic_tax": {
+        "disabled_reason": null,
+        "enabled": false,
+        "liability": null,
+        "provider": null,
+        "status": null
+      },
+      "automatically_finalizes_at": null,
+      "billing_reason": "subscription_create",
+      "collection_method": "charge_automatically",
+      "created": 1757058819,
+      "currency": "usd",
+      "custom_fields": null,
+      "customer": "cus_SztiQZglPC96Cb",
+      "customer_address": null,
+      "customer_email": "russian316@gmail.com",
+      "customer_name": "Stanislav Sinitsyn",
+      "customer_phone": null,
+      "customer_shipping": null,
+      "customer_tax_exempt": "none",
+      "customer_tax_ids": [],
+      "default_payment_method": null,
+      "default_source": null,
+      "default_tax_rates": [],
+      "description": null,
+      "discounts": [],
+      "due_date": null,
+      "effective_at": 1757058819,
+      "ending_balance": 0,
+      "footer": null,
+      "from_invoice": null,
+      "hosted_invoice_url": "https://invoice.stripe.com/i/acct_1RjE51Cp6pJe31oC/live_YWNjdF8xUmpFNTFDcDZwSmUzMW9DLF9TenVIdndtYzRvdjFOc3ZFeEJpOUR3R1lQdHJnemhSLDE0NzU5OTYyMg0200rUqzC20H?s=ap",
+      "invoice_pdf": "https://pay.stripe.com/invoice/acct_1RjE51Cp6pJe31oC/live_YWNjdF8xUmpFNTFDcDZwSmUzMW9DLF9TenVIdndtYzRvdjFOc3ZFeEJpOUR3R1lQdHJnemhSLDE0NzU5OTYyMg0200rUqzC20H/pdf?s=ap",
+      "issuer": {
+        "type": "self"
+      },
+      "last_finalization_error": null,
+      "latest_revision": null,
+      "lines": {
+        "object": "list",
+        "data": [
+          {
+            "id": "il_1S3uSlCp6pJe31oCRqYbHAq7",
+            "object": "line_item",
+            "amount": 2000,
+            "currency": "usd",
+            "description": "1 × Creative Spark Plan (at $20.00 / month)",
+            "discount_amounts": [],
+            "discountable": true,
+            "discounts": [],
+            "invoice": "in_1S3uSlCp6pJe31oC9qqJCFWw",
+            "livemode": true,
+            "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_1S3uSlCp6pJe31oCQDQtOxAD",
+                "subscription_item": "si_SzuH6WpphRbmyc"
+              },
+              "type": "subscription_item_details"
+            },
+            "period": {
+              "end": 1759650819,
+              "start": 1757058819
+            },
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "price_1S3YiKCp6pJe31oCefXXXwBe",
+                "product": "prod_SzXn1mEHWy75mf"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": "2000"
+            },
+            "quantity": 1,
+            "taxes": []
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/invoices/in_1S3uSlCp6pJe31oC9qqJCFWw/lines"
+      },
+      "livemode": true,
+      "metadata": {},
+      "next_payment_attempt": null,
+      "number": "WZTWUBNR-0001",
+      "on_behalf_of": null,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {},
+          "subscription": "sub_1S3uSlCp6pJe31oCQDQtOxAD"
+        },
+        "type": "subscription_details"
+      },
+      "payment_settings": {
+        "default_mandate": null,
+        "payment_method_options": {
+          "acss_debit": null,
+          "bancontact": null,
+          "card": {
+            "request_three_d_secure": "automatic"
+          },
+          "customer_balance": null,
+          "konbini": null,
+          "sepa_debit": null,
+          "us_bank_account": null
+        },
+        "payment_method_types": [
+          "card"
+        ]
+      },
+      "period_end": 1757058819,
+      "period_start": 1757058819,
+      "post_payment_credit_notes_amount": 0,
+      "pre_payment_credit_notes_amount": 0,
+      "receipt_number": null,
+      "rendering": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "starting_balance": 0,
+      "statement_descriptor": null,
+      "status": "open",
+      "status_transitions": {
+        "finalized_at": 1757058819,
+        "marked_uncollectible_at": null,
+        "paid_at": null,
+        "voided_at": null
+      },
+      "subtotal": 2000,
+      "subtotal_excluding_tax": 2000,
+      "test_clock": null,
+      "total": 2000,
+      "total_discount_amounts": [],
+      "total_excluding_tax": 2000,
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": 1757058819
+    }
+  },
+  "livemode": true,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": "10e06293-e453-4503-ab56-39a9d5d87636"
+  },
+  "type": "invoice.payment_failed"
+}
