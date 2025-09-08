@@ -43,7 +43,7 @@ function simpleRateLimit(req: any, res: any, next: any) {
 
 async function startProductionServer() {
   const app = express();
-  const PORT = process.env.PORT || 5000;
+  const PORT = parseInt(process.env.PORT || '5000', 10);
 
   // Trust proxy - essential for custom domain behind reverse proxy
   app.set('trust proxy', 1);
@@ -249,7 +249,7 @@ async function startProductionServer() {
     // Never serve index.html for API routes or asset paths
     if (req.path.startsWith('/api') || 
         req.path.startsWith('/assets') || 
-        req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+        req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|mp4|webm|mov|avi)$/)) {
       return next();
     }
     
@@ -272,7 +272,8 @@ async function startProductionServer() {
   app.use((err: any, req: any, res: any, _next: any) => {
     // For static files, don't send JSON errors
     if (req.path.startsWith('/assets') || 
-        req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+        req.path.startsWith('/videos') ||
+        req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|mp4|webm|mov|avi)$/)) {
       const status = err.status || err.statusCode || 500;
       console.error(`Static file error: ${req.path} - ${err.message}`);
       return res.status(status).send('Error loading resource');
