@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
+import { useVideoPreloader } from "@/hooks/useVideoPreloader";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
 // Use Object Storage URLs in production for better performance and no size limits
 const isProduction = window.location.hostname === 'mementiq.co' || 
