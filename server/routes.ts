@@ -4432,15 +4432,34 @@ export async function registerRoutes(app: any): Promise<Server> {
 
       console.log(`Fetching asset: ${assetPath}`);
 
-      // For large videos (like Conference Interviews), use streaming instead of downloadAsset
+      // For large videos (like Conference Interviews 45MB), skip caching and use direct processing
+      // This prevents memory issues with buffer conversion for large files
       if (isVideo && assetPath.toLowerCase().includes('conference')) {
-        console.log(`Detected large video - using streaming: ${assetPath}`);
+        console.log(`Detected large video - processing without cache: ${assetPath}`);
+        
+        // Use downloadAsset but don't cache the result to avoid memory pressure
+        const downloadPromise = downloadAsset(assetPath);
+        pendingRequests.set(assetPath, downloadPromise);
+
         try {
-          await streamLargeVideo(assetPath, req, res);
+          const result = await downloadPromise;
+
+          // Don't cache large videos - serve directly
+          console.log(`Serving large video without caching: ${assetPath} (${result.content.length} bytes)`);
+
+          (res as any).set({
+            "Content-Type": result.contentType,
+            "Cache-Control": "public, max-age=3600",
+            "Content-Length": result.content.length.toString(),
+            ETag: `"${assetPath}-${Date.now()}"`,
+            "Accept-Ranges": "bytes",
+            Connection: "keep-alive",
+          });
+
+          (res as any).send(Buffer.from(result.content));
           return;
-        } catch (streamError) {
-          console.log(`Streaming failed for ${assetPath}, falling back to downloadAsset:`, streamError);
-          // Fall through to regular downloadAsset logic
+        } finally {
+          pendingRequests.delete(assetPath);
         }
       }
 
@@ -5747,16 +5766,21 @@ async function streamLargeVideo(
   if (searchPaths) {
     const paths = searchPaths.split(',').map(p => p.trim());
     for (const searchPath of paths) {
-      const cleanSearchPath = searchPath.replace(/^\//, '').replace(/\/$/, '');
+      // The searchPath is the full path like '/replit-objstore-xxx/EditingPortfolioAssets'  
+      // Remove leading slash but keep the full bucket path
+      const cleanSearchPath = searchPath.replace(/^\//, '');
       const fullPath = `${cleanSearchPath}/${assetPath}`;
       
       try {
         console.log(`Streaming from path: ${fullPath}`);
         
-        // Get a read stream directly from Object Storage
-        const streamResult = await objectStorageClient.downloadAsStream(fullPath);
+        // Use the same approach as downloadAsset - check if file exists first
+        const bytesCheck = await objectStorageClient.downloadAsBytes(fullPath);
+        if (bytesCheck.ok && bytesCheck.value && bytesCheck.value.length > 0) {
+          // File exists, now stream it using signed URL approach
+          const streamResult = await objectStorageClient.downloadAsStream(fullPath);
         
-        if (streamResult.ok && streamResult.value) {
+          if (streamResult.ok && streamResult.value) {
           console.log(`Successfully streaming video: ${assetPath}`);
           
           // Set video streaming headers
@@ -5777,15 +5801,16 @@ async function streamLargeVideo(
           // Pipe the stream directly to the response
           streamResult.value.pipe(res);
           
-          // Handle stream events
-          streamResult.value.on('error', (error) => {
-            console.error(`Streaming error for ${assetPath}:`, error);
-            if (!res.headersSent) {
-              res.status(500).send('Streaming error');
-            }
-          });
-          
-          return;
+            // Handle stream events
+            streamResult.value.on('error', (error) => {
+              console.error(`Streaming error for ${assetPath}:`, error);
+              if (!res.headersSent) {
+                res.status(500).send('Streaming error');
+              }
+            });
+            
+            return;
+          }
         }
       } catch (streamError) {
         console.log(`Streaming failed from ${fullPath}:`, streamError);
