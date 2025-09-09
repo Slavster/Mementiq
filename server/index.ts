@@ -124,45 +124,92 @@ app.use((req: Request, res: Response, next: any) => {
     // Serve Object Storage assets
     app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
 
-    // Serve portfolio videos - different paths for dev vs production
+    // Custom video streaming handler for large files
     const isDevelopment = app.get("env") === "development";
     const videosPath = isDevelopment 
       ? path.resolve(process.cwd(), 'client/public/videos')
       : path.resolve(process.cwd(), 'dist/public/videos');
     
-    if (fs.existsSync(videosPath)) {
-      app.use('/videos', express.static(videosPath, {
-        maxAge: '31536000000', // 1 year cache for videos
-        setHeaders: (res: any, filePath: string) => {
-          if (filePath.endsWith('.mp4')) {
-            res.setHeader('Content-Type', 'video/mp4');
-            res.setHeader('Accept-Ranges', 'bytes'); // Enable byte-range requests for video streaming
-            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-          }
+    // Fallback path for production
+    const fallbackPath = path.resolve(process.cwd(), 'server/public/videos');
+    const finalVideosPath = fs.existsSync(videosPath) ? videosPath : 
+                           (!isDevelopment && fs.existsSync(fallbackPath)) ? fallbackPath : null;
+    
+    if (finalVideosPath) {
+      console.log(`✅ Portfolio videos will be served from: ${finalVideosPath} (${isDevelopment ? 'development' : 'production'})`);
+      
+      // Custom handler for video streaming with proper range request support
+      app.get('/videos/:filename', (req, res) => {
+        const filename = req.params.filename;
+        const videoPath = path.join(finalVideosPath, filename);
+        
+        // Check if file exists
+        if (!fs.existsSync(videoPath)) {
+          return res.status(404).send('Video not found');
         }
-      } as any));
-      console.log(`✅ Portfolio videos served from: ${videosPath} (${isDevelopment ? 'development' : 'production'})`);
-    } else {
-      console.warn('⚠️ Portfolio videos directory not found:', videosPath);
-      // Try fallback paths in production
-      if (!isDevelopment) {
-        const fallbackPath = path.resolve(process.cwd(), 'server/public/videos');
-        if (fs.existsSync(fallbackPath)) {
-          app.use('/videos', express.static(fallbackPath, {
-            maxAge: '31536000000',
-            setHeaders: (res: any, filePath: string) => {
-              if (filePath.endsWith('.mp4')) {
-                res.setHeader('Content-Type', 'video/mp4');
-                res.setHeader('Accept-Ranges', 'bytes');
-                res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-              }
+        
+        try {
+          const stat = fs.statSync(videoPath);
+          const fileSize = stat.size;
+          const range = req.headers.range;
+          
+          // Set video headers
+          res.setHeader('Content-Type', 'video/mp4');
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          
+          if (range) {
+            // Parse range header
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+            
+            // Validate range
+            if (start >= fileSize || end >= fileSize) {
+              res.status(416).send('Requested Range Not Satisfiable');
+              return;
             }
-          } as any));
-          console.log('✅ Using fallback path for videos:', fallbackPath);
-        } else {
-          console.error('❌ No video directory found in production! Checked:', videosPath, 'and', fallbackPath);
+            
+            const chunksize = (end - start) + 1;
+            
+            // Create read stream for the requested range
+            const stream = fs.createReadStream(videoPath, { start, end });
+            
+            // Set partial content headers
+            res.status(206);
+            res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+            res.setHeader('Content-Length', chunksize);
+            
+            // Stream the video chunk
+            stream.pipe(res);
+            
+            stream.on('error', (error) => {
+              console.error(`Error streaming video ${filename}:`, error);
+              if (!res.headersSent) {
+                res.status(500).send('Error streaming video');
+              }
+            });
+          } else {
+            // No range requested, send entire file
+            res.setHeader('Content-Length', fileSize);
+            
+            const stream = fs.createReadStream(videoPath);
+            stream.pipe(res);
+            
+            stream.on('error', (error) => {
+              console.error(`Error streaming video ${filename}:`, error);
+              if (!res.headersSent) {
+                res.status(500).send('Error streaming video');
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`Error serving video ${filename}:`, error);
+          res.status(500).send('Internal Server Error');
         }
-      }
+      });
+    } else {
+      console.error('❌ No video directory found! Checked:', videosPath, 'and', fallbackPath);
     }
 
     // importantly only setup vite in development and after
