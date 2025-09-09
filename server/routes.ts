@@ -5750,27 +5750,36 @@ async function downloadAsset(
   let content: Uint8Array;
   let finalPath = assetPath;
 
+  console.log(`downloadAsset called with: ${assetPath}`);
+  console.log(`PUBLIC_OBJECT_SEARCH_PATHS: ${process.env.PUBLIC_OBJECT_SEARCH_PATHS}`);
+
   // Try using PUBLIC_OBJECT_SEARCH_PATHS environment variable first
   const searchPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS;
   if (searchPaths) {
     const paths = searchPaths.split(',').map(p => p.trim());
     for (const searchPath of paths) {
-      // Remove leading slash from searchPath if present and trailing slash
-      const cleanSearchPath = searchPath.replace(/^\//, '').replace(/\/$/, '');
-      // Build the full path - searchPath already includes EditingPortfolioAssets
-      const fullPath = `${cleanSearchPath}/${assetPath}`;
+      // Object Storage client automatically prepends bucket ID, so we need to strip it from searchPath
+      // searchPath format: /bucket-id/EditingPortfolioAssets
+      // We need just: EditingPortfolioAssets/Objects/TechStartup.mp4
+      const pathParts = searchPath.split('/').filter(p => p);
+      const pathWithoutBucket = pathParts.slice(1).join('/'); // Remove bucket ID part
+      const fullPath = `${pathWithoutBucket}/${assetPath}`;
+      
+      console.log(`Trying to download from Object Storage:
+        searchPath: ${searchPath}
+        pathWithoutBucket: ${pathWithoutBucket}
+        assetPath: ${assetPath}
+        fullPath: ${fullPath}`);
+      
       try {
-        // Try path with search path
+        // Try path with search path - use full path including bucket ID
         const bytesResult = await objectStorageClient.downloadAsBytes(fullPath);
-        // Successfully retrieved from search path
         
+        console.log(`downloadAsBytes result: ok=${bytesResult.ok}, has value=${!!bytesResult.value}, error=${JSON.stringify(bytesResult.error)}`);
+        
+        // Successfully retrieved from search path
         if (bytesResult.ok && bytesResult.value && bytesResult.value.length > 0) {
           // Successfully found the asset, now process it
-          if (!bytesResult.ok) {
-            throw new Error(
-              `Object Storage error: bytesResult.error`,
-            );
-          }
 
           // Check the actual structure of the response
 
