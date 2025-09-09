@@ -4431,22 +4431,22 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       // Fetching asset
+      
+      // Create pending request promise
+      const downloadPromise = downloadAsset(assetPath);
+      pendingRequests.set(assetPath, downloadPromise);
 
-      // For large videos (like Conference Interviews 45MB), skip caching and use direct processing
-      // This prevents memory issues with buffer conversion for large files
-      if (isVideo && assetPath.toLowerCase().includes('conference')) {
-        // Detected large video - process without cache to avoid memory pressure
+      try {
+        const result = await downloadPromise;
         
-        // Use downloadAsset but don't cache the result to avoid memory pressure
-        const downloadPromise = downloadAsset(assetPath);
-        pendingRequests.set(assetPath, downloadPromise);
-
-        try {
-          const result = await downloadPromise;
-
-          // Don't cache large videos - serve directly
-          // Serve large video without caching to avoid memory pressure
-
+        // Check file size for large videos (>40MB threshold for memory safety)
+        const sizeInMB = result.content.length / (1024 * 1024);
+        const isLargeVideo = isVideo && sizeInMB > 40;
+        
+        if (isLargeVideo) {
+          console.log(`Large video detected (${sizeInMB.toFixed(1)}MB): ${assetPath} - serving without cache`);
+          
+          // Serve large videos directly without caching to avoid memory pressure
           (res as any).set({
             "Content-Type": result.contentType,
             "Cache-Control": "public, max-age=3600",
@@ -4458,33 +4458,23 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           (res as any).send(Buffer.from(result.content));
           return;
-        } finally {
-          pendingRequests.delete(assetPath);
         }
-      }
 
-      // Create pending request promise
-      const downloadPromise = downloadAsset(assetPath);
-      pendingRequests.set(assetPath, downloadPromise);
-
-      try {
-        const result = await downloadPromise;
-
-        // Cache thumbnails and videos
+        // Cache smaller files (thumbnails and videos under 40MB)
         if (isThumbnail && result.content.length < 10 * 1024 * 1024) {
           assetCache.set(assetPath, {
             content: result.content,
             contentType: result.contentType,
             timestamp: Date.now(),
           });
-        } else if (isVideo && result.content.length < 50 * 1024 * 1024) {
-          // Cache videos up to 50MB
+        } else if (isVideo && !isLargeVideo) {
+          // Cache videos under 40MB for performance
           videoCache.set(assetPath, {
             content: result.content,
             contentType: result.contentType,
             timestamp: Date.now(),
           });
-          // Video cached for performance
+          console.log(`Video cached for performance (${sizeInMB.toFixed(1)}MB): ${assetPath}`);
         }
 
         // For new video downloads, serve full content for smooth playback
