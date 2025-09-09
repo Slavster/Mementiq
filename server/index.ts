@@ -119,109 +119,31 @@ app.use((req: Request, res: Response, next: any) => {
 
 (async () => {
   try {
-    const server = await (registerRoutes as any)(app);
-
-    // Serve Object Storage assets
-    app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
-
-    // Custom video streaming handler for large files
     const isDevelopment = app.get("env") === "development";
-    const videosPath = isDevelopment 
-      ? path.resolve(process.cwd(), 'client/public/videos')
-      : path.resolve(process.cwd(), 'dist/public/videos');
     
-    // Fallback path for production
-    const fallbackPath = path.resolve(process.cwd(), 'server/public/videos');
-    const finalVideosPath = fs.existsSync(videosPath) ? videosPath : 
-                           (!isDevelopment && fs.existsSync(fallbackPath)) ? fallbackPath : null;
-    
-    if (finalVideosPath) {
-      console.log(`✅ Portfolio videos will be served from: ${finalVideosPath} (${isDevelopment ? 'development' : 'production'})`);
-      
-      // Custom handler for video streaming with proper range request support
-      app.get('/videos/:filename', (req, res) => {
-        const filename = req.params.filename;
-        const videoPath = path.join(finalVideosPath, filename);
-        
-        // Check if file exists
-        if (!fs.existsSync(videoPath)) {
-          return res.status(404).send('Video not found');
-        }
-        
-        try {
-          const stat = fs.statSync(videoPath);
-          const fileSize = stat.size;
-          const range = req.headers.range;
-          
-          // Set video headers
-          res.setHeader('Content-Type', 'video/mp4');
-          res.setHeader('Accept-Ranges', 'bytes');
-          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-          
-          if (range) {
-            // Parse range header
-            const parts = range.replace(/bytes=/, "").split("-");
-            const start = parseInt(parts[0], 10);
-            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-            
-            // Validate range
-            if (start >= fileSize || end >= fileSize) {
-              res.status(416).send('Requested Range Not Satisfiable');
-              return;
-            }
-            
-            const chunksize = (end - start) + 1;
-            
-            // Create read stream for the requested range
-            const stream = fs.createReadStream(videoPath, { start, end });
-            
-            // Set partial content headers
-            res.status(206);
-            res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
-            res.setHeader('Content-Length', chunksize);
-            
-            // Stream the video chunk
-            stream.pipe(res);
-            
-            stream.on('error', (error) => {
-              console.error(`Error streaming video ${filename}:`, error);
-              if (!res.headersSent) {
-                res.status(500).send('Error streaming video');
-              }
-            });
-          } else {
-            // No range requested, send entire file
-            res.setHeader('Content-Length', fileSize);
-            
-            const stream = fs.createReadStream(videoPath);
-            stream.pipe(res);
-            
-            stream.on('error', (error) => {
-              console.error(`Error streaming video ${filename}:`, error);
-              if (!res.headersSent) {
-                res.status(500).send('Error streaming video');
-              }
-            });
-          }
-        } catch (error) {
-          console.error(`Error serving video ${filename}:`, error);
-          res.status(500).send('Internal Server Error');
-        }
-      });
-    } else {
-      console.error('❌ No video directory found! Checked:', videosPath, 'and', fallbackPath);
-    }
-
-    // importantly only setup vite in development and after
-    // setting up all the other routes so the catch-all route
-    // doesn't interfere with the other routes
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      // Production static file serving with proper MIME types
+    // STEP 1: Serve static files FIRST (before any API routes or error handlers)
+    if (!isDevelopment) {
+      // Production: Serve videos and static assets FIRST
       const distPath = path.resolve(process.cwd(), 'server/public');
       
-      // Check if production build exists
+      // Serve videos with proper caching and no compression for video/mp4
+      const videosPath = path.join(distPath, 'videos');
+      if (fs.existsSync(videosPath)) {
+        app.use('/videos', express.static(videosPath, {
+          immutable: true,
+          maxAge: '31536000000', // 1 year
+          setHeaders: (res: any, filePath: string) => {
+            if (filePath.endsWith('.mp4')) {
+              res.setHeader('Content-Type', 'video/mp4');
+              res.setHeader('Accept-Ranges', 'bytes');
+              res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            }
+          }
+        } as any));
+        console.log(`✅ Portfolio videos served from: ${videosPath} (production static)`);
+      }
+      
+      // Serve other static assets (JS, CSS, images, etc)
       if (fs.existsSync(distPath)) {
         // Serve /assets with proper MIME types and long cache
         app.use('/assets', express.static(path.join(distPath, 'assets'), {
@@ -239,20 +161,49 @@ app.use((req: Request, res: Response, next: any) => {
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
           }
         } as any));
+        
+        // Serve other static files (but not index.html yet)
+        app.use(express.static(distPath, { index: false } as any));
       }
-      
-      // Use the standard serveStatic function for other files
-      serveStatic(app);
+    } else {
+      // Development: Serve videos from client/public/videos
+      const devVideosPath = path.resolve(process.cwd(), 'client/public/videos');
+      if (fs.existsSync(devVideosPath)) {
+        app.use('/videos', express.static(devVideosPath, {
+          maxAge: '31536000000',
+          setHeaders: (res: any, filePath: string) => {
+            if (filePath.endsWith('.mp4')) {
+              res.setHeader('Content-Type', 'video/mp4');
+              res.setHeader('Accept-Ranges', 'bytes');
+            }
+          }
+        } as any));
+        console.log(`✅ Portfolio videos served from: ${devVideosPath} (development)`);
+      }
     }
-
-    // Error handler should be AFTER static file serving
-    app.use((err: Error, req: Request, res: Response, _next: any) => {
-      // Don't send JSON for static file errors
-      if ((req as any).path && ((req as any).path.startsWith('/assets') || (req as any).path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/))) {
-        const status = (err as any).status || (err as any).statusCode || 500;
-        return (res as any).status(status).send('Error loading resource');
-      }
+    
+    // Serve Object Storage assets
+    app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
+    
+    // STEP 2: Register API routes (after static files)
+    const server = await (registerRoutes as any)(app);
+    
+    // STEP 3: Setup development server or production fallback
+    if (isDevelopment) {
+      await setupVite(app, server);
+    } else {
+      // Production: Setup SPA fallback (after all other routes)
+      const distPath = path.resolve(process.cwd(), 'server/public');
       
+      // SPA fallback - serve index.html for all unmatched routes
+      app.get('*', (_req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
+    
+    // STEP 4: API-only error handler (avoid catching static file errors)
+    app.use('/api', (err: Error, req: Request, res: Response, _next: any) => {
+      console.error('API Error:', err);
       const status = (err as any).status || (err as any).statusCode || 500;
       const message = err.message || "Internal Server Error";
 
