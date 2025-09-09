@@ -124,8 +124,12 @@ app.use((req: Request, res: Response, next: any) => {
     // Serve Object Storage assets
     app.use('/EditingPortfolioAssets', express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets')));
 
-    // Serve portfolio videos from client/public/videos
-    const videosPath = path.resolve(process.cwd(), 'client/public/videos');
+    // Serve portfolio videos - different paths for dev vs production
+    const isDevelopment = app.get("env") === "development";
+    const videosPath = isDevelopment 
+      ? path.resolve(process.cwd(), 'client/public/videos')
+      : path.resolve(process.cwd(), 'dist/public/videos');
+    
     if (fs.existsSync(videosPath)) {
       app.use('/videos', express.static(videosPath, {
         maxAge: '31536000000', // 1 year cache for videos
@@ -137,9 +141,28 @@ app.use((req: Request, res: Response, next: any) => {
           }
         }
       } as any));
-      console.log('✅ Portfolio videos served from:', videosPath);
+      console.log(`✅ Portfolio videos served from: ${videosPath} (${isDevelopment ? 'development' : 'production'})`);
     } else {
       console.warn('⚠️ Portfolio videos directory not found:', videosPath);
+      // Try fallback paths in production
+      if (!isDevelopment) {
+        const fallbackPath = path.resolve(process.cwd(), 'server/public/videos');
+        if (fs.existsSync(fallbackPath)) {
+          app.use('/videos', express.static(fallbackPath, {
+            maxAge: '31536000000',
+            setHeaders: (res: any, filePath: string) => {
+              if (filePath.endsWith('.mp4')) {
+                res.setHeader('Content-Type', 'video/mp4');
+                res.setHeader('Accept-Ranges', 'bytes');
+                res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+              }
+            }
+          } as any));
+          console.log('✅ Using fallback path for videos:', fallbackPath);
+        } else {
+          console.error('❌ No video directory found in production! Checked:', videosPath, 'and', fallbackPath);
+        }
+      }
     }
 
     // importantly only setup vite in development and after
