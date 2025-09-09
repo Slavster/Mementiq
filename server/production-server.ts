@@ -232,9 +232,9 @@ async function startProductionServer() {
     next();
   });
 
-  // Register API routes
-  const server = await registerRoutes(app);
-  
+  // Register API routes FIRST (includes /api/assets/* routes)
+  const httpServer = await registerRoutes(app);
+
   // Serve Object Storage assets
   app.use('/EditingPortfolioAssets', 
     express.static(path.resolve(process.cwd(), 'EditingPortfolioAssets'), {
@@ -294,7 +294,7 @@ async function startProductionServer() {
   });
 
   // Start server
-  const httpServer = server.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log('========================================');
     console.log('🚀 Production Server Started');
     console.log('========================================');
