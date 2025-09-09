@@ -6717,7 +6717,43 @@ async function downloadAsset(
     `PUBLIC_OBJECT_SEARCH_PATHS: ${process.env.PUBLIC_OBJECT_SEARCH_PATHS}`,
   );
 
-  // Try using PUBLIC_OBJECT_SEARCH_PATHS environment variable first
+  // Special handling for Videos folder - they're at root level, not under EditingPortfolioAssets
+  if (assetPath.startsWith("Videos/")) {
+    try {
+      // Videos are stored directly at root level (e.g., "Videos/Conference Interviews.mp4")
+      const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
+      
+      console.log(
+        `Direct video path result: ok=${bytesResult.ok}, has value=${!!bytesResult.value}`,
+      );
+      
+      if (bytesResult.ok && bytesResult.value && bytesResult.value.length > 0) {
+        // Process the video content
+        let content: Uint8Array;
+        
+        if (bytesResult.value instanceof Uint8Array) {
+          content = bytesResult.value;
+        } else if (Array.isArray(bytesResult.value)) {
+          if (bytesResult.value[0] instanceof Uint8Array) {
+            content = bytesResult.value[0];
+          } else if (bytesResult.value[0] && typeof (bytesResult.value[0] as any).arrayBuffer === "function") {
+            const arrayBuffer = await (bytesResult.value[0] as any).arrayBuffer();
+            content = new Uint8Array(arrayBuffer);
+          } else {
+            content = new Uint8Array(bytesResult.value as any);
+          }
+        } else {
+          content = new Uint8Array(bytesResult.value as any);
+        }
+        
+        return { content, contentType: "video/mp4" };
+      }
+    } catch (error) {
+      console.log(`Failed to download video from root path ${assetPath}:`, error);
+    }
+  }
+  
+  // Try using PUBLIC_OBJECT_SEARCH_PATHS environment variable for non-video assets
   const searchPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS;
   if (searchPaths) {
     const paths = searchPaths.split(",").map((p) => p.trim());
