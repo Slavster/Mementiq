@@ -34,14 +34,22 @@ import {
 import { emailService } from "./emailService";
 import { trelloAutomation } from "./services/trello-automation";
 import { trelloService } from "./services/trello";
-import { trelloWebhookService, type TrelloWebhookPayload } from "./services/trello-webhook";
+import {
+  trelloWebhookService,
+  type TrelloWebhookPayload,
+} from "./services/trello-webhook";
 import { assetDetectionService } from "./assetDetectionService";
 import "./types"; // Import session types
 import Stripe from "stripe";
 import multer from "multer";
 import { getAppBaseUrl, getDashboardUrl } from "./config/appUrl.js";
 import geoip from "geoip-lite";
-import { resolvePriceByLookupKey, tierToPlanKey, PLAN_LOOKUP_KEYS, type PlanKey } from "./services/stripe-price-resolver.js";
+import {
+  resolvePriceByLookupKey,
+  tierToPlanKey,
+  PLAN_LOOKUP_KEYS,
+  type PlanKey,
+} from "./services/stripe-price-resolver.js";
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -51,7 +59,9 @@ async function updateProjectTimestamp(projectId: number, action?: string) {
   const now = new Date();
   await storage.updateProject(projectId, { updatedAt: now });
   if (action) {
-    console.log(`📅 Updated project ${projectId} timestamp for action: ${action} at ${now.toISOString()}`);
+    console.log(
+      `📅 Updated project ${projectId} timestamp for action: ${action} at ${now.toISOString()}`,
+    );
   }
   return now;
 }
@@ -59,11 +69,7 @@ async function updateProjectTimestamp(projectId: number, action?: string) {
 // Use standard Request type with user property from module augmentation
 
 // Middleware to verify Supabase auth
-async function requireAuth(
-  req: AppRequest,
-  res: AppResponse,
-  next: any,
-) {
+async function requireAuth(req: AppRequest, res: AppResponse, next: any) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -82,7 +88,7 @@ async function requireAuth(
       .json({ success: false, message: "Invalid token format" });
   }
 
-    console.log("🔐 AUTH: Verifying token for request:", req.method, req.path);
+  console.log("🔐 AUTH: Verifying token for request:", req.method, req.path);
   const result = await verifySupabaseToken(token);
 
   if (!result.success) {
@@ -135,7 +141,8 @@ async function requireProjectAccess(
     if (now > thirtyOneDaysAfterCreation) {
       return res.status(403).json({
         success: false,
-        message: "Project access has expired. You can only manage projects for 31 days after creation.",
+        message:
+          "Project access has expired. You can only manage projects for 31 days after creation.",
         expired: true,
         createdAt: project.createdAt,
         expiresAt: thirtyOneDaysAfterCreation.toISOString(),
@@ -291,7 +298,7 @@ const getSubscriptionTierFromProductId = (productId: string): string => {
       return tierKey;
     }
   }
-  return 'basic'; // Default fallback
+  return "basic"; // Default fallback
 };
 
 export async function registerRoutes(app: any): Promise<Server> {
@@ -323,7 +330,9 @@ export async function registerRoutes(app: any): Promise<Server> {
 
       // Log webhook receipt (works with any environment)
       console.log(`📬 Webhook received: ${event.type}`);
-      console.log(`Event ID: ${event.id}, Created: ${new Date(event.created * 1000).toISOString()}`);
+      console.log(
+        `Event ID: ${event.id}, Created: ${new Date(event.created * 1000).toISOString()}`,
+      );
 
       try {
         switch (event.type) {
@@ -331,77 +340,103 @@ export async function registerRoutes(app: any): Promise<Server> {
             const session = event.data.object as Stripe.Checkout.Session;
 
             // Handle revision payments
-            if (session.metadata?.type === 'revision_payment') {
+            if (session.metadata?.type === "revision_payment") {
               console.log("🎯 WEBHOOK: Processing revision payment completion");
-              
+
               try {
                 const projectId = Number(session.metadata.projectId);
-                
+
                 // Update revision payment status
                 await storage.updateRevisionPaymentStatus(
                   session.id,
-                  'completed',
+                  "completed",
                   session.payment_intent as string,
-                  new Date()
+                  new Date(),
                 );
-                
-                console.log(`✅ WEBHOOK: Revision payment completed for project ${projectId}`);
+
+                console.log(
+                  `✅ WEBHOOK: Revision payment completed for project ${projectId}`,
+                );
 
                 // Update project status to "awaiting revision instructions"
                 await storage.updateProject(projectId, {
                   status: "awaiting revision instructions",
                   updatedAt: new Date(),
                 });
-                
+
                 // Move revision card to Done (revision request completes the current revision)
                 try {
                   await trelloAutomation.markProjectComplete(projectId, true);
-                  console.log(`✅ WEBHOOK: Moved revision card to Done for project ${projectId}`);
+                  console.log(
+                    `✅ WEBHOOK: Moved revision card to Done for project ${projectId}`,
+                  );
                 } catch (error) {
-                  console.error('Failed to move revision Trello card to Done:', error);
+                  console.error(
+                    "Failed to move revision Trello card to Done:",
+                    error,
+                  );
                 }
 
                 // Automatically generate review link after successful payment
                 try {
                   const project = await storage.getProject(projectId);
-                  const projectFolderId = project?.mediaFolderId?.split('/').pop();
-                  
+                  const projectFolderId = project?.mediaFolderId
+                    ?.split("/")
+                    .pop();
+
                   if (projectFolderId) {
-                    const reviewLink = await createFrameioReviewLink(projectFolderId);
+                    const reviewLink =
+                      await createFrameioReviewLink(projectFolderId);
                     if (reviewLink) {
                       // Save review link to database
                       await storage.updateProject(projectId, {
-                        updatedAt: new Date()
+                        updatedAt: new Date(),
                       });
 
                       // Get user info to send email
-                      const user = project ? await storage.getUserById(project.userId) : null;
+                      const user = project
+                        ? await storage.getUserById(project.userId)
+                        : null;
                       if (user) {
                         // Try to send email with review link and instructions
                         try {
                           await emailService.sendRevisionInstructionsEmail(
                             user.email,
                             user.firstName,
-                            project?.title || 'Unknown Project',
-                            reviewLink
+                            project?.title || "Unknown Project",
+                            reviewLink,
                           );
-                          console.log(`Review link automatically generated and email sent for project ${projectId}`);
+                          console.log(
+                            `Review link automatically generated and email sent for project ${projectId}`,
+                          );
                         } catch (emailError) {
-                          console.error(`Email sending failed for project ${projectId}:`, emailError);
-                          console.log(`Review link automatically generated for project ${projectId} (email failed)`);
+                          console.error(
+                            `Email sending failed for project ${projectId}:`,
+                            emailError,
+                          );
+                          console.log(
+                            `Review link automatically generated for project ${projectId} (email failed)`,
+                          );
                         }
                       }
                     }
                   }
                 } catch (reviewLinkError) {
-                  console.error(`Failed to auto-generate review link for project ${projectId}:`, reviewLinkError);
+                  console.error(
+                    `Failed to auto-generate review link for project ${projectId}:`,
+                    reviewLinkError,
+                  );
                   // Don't fail the webhook if review link generation fails
                 }
 
-                console.log(`Revision payment completed for project ${projectId}`);
-
+                console.log(
+                  `Revision payment completed for project ${projectId}`,
+                );
               } catch (error) {
-                console.error("Error processing revision payment webhook:", error);
+                console.error(
+                  "Error processing revision payment webhook:",
+                  error,
+                );
               }
             }
             // Handle subscription payments
@@ -440,7 +475,6 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "invoice.payment_succeeded": {
             const invoice = event.data.object as Stripe.Invoice;
-  
 
             if ((invoice as any).subscription) {
               const subscription = await stripe.subscriptions.retrieve(
@@ -487,7 +521,6 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "customer.subscription.updated": {
             const subscription = event.data.object as Stripe.Subscription;
-  
 
             const user = await storage.getUserByStripeCustomerId(
               subscription.customer as string,
@@ -527,7 +560,6 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "customer.subscription.deleted": {
             const subscription = event.data.object as Stripe.Subscription;
-  
 
             const user = await storage.getUserByStripeCustomerId(
               subscription.customer as string,
@@ -548,7 +580,6 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "invoice.payment_failed": {
             const invoice = event.data.object as Stripe.Invoice;
-  
 
             if ((invoice as any).subscription) {
               const subscription = await stripe.subscriptions.retrieve(
@@ -583,556 +614,769 @@ export async function registerRoutes(app: any): Promise<Server> {
     },
   );
   // Frame.io webhook endpoint for video upload notifications
-  // Generate Frame.io V4 public share link for project video  
-  router.get("/api/projects/:id/video-share-link", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    console.log(`🔥🔥🔥 NEW ROUTE CODE LOADED: /api/projects/${req.params.id}/video-share-link`);
-    console.log(`🔥🔥🔥 THIS SHOULD ALWAYS APPEAR FIRST!`);
-    try {
-      const projectId = Number(req.params.id);
-      const project = await storage.getProject(projectId);
-      
-      if (!project) {
-        return res.status(404).json({ error: 'Project not found' });
-      }
+  // Generate Frame.io V4 public share link for project video
+  router.get(
+    "/api/projects/:id/video-share-link",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      console.log(
+        `🔥🔥🔥 NEW ROUTE CODE LOADED: /api/projects/${req.params.id}/video-share-link`,
+      );
+      console.log(`🔥🔥🔥 THIS SHOULD ALWAYS APPEAR FIRST!`);
+      try {
+        const projectId = Number(req.params.id);
+        const project = await storage.getProject(projectId);
 
-      // FIRST: Check if we already have a project-level share link stored
-      if (project.frameioReviewLink) {
-        console.log(`✅ Found existing project-level share link: ${project.frameioReviewLink}`);
-        return res.json({
-          shareUrl: project.frameioReviewLink,
-          shareId: project.frameioReviewShareId || 'project-cached',
-          filename: project.title,
-          isPublicShare: true,
-          note: 'Using existing project share link',
-          features: {
-            publicAccess: true,
-            commentsEnabled: true,
-            downloadsEnabled: true
-          }
-        });
-      }
-      
-      // Get the completed video file - for "video is ready" projects, use Frame.io assets directly
-      let videoFile: any = null;
-      
-      if (project.status.toLowerCase() === "video is ready" && project.mediaFolderId) {
-        try {
-          // Use same logic as /files endpoint to get the correct detected video
-          await frameioV4Service.loadServiceAccountToken();
-          const accountId = await frameioV4Service.getAccountId();
-          const response = await frameioV4Service.makeRequest(
-            'GET', 
-            `/accounts/${accountId}/folders/${project.mediaFolderId}/children`
-          );
-          
-          if (response && response.data) {
-            // Filter for video files uploaded after submission timestamp
-            const videoAssets = response.data.filter((asset: any) => 
-              asset.media_type && 
-              asset.media_type.startsWith('video/') && 
-              project.submittedToEditorAt && 
-              new Date(asset.created_at) > new Date(project.submittedToEditorAt)
-            );
-            
-            // Sort by creation date and take the most recent
-            videoAssets.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            
-            if (videoAssets.length > 0) {
-              const latestVideo = videoAssets[0];
-              
-              // Format as expected by share creation logic
-              videoFile = {
-                id: latestVideo.id,
-                projectId: projectId,
-                mediaAssetId: latestVideo.id,
-                mediaAssetUrl: latestVideo.view_url || '',
-                filename: latestVideo.name,
-                fileType: latestVideo.media_type,
-                fileSize: latestVideo.file_size || 0
-              };
-            }
-          }
-        } catch (frameioError) {
-          console.error("Failed to get Frame.io assets for share creation:", frameioError);
-          // Fall back to database files if Frame.io fails
+        if (!project) {
+          return res.status(404).json({ error: "Project not found" });
         }
-      }
-      
-      // Fallback: if not "video is ready" or Frame.io failed, use database files
-      if (!videoFile) {
-        const projectFiles = await storage.getProjectFiles(projectId);
-        videoFile = projectFiles.find(file => 
-          file.fileType && file.fileType.startsWith('video/') && file.mediaAssetId
-        );
-      }
-      
-      if (!videoFile) {
-        return res.status(404).json({ error: 'No video file found for this project' });
-      }
-      
-      console.log(`🚨 ROUTE ENTRY: Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`);
-      console.log(`🚨 ROUTE: Current cached URL in project: ${project.frameioReviewLink}`);
-      console.log(`🚨 ROUTE: Current cached URL in video file: ${videoFile.mediaAssetUrl}`);
-      
-      // PRIORITY 1: Check if we have a project-level share link (created by asset detection)
-      if (project.frameioReviewLink && 
-          (project.frameioReviewLink.includes('f.io/') || project.frameioReviewLink.includes('share.frame.io'))) {
-        console.log(`✅ Found project-level public share link - reusing for consistency: ${project.frameioReviewLink}`);
-        
-        return res.json({
-          shareUrl: project.frameioReviewLink,
-          shareId: project.frameioReviewShareId || 'project-cached',
-          filename: videoFile.filename,
-          isPublicShare: true,
-          note: 'Using project-level Frame.io public share - same link as email notification',
-          features: {
-            publicAccess: true,
-            commentsEnabled: true,
-            downloadsEnabled: true
-          }
-        });
-      }
-      
-      // PRIORITY 2: Check if we have a VALID PUBLIC cached share URL in video file database
-      if (videoFile.mediaAssetUrl) {
-        console.log(`🔍 Found cached URL in database: ${videoFile.mediaAssetUrl}`);
-        
-        // Only accept f.io URLs as valid public shares
-        if (videoFile.mediaAssetUrl.includes('f.io/')) {
-          console.log(`✅ Found valid public share URL - checking comment settings before serving...`);
-          
-          // SECURITY CHECK: Ensure comments are disabled before serving to user
-          try {
-            await frameioV4Service.loadServiceAccountToken();
-            const accountId = await frameioV4Service.getAccountId();
-            
-            // Extract share ID from f.io URL (format: https://f.io/SHARE_ID)
-            const shareId = videoFile.mediaAssetUrl.split('/').pop();
-            if (shareId) {
-              console.log(`🔒 Checking comment settings for share ${shareId}...`);
-              const commentSettings = await shareConfigService.getShareCommentSettings(shareId, accountId);
-              
-              if (commentSettings && commentSettings.commentsEnabled) {
-                console.log(`✅ Comments are ENABLED on share ${shareId} - keeping enabled per user preference`);
-              } else if (commentSettings) {
-                console.log(`✅ Comments already ENABLED on share ${commentSettings.actualShareId || shareId}`);
-              } else {
-                console.log(`✅ Could not verify comment settings for share ${shareId} - comments will remain as configured`);
-              }
-            }
-          } catch (commentCheckError) {
-            console.log(`⚠️ Comment check failed: ${commentCheckError instanceof Error ? commentCheckError.message : String(commentCheckError)} - proceeding with cached URL`);
-          }
-          
+
+        // FIRST: Check if we already have a project-level share link stored
+        if (project.frameioReviewLink) {
+          console.log(
+            `✅ Found existing project-level share link: ${project.frameioReviewLink}`,
+          );
           return res.json({
-            shareUrl: videoFile.mediaAssetUrl,
-            shareId: 'cached-public',
-            filename: videoFile.filename,
+            shareUrl: project.frameioReviewLink,
+            shareId: project.frameioReviewShareId || "project-cached",
+            filename: project.title,
             isPublicShare: true,
-            note: 'Using cached Frame.io public share - no login required, comments enabled',
+            note: "Using existing project share link",
             features: {
               publicAccess: true,
               commentsEnabled: true,
-              downloadsEnabled: true
-            }
+              downloadsEnabled: true,
+            },
           });
-        } else {
-          console.log(`⚠️ Cached URL is not public format (${videoFile.mediaAssetUrl})`);
-          console.log(`🔍 Searching Frame.io for correct public share version...`);
-          
-          // Search for the correct public share version
+        }
+
+        // Get the completed video file - for "video is ready" projects, use Frame.io assets directly
+        let videoFile: any = null;
+
+        if (
+          project.status.toLowerCase() === "video is ready" &&
+          project.mediaFolderId
+        ) {
           try {
+            // Use same logic as /files endpoint to get the correct detected video
             await frameioV4Service.loadServiceAccountToken();
             const accountId = await frameioV4Service.getAccountId();
-            
-            // Use dynamic folder discovery instead of trusting stored folder ID
-            let currentProjectFolderId = null;
-            
-            try {
-              const userFolders = await frameioV4Service.getUserFolders(project.userId);
-              if (userFolders && userFolders.length > 0) {
-                const userFolderId = userFolders[0].id;
-                const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
-                let projectFolder = userFolderChildren.find((child: any) => 
-                  child.type === 'folder' && (
-                    child.name === project.title ||
-                    child.name === `${project.title}-${project.id.toString().slice(0, 8)}` ||
-                    child.name === `Project-${project.id}`
-                  )
-                );
-                
-                if (projectFolder) {
-                  currentProjectFolderId = projectFolder.id;
-                  console.log(`Found correct project folder via discovery: ${currentProjectFolderId}`);
-                  
-                  // Update database if different
-                  if (currentProjectFolderId !== project.mediaFolderId) {
-                    await storage.updateProject(project.id, {
-                      mediaFolderId: currentProjectFolderId,
-                      mediaUserFolderId: userFolderId
-                    });
-                  }
-                }
-              }
-            } catch (discoveryError) {
-              console.log(`Discovery error: ${discoveryError}`);
-              currentProjectFolderId = project.mediaFolderId || null;
-            }
-            
-            if (!currentProjectFolderId) {
-              throw new Error('Could not determine project folder ID');
-            }
-            
-            const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, currentProjectFolderId, videoFile.mediaAssetId);
-            
-            if (existingShare && existingShare.url.includes('f.io/')) {
-              console.log(`✅ Found public share version: ${existingShare.url}`);
-              
-              // SECURITY CHECK: Ensure comments are disabled before serving
-              try {
-                console.log(`🔒 Ensuring comments are disabled on share ${existingShare.id}...`);
-                const commentSettings = await shareConfigService.getShareCommentSettings(existingShare.id, accountId);
-                
-                if (commentSettings && commentSettings.commentsEnabled) {
-                  console.log(`⚠️ Comments are ENABLED on share ${existingShare.id} - disabling before serving...`);
-                  const actualShareId = commentSettings.actualShareId || existingShare.id;
-                  await shareConfigService.disableCommentsOnShare(actualShareId, accountId);
-                  console.log(`✅ Comments successfully DISABLED on share ${actualShareId}`);
-                }
-              } catch (commentError) {
-                console.log(`⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
-              }
-              
-              // Update database with correct public URL for backward compatibility
-              await storage.updateProjectFileUrl(videoFile.id, existingShare.url);
-              
-              return res.json({
-                shareUrl: existingShare.url,
-                shareId: existingShare.id,
-                filename: videoFile.filename,
-                isPublicShare: true,
-                note: 'Found and cached public Frame.io share - no login required, comments disabled',
-            features: {
-              publicAccess: true,
-              commentsDisabled: true,
-              downloadsEnabled: true
-            }
-              });
-            } else {
-    
-            }
-          } catch (error) {
-            console.log(`❌ Error searching for public share version: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`);
-          }
-        }
-      }
-
-      // Second priority: Search Frame.io for existing public shares (either no cached URL or no valid public URL found)
-      console.log(`🚨 ROUTE: Searching Frame.io for existing PUBLIC shares...`);
-      try {
-        console.log(`🚨 ROUTE: Loading service account token...`);
-        await frameioV4Service.loadServiceAccountToken();
-        console.log(`🚨 ROUTE: Getting account ID...`);
-        const accountId = await frameioV4Service.getAccountId();
-        console.log(`🚨 ROUTE: Account ID obtained: ${accountId}`);
-        // Use dynamic folder discovery instead of trusting stored folder ID
-        console.log(`🚨 ROUTE: Using dynamic folder discovery for share creation...`);
-        let currentProjectFolderId = null;
-        
-        try {
-          // Dynamic folder discovery - same approach as Last Updated calculation
-          const userFolders = await frameioV4Service.getUserFolders(project.userId);
-          if (userFolders && userFolders.length > 0) {
-            const userFolderId = userFolders[0].id;
-            console.log(`🚨 ROUTE: Found user folder: ${userFolderId}`);
-            
-            const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
-            let projectFolder = userFolderChildren.find((child: any) => 
-              child.type === 'folder' && (
-                child.name === project.title ||
-                child.name === `${project.title}-${project.id.toString().slice(0, 8)}` ||
-                child.name === `Project-${project.id}`
-              )
+            const response = await frameioV4Service.makeRequest(
+              "GET",
+              `/accounts/${accountId}/folders/${project.mediaFolderId}/children`,
             );
-            
-            if (projectFolder) {
-              currentProjectFolderId = projectFolder.id;
-              console.log(`🚨 ROUTE: Found project folder via discovery: ${currentProjectFolderId}`);
-              
-              // Update database if different from stored value
-              if (currentProjectFolderId !== project.mediaFolderId) {
-                console.log(`📁 Share creation: Updating project ${project.id} with correct folder ID: ${currentProjectFolderId}`);
-                await storage.updateProject(project.id, {
-                  mediaFolderId: currentProjectFolderId,
-                  mediaUserFolderId: userFolderId
-                });
+
+            if (response && response.data) {
+              // Filter for video files uploaded after submission timestamp
+              const videoAssets = response.data.filter(
+                (asset: any) =>
+                  asset.media_type &&
+                  asset.media_type.startsWith("video/") &&
+                  project.submittedToEditorAt &&
+                  new Date(asset.created_at) >
+                    new Date(project.submittedToEditorAt),
+              );
+
+              // Sort by creation date and take the most recent
+              videoAssets.sort(
+                (a: any, b: any) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime(),
+              );
+
+              if (videoAssets.length > 0) {
+                const latestVideo = videoAssets[0];
+
+                // Format as expected by share creation logic
+                videoFile = {
+                  id: latestVideo.id,
+                  projectId: projectId,
+                  mediaAssetId: latestVideo.id,
+                  mediaAssetUrl: latestVideo.view_url || "",
+                  filename: latestVideo.name,
+                  fileType: latestVideo.media_type,
+                  fileSize: latestVideo.file_size || 0,
+                };
               }
             }
+          } catch (frameioError) {
+            console.error(
+              "Failed to get Frame.io assets for share creation:",
+              frameioError,
+            );
+            // Fall back to database files if Frame.io fails
           }
-        } catch (discoveryError) {
-          console.log(`❌ Dynamic folder discovery failed: ${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}`);
-          // Fall back to stored folder ID if discovery fails
-          currentProjectFolderId = project.mediaFolderId;
         }
 
-        if (!currentProjectFolderId) {
-          throw new Error('Could not determine project folder ID (neither via discovery nor database)');
+        // Fallback: if not "video is ready" or Frame.io failed, use database files
+        if (!videoFile) {
+          const projectFiles = await storage.getProjectFiles(projectId);
+          videoFile = projectFiles.find(
+            (file) =>
+              file.fileType &&
+              file.fileType.startsWith("video/") &&
+              file.mediaAssetId,
+          );
         }
-        
-        console.log(`🚨 ROUTE: Using project folder ID: ${currentProjectFolderId}`);
-        console.log(`🚨 ROUTE: Asset ID: ${videoFile.mediaAssetId}`);
-        console.log(`🚨 ROUTE: Calling findExistingShareForAsset...`);
-        const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, currentProjectFolderId, videoFile.mediaAssetId);
-    
-        
-        if (existingShare) {
-          // Ensure we only return public f.io URLs
-          if (existingShare.url.includes('f.io/')) {
-            console.log(`🛡️ FOUND EXISTING PUBLIC SHARE: ${existingShare.id} - URL: ${existingShare.url}`);
-            
-            // SECURITY CHECK: Ensure comments are disabled before serving
-            try {
-              console.log(`🔒 Ensuring comments are disabled on share ${existingShare.id}...`);
-              const commentSettings = await shareConfigService.getShareCommentSettings(existingShare.id, accountId);
-              
-              if (commentSettings && commentSettings.commentsEnabled) {
-                console.log(`⚠️ Comments are ENABLED on share ${existingShare.id} - disabling before serving...`);
-                const actualShareId = commentSettings.actualShareId || existingShare.id;
-                await shareConfigService.disableCommentsOnShare(actualShareId, accountId);
-                console.log(`✅ Comments successfully DISABLED on share ${actualShareId}`);
-              }
-            } catch (commentError) {
-              console.log(`⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
-            }
-            
-            console.log(`💾 Updating database cache with public share: ${existingShare.url}`);
-            
-            // Update database with existing public share URL for backward compatibility
-            await storage.updateProjectFileUrl(videoFile.id, existingShare.url);
-            
-            // Store existing share at project level for consistency
-            await storage.updateProjectShareLink(projectId, existingShare.id, existingShare.url);
-            
-            // Store asset mapping for webhook detection
-            await storage.createFrameioShareAsset({
-              shareId: existingShare.id,
-              projectId: projectId,
-              assetId: videoFile.mediaAssetId,
-              assetType: 'file',
-              parentFolderId: currentProjectFolderId
-            });
-            
-            return res.json({
-              shareUrl: existingShare.url,
-              shareId: existingShare.id,
-              filename: videoFile.filename,
-              isPublicShare: true,
-              note: 'Found existing Frame.io public share - no login required, comments disabled',
+
+        if (!videoFile) {
+          return res
+            .status(404)
+            .json({ error: "No video file found for this project" });
+        }
+
+        console.log(
+          `🚨 ROUTE ENTRY: Creating Frame.io V4 public share for video: ${videoFile.filename} (${videoFile.mediaAssetId})`,
+        );
+        console.log(
+          `🚨 ROUTE: Current cached URL in project: ${project.frameioReviewLink}`,
+        );
+        console.log(
+          `🚨 ROUTE: Current cached URL in video file: ${videoFile.mediaAssetUrl}`,
+        );
+
+        // PRIORITY 1: Check if we have a project-level share link (created by asset detection)
+        if (
+          project.frameioReviewLink &&
+          (project.frameioReviewLink.includes("f.io/") ||
+            project.frameioReviewLink.includes("share.frame.io"))
+        ) {
+          console.log(
+            `✅ Found project-level public share link - reusing for consistency: ${project.frameioReviewLink}`,
+          );
+
+          return res.json({
+            shareUrl: project.frameioReviewLink,
+            shareId: project.frameioReviewShareId || "project-cached",
+            filename: videoFile.filename,
+            isPublicShare: true,
+            note: "Using project-level Frame.io public share - same link as email notification",
             features: {
               publicAccess: true,
-              commentsDisabled: true,
-              downloadsEnabled: true
-            }
-            });
-          } else {
-            console.log(`⚠️ Found share but not public format: ${existingShare.url}`);
-            console.log(`🔍 Continuing search for public version...`);
-          }
-        } else {
-          console.log(`❌ No existing public shares found in Frame.io for asset ${videoFile.mediaAssetId}`);
-        }
-      } catch (searchError) {
-        console.log(`❌ Existing share search failed: ${searchError instanceof Error ? searchError.message : String(searchError)}`);
-      }
-      
-      // This section should not be reached if we have a valid cached URL above
-      // Check if we have any Frame.io share URL but need to validate it
-      if (videoFile.mediaAssetUrl && (videoFile.mediaAssetUrl.includes('share.frame.io') || videoFile.mediaAssetUrl.includes('f.io'))) {
-        console.log(`🔍 Validating cached share URL: ${videoFile.mediaAssetUrl}`);
-        
-        try {
-          // Test if the share URL is still valid by making a HEAD request
-          const axios = require('axios');
-          const response = await axios.head(videoFile.mediaAssetUrl, { 
-            timeout: 5000,
-            maxRedirects: 2 // Allow some redirects but not too many
+              commentsEnabled: true,
+              downloadsEnabled: true,
+            },
           });
-          
-          // If we get a successful response, the share is still valid
-          if (response.status === 200) {
-            console.log(`✅ Cached share URL is still valid: ${videoFile.mediaAssetUrl}`);
+        }
+
+        // PRIORITY 2: Check if we have a VALID PUBLIC cached share URL in video file database
+        if (videoFile.mediaAssetUrl) {
+          console.log(
+            `🔍 Found cached URL in database: ${videoFile.mediaAssetUrl}`,
+          );
+
+          // Only accept f.io URLs as valid public shares
+          if (videoFile.mediaAssetUrl.includes("f.io/")) {
+            console.log(
+              `✅ Found valid public share URL - checking comment settings before serving...`,
+            );
+
+            // SECURITY CHECK: Ensure comments are disabled before serving to user
+            try {
+              await frameioV4Service.loadServiceAccountToken();
+              const accountId = await frameioV4Service.getAccountId();
+
+              // Extract share ID from f.io URL (format: https://f.io/SHARE_ID)
+              const shareId = videoFile.mediaAssetUrl.split("/").pop();
+              if (shareId) {
+                console.log(
+                  `🔒 Checking comment settings for share ${shareId}...`,
+                );
+                const commentSettings =
+                  await shareConfigService.getShareCommentSettings(
+                    shareId,
+                    accountId,
+                  );
+
+                if (commentSettings && commentSettings.commentsEnabled) {
+                  console.log(
+                    `✅ Comments are ENABLED on share ${shareId} - keeping enabled per user preference`,
+                  );
+                } else if (commentSettings) {
+                  console.log(
+                    `✅ Comments already ENABLED on share ${commentSettings.actualShareId || shareId}`,
+                  );
+                } else {
+                  console.log(
+                    `✅ Could not verify comment settings for share ${shareId} - comments will remain as configured`,
+                  );
+                }
+              }
+            } catch (commentCheckError) {
+              console.log(
+                `⚠️ Comment check failed: ${commentCheckError instanceof Error ? commentCheckError.message : String(commentCheckError)} - proceeding with cached URL`,
+              );
+            }
+
             return res.json({
               shareUrl: videoFile.mediaAssetUrl,
-              shareId: 'cached-validated',
+              shareId: "cached-public",
               filename: videoFile.filename,
               isPublicShare: true,
-              note: 'Validated Frame.io public share - no login required'
+              note: "Using cached Frame.io public share - no login required, comments enabled",
+              features: {
+                publicAccess: true,
+                commentsEnabled: true,
+                downloadsEnabled: true,
+              },
             });
-          }
-        } catch (error) {
-          console.log(`❌ Cached share URL is invalid or requires login: ${videoFile.mediaAssetUrl}`);
-          console.log(`🛡️ Attempting resilient recovery - searching Frame.io for existing shares...`);
-          
-          // Try to find existing shares in Frame.io before creating new one
-          try {
-            await frameioV4Service.loadServiceAccountToken();
-            const accountId = await frameioV4Service.getAccountId();
-            if (!project.mediaFolderId) {
-              throw new Error('Project has no media folder ID');
+          } else {
+            console.log(
+              `⚠️ Cached URL is not public format (${videoFile.mediaAssetUrl})`,
+            );
+            console.log(
+              `🔍 Searching Frame.io for correct public share version...`,
+            );
+
+            // Search for the correct public share version
+            try {
+              await frameioV4Service.loadServiceAccountToken();
+              const accountId = await frameioV4Service.getAccountId();
+
+              // Use dynamic folder discovery instead of trusting stored folder ID
+              let currentProjectFolderId = null;
+
+              try {
+                const userFolders = await frameioV4Service.getUserFolders(
+                  project.userId,
+                );
+                if (userFolders && userFolders.length > 0) {
+                  const userFolderId = userFolders[0].id;
+                  const userFolderChildren =
+                    await frameioV4Service.getFolderChildren(userFolderId);
+                  let projectFolder = userFolderChildren.find(
+                    (child: any) =>
+                      child.type === "folder" &&
+                      (child.name === project.title ||
+                        child.name ===
+                          `${project.title}-${project.id.toString().slice(0, 8)}` ||
+                        child.name === `Project-${project.id}`),
+                  );
+
+                  if (projectFolder) {
+                    currentProjectFolderId = projectFolder.id;
+                    console.log(
+                      `Found correct project folder via discovery: ${currentProjectFolderId}`,
+                    );
+
+                    // Update database if different
+                    if (currentProjectFolderId !== project.mediaFolderId) {
+                      await storage.updateProject(project.id, {
+                        mediaFolderId: currentProjectFolderId,
+                        mediaUserFolderId: userFolderId,
+                      });
+                    }
+                  }
+                }
+              } catch (discoveryError) {
+                console.log(`Discovery error: ${discoveryError}`);
+                currentProjectFolderId = project.mediaFolderId || null;
+              }
+
+              if (!currentProjectFolderId) {
+                throw new Error("Could not determine project folder ID");
+              }
+
+              const existingShare =
+                await frameioV4Service.findExistingShareForAsset(
+                  accountId,
+                  currentProjectFolderId,
+                  videoFile.mediaAssetId,
+                );
+
+              if (existingShare && existingShare.url.includes("f.io/")) {
+                console.log(
+                  `✅ Found public share version: ${existingShare.url}`,
+                );
+
+                // SECURITY CHECK: Ensure comments are disabled before serving
+                try {
+                  console.log(
+                    `🔒 Ensuring comments are disabled on share ${existingShare.id}...`,
+                  );
+                  const commentSettings =
+                    await shareConfigService.getShareCommentSettings(
+                      existingShare.id,
+                      accountId,
+                    );
+
+                  if (commentSettings && commentSettings.commentsEnabled) {
+                    console.log(
+                      `⚠️ Comments are ENABLED on share ${existingShare.id} - disabling before serving...`,
+                    );
+                    const actualShareId =
+                      commentSettings.actualShareId || existingShare.id;
+                    await shareConfigService.disableCommentsOnShare(
+                      actualShareId,
+                      accountId,
+                    );
+                    console.log(
+                      `✅ Comments successfully DISABLED on share ${actualShareId}`,
+                    );
+                  }
+                } catch (commentError) {
+                  console.log(
+                    `⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`,
+                  );
+                }
+
+                // Update database with correct public URL for backward compatibility
+                await storage.updateProjectFileUrl(
+                  videoFile.id,
+                  existingShare.url,
+                );
+
+                return res.json({
+                  shareUrl: existingShare.url,
+                  shareId: existingShare.id,
+                  filename: videoFile.filename,
+                  isPublicShare: true,
+                  note: "Found and cached public Frame.io share - no login required, comments disabled",
+                  features: {
+                    publicAccess: true,
+                    commentsDisabled: true,
+                    downloadsEnabled: true,
+                  },
+                });
+              } else {
+              }
+            } catch (error) {
+              console.log(
+                `❌ Error searching for public share version: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+              );
             }
-            const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, project.mediaFolderId, videoFile.mediaAssetId);
-            
-            if (existingShare) {
-              console.log(`🛡️ RESILIENT RECOVERY SUCCESS: Found existing share ${existingShare.id}`);
-              console.log(`💾 Updating database cache with recovered share: ${existingShare.url}`);
-              
-              // Update database with recovered share URL (both file and project level)
-              await storage.updateProjectFile(videoFile.id, {
-                mediaAssetUrl: existingShare.url
-              });
-              await storage.updateProjectShareLink(projectId, existingShare.id, existingShare.url);
-              
+          }
+        }
+
+        // Second priority: Search Frame.io for existing public shares (either no cached URL or no valid public URL found)
+        console.log(
+          `🚨 ROUTE: Searching Frame.io for existing PUBLIC shares...`,
+        );
+        try {
+          console.log(`🚨 ROUTE: Loading service account token...`);
+          await frameioV4Service.loadServiceAccountToken();
+          console.log(`🚨 ROUTE: Getting account ID...`);
+          const accountId = await frameioV4Service.getAccountId();
+          console.log(`🚨 ROUTE: Account ID obtained: ${accountId}`);
+          // Use dynamic folder discovery instead of trusting stored folder ID
+          console.log(
+            `🚨 ROUTE: Using dynamic folder discovery for share creation...`,
+          );
+          let currentProjectFolderId = null;
+
+          try {
+            // Dynamic folder discovery - same approach as Last Updated calculation
+            const userFolders = await frameioV4Service.getUserFolders(
+              project.userId,
+            );
+            if (userFolders && userFolders.length > 0) {
+              const userFolderId = userFolders[0].id;
+              console.log(`🚨 ROUTE: Found user folder: ${userFolderId}`);
+
+              const userFolderChildren =
+                await frameioV4Service.getFolderChildren(userFolderId);
+              let projectFolder = userFolderChildren.find(
+                (child: any) =>
+                  child.type === "folder" &&
+                  (child.name === project.title ||
+                    child.name ===
+                      `${project.title}-${project.id.toString().slice(0, 8)}` ||
+                    child.name === `Project-${project.id}`),
+              );
+
+              if (projectFolder) {
+                currentProjectFolderId = projectFolder.id;
+                console.log(
+                  `🚨 ROUTE: Found project folder via discovery: ${currentProjectFolderId}`,
+                );
+
+                // Update database if different from stored value
+                if (currentProjectFolderId !== project.mediaFolderId) {
+                  console.log(
+                    `📁 Share creation: Updating project ${project.id} with correct folder ID: ${currentProjectFolderId}`,
+                  );
+                  await storage.updateProject(project.id, {
+                    mediaFolderId: currentProjectFolderId,
+                    mediaUserFolderId: userFolderId,
+                  });
+                }
+              }
+            }
+          } catch (discoveryError) {
+            console.log(
+              `❌ Dynamic folder discovery failed: ${discoveryError instanceof Error ? discoveryError.message : String(discoveryError)}`,
+            );
+            // Fall back to stored folder ID if discovery fails
+            currentProjectFolderId = project.mediaFolderId;
+          }
+
+          if (!currentProjectFolderId) {
+            throw new Error(
+              "Could not determine project folder ID (neither via discovery nor database)",
+            );
+          }
+
+          console.log(
+            `🚨 ROUTE: Using project folder ID: ${currentProjectFolderId}`,
+          );
+          console.log(`🚨 ROUTE: Asset ID: ${videoFile.mediaAssetId}`);
+          console.log(`🚨 ROUTE: Calling findExistingShareForAsset...`);
+          const existingShare =
+            await frameioV4Service.findExistingShareForAsset(
+              accountId,
+              currentProjectFolderId,
+              videoFile.mediaAssetId,
+            );
+
+          if (existingShare) {
+            // Ensure we only return public f.io URLs
+            if (existingShare.url.includes("f.io/")) {
+              console.log(
+                `🛡️ FOUND EXISTING PUBLIC SHARE: ${existingShare.id} - URL: ${existingShare.url}`,
+              );
+
+              // SECURITY CHECK: Ensure comments are disabled before serving
+              try {
+                console.log(
+                  `🔒 Ensuring comments are disabled on share ${existingShare.id}...`,
+                );
+                const commentSettings =
+                  await shareConfigService.getShareCommentSettings(
+                    existingShare.id,
+                    accountId,
+                  );
+
+                if (commentSettings && commentSettings.commentsEnabled) {
+                  console.log(
+                    `⚠️ Comments are ENABLED on share ${existingShare.id} - disabling before serving...`,
+                  );
+                  const actualShareId =
+                    commentSettings.actualShareId || existingShare.id;
+                  await shareConfigService.disableCommentsOnShare(
+                    actualShareId,
+                    accountId,
+                  );
+                  console.log(
+                    `✅ Comments successfully DISABLED on share ${actualShareId}`,
+                  );
+                }
+              } catch (commentError) {
+                console.log(
+                  `⚠️ Comment disable failed: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`,
+                );
+              }
+
+              console.log(
+                `💾 Updating database cache with public share: ${existingShare.url}`,
+              );
+
+              // Update database with existing public share URL for backward compatibility
+              await storage.updateProjectFileUrl(
+                videoFile.id,
+                existingShare.url,
+              );
+
+              // Store existing share at project level for consistency
+              await storage.updateProjectShareLink(
+                projectId,
+                existingShare.id,
+                existingShare.url,
+              );
+
               // Store asset mapping for webhook detection
               await storage.createFrameioShareAsset({
                 shareId: existingShare.id,
                 projectId: projectId,
                 assetId: videoFile.mediaAssetId,
-                assetType: 'file',
-                parentFolderId: project.mediaFolderId || ''
+                assetType: "file",
+                parentFolderId: currentProjectFolderId,
               });
-              
+
               return res.json({
                 shareUrl: existingShare.url,
                 shareId: existingShare.id,
                 filename: videoFile.filename,
                 isPublicShare: true,
-                note: 'Recovered existing Frame.io share - no login required'
+                note: "Found existing Frame.io public share - no login required, comments disabled",
+                features: {
+                  publicAccess: true,
+                  commentsDisabled: true,
+                  downloadsEnabled: true,
+                },
               });
             } else {
-    
+              console.log(
+                `⚠️ Found share but not public format: ${existingShare.url}`,
+              );
+              console.log(`🔍 Continuing search for public version...`);
             }
-          } catch (recoveryError) {
-            console.log(`❌ Resilient recovery failed: ${recoveryError instanceof Error ? recoveryError.message : String(recoveryError)}`);
+          } else {
+            console.log(
+              `❌ No existing public shares found in Frame.io for asset ${videoFile.mediaAssetId}`,
+            );
           }
-          // Continue to create new share below
+        } catch (searchError) {
+          console.log(
+            `❌ Existing share search failed: ${searchError instanceof Error ? searchError.message : String(searchError)}`,
+          );
         }
-      }
-      
-      // Create Frame.io V4 public share using the 4-step process
-      await frameioV4Service.loadServiceAccountToken();
-      if (!project.mediaFolderId) {
-        return res.status(400).json({ error: 'Project has no media folder ID configured' });
-      }
-      console.log(`🚨 CALLING createAssetShareLink with assetId: ${videoFile.mediaAssetId}, filename: ${videoFile.filename}`);
-      const shareLink = await frameioV4Service.createAssetShareLink(
-        videoFile.mediaAssetId,
-        videoFile.filename || 'Video Share',
-        true  // Enable comments per user preference
-      );
-      console.log(`🚨 RETURNED from createAssetShareLink with URL: ${shareLink.url}`);
 
-      // SECURITY CHECK: Ensure comments are disabled on newly created share
-      try {
-        console.log(`🔒 Ensuring comments are disabled on new share ${shareLink.id}...`);
-        const commentSettings = await shareConfigService.getShareCommentSettings(shareLink.id, await frameioV4Service.getAccountId());
-        
-        if (commentSettings && commentSettings.commentsEnabled) {
-          console.log(`⚠️ Comments are ENABLED on new share ${shareLink.id} - disabling before serving...`);
-          await shareConfigService.disableCommentsOnShare(shareLink.id, await frameioV4Service.getAccountId());
-          console.log(`✅ Comments successfully DISABLED on new share ${shareLink.id}`);
+        // This section should not be reached if we have a valid cached URL above
+        // Check if we have any Frame.io share URL but need to validate it
+        if (
+          videoFile.mediaAssetUrl &&
+          (videoFile.mediaAssetUrl.includes("share.frame.io") ||
+            videoFile.mediaAssetUrl.includes("f.io"))
+        ) {
+          console.log(
+            `🔍 Validating cached share URL: ${videoFile.mediaAssetUrl}`,
+          );
+
+          try {
+            // Test if the share URL is still valid by making a HEAD request
+            const axios = require("axios");
+            const response = await axios.head(videoFile.mediaAssetUrl, {
+              timeout: 5000,
+              maxRedirects: 2, // Allow some redirects but not too many
+            });
+
+            // If we get a successful response, the share is still valid
+            if (response.status === 200) {
+              console.log(
+                `✅ Cached share URL is still valid: ${videoFile.mediaAssetUrl}`,
+              );
+              return res.json({
+                shareUrl: videoFile.mediaAssetUrl,
+                shareId: "cached-validated",
+                filename: videoFile.filename,
+                isPublicShare: true,
+                note: "Validated Frame.io public share - no login required",
+              });
+            }
+          } catch (error) {
+            console.log(
+              `❌ Cached share URL is invalid or requires login: ${videoFile.mediaAssetUrl}`,
+            );
+            console.log(
+              `🛡️ Attempting resilient recovery - searching Frame.io for existing shares...`,
+            );
+
+            // Try to find existing shares in Frame.io before creating new one
+            try {
+              await frameioV4Service.loadServiceAccountToken();
+              const accountId = await frameioV4Service.getAccountId();
+              if (!project.mediaFolderId) {
+                throw new Error("Project has no media folder ID");
+              }
+              const existingShare =
+                await frameioV4Service.findExistingShareForAsset(
+                  accountId,
+                  project.mediaFolderId,
+                  videoFile.mediaAssetId,
+                );
+
+              if (existingShare) {
+                console.log(
+                  `🛡️ RESILIENT RECOVERY SUCCESS: Found existing share ${existingShare.id}`,
+                );
+                console.log(
+                  `💾 Updating database cache with recovered share: ${existingShare.url}`,
+                );
+
+                // Update database with recovered share URL (both file and project level)
+                await storage.updateProjectFile(videoFile.id, {
+                  mediaAssetUrl: existingShare.url,
+                });
+                await storage.updateProjectShareLink(
+                  projectId,
+                  existingShare.id,
+                  existingShare.url,
+                );
+
+                // Store asset mapping for webhook detection
+                await storage.createFrameioShareAsset({
+                  shareId: existingShare.id,
+                  projectId: projectId,
+                  assetId: videoFile.mediaAssetId,
+                  assetType: "file",
+                  parentFolderId: project.mediaFolderId || "",
+                });
+
+                return res.json({
+                  shareUrl: existingShare.url,
+                  shareId: existingShare.id,
+                  filename: videoFile.filename,
+                  isPublicShare: true,
+                  note: "Recovered existing Frame.io share - no login required",
+                });
+              } else {
+              }
+            } catch (recoveryError) {
+              console.log(
+                `❌ Resilient recovery failed: ${recoveryError instanceof Error ? recoveryError.message : String(recoveryError)}`,
+              );
+            }
+            // Continue to create new share below
+          }
         }
-      } catch (commentError) {
-        console.log(`⚠️ Comment disable failed on new share: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`);
-      }
 
-      // Store the new share URL and ID in the database to avoid duplicate creation
-      console.log(`💾 Updating database with new share URL: ${shareLink.url} and ID: ${shareLink.id}`);
-      
-      // Only update file-level info if we have a database record (not Frame.io direct asset)
-      if (typeof videoFile.id === 'number') {
-        await storage.updateProjectFileUrl(videoFile.id, shareLink.url);
-        console.log(`📊 Updated file-level database record ${videoFile.id} with share URL for backward compatibility`);
-      } else {
-        console.log(`📊 Skipping file-level update - using Frame.io asset directly (${videoFile.id})`);
-      }
-      
-      // ALWAYS store the share link at the project level with video metadata for easy access (enforces 1:1 relationship)
-      await storage.updateProjectShareLink(projectId, shareLink.id, shareLink.url, {
-        filename: videoFile.filename,
-        fileSize: videoFile.fileSize,
-        fileType: videoFile.fileType,
-        assetId: videoFile.mediaAssetId
-      });
-      await updateProjectTimestamp(projectId, "share link generated");
-      console.log(`✅ Database updated with project-level share info and video metadata`);
-      
-      // Store asset mapping for webhook detection
-      await storage.createFrameioShareAsset({
-        shareId: shareLink.id,
-        projectId: projectId,
-        assetId: videoFile.mediaAssetId,
-        assetType: 'file',
-        parentFolderId: project.mediaFolderId || ''
-      });
-      console.log(`📍 Asset mapping stored for webhook detection`);
-      
-      console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
-      
-      res.json({
-        shareUrl: shareLink.url,
-        shareId: shareLink.id,
-        filename: videoFile.filename,
-        isPublicShare: true,
-        expiresInDays: 30,
-        note: 'New Frame.io public share created - comments disabled',
-        features: {
-          publicAccess: true,
-          commentsDisabled: true,
-          downloadsEnabled: true
+        // Create Frame.io V4 public share using the 4-step process
+        await frameioV4Service.loadServiceAccountToken();
+        if (!project.mediaFolderId) {
+          return res
+            .status(400)
+            .json({ error: "Project has no media folder ID configured" });
         }
-      });
-      
-    } catch (error) {
-      console.error('Failed to create Frame.io share link:', error);
-      res.status(500).json({ error: 'Failed to generate Frame.io share link' });
-    }
-  });
+        console.log(
+          `🚨 CALLING createAssetShareLink with assetId: ${videoFile.mediaAssetId}, filename: ${videoFile.filename}`,
+        );
+        const shareLink = await frameioV4Service.createAssetShareLink(
+          videoFile.mediaAssetId,
+          videoFile.filename || "Video Share",
+          true, // Enable comments per user preference
+        );
+        console.log(
+          `🚨 RETURNED from createAssetShareLink with URL: ${shareLink.url}`,
+        );
 
+        // SECURITY CHECK: Ensure comments are disabled on newly created share
+        try {
+          console.log(
+            `🔒 Ensuring comments are disabled on new share ${shareLink.id}...`,
+          );
+          const commentSettings =
+            await shareConfigService.getShareCommentSettings(
+              shareLink.id,
+              await frameioV4Service.getAccountId(),
+            );
+
+          if (commentSettings && commentSettings.commentsEnabled) {
+            console.log(
+              `⚠️ Comments are ENABLED on new share ${shareLink.id} - disabling before serving...`,
+            );
+            await shareConfigService.disableCommentsOnShare(
+              shareLink.id,
+              await frameioV4Service.getAccountId(),
+            );
+            console.log(
+              `✅ Comments successfully DISABLED on new share ${shareLink.id}`,
+            );
+          }
+        } catch (commentError) {
+          console.log(
+            `⚠️ Comment disable failed on new share: ${commentError instanceof Error ? commentError.message : String(commentError)} - proceeding anyway`,
+          );
+        }
+
+        // Store the new share URL and ID in the database to avoid duplicate creation
+        console.log(
+          `💾 Updating database with new share URL: ${shareLink.url} and ID: ${shareLink.id}`,
+        );
+
+        // Only update file-level info if we have a database record (not Frame.io direct asset)
+        if (typeof videoFile.id === "number") {
+          await storage.updateProjectFileUrl(videoFile.id, shareLink.url);
+          console.log(
+            `📊 Updated file-level database record ${videoFile.id} with share URL for backward compatibility`,
+          );
+        } else {
+          console.log(
+            `📊 Skipping file-level update - using Frame.io asset directly (${videoFile.id})`,
+          );
+        }
+
+        // ALWAYS store the share link at the project level with video metadata for easy access (enforces 1:1 relationship)
+        await storage.updateProjectShareLink(
+          projectId,
+          shareLink.id,
+          shareLink.url,
+          {
+            filename: videoFile.filename,
+            fileSize: videoFile.fileSize,
+            fileType: videoFile.fileType,
+            assetId: videoFile.mediaAssetId,
+          },
+        );
+        await updateProjectTimestamp(projectId, "share link generated");
+        console.log(
+          `✅ Database updated with project-level share info and video metadata`,
+        );
+
+        // Store asset mapping for webhook detection
+        await storage.createFrameioShareAsset({
+          shareId: shareLink.id,
+          projectId: projectId,
+          assetId: videoFile.mediaAssetId,
+          assetType: "file",
+          parentFolderId: project.mediaFolderId || "",
+        });
+        console.log(`📍 Asset mapping stored for webhook detection`);
+
+        console.log(`✅ Frame.io V4 public share created: ${shareLink.url}`);
+
+        res.json({
+          shareUrl: shareLink.url,
+          shareId: shareLink.id,
+          filename: videoFile.filename,
+          isPublicShare: true,
+          expiresInDays: 30,
+          note: "New Frame.io public share created - comments disabled",
+          features: {
+            publicAccess: true,
+            commentsDisabled: true,
+            downloadsEnabled: true,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create Frame.io share link:", error);
+        res
+          .status(500)
+          .json({ error: "Failed to generate Frame.io share link" });
+      }
+    },
+  );
 
   // Frame.io proxy endpoint for authenticated file access
-  router.get("/api/frameio/proxy/file/:assetId", async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { assetId } = req.params;
-      console.log(`Proxying Frame.io file access for asset: ${assetId}`);
-      
-      // Load service account token and get file details
-      await frameioV4Service.loadServiceAccountToken();
-      const accountId = await frameioV4Service.getAccountId();
-      
-      // Get file details to find actual file content
-      const fileResponse = await frameioV4Service.makeRequest('GET', `/accounts/${accountId}/files/${assetId}`);
-      const fileData = fileResponse.data;
-      
-      if (!fileData) {
-        return res.status(404).json({ error: 'File not found' });
+  router.get(
+    "/api/frameio/proxy/file/:assetId",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { assetId } = req.params;
+        console.log(`Proxying Frame.io file access for asset: ${assetId}`);
+
+        // Load service account token and get file details
+        await frameioV4Service.loadServiceAccountToken();
+        const accountId = await frameioV4Service.getAccountId();
+
+        // Get file details to find actual file content
+        const fileResponse = await frameioV4Service.makeRequest(
+          "GET",
+          `/accounts/${accountId}/files/${assetId}`,
+        );
+        const fileData = fileResponse.data;
+
+        if (!fileData) {
+          return res.status(404).json({ error: "File not found" });
+        }
+
+        // Frame.io V4 doesn't provide direct download URLs - return explanation
+        console.log(
+          "Frame.io V4 limitation: No direct streaming URLs available",
+        );
+
+        // Fallback: Return Frame.io web URL with explanation
+        res.json({
+          message: "Frame.io V4 requires web authentication",
+          webUrl: fileData.view_url,
+          filename: fileData.name,
+          instructions: "This video requires opening in Frame.io web interface",
+        });
+      } catch (error) {
+        console.error("Frame.io proxy error:", error);
+        res.status(500).json({ error: "Failed to proxy Frame.io file" });
       }
-      
-      // Frame.io V4 doesn't provide direct download URLs - return explanation
-      console.log('Frame.io V4 limitation: No direct streaming URLs available');
-      
-      // Fallback: Return Frame.io web URL with explanation
-      res.json({
-        message: 'Frame.io V4 requires web authentication',
-        webUrl: fileData.view_url,
-        filename: fileData.name,
-        instructions: 'This video requires opening in Frame.io web interface'
-      });
-      
-    } catch (error) {
-      console.error('Frame.io proxy error:', error);
-      res.status(500).json({ error: 'Failed to proxy Frame.io file' });
-    }
-  });
+    },
+  );
 
   // WEBHOOK FUNCTIONALITY (DISABLED - Using polling instead)
   // Uncomment this section if you want to enable webhook-based detection in the future
@@ -1415,752 +1659,980 @@ export async function registerRoutes(app: any): Promise<Server> {
   // END OF WEBHOOK HELPER FUNCTIONS
 
   // Get project files endpoint
-  router.get("/api/projects/:id/files", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const userId = req.user.id;
-      
-      // Verify project ownership
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ error: "Project not found" });
-      }
-      
-      // PRIORITY 1: If we have stored video metadata with the share link, use that
-      if (project.frameioReviewLink && project.frameioVideoFilename && project.frameioVideoAssetId) {
-        console.log(`📌 Using stored video metadata for project ${projectId}: ${project.frameioVideoFilename}`);
-        const storedVideoFile = [{
-          id: project.frameioVideoAssetId,
-          projectId: projectId,
-          mediaAssetId: project.frameioVideoAssetId,
-          mediaAssetUrl: project.frameioReviewLink,
-          filename: project.frameioVideoFilename,
-          fileType: project.frameioVideoFileType || 'video/mp4',
-          fileSize: project.frameioVideoFileSize || 0,
-          uploadDate: project.updatedAt
-        }];
-        return res.json(storedVideoFile);
-      }
-      
-      // PRIORITY 2: For projects in "video is ready" or revision status, fetch from Frame.io
-      if ((project.status.toLowerCase() === "video is ready" || 
-           project.status.toLowerCase() === "awaiting revision instructions" ||
-           project.status.toLowerCase() === "revision in progress") && 
-          project.mediaFolderId) {
-        try {
-          await frameioV4Service.loadServiceAccountToken();
-          const accountId = await frameioV4Service.getAccountId();
-          const response = await frameioV4Service.makeRequest(
-            'GET', 
-            `/accounts/${accountId}/folders/${project.mediaFolderId}/children`
-          );
-          
-          if (response && response.data) {
-            console.log(`🔍 Found ${response.data.length} total assets in Frame.io folder for project ${projectId}`);
-            
-            let videoAssets = [];
-            
-            // For all statuses showing delivered videos, filter by submission timestamp
-            // This ensures we only show videos uploaded by the editor, not user uploads
-            if (project.status.toLowerCase() === 'video is ready' || 
-                project.status.toLowerCase() === 'awaiting revision instructions' || 
-                project.status.toLowerCase() === 'revision in progress') {
-              console.log(`🎬 Getting delivered videos for project (status: ${project.status})`);
-              videoAssets = response.data.filter((asset: any) => 
-                asset.media_type && 
-                asset.media_type.startsWith('video/') && 
-                project.submittedToEditorAt && 
-                new Date(asset.created_at) > new Date(project.submittedToEditorAt)
-              );
-              console.log(`🎬 Found ${videoAssets.length} video assets after submission timestamp`);
-              console.log(`⏰ Submission timestamp: ${project.submittedToEditorAt}`);
-            } else {
-              // For other statuses, get all videos
-              videoAssets = response.data.filter((asset: any) => 
-                asset.media_type && asset.media_type.startsWith('video/')
-              );
-              console.log(`📹 Found ${videoAssets.length} total video assets`);
-            }
-            
-            // Sort by creation date and take the most recent
-            videoAssets.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            
-            if (videoAssets.length > 0) {
-              const latestVideo = videoAssets[0];
-              console.log(`📁 For project ${projectId} (status: ${project.status}), returning Frame.io asset: ${latestVideo.name}`);
-              console.log(`📏 Frame.io file size: ${latestVideo.file_size} bytes (${(latestVideo.file_size / 1024 / 1024).toFixed(2)} MB)`);
-              
-              // Return in the format expected by VideoViewingStep
-              const frameioFileFormat = [{
-                id: latestVideo.id,
-                projectId: projectId,
-                mediaAssetId: latestVideo.id,
-                mediaAssetUrl: latestVideo.view_url || '',
-                filename: latestVideo.name,
-                fileType: latestVideo.media_type,
-                fileSize: latestVideo.file_size || 0,
-                uploadDate: latestVideo.created_at
-              }];
-              
-              return res.json(frameioFileFormat);
-            } else {
-    
-            }
-          }
-        } catch (frameioError) {
-          console.error("Failed to get Frame.io assets for video ready project:", frameioError);
-          // Fall back to database files if Frame.io fails
+  router.get(
+    "/api/projects/:id/files",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const userId = req.user.id;
+
+        // Verify project ownership
+        const project = await storage.getProject(projectId);
+        if (!project || project.userId !== userId) {
+          return res.status(404).json({ error: "Project not found" });
         }
+
+        // PRIORITY 1: If we have stored video metadata with the share link, use that
+        if (
+          project.frameioReviewLink &&
+          project.frameioVideoFilename &&
+          project.frameioVideoAssetId
+        ) {
+          console.log(
+            `📌 Using stored video metadata for project ${projectId}: ${project.frameioVideoFilename}`,
+          );
+          const storedVideoFile = [
+            {
+              id: project.frameioVideoAssetId,
+              projectId: projectId,
+              mediaAssetId: project.frameioVideoAssetId,
+              mediaAssetUrl: project.frameioReviewLink,
+              filename: project.frameioVideoFilename,
+              fileType: project.frameioVideoFileType || "video/mp4",
+              fileSize: project.frameioVideoFileSize || 0,
+              uploadDate: project.updatedAt,
+            },
+          ];
+          return res.json(storedVideoFile);
+        }
+
+        // PRIORITY 2: For projects in "video is ready" or revision status, fetch from Frame.io
+        if (
+          (project.status.toLowerCase() === "video is ready" ||
+            project.status.toLowerCase() === "awaiting revision instructions" ||
+            project.status.toLowerCase() === "revision in progress") &&
+          project.mediaFolderId
+        ) {
+          try {
+            await frameioV4Service.loadServiceAccountToken();
+            const accountId = await frameioV4Service.getAccountId();
+            const response = await frameioV4Service.makeRequest(
+              "GET",
+              `/accounts/${accountId}/folders/${project.mediaFolderId}/children`,
+            );
+
+            if (response && response.data) {
+              console.log(
+                `🔍 Found ${response.data.length} total assets in Frame.io folder for project ${projectId}`,
+              );
+
+              let videoAssets = [];
+
+              // For all statuses showing delivered videos, filter by submission timestamp
+              // This ensures we only show videos uploaded by the editor, not user uploads
+              if (
+                project.status.toLowerCase() === "video is ready" ||
+                project.status.toLowerCase() ===
+                  "awaiting revision instructions" ||
+                project.status.toLowerCase() === "revision in progress"
+              ) {
+                console.log(
+                  `🎬 Getting delivered videos for project (status: ${project.status})`,
+                );
+                videoAssets = response.data.filter(
+                  (asset: any) =>
+                    asset.media_type &&
+                    asset.media_type.startsWith("video/") &&
+                    project.submittedToEditorAt &&
+                    new Date(asset.created_at) >
+                      new Date(project.submittedToEditorAt),
+                );
+                console.log(
+                  `🎬 Found ${videoAssets.length} video assets after submission timestamp`,
+                );
+                console.log(
+                  `⏰ Submission timestamp: ${project.submittedToEditorAt}`,
+                );
+              } else {
+                // For other statuses, get all videos
+                videoAssets = response.data.filter(
+                  (asset: any) =>
+                    asset.media_type && asset.media_type.startsWith("video/"),
+                );
+                console.log(
+                  `📹 Found ${videoAssets.length} total video assets`,
+                );
+              }
+
+              // Sort by creation date and take the most recent
+              videoAssets.sort(
+                (a: any, b: any) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime(),
+              );
+
+              if (videoAssets.length > 0) {
+                const latestVideo = videoAssets[0];
+                console.log(
+                  `📁 For project ${projectId} (status: ${project.status}), returning Frame.io asset: ${latestVideo.name}`,
+                );
+                console.log(
+                  `📏 Frame.io file size: ${latestVideo.file_size} bytes (${(latestVideo.file_size / 1024 / 1024).toFixed(2)} MB)`,
+                );
+
+                // Return in the format expected by VideoViewingStep
+                const frameioFileFormat = [
+                  {
+                    id: latestVideo.id,
+                    projectId: projectId,
+                    mediaAssetId: latestVideo.id,
+                    mediaAssetUrl: latestVideo.view_url || "",
+                    filename: latestVideo.name,
+                    fileType: latestVideo.media_type,
+                    fileSize: latestVideo.file_size || 0,
+                    uploadDate: latestVideo.created_at,
+                  },
+                ];
+
+                return res.json(frameioFileFormat);
+              } else {
+              }
+            }
+          } catch (frameioError) {
+            console.error(
+              "Failed to get Frame.io assets for video ready project:",
+              frameioError,
+            );
+            // Fall back to database files if Frame.io fails
+          }
+        }
+
+        // Default: return database files
+        console.log(
+          `⚠️ Falling back to database files for project ${projectId} (status: ${project.status})`,
+        );
+        const projectFiles =
+          await storage.getProjectFilesByProjectId(projectId);
+        console.log(`📊 Database files returned: ${projectFiles.length} files`);
+        if (projectFiles.length > 0) {
+          console.log(
+            `📏 First file size from DB: ${projectFiles[0].fileSize} bytes (${(projectFiles[0].fileSize / 1024 / 1024).toFixed(2)} MB)`,
+          );
+        }
+        res.json(projectFiles);
+      } catch (error) {
+        console.error("Failed to get project files:", error);
+        res.status(500).json({ error: "Failed to get project files" });
       }
-      
-      // Default: return database files
-      console.log(`⚠️ Falling back to database files for project ${projectId} (status: ${project.status})`);
-      const projectFiles = await storage.getProjectFilesByProjectId(projectId);
-      console.log(`📊 Database files returned: ${projectFiles.length} files`);
-      if (projectFiles.length > 0) {
-        console.log(`📏 First file size from DB: ${projectFiles[0].fileSize} bytes (${(projectFiles[0].fileSize / 1024 / 1024).toFixed(2)} MB)`);
-      }
-      res.json(projectFiles);
-    } catch (error) {
-      console.error("Failed to get project files:", error);
-      res.status(500).json({ error: "Failed to get project files" });
-    }
-  });
+    },
+  );
 
   // Generate download link for video asset
-  router.get("/api/projects/:id/download/:assetId", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const assetId = req.params.assetId;
-      const userId = req.user.id;
-      
-      // Verify project ownership
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ error: "Project not found" });
+  router.get(
+    "/api/projects/:id/download/:assetId",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const assetId = req.params.assetId;
+        const userId = req.user.id;
+
+        // Verify project ownership
+        const project = await storage.getProject(projectId);
+        if (!project || project.userId !== userId) {
+          return res.status(404).json({ error: "Project not found" });
+        }
+
+        // Generate download link from Frame.io
+        await frameioV4Service.loadServiceAccountToken();
+        const downloadUrl =
+          await frameioV4Service.generateAssetDownloadLink(assetId);
+
+        if (downloadUrl) {
+          res.json({ downloadUrl });
+        } else {
+          res.status(404).json({ error: "Could not generate download link" });
+        }
+      } catch (error) {
+        console.error("Failed to generate download link:", error);
+        res.status(500).json({ error: "Failed to generate download link" });
       }
-      
-      // Generate download link from Frame.io
-      await frameioV4Service.loadServiceAccountToken();
-      const downloadUrl = await frameioV4Service.generateAssetDownloadLink(assetId);
-      
-      if (downloadUrl) {
-        res.json({ downloadUrl });
-      } else {
-        res.status(404).json({ error: "Could not generate download link" });
-      }
-    } catch (error) {
-      console.error("Failed to generate download link:", error);
-      res.status(500).json({ error: "Failed to generate download link" });
-    }
-  });
+    },
+  );
 
   // Stream video from Frame.io V4 - Enhanced with better error handling
-  router.get("/api/files/:fileId/stream", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { fileId } = req.params;
-      const userId = req.user.id;
-      
-      console.log(`Streaming request for file ${fileId} by user ${userId}`);
-      
-      // Security: verify user has access to this file through their projects
-      const userProjects = await storage.getProjectsByUser(userId);
-      const hasAccess = userProjects.length > 0; // For now, allow all authenticated users who have projects
-      
-      if (!hasAccess) {
-        return res.status(403).json({ error: "Access denied to this file" });
-      }
-      
-      // Get playable media links using prefer parameter
-      await frameioV4Service.loadServiceAccountToken();
-      const prefer = (req.query.prefer as string) || "proxy";
-      const mediaLink = await frameioV4Service.getPlayableMediaLinks(fileId, prefer);
-      
-      if (mediaLink && mediaLink.available && mediaLink.url) {
-        // Successfully got a streaming URL
-    
-        (res as any).setHeader('Cache-Control', 'no-store');
-        res.json(mediaLink);
-      } else if (mediaLink && !mediaLink.available) {
-        // Frame.io V4 doesn't provide direct streaming
-        console.log('Frame.io V4 direct streaming not available');
-        res.json({
-          available: false,
-          reason: mediaLink.reason || "Frame.io V4 requires web interface for playback",
-          webUrl: mediaLink.webUrl,
-          asset: mediaLink.asset
+  router.get(
+    "/api/files/:fileId/stream",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { fileId } = req.params;
+        const userId = req.user.id;
+
+        console.log(`Streaming request for file ${fileId} by user ${userId}`);
+
+        // Security: verify user has access to this file through their projects
+        const userProjects = await storage.getProjectsByUser(userId);
+        const hasAccess = userProjects.length > 0; // For now, allow all authenticated users who have projects
+
+        if (!hasAccess) {
+          return res.status(403).json({ error: "Access denied to this file" });
+        }
+
+        // Get playable media links using prefer parameter
+        await frameioV4Service.loadServiceAccountToken();
+        const prefer = (req.query.prefer as string) || "proxy";
+        const mediaLink = await frameioV4Service.getPlayableMediaLinks(
+          fileId,
+          prefer,
+        );
+
+        if (mediaLink && mediaLink.available && mediaLink.url) {
+          // Successfully got a streaming URL
+
+          (res as any).setHeader("Cache-Control", "no-store");
+          res.json(mediaLink);
+        } else if (mediaLink && !mediaLink.available) {
+          // Frame.io V4 doesn't provide direct streaming
+          console.log("Frame.io V4 direct streaming not available");
+          res.json({
+            available: false,
+            reason:
+              mediaLink.reason ||
+              "Frame.io V4 requires web interface for playback",
+            webUrl: mediaLink.webUrl,
+            asset: mediaLink.asset,
+          });
+        } else {
+          res.status(404).json({
+            error: "No playable media links available",
+            reason: "File may not be transcoded or accessible for streaming",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to get media stream URL:", error);
+        res.status(500).json({
+          error: "Failed to get media stream URL",
+          details:
+            error instanceof Error
+              ? error instanceof Error
+                ? error.message
+                : String(error)
+              : "Unknown error occurred",
         });
-      } else {
-        res.status(404).json({ 
-          error: "No playable media links available",
-          reason: "File may not be transcoded or accessible for streaming"
-        });
       }
-    } catch (error) {
-      console.error("Failed to get media stream URL:", error);
-      res.status(500).json({ 
-        error: "Failed to get media stream URL",
-        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error occurred'
-      });
-    }
-  });
+    },
+  );
 
   // Verify revision payment success and get project details
-  router.get("/api/stripe/verify-revision-payment/:sessionId", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { sessionId } = req.params;
-      const userId = req.user!.id;
+  router.get(
+    "/api/stripe/verify-revision-payment/:sessionId",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { sessionId } = req.params;
+        const userId = req.user!.id;
 
-      console.log(`🔍 Verifying revision payment - Session: ${sessionId}, User: ${userId}`);
+        console.log(
+          `🔍 Verifying revision payment - Session: ${sessionId}, User: ${userId}`,
+        );
 
-      // Handle test/debug session IDs
-      if (sessionId.startsWith('cs_test_') && (sessionId.includes('debug') || sessionId.includes('manual'))) {
-    
-        
-        // For testing, use project 16 (Test 10)
-        const project = await storage.getProject(16);
-        if (!project || project.userId !== userId) {
-          return res.status(404).json({
-            success: false,
-            message: "Test project not found or access denied"
+        // Handle test/debug session IDs
+        if (
+          sessionId.startsWith("cs_test_") &&
+          (sessionId.includes("debug") || sessionId.includes("manual"))
+        ) {
+          // For testing, use project 16 (Test 10)
+          const project = await storage.getProject(16);
+          if (!project || project.userId !== userId) {
+            return res.status(404).json({
+              success: false,
+              message: "Test project not found or access denied",
+            });
+          }
+
+          return res.json({
+            success: true,
+            payment: {
+              status: "completed",
+              amount: 500,
+              currency: "usd",
+              stripeStatus: "paid",
+            },
+            project: {
+              id: project.id,
+              title: project.title,
+              status: project.status,
+              frameioReviewLink: project.frameioReviewLink,
+            },
+            debug: true,
           });
         }
 
-        return res.json({
+        // Get revision payment record for real payments
+        const payment = await storage.getRevisionPayment(sessionId);
+        if (!payment) {
+          console.log(`❌ Payment session not found in database: ${sessionId}`);
+          return res.status(404).json({
+            success: false,
+            message: "Payment session not found",
+          });
+        }
+
+        // Verify this payment belongs to the current user
+        if (payment.userId !== userId) {
+          console.log(
+            `❌ Payment access denied - Payment user: ${payment.userId}, Current user: ${userId}`,
+          );
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
+        }
+
+        // Get the project details
+        const project = await storage.getProject(payment.projectId);
+        if (!project) {
+          console.log(`❌ Project not found: ${payment.projectId}`);
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        // Get the Stripe session to verify payment status
+        const stripeSession =
+          await stripe.checkout.sessions.retrieve(sessionId);
+
+        // If payment is completed and not already recorded, update the database
+        if (
+          stripeSession.payment_status === "paid" &&
+          payment.paymentStatus !== "completed"
+        ) {
+          console.log(
+            `💳 Recording completed payment for session: ${sessionId}`,
+          );
+
+          // Update the revision payment record
+          await storage.updateRevisionPayment(sessionId, {
+            paymentStatus: "completed",
+            paidAt: new Date(),
+            stripePaymentIntentId: stripeSession.payment_intent as string,
+          });
+
+          // Increment the project's revision count
+          await storage.incrementProjectRevisionCount(payment.projectId);
+          console.log(
+            `📊 Incremented revision count for project ${payment.projectId}`,
+          );
+
+          // Log the revision for accounting/tracking
+          console.log(
+            `💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`,
+          );
+        }
+
+        console.log(
+          `✅ Payment verification successful for session: ${sessionId}`,
+        );
+
+        res.json({
           success: true,
           payment: {
-            status: 'completed',
-            amount: 500,
-            currency: 'usd',
-            stripeStatus: 'paid'
+            status:
+              stripeSession.payment_status === "paid"
+                ? "completed"
+                : payment.paymentStatus,
+            amount: payment.paymentAmount,
+            currency: payment.currency,
+            stripeStatus: stripeSession.payment_status,
           },
           project: {
             id: project.id,
             title: project.title,
             status: project.status,
-            frameioReviewLink: project.frameioReviewLink
+            frameioReviewLink: project.frameioReviewLink,
           },
-          debug: true
         });
-      }
-
-      // Get revision payment record for real payments
-      const payment = await storage.getRevisionPayment(sessionId);
-      if (!payment) {
-        console.log(`❌ Payment session not found in database: ${sessionId}`);
-        return res.status(404).json({
-          success: false,
-          message: "Payment session not found"
-        });
-      }
-
-      // Verify this payment belongs to the current user
-      if (payment.userId !== userId) {
-        console.log(`❌ Payment access denied - Payment user: ${payment.userId}, Current user: ${userId}`);
-        return res.status(403).json({
-          success: false,
-          message: "Access denied"
-        });
-      }
-
-      // Get the project details
-      const project = await storage.getProject(payment.projectId);
-      if (!project) {
-        console.log(`❌ Project not found: ${payment.projectId}`);
-        return res.status(404).json({
-          success: false,
-          message: "Project not found"
-        });
-      }
-
-      // Get the Stripe session to verify payment status
-      const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
-      
-      // If payment is completed and not already recorded, update the database
-      if (stripeSession.payment_status === 'paid' && payment.paymentStatus !== 'completed') {
-        console.log(`💳 Recording completed payment for session: ${sessionId}`);
-        
-        // Update the revision payment record
-        await storage.updateRevisionPayment(sessionId, {
-          paymentStatus: 'completed',
-          paidAt: new Date(),
-          stripePaymentIntentId: stripeSession.payment_intent as string
-        });
-        
-        // Increment the project's revision count
-        await storage.incrementProjectRevisionCount(payment.projectId);
-        console.log(`📊 Incremented revision count for project ${payment.projectId}`);
-        
-        // Log the revision for accounting/tracking
-        console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
-      }
-      
-      console.log(`✅ Payment verification successful for session: ${sessionId}`);
-      
-      res.json({
-        success: true,
-        payment: {
-          status: stripeSession.payment_status === 'paid' ? 'completed' : payment.paymentStatus,
-          amount: payment.paymentAmount,
-          currency: payment.currency,
-          stripeStatus: stripeSession.payment_status
-        },
-        project: {
-          id: project.id,
-          title: project.title,
-          status: project.status,
-          frameioReviewLink: project.frameioReviewLink
-        }
-      });
-    } catch (error) {
-      console.error("Error verifying revision payment:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to verify payment"
-      });
-    }
-  });
-
-
-  // Legacy endpoint for backward compatibility  
-  router.get("/api/projects/:id/video-stream/:assetId", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const assetId = req.params.assetId;
-      const userId = req.user.id;
-      
-      // Verify project ownership
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ error: "Project not found" });
-      }
-      
-      console.log(`Legacy endpoint: forwarding ${assetId} to new streaming endpoint`);
-      
-      // Get playable media links using prefer parameter  
-      await frameioV4Service.loadServiceAccountToken();
-      const prefer = (req.query.prefer as string) || "proxy";
-      const mediaLink = await frameioV4Service.getPlayableMediaLinks(assetId, prefer);
-      
-      if (mediaLink) {
-        (res as any).setHeader('Cache-Control', 'no-store');
-        res.json(mediaLink);
-      } else {
-        res.status(404).json({ 
-          error: "No playable media links available",
-          reason: "File may not be transcoded or accessible for streaming"
-        });
-      }
-    } catch (error) {
-      console.error("Legacy streaming endpoint error:", error);
-      res.status(500).json({ 
-        error: "Failed to get media stream URL",
-        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error occurred'
-      });
-    }
-  });
-
-  // Accept video endpoint - THE ONLY endpoint for accepting completed videos
-  router.post("/api/projects/:id/accept", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const userId = req.user.id;
-      
-      // Verify project ownership
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ error: "Project not found" });
-      }
-      
-      // Verify project is in correct status
-      if (project.status !== 'video is ready') {
-        return res.status(400).json({ 
-          error: "Project must be in 'video is ready' status to accept" 
-        });
-      }
-      
-      // Update project status to complete
-      await storage.updateProject(projectId, {
-        status: 'complete',
-        updatedAt: new Date(),
-      });
-      
-      // Log status change
-      await storage.logProjectStatusChange(projectId, project.status, 'complete');
-      
-      // Update Frame.io assets status to "Approved"
-      try {
-        await frameioV4Service.updateProjectAssetsStatus(projectId, 'Approved');
-        console.log(`✅ Frame.io assets updated to "Approved" for project ${projectId}`);
-      } catch (frameioError) {
-        console.log(`⚠️ Frame.io status update failed for project ${projectId}: ${frameioError instanceof Error ? frameioError.message : String(frameioError)}`);
-        // Don't fail the request if Frame.io update fails
-      }
-
-      // Move Trello card to Done list
-      try {
-        await trelloAutomation.markProjectComplete(projectId);
-        console.log(`✅ Moved Trello card to Done for project ${projectId}`);
-      } catch (trelloError) {
-        console.log(`⚠️ Trello card update failed for project ${projectId}: ${trelloError instanceof Error ? trelloError.message : String(trelloError)}`);
-        // Don't fail the request if Trello update fails
-      }
-
-      // Send completion confirmation email using the same Frame.io share link as "video is ready" email
-      try {
-        const user = await storage.getUserById(userId);
-        
-        if (user && project.frameioReviewLink) {
-          const emailTemplate = emailService.generateProjectCompletionEmail(
-            user.email,
-            project.title,
-            project.frameioReviewLink  // Use the same Frame.io share link from "video is ready" email
-          );
-          
-          await emailService.sendEmail(emailTemplate);
-          console.log(`✅ Project completion email sent to ${user.email} for project ${projectId}`);
-        } else {
-          console.log(`⚠️ Cannot send completion email: missing user or Frame.io review link`);
-        }
-      } catch (emailError) {
-        console.log(`⚠️ Failed to send completion email for project ${projectId}: ${emailError instanceof Error ? emailError.message : String(emailError)}`);
-        // Don't fail the request if email fails
-      }
-      
-      res.json({ success: true, message: "Video accepted successfully" });
-    } catch (error) {
-      console.error("Failed to accept video:", error);
-      res.status(500).json({ error: "Failed to accept video" });
-    }
-  });
-
-  // Request revision endpoint (after payment)
-  router.post("/api/projects/:id/request-revision", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const userId = req.user!.id;
-      
-      console.log(`🎬 Submitting revision request for project ${projectId} by user ${userId}`);
-      
-      // Verify project ownership
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "Project not found" 
-        });
-      }
-      
-      // Verify project is in acceptable status for revision (after payment)
-      const validStatuses = ['video is ready', 'complete', 'awaiting revision instructions'];
-      if (!validStatuses.includes(project.status)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Project must be in one of these statuses: ${validStatuses.join(', ')}` 
-        });
-      }
-      
-      // Calculate new revision count
-      const newRevisionCount = (project.revisionCount || 0) + 1;
-      
-      // Update project status to revision in progress with timestamp tracking and increment revision count
-      await storage.updateProject(projectId, {
-        status: 'revision in progress',
-        // revisionCount: newRevisionCount, // TODO: Add revisionCount to schema
-        updatedAt: new Date(),
-      });
-      await updateProjectTimestamp(projectId, "revision requested");
-      
-      console.log(`✅ Project ${projectId} status updated to "revision in progress", revision count: ${newRevisionCount}`);
-      
-      // Log status change
-      await storage.logProjectStatusChange(projectId, project.status, 'revision in progress');
-      
-      // Create Trello revision card
-      try {
-        const cardId = await trelloAutomation.createRevisionCard(projectId, newRevisionCount);
-        if (cardId) {
-          console.log(`✅ Created Trello revision card for project ${projectId}, revision #${newRevisionCount}: ${cardId}`);
-        } else {
-          console.log(`⚠️ Failed to create Trello revision card for project ${projectId}`);
-        }
-      } catch (trelloError) {
-        console.error(`❌ Error creating Trello revision card for project ${projectId}:`, trelloError);
-        // Don't fail the whole request if Trello fails
-      }
-      
-      res.json({ 
-        success: true, 
-        message: "Revision request submitted successfully",
-        project: {
-          id: projectId,
-          status: "revision in progress"
-        }
-      });
-    } catch (error: any) {
-      console.error("Failed to request revision:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: error instanceof Error ? error.message : String(error) || "Failed to request revision" 
-      });
-    }
-  });
-
-  // Email signup endpoint
-  router.post("/api/email-signup", async (req: AppRequest, res: AppResponse) => {
-    try {
-      const validatedData = insertEmailSignupSchema.parse(req.body);
-      
-      // Check if email already exists in either users or email_signups table
-      const emailExists = await storage.checkEmailExists(validatedData.email);
-      if (emailExists) {
-        return res.status(409).json({
-          success: false,
-          message: "You're already signed up! Check your inbox for updates from us.",
-        });
-      }
-      
-      // Capture user's IP address from various possible headers
-      const getClientIP = (req: any) => {
-        return req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
-               req.headers['x-real-ip']?.toString() ||
-               req.headers['x-client-ip']?.toString() ||
-               req.connection?.remoteAddress ||
-               req.socket?.remoteAddress ||
-               'unknown';
-      };
-      
-      const ipAddress = getClientIP(req);
-      
-      // Get geolocation data from IP address using geoip-lite
-      let locationData = {
-        country: null as string | null,
-        region: null as string | null,
-        city: null as string | null,
-        timezone: null as string | null
-      };
-      
-      if (ipAddress && ipAddress !== 'unknown' && ipAddress !== '127.0.0.1' && ipAddress !== '::1') {
-        try {
-          const geo = geoip.lookup(ipAddress);
-          if (geo) {
-            locationData = {
-              country: geo.country || null,
-              region: geo.region || null,
-              city: geo.city || null,
-              timezone: geo.timezone || null
-            };
-          }
-        } catch (geoError) {
-          console.warn(`Failed to get geolocation for IP ${ipAddress}:`, geoError);
-          // Continue without location data - not critical for signup
-        }
-      }
-      
-      // Add IP address and location data to the data before storing
-      const emailSignupData = {
-        ...validatedData,
-        ipAddress: ipAddress,
-        country: locationData.country,
-        region: locationData.region,
-        city: locationData.city,
-        timezone: locationData.timezone
-      };
-      
-      const emailSignup = await storage.createEmailSignup(emailSignupData);
-      
-      const locationInfo = locationData.city && locationData.region && locationData.country
-        ? `${locationData.city}, ${locationData.region}, ${locationData.country}`
-        : locationData.country || 'Unknown location';
-      
-      console.log(`📧 New email signup: ${validatedData.email} from ${ipAddress} (${locationInfo})`);
-      
-      res.json({ success: true, message: "Email successfully registered!" });
-    } catch (error) {
-      console.error("Email signup error:", error);
-      
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid email format",
-          errors: error.errors,
-        });
-      } else if (
-        error instanceof Error &&
-        error instanceof Error ? error.message : String(error) === "Email already exists"
-      ) {
-        res.status(409).json({
-          success: false,
-          message: "You're already signed up! Check your inbox for updates from us.",
-        });
-      } else {
-        console.error("Unexpected email signup error:", error);
+      } catch (error) {
+        console.error("Error verifying revision payment:", error);
         res.status(500).json({
           success: false,
-          message: "Internal server error",
+          message: "Failed to verify payment",
         });
       }
-    }
-  });
+    },
+  );
+
+  // Legacy endpoint for backward compatibility
+  router.get(
+    "/api/projects/:id/video-stream/:assetId",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const assetId = req.params.assetId;
+        const userId = req.user.id;
+
+        // Verify project ownership
+        const project = await storage.getProject(projectId);
+        if (!project || project.userId !== userId) {
+          return res.status(404).json({ error: "Project not found" });
+        }
+
+        console.log(
+          `Legacy endpoint: forwarding ${assetId} to new streaming endpoint`,
+        );
+
+        // Get playable media links using prefer parameter
+        await frameioV4Service.loadServiceAccountToken();
+        const prefer = (req.query.prefer as string) || "proxy";
+        const mediaLink = await frameioV4Service.getPlayableMediaLinks(
+          assetId,
+          prefer,
+        );
+
+        if (mediaLink) {
+          (res as any).setHeader("Cache-Control", "no-store");
+          res.json(mediaLink);
+        } else {
+          res.status(404).json({
+            error: "No playable media links available",
+            reason: "File may not be transcoded or accessible for streaming",
+          });
+        }
+      } catch (error) {
+        console.error("Legacy streaming endpoint error:", error);
+        res.status(500).json({
+          error: "Failed to get media stream URL",
+          details:
+            error instanceof Error
+              ? error instanceof Error
+                ? error.message
+                : String(error)
+              : "Unknown error occurred",
+        });
+      }
+    },
+  );
+
+  // Accept video endpoint - THE ONLY endpoint for accepting completed videos
+  router.post(
+    "/api/projects/:id/accept",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const userId = req.user.id;
+
+        // Verify project ownership
+        const project = await storage.getProject(projectId);
+        if (!project || project.userId !== userId) {
+          return res.status(404).json({ error: "Project not found" });
+        }
+
+        // Verify project is in correct status
+        if (project.status !== "video is ready") {
+          return res.status(400).json({
+            error: "Project must be in 'video is ready' status to accept",
+          });
+        }
+
+        // Update project status to complete
+        await storage.updateProject(projectId, {
+          status: "complete",
+          updatedAt: new Date(),
+        });
+
+        // Log status change
+        await storage.logProjectStatusChange(
+          projectId,
+          project.status,
+          "complete",
+        );
+
+        // Update Frame.io assets status to "Approved"
+        try {
+          await frameioV4Service.updateProjectAssetsStatus(
+            projectId,
+            "Approved",
+          );
+          console.log(
+            `✅ Frame.io assets updated to "Approved" for project ${projectId}`,
+          );
+        } catch (frameioError) {
+          console.log(
+            `⚠️ Frame.io status update failed for project ${projectId}: ${frameioError instanceof Error ? frameioError.message : String(frameioError)}`,
+          );
+          // Don't fail the request if Frame.io update fails
+        }
+
+        // Move Trello card to Done list
+        try {
+          await trelloAutomation.markProjectComplete(projectId);
+          console.log(`✅ Moved Trello card to Done for project ${projectId}`);
+        } catch (trelloError) {
+          console.log(
+            `⚠️ Trello card update failed for project ${projectId}: ${trelloError instanceof Error ? trelloError.message : String(trelloError)}`,
+          );
+          // Don't fail the request if Trello update fails
+        }
+
+        // Send completion confirmation email using the same Frame.io share link as "video is ready" email
+        try {
+          const user = await storage.getUserById(userId);
+
+          if (user && project.frameioReviewLink) {
+            const emailTemplate = emailService.generateProjectCompletionEmail(
+              user.email,
+              project.title,
+              project.frameioReviewLink, // Use the same Frame.io share link from "video is ready" email
+            );
+
+            await emailService.sendEmail(emailTemplate);
+            console.log(
+              `✅ Project completion email sent to ${user.email} for project ${projectId}`,
+            );
+          } else {
+            console.log(
+              `⚠️ Cannot send completion email: missing user or Frame.io review link`,
+            );
+          }
+        } catch (emailError) {
+          console.log(
+            `⚠️ Failed to send completion email for project ${projectId}: ${emailError instanceof Error ? emailError.message : String(emailError)}`,
+          );
+          // Don't fail the request if email fails
+        }
+
+        res.json({ success: true, message: "Video accepted successfully" });
+      } catch (error) {
+        console.error("Failed to accept video:", error);
+        res.status(500).json({ error: "Failed to accept video" });
+      }
+    },
+  );
+
+  // Request revision endpoint (after payment)
+  router.post(
+    "/api/projects/:id/request-revision",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const userId = req.user!.id;
+
+        console.log(
+          `🎬 Submitting revision request for project ${projectId} by user ${userId}`,
+        );
+
+        // Verify project ownership
+        const project = await storage.getProject(projectId);
+        if (!project || project.userId !== userId) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        // Verify project is in acceptable status for revision (after payment)
+        const validStatuses = [
+          "video is ready",
+          "complete",
+          "awaiting revision instructions",
+        ];
+        if (!validStatuses.includes(project.status)) {
+          return res.status(400).json({
+            success: false,
+            message: `Project must be in one of these statuses: ${validStatuses.join(", ")}`,
+          });
+        }
+
+        // Calculate new revision count
+        const newRevisionCount = (project.revisionCount || 0) + 1;
+
+        // Update project status to revision in progress with timestamp tracking and increment revision count
+        await storage.updateProject(projectId, {
+          status: "revision in progress",
+          // revisionCount: newRevisionCount, // TODO: Add revisionCount to schema
+          updatedAt: new Date(),
+        });
+        await updateProjectTimestamp(projectId, "revision requested");
+
+        console.log(
+          `✅ Project ${projectId} status updated to "revision in progress", revision count: ${newRevisionCount}`,
+        );
+
+        // Log status change
+        await storage.logProjectStatusChange(
+          projectId,
+          project.status,
+          "revision in progress",
+        );
+
+        // Create Trello revision card
+        try {
+          const cardId = await trelloAutomation.createRevisionCard(
+            projectId,
+            newRevisionCount,
+          );
+          if (cardId) {
+            console.log(
+              `✅ Created Trello revision card for project ${projectId}, revision #${newRevisionCount}: ${cardId}`,
+            );
+          } else {
+            console.log(
+              `⚠️ Failed to create Trello revision card for project ${projectId}`,
+            );
+          }
+        } catch (trelloError) {
+          console.error(
+            `❌ Error creating Trello revision card for project ${projectId}:`,
+            trelloError,
+          );
+          // Don't fail the whole request if Trello fails
+        }
+
+        res.json({
+          success: true,
+          message: "Revision request submitted successfully",
+          project: {
+            id: projectId,
+            status: "revision in progress",
+          },
+        });
+      } catch (error: any) {
+        console.error("Failed to request revision:", error);
+        res.status(500).json({
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : String(error) || "Failed to request revision",
+        });
+      }
+    },
+  );
+
+  // Email signup endpoint
+  router.post(
+    "/api/email-signup",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const validatedData = insertEmailSignupSchema.parse(req.body);
+
+        // Check if email already exists in either users or email_signups table
+        const emailExists = await storage.checkEmailExists(validatedData.email);
+        if (emailExists) {
+          return res.status(409).json({
+            success: false,
+            message:
+              "You're already signed up! Check your inbox for updates from us.",
+          });
+        }
+
+        // Capture user's IP address from various possible headers
+        const getClientIP = (req: any) => {
+          return (
+            req.headers["x-forwarded-for"]?.toString().split(",")[0].trim() ||
+            req.headers["x-real-ip"]?.toString() ||
+            req.headers["x-client-ip"]?.toString() ||
+            req.connection?.remoteAddress ||
+            req.socket?.remoteAddress ||
+            "unknown"
+          );
+        };
+
+        const ipAddress = getClientIP(req);
+
+        // Get geolocation data from IP address using geoip-lite
+        let locationData = {
+          country: null as string | null,
+          region: null as string | null,
+          city: null as string | null,
+          timezone: null as string | null,
+        };
+
+        if (
+          ipAddress &&
+          ipAddress !== "unknown" &&
+          ipAddress !== "127.0.0.1" &&
+          ipAddress !== "::1"
+        ) {
+          try {
+            const geo = geoip.lookup(ipAddress);
+            if (geo) {
+              locationData = {
+                country: geo.country || null,
+                region: geo.region || null,
+                city: geo.city || null,
+                timezone: geo.timezone || null,
+              };
+            }
+          } catch (geoError) {
+            console.warn(
+              `Failed to get geolocation for IP ${ipAddress}:`,
+              geoError,
+            );
+            // Continue without location data - not critical for signup
+          }
+        }
+
+        // Add IP address and location data to the data before storing
+        const emailSignupData = {
+          ...validatedData,
+          ipAddress: ipAddress,
+          country: locationData.country,
+          region: locationData.region,
+          city: locationData.city,
+          timezone: locationData.timezone,
+        };
+
+        const emailSignup = await storage.createEmailSignup(emailSignupData);
+
+        const locationInfo =
+          locationData.city && locationData.region && locationData.country
+            ? `${locationData.city}, ${locationData.region}, ${locationData.country}`
+            : locationData.country || "Unknown location";
+
+        console.log(
+          `📧 New email signup: ${validatedData.email} from ${ipAddress} (${locationInfo})`,
+        );
+
+        res.json({ success: true, message: "Email successfully registered!" });
+      } catch (error) {
+        console.error("Email signup error:", error);
+
+        if (error instanceof z.ZodError) {
+          res.status(400).json({
+            success: false,
+            message: "Invalid email format",
+            errors: error.errors,
+          });
+        } else if (
+          error instanceof Error && error instanceof Error
+            ? error.message
+            : String(error) === "Email already exists"
+        ) {
+          res.status(409).json({
+            success: false,
+            message:
+              "You're already signed up! Check your inbox for updates from us.",
+          });
+        } else {
+          console.error("Unexpected email signup error:", error);
+          res.status(500).json({
+            success: false,
+            message: "Internal server error",
+          });
+        }
+      }
+    },
+  );
 
   // Get all email signups (for admin purposes)
-  router.get("/api/email-signups", async (req: AppRequest, res: AppResponse) => {
-    try {
-      const emailSignups = await storage.getEmailSignups();
-      res.json(emailSignups);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to retrieve email signups",
-      });
-    }
-  });
+  router.get(
+    "/api/email-signups",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const emailSignups = await storage.getEmailSignups();
+        res.json(emailSignups);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: "Failed to retrieve email signups",
+        });
+      }
+    },
+  );
 
   // Get user privacy settings - returns latest setting for each toggle type
-  router.get("/api/privacy-settings", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const userId = req.user!.id;
-      
-      // Get latest setting for each toggle type
-      const latestSettings = await db
-        .select()
-        .from(userPrivacy)
-        .where(eq(userPrivacy.userId, userId))
-        .orderBy(desc(userPrivacy.createdAt));
+  router.get(
+    "/api/privacy-settings",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const userId = req.user!.id;
 
-      // Group by toggle name and get the most recent setting for each
-      const settingsMap = new Map();
-      for (const setting of latestSettings) {
-        if (!settingsMap.has(setting.toggleName)) {
-          settingsMap.set(setting.toggleName, setting.isEnabled);
+        // Get latest setting for each toggle type
+        const latestSettings = await db
+          .select()
+          .from(userPrivacy)
+          .where(eq(userPrivacy.userId, userId))
+          .orderBy(desc(userPrivacy.createdAt));
+
+        // Group by toggle name and get the most recent setting for each
+        const settingsMap = new Map();
+        for (const setting of latestSettings) {
+          if (!settingsMap.has(setting.toggleName)) {
+            settingsMap.set(setting.toggleName, setting.isEnabled);
+          }
         }
+
+        // Set defaults if no settings exist
+        const privacySettings = {
+          portfolioShowcase: settingsMap.get("portfolio") ?? false,
+          modelTraining: settingsMap.get("R&D") ?? false,
+          doNotSell: settingsMap.get("no_sell") ?? true,
+        };
+
+        res.json({ success: true, settings: privacySettings });
+      } catch (error) {
+        console.error("Error fetching privacy settings:", error);
+        res.status(500).json({
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch privacy settings",
+          // Fallback to defaults on error
+          settings: {
+            portfolioShowcase: false,
+            modelTraining: false,
+            doNotSell: true,
+          },
+        });
       }
-
-      // Set defaults if no settings exist
-      const privacySettings = {
-        portfolioShowcase: settingsMap.get('portfolio') ?? false,
-        modelTraining: settingsMap.get('R&D') ?? false,
-        doNotSell: settingsMap.get('no_sell') ?? true,
-      };
-
-      res.json({ success: true, settings: privacySettings });
-    } catch (error) {
-      console.error('Error fetching privacy settings:', error);
-      res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Failed to fetch privacy settings",
-        // Fallback to defaults on error
-        settings: {
-          portfolioShowcase: false,
-          modelTraining: false,
-          doNotSell: true,
-        }
-      });
-    }
-  });
+    },
+  );
 
   // Update user privacy settings - creates new rows with timestamps
-  router.post("/api/privacy-settings", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const userId = req.user!.id;
-      const { settings } = req.body;
+  router.post(
+    "/api/privacy-settings",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const userId = req.user!.id;
+        const { settings } = req.body;
 
-      if (!settings || typeof settings !== 'object') {
-        return res.status(400).json({
+        if (!settings || typeof settings !== "object") {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid settings format",
+          });
+        }
+
+        const { portfolioShowcase, modelTraining, doNotSell } = settings;
+
+        // Validate setting values
+        if (
+          typeof portfolioShowcase !== "boolean" ||
+          typeof modelTraining !== "boolean" ||
+          typeof doNotSell !== "boolean"
+        ) {
+          return res.status(400).json({
+            success: false,
+            message: "All settings must be boolean values",
+          });
+        }
+
+        // Get current settings to determine what changed
+        const latestSettings = await db
+          .select()
+          .from(userPrivacy)
+          .where(eq(userPrivacy.userId, userId))
+          .orderBy(desc(userPrivacy.createdAt));
+
+        const settingsMap = new Map();
+        for (const setting of latestSettings) {
+          if (!settingsMap.has(setting.toggleName)) {
+            settingsMap.set(setting.toggleName, setting.isEnabled);
+          }
+        }
+
+        const currentModelTraining = settingsMap.get("R&D") ?? false;
+        const currentDoNotSell = settingsMap.get("no_sell") ?? true;
+
+        // Create new records for each setting change with manual_selection source
+        const settingsToInsert = [
+          {
+            userId,
+            toggleName: "portfolio",
+            isEnabled: portfolioShowcase,
+            source: "manual_selection",
+          },
+          {
+            userId,
+            toggleName: "R&D",
+            isEnabled: modelTraining,
+            source: "manual_selection",
+          },
+          {
+            userId,
+            toggleName: "no_sell",
+            isEnabled: doNotSell,
+            source: "manual_selection",
+          },
+        ];
+
+        await db.insert(userPrivacy).values(settingsToInsert);
+
+        // Inverse relationship logic: R&D and "Do Not Sell" are mutually exclusive
+        let finalModelTraining = modelTraining;
+        let finalDoNotSell = doNotSell;
+
+        // If user just enabled R&D (changed from false to true) and "Do Not Sell" is true, disable "Do Not Sell"
+        if (modelTraining && !currentModelTraining && doNotSell) {
+          await db
+            .insert(userPrivacy)
+            .values([
+              {
+                userId,
+                toggleName: "no_sell",
+                isEnabled: false,
+                source: "automated_selection",
+              },
+            ]);
+          finalDoNotSell = false;
+          console.log(
+            `🤖 Automatically disabled "Do Not Sell" for user ${userId} because they enabled R&D`,
+          );
+        }
+
+        // If user just enabled "Do Not Sell" (changed from false to true) and R&D is true, disable R&D
+        if (doNotSell && !currentDoNotSell && modelTraining) {
+          await db
+            .insert(userPrivacy)
+            .values([
+              {
+                userId,
+                toggleName: "R&D",
+                isEnabled: false,
+                source: "automated_selection",
+              },
+            ]);
+          finalModelTraining = false;
+          console.log(
+            `🤖 Automatically disabled R&D for user ${userId} because they enabled "Do Not Sell"`,
+          );
+        }
+
+        console.log(`📋 Privacy settings updated for user ${userId}:`, {
+          portfolio: portfolioShowcase,
+          "R&D": finalModelTraining,
+          no_sell: finalDoNotSell,
+          adjustments: {
+            modelTraining:
+              finalModelTraining !== modelTraining
+                ? "auto-adjusted"
+                : "unchanged",
+            doNotSell:
+              finalDoNotSell !== doNotSell ? "auto-adjusted" : "unchanged",
+          },
+        });
+
+        res.json({
+          success: true,
+          message: "Privacy settings updated successfully",
+          settings: {
+            portfolioShowcase,
+            modelTraining: finalModelTraining,
+            doNotSell: finalDoNotSell,
+          },
+        });
+      } catch (error) {
+        console.error("Error updating privacy settings:", error);
+        res.status(500).json({
           success: false,
-          message: "Invalid settings format"
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to update privacy settings",
         });
       }
-
-      const { portfolioShowcase, modelTraining, doNotSell } = settings;
-
-      // Validate setting values
-      if (
-        typeof portfolioShowcase !== 'boolean' ||
-        typeof modelTraining !== 'boolean' ||
-        typeof doNotSell !== 'boolean'
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "All settings must be boolean values"
-        });
-      }
-
-      // Get current settings to determine what changed
-      const latestSettings = await db
-        .select()
-        .from(userPrivacy)
-        .where(eq(userPrivacy.userId, userId))
-        .orderBy(desc(userPrivacy.createdAt));
-
-      const settingsMap = new Map();
-      for (const setting of latestSettings) {
-        if (!settingsMap.has(setting.toggleName)) {
-          settingsMap.set(setting.toggleName, setting.isEnabled);
-        }
-      }
-
-      const currentModelTraining = settingsMap.get('R&D') ?? false;
-      const currentDoNotSell = settingsMap.get('no_sell') ?? true;
-
-      // Create new records for each setting change with manual_selection source
-      const settingsToInsert = [
-        { userId, toggleName: 'portfolio', isEnabled: portfolioShowcase, source: 'manual_selection' },
-        { userId, toggleName: 'R&D', isEnabled: modelTraining, source: 'manual_selection' },
-        { userId, toggleName: 'no_sell', isEnabled: doNotSell, source: 'manual_selection' },
-      ];
-
-      await db.insert(userPrivacy).values(settingsToInsert);
-
-      // Inverse relationship logic: R&D and "Do Not Sell" are mutually exclusive
-      let finalModelTraining = modelTraining;
-      let finalDoNotSell = doNotSell;
-      
-      // If user just enabled R&D (changed from false to true) and "Do Not Sell" is true, disable "Do Not Sell"
-      if (modelTraining && !currentModelTraining && doNotSell) {
-        await db.insert(userPrivacy).values([
-          { userId, toggleName: 'no_sell', isEnabled: false, source: 'automated_selection' }
-        ]);
-        finalDoNotSell = false;
-        console.log(`🤖 Automatically disabled "Do Not Sell" for user ${userId} because they enabled R&D`);
-      }
-      
-      // If user just enabled "Do Not Sell" (changed from false to true) and R&D is true, disable R&D
-      if (doNotSell && !currentDoNotSell && modelTraining) {
-        await db.insert(userPrivacy).values([
-          { userId, toggleName: 'R&D', isEnabled: false, source: 'automated_selection' }
-        ]);
-        finalModelTraining = false;
-        console.log(`🤖 Automatically disabled R&D for user ${userId} because they enabled "Do Not Sell"`);
-      }
-
-      console.log(`📋 Privacy settings updated for user ${userId}:`, {
-        portfolio: portfolioShowcase,
-        'R&D': finalModelTraining,
-        no_sell: finalDoNotSell,
-        adjustments: {
-          modelTraining: finalModelTraining !== modelTraining ? 'auto-adjusted' : 'unchanged',
-          doNotSell: finalDoNotSell !== doNotSell ? 'auto-adjusted' : 'unchanged'
-        }
-      });
-
-      res.json({
-        success: true,
-        message: "Privacy settings updated successfully",
-        settings: {
-          portfolioShowcase,
-          modelTraining: finalModelTraining,
-          doNotSell: finalDoNotSell,
-        }
-      });
-    } catch (error) {
-      console.error('Error updating privacy settings:', error);
-      res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Failed to update privacy settings",
-      });
-    }
-  });
+    },
+  );
 
   // Get current user (for Supabase auth)
   router.get(
@@ -2187,280 +2659,345 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Email Verification endpoint removed - handled by Supabase
 
   // Get Current User
-  router.get("/api/auth/me", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const userId = req.user!.id;
-      const userEmail = req.user!.email;
-      console.log(`🔍 DEBUG: Fetching user data for ID: ${userId}, email: ${userEmail}`);
+  router.get(
+    "/api/auth/me",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const userId = req.user!.id;
+        const userEmail = req.user!.email;
+        console.log(
+          `🔍 DEBUG: Fetching user data for ID: ${userId}, email: ${userEmail}`,
+        );
 
-      // Try to get user by ID first, then fall back to email (for legacy users)
-      let user = await storage.getUser(userId);
-      if (!user && userEmail) {
-        console.log(`🔍 DEBUG: User not found by ID, trying email: ${userEmail}`);
-        user = await storage.getUserByEmail(userEmail);
-      }
-      
-      if (!user) {
-        return res.status(404).json({
+        // Try to get user by ID first, then fall back to email (for legacy users)
+        let user = await storage.getUser(userId);
+        if (!user && userEmail) {
+          console.log(
+            `🔍 DEBUG: User not found by ID, trying email: ${userEmail}`,
+          );
+          user = await storage.getUserByEmail(userEmail);
+        }
+
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: "User not found",
+          });
+        }
+
+        // Debug logging
+        console.log(`🔍 DEBUG: Raw user object from DB:`, user);
+        console.log(`🔍 DEBUG: user.tosPpAccepted value:`, user.tosPpAccepted);
+        console.log(
+          `🔍 DEBUG: user.tosPpAccepted type:`,
+          typeof user.tosPpAccepted,
+        );
+
+        // Prevent caching of user data to ensure ToS acceptance is always fresh
+        res.set({
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        });
+
+        const responseData = {
+          success: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            company: user.company,
+            verified: true, // Verification handled by Supabase
+            tosPpAccepted: user.tosPpAccepted,
+          },
+        };
+
+        console.log(`🔍 DEBUG: API response data:`, responseData);
+        res.json(responseData);
+      } catch (error) {
+        console.error("Get current user error:", error);
+        res.status(500).json({
           success: false,
-          message: "User not found",
+          message: "Failed to get user data",
         });
       }
-
-      // Debug logging
-      console.log(`🔍 DEBUG: Raw user object from DB:`, user);
-      console.log(`🔍 DEBUG: user.tosPpAccepted value:`, user.tosPpAccepted);
-      console.log(`🔍 DEBUG: user.tosPpAccepted type:`, typeof user.tosPpAccepted);
-
-      // Prevent caching of user data to ensure ToS acceptance is always fresh
-      res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      });
-
-      const responseData = {
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          company: user.company,
-          verified: true, // Verification handled by Supabase
-          tosPpAccepted: user.tosPpAccepted,
-        },
-      };
-
-      console.log(`🔍 DEBUG: API response data:`, responseData);
-      res.json(responseData);
-    } catch (error) {
-      console.error("Get current user error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get user data",
-      });
-    }
-  });
+    },
+  );
 
   // Accept Terms of Service and Privacy Policy
-  router.post("/api/auth/accept-tos-pp", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const userId = req.user!.id;
-      const { portfolioConsent, rdConsent } = req.body;
+  router.post(
+    "/api/auth/accept-tos-pp",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const userId = req.user!.id;
+        const { portfolioConsent, rdConsent } = req.body;
 
-      // Update the user's tos_pp_accepted timestamp
-      await db.update(users)
-        .set({ tosPpAccepted: new Date() })
-        .where(eq(users.id, userId));
+        // Update the user's tos_pp_accepted timestamp
+        await db
+          .update(users)
+          .set({ tosPpAccepted: new Date() })
+          .where(eq(users.id, userId));
 
-      // Create privacy settings if consent was given for Portfolio or R&D
-      const privacySettingsToCreate = [];
-      
-      if (portfolioConsent === true) {
-        privacySettingsToCreate.push({
-          userId,
-          toggleName: 'portfolio',
-          isEnabled: true,
-          source: 'signup'
-        });
-      }
-      
-      if (rdConsent === true) {
-        privacySettingsToCreate.push({
-          userId,
-          toggleName: 'R&D',
-          isEnabled: true,
-          source: 'signup'
-        });
-      }
+        // Create privacy settings if consent was given for Portfolio or R&D
+        const privacySettingsToCreate = [];
 
-      // Insert privacy settings if any were consented to
-      if (privacySettingsToCreate.length > 0) {
-        await db.insert(userPrivacy).values(privacySettingsToCreate);
-      }
-
-      // Inverse relationship logic: If user opts INTO R&D, automatically opt them OUT of "Do Not Sell"
-      if (rdConsent === true) {
-        await db.insert(userPrivacy).values([{
-          userId,
-          toggleName: 'no_sell',
-          isEnabled: false, // Disable "Do Not Sell" when R&D is enabled
-          source: 'automated_selection'
-        }]);
-        console.log(`🤖 Automatically disabled "Do Not Sell" for user ${userId} because they opted into R&D`);
-      }
-
-      console.log(`✅ User ${userId} accepted ToS/PP with consent: portfolio=${portfolioConsent}, R&D=${rdConsent}`);
-
-      res.json({
-        success: true,
-        message: "Terms of Service and Privacy Policy acceptance recorded",
-        consents: {
-          portfolio: portfolioConsent,
-          rd: rdConsent
+        if (portfolioConsent === true) {
+          privacySettingsToCreate.push({
+            userId,
+            toggleName: "portfolio",
+            isEnabled: true,
+            source: "signup",
+          });
         }
-      });
-    } catch (error) {
-      console.error('Error recording ToS/PP acceptance:', error);
-      res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Failed to record acceptance"
-      });
-    }
-  });
+
+        if (rdConsent === true) {
+          privacySettingsToCreate.push({
+            userId,
+            toggleName: "R&D",
+            isEnabled: true,
+            source: "signup",
+          });
+        }
+
+        // Insert privacy settings if any were consented to
+        if (privacySettingsToCreate.length > 0) {
+          await db.insert(userPrivacy).values(privacySettingsToCreate);
+        }
+
+        // Inverse relationship logic: If user opts INTO R&D, automatically opt them OUT of "Do Not Sell"
+        if (rdConsent === true) {
+          await db.insert(userPrivacy).values([
+            {
+              userId,
+              toggleName: "no_sell",
+              isEnabled: false, // Disable "Do Not Sell" when R&D is enabled
+              source: "automated_selection",
+            },
+          ]);
+          console.log(
+            `🤖 Automatically disabled "Do Not Sell" for user ${userId} because they opted into R&D`,
+          );
+        }
+
+        console.log(
+          `✅ User ${userId} accepted ToS/PP with consent: portfolio=${portfolioConsent}, R&D=${rdConsent}`,
+        );
+
+        res.json({
+          success: true,
+          message: "Terms of Service and Privacy Policy acceptance recorded",
+          consents: {
+            portfolio: portfolioConsent,
+            rd: rdConsent,
+          },
+        });
+      } catch (error) {
+        console.error("Error recording ToS/PP acceptance:", error);
+        res.status(500).json({
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to record acceptance",
+        });
+      }
+    },
+  );
 
   // Trello Integration API Routes
-  
+
   // Get Trello boards (for setup)
-  router.get("/api/trello/boards", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const boards = await trelloService.getBoards();
-      res.json({ success: true, boards });
-    } catch (error) {
-      console.error("Get Trello boards error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get Trello boards. Check your API credentials."
-      });
-    }
-  });
+  router.get(
+    "/api/trello/boards",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const boards = await trelloService.getBoards();
+        res.json({ success: true, boards });
+      } catch (error) {
+        console.error("Get Trello boards error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to get Trello boards. Check your API credentials.",
+        });
+      }
+    },
+  );
 
   // Get board lists (for configuration)
-  router.get("/api/trello/boards/:boardId/lists", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { boardId } = req.params;
-      const lists = await trelloService.getBoardLists(boardId);
-      res.json({ success: true, lists });
-    } catch (error) {
-      console.error("Get board lists error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get board lists"
-      });
-    }
-  });
+  router.get(
+    "/api/trello/boards/:boardId/lists",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { boardId } = req.params;
+        const lists = await trelloService.getBoardLists(boardId);
+        res.json({ success: true, lists });
+      } catch (error) {
+        console.error("Get board lists error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to get board lists",
+        });
+      }
+    },
+  );
 
   // Setup Trello configuration
-  router.post("/api/trello/config", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { boardId, todoListId, doneListId, revisionListId } = req.body;
-      
-      if (!boardId || !todoListId || !doneListId) {
-        return res.status(400).json({
+  router.post(
+    "/api/trello/config",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { boardId, todoListId, doneListId, revisionListId } = req.body;
+
+        if (!boardId || !todoListId || !doneListId) {
+          return res.status(400).json({
+            success: false,
+            message: "Board ID, todo list ID, and done list ID are required",
+          });
+        }
+
+        await trelloAutomation.setupTrelloConfig(
+          boardId,
+          todoListId,
+          doneListId,
+          revisionListId,
+        );
+
+        res.json({
+          success: true,
+          message: "Trello configuration saved successfully",
+        });
+      } catch (error) {
+        console.error("Setup Trello config error:", error);
+        res.status(500).json({
           success: false,
-          message: "Board ID, todo list ID, and done list ID are required"
+          message: "Failed to setup Trello configuration",
         });
       }
-      
-      await trelloAutomation.setupTrelloConfig(boardId, todoListId, doneListId, revisionListId);
-      
-      res.json({
-        success: true,
-        message: "Trello configuration saved successfully"
-      });
-    } catch (error) {
-      console.error("Setup Trello config error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to setup Trello configuration"
-      });
-    }
-  });
+    },
+  );
 
   // Get current Trello configuration
-  router.get("/api/trello/config", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const config = await trelloAutomation.getTrelloConfig();
-      res.json({ success: true, config });
-    } catch (error) {
-      console.error("Get Trello config error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get Trello configuration"
-      });
-    }
-  });
+  router.get(
+    "/api/trello/config",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const config = await trelloAutomation.getTrelloConfig();
+        res.json({ success: true, config });
+      } catch (error) {
+        console.error("Get Trello config error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to get Trello configuration",
+        });
+      }
+    },
+  );
 
   // Test Trello integration - create a test card
-  router.post("/api/trello/test", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const config = await trelloAutomation.getTrelloConfig();
-      if (!config) {
-        return res.status(400).json({
+  router.post(
+    "/api/trello/test",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const config = await trelloAutomation.getTrelloConfig();
+        if (!config) {
+          return res.status(400).json({
+            success: false,
+            message: "Trello not configured yet",
+          });
+        }
+
+        const testCard = await trelloService.createCard({
+          name: "Test Card - " + new Date().toLocaleString(),
+          desc: "This is a test card created by Mementiq integration",
+          idList: config.todoListId,
+        });
+
+        res.json({
+          success: true,
+          message: "Test card created successfully",
+          cardId: testCard.id,
+        });
+      } catch (error) {
+        console.error("Trello test error:", error);
+        res.status(500).json({
           success: false,
-          message: "Trello not configured yet"
+          message: "Failed to create test card",
         });
       }
-
-      const testCard = await trelloService.createCard({
-        name: "Test Card - " + new Date().toLocaleString(),
-        desc: "This is a test card created by Mementiq integration",
-        idList: config.todoListId
-      });
-
-      res.json({
-        success: true,
-        message: "Test card created successfully",
-        cardId: testCard.id
-      });
-    } catch (error) {
-      console.error("Trello test error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create test card"
-      });
-    }
-  });
+    },
+  );
 
   // Move project cards to Done (temporary admin endpoint)
-  router.post("/api/trello/move-to-done/:projectId", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.projectId);
-      if (isNaN(projectId)) {
-        return res.status(400).json({
+  router.post(
+    "/api/trello/move-to-done/:projectId",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.projectId);
+        if (isNaN(projectId)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid project ID",
+          });
+        }
+
+        const result = await trelloAutomation.markProjectComplete(
+          projectId,
+          true,
+        );
+
+        res.json({
+          success: true,
+          message: `Cards moved to Done for project ${projectId}`,
+          result,
+        });
+      } catch (error) {
+        console.error("Move cards to Done error:", error);
+        res.status(500).json({
           success: false,
-          message: "Invalid project ID"
+          message: "Failed to move cards to Done",
         });
       }
-
-      const result = await trelloAutomation.markProjectComplete(projectId, true);
-      
-      res.json({
-        success: true,
-        message: `Cards moved to Done for project ${projectId}`,
-        result
-      });
-    } catch (error) {
-      console.error("Move cards to Done error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to move cards to Done"
-      });
-    }
-  });
+    },
+  );
 
   // Simple Trello connection test (no auth required for testing)
-  router.get("/api/trello/test-connection", async (req: AppRequest, res: AppResponse) => {
-    try {
-      console.log("Testing Trello connection...");
-      const boards = await trelloService.getBoards();
-      
-      res.json({
-        success: true,
-        message: `Successfully connected to Trello! Found ${boards.length} boards`,
-        boardCount: boards.length,
-        boards: boards.map(board => ({ id: board.id, name: board.name }))
-      });
-    } catch (error) {
-      console.error("Trello connection test error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to connect to Trello",
-        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)
-      });
-    }
-  });
+  router.get(
+    "/api/trello/test-connection",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        console.log("Testing Trello connection...");
+        const boards = await trelloService.getBoards();
+
+        res.json({
+          success: true,
+          message: `Successfully connected to Trello! Found ${boards.length} boards`,
+          boardCount: boards.length,
+          boards: boards.map((board) => ({ id: board.id, name: board.name })),
+        });
+      } catch (error) {
+        console.error("Trello connection test error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to connect to Trello",
+          error:
+            error instanceof Error
+              ? error instanceof Error
+                ? error.message
+                : String(error)
+              : String(error),
+        });
+      }
+    },
+  );
 
   // Trello Webhook Routes
 
@@ -2471,289 +3008,363 @@ export async function registerRoutes(app: any): Promise<Server> {
   });
 
   // Webhook endpoint for Trello events (POST request for actual webhooks)
-  router.post("/api/trello/webhook", express.raw({ type: 'application/json' }), async (req: AppRequest, res: AppResponse) => {
-    try {
-      const signature = req.headers['x-trello-webhook'] as string;
-      const callbackUrl = `${req.protocol}://${req.get('host')}/api/trello/webhook`;
-      
-      // Handle body correctly - it could be Buffer or already parsed object
-      let body: string;
-      let payload: TrelloWebhookPayload;
-      
-      if (Buffer.isBuffer(req.body)) {
-        body = req.body.toString('utf8');
-        payload = JSON.parse(body);
-      } else if (typeof req.body === 'object') {
-        payload = req.body as TrelloWebhookPayload;
-        body = JSON.stringify(payload);
-      } else {
-        body = String(req.body);
-        payload = JSON.parse(body);
-      }
+  router.post(
+    "/api/trello/webhook",
+    express.raw({ type: "application/json" }),
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const signature = req.headers["x-trello-webhook"] as string;
+        const callbackUrl = `${req.protocol}://${req.get("host")}/api/trello/webhook`;
 
-      console.log("🔔 Trello webhook received");
-  
-  
-      
-      if (!signature) {
-        console.log("❌ Missing webhook signature");
-        return res.status(400).json({ success: false, message: "Missing signature" });
-      }
+        // Handle body correctly - it could be Buffer or already parsed object
+        let body: string;
+        let payload: TrelloWebhookPayload;
 
-      // Verify webhook signature using Trello's application secret
-      const isValid = trelloWebhookService.verifyWebhookSignature(body, callbackUrl, signature);
-      if (!isValid) {
-        console.log("❌ Invalid webhook signature");
-        return res.status(403).json({ success: false, message: "Invalid signature" });
-      }
+        if (Buffer.isBuffer(req.body)) {
+          body = req.body.toString("utf8");
+          payload = JSON.parse(body);
+        } else if (typeof req.body === "object") {
+          payload = req.body as TrelloWebhookPayload;
+          body = JSON.stringify(payload);
+        } else {
+          body = String(req.body);
+          payload = JSON.parse(body);
+        }
 
-      console.log("✅ Webhook signature verified");
-  
-      
-      const processed = await trelloWebhookService.processWebhook(payload);
-      
-      if (processed) {
-        res.status(200).json({ success: true, message: "Webhook processed" });
-      } else {
-        res.status(400).json({ success: false, message: "Failed to process webhook" });
+        console.log("🔔 Trello webhook received");
+
+        if (!signature) {
+          console.log("❌ Missing webhook signature");
+          return res
+            .status(400)
+            .json({ success: false, message: "Missing signature" });
+        }
+
+        // Verify webhook signature using Trello's application secret
+        const isValid = trelloWebhookService.verifyWebhookSignature(
+          body,
+          callbackUrl,
+          signature,
+        );
+        if (!isValid) {
+          console.log("❌ Invalid webhook signature");
+          return res
+            .status(403)
+            .json({ success: false, message: "Invalid signature" });
+        }
+
+        console.log("✅ Webhook signature verified");
+
+        const processed = await trelloWebhookService.processWebhook(payload);
+
+        if (processed) {
+          res.status(200).json({ success: true, message: "Webhook processed" });
+        } else {
+          res
+            .status(400)
+            .json({ success: false, message: "Failed to process webhook" });
+        }
+      } catch (error) {
+        console.error("❌ Webhook processing error:", error);
+        res
+          .status(500)
+          .json({ success: false, message: "Webhook processing failed" });
       }
-    } catch (error) {
-      console.error("❌ Webhook processing error:", error);
-      res.status(500).json({ success: false, message: "Webhook processing failed" });
-    }
-  });
+    },
+  );
 
   // Create webhook for a board
-  router.post("/api/trello/webhook/create", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { boardId } = req.body;
-      
-      if (!boardId) {
-        return res.status(400).json({
-          success: false,
-          message: "Board ID is required"
-        });
-      }
+  router.post(
+    "/api/trello/webhook/create",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { boardId } = req.body;
 
-      const callbackUrl = `${req.protocol}://${req.get('host')}/api/trello/webhook`;
-      const webhookId = await trelloWebhookService.createWebhook(boardId, callbackUrl);
-      
-      if (webhookId) {
-        res.json({
-          success: true,
-          message: "Webhook created successfully",
-          webhookId: webhookId,
-          callbackUrl: callbackUrl
-        });
-      } else {
+        if (!boardId) {
+          return res.status(400).json({
+            success: false,
+            message: "Board ID is required",
+          });
+        }
+
+        const callbackUrl = `${req.protocol}://${req.get("host")}/api/trello/webhook`;
+        const webhookId = await trelloWebhookService.createWebhook(
+          boardId,
+          callbackUrl,
+        );
+
+        if (webhookId) {
+          res.json({
+            success: true,
+            message: "Webhook created successfully",
+            webhookId: webhookId,
+            callbackUrl: callbackUrl,
+          });
+        } else {
+          res.status(500).json({
+            success: false,
+            message: "Failed to create webhook",
+          });
+        }
+      } catch (error) {
+        console.error("Create webhook error:", error);
         res.status(500).json({
           success: false,
-          message: "Failed to create webhook"
+          message: "Failed to create webhook",
         });
       }
-    } catch (error) {
-      console.error("Create webhook error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create webhook"
-      });
-    }
-  });
+    },
+  );
 
   // Get active webhooks
-  router.get("/api/trello/webhooks", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const webhooks = await trelloWebhookService.getActiveWebhooks();
-      res.json({ success: true, webhooks });
-    } catch (error) {
-      console.error("Get webhooks error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get webhooks"
-      });
-    }
-  });
+  router.get(
+    "/api/trello/webhooks",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const webhooks = await trelloWebhookService.getActiveWebhooks();
+        res.json({ success: true, webhooks });
+      } catch (error) {
+        console.error("Get webhooks error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to get webhooks",
+        });
+      }
+    },
+  );
 
   // Delete webhook
-  router.delete("/api/trello/webhooks/:webhookId", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { webhookId } = req.params;
-      const success = await trelloWebhookService.deleteWebhook(webhookId);
-      
-      if (success) {
-        res.json({ success: true, message: "Webhook deleted successfully" });
-      } else {
-        res.status(500).json({ success: false, message: "Failed to delete webhook" });
+  router.delete(
+    "/api/trello/webhooks/:webhookId",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { webhookId } = req.params;
+        const success = await trelloWebhookService.deleteWebhook(webhookId);
+
+        if (success) {
+          res.json({ success: true, message: "Webhook deleted successfully" });
+        } else {
+          res
+            .status(500)
+            .json({ success: false, message: "Failed to delete webhook" });
+        }
+      } catch (error) {
+        console.error("Delete webhook error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to delete webhook",
+        });
       }
-    } catch (error) {
-      console.error("Delete webhook error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to delete webhook"
-      });
-    }
-  });
+    },
+  );
 
   // Editor Management Routes
 
   // Add or update editor mapping
-  router.post("/api/trello/editors", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { trelloMemberId, editorName } = req.body;
-      
-      if (!trelloMemberId || !editorName) {
-        return res.status(400).json({
+  router.post(
+    "/api/trello/editors",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { trelloMemberId, editorName } = req.body;
+
+        if (!trelloMemberId || !editorName) {
+          return res.status(400).json({
+            success: false,
+            message: "Trello member ID and editor name are required",
+          });
+        }
+
+        const success = await trelloWebhookService.addEditor(
+          trelloMemberId,
+          editorName,
+        );
+
+        if (success) {
+          res.json({
+            success: true,
+            message: "Editor mapping added/updated successfully",
+          });
+        } else {
+          res
+            .status(500)
+            .json({
+              success: false,
+              message: "Failed to add/update editor mapping",
+            });
+        }
+      } catch (error) {
+        console.error("Add editor error:", error);
+        res.status(500).json({
           success: false,
-          message: "Trello member ID and editor name are required"
+          message: "Failed to add/update editor mapping",
         });
       }
-
-      const success = await trelloWebhookService.addEditor(trelloMemberId, editorName);
-      
-      if (success) {
-        res.json({ success: true, message: "Editor mapping added/updated successfully" });
-      } else {
-        res.status(500).json({ success: false, message: "Failed to add/update editor mapping" });
-      }
-    } catch (error) {
-      console.error("Add editor error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to add/update editor mapping"
-      });
-    }
-  });
+    },
+  );
 
   // Get all editors
-  router.get("/api/trello/editors", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const editors = await trelloWebhookService.getAllEditors();
-      res.json({ success: true, editors });
-    } catch (error) {
-      console.error("Get editors error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get editors"
-      });
-    }
-  });
+  router.get(
+    "/api/trello/editors",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const editors = await trelloWebhookService.getAllEditors();
+        res.json({ success: true, editors });
+      } catch (error) {
+        console.error("Get editors error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to get editors",
+        });
+      }
+    },
+  );
 
   // Revision API Routes
 
   // Generate media platform review link for revisions
-  router.post('/api/projects/:id/generate-review-link', requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const userId = req.user!.id;
-
-      // Verify user owns the project
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ success: false, message: 'Project not found' });
-      }
-
-      // Project must be in 'awaiting revision instructions' status
-      if (project.status !== 'awaiting revision instructions') {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Review link can only be generated for projects awaiting revision instructions' 
-        });
-      }
-
-      // Extract project folder ID 
-      const projectFolderId = project.mediaFolderId;
-      if (!projectFolderId) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'No Frame.io folder found for this project' 
-        });
-      }
-
-      // Generate Frame.io review link
-      console.log(`🎬 Generating review link for project ${projectId}, folder: ${projectFolderId}`);
-      const reviewLink = await createFrameioReviewLink(projectFolderId);
-      console.log(`✅ Review link generated for project ${projectId}`);
-      
-      if (!reviewLink) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'No videos found in project or failed to create review link' 
-        });
-      }
-
-      // Save review link to database
-      await storage.updateProject(projectId, {
-        updatedAt: new Date()
-      });
-
-      // Try to send email with review link and instructions
+  router.post(
+    "/api/projects/:id/generate-review-link",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
       try {
-        await emailService.sendRevisionInstructionsEmail(
-          req.user!.email,
-          req.user!.firstName,
-          project.title,
-          reviewLink
+        const projectId = Number(req.params.id);
+        const userId = req.user!.id;
+
+        // Verify user owns the project
+        const project = await storage.getProject(projectId);
+        if (!project || project.userId !== userId) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Project not found" });
+        }
+
+        // Project must be in 'awaiting revision instructions' status
+        if (project.status !== "awaiting revision instructions") {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Review link can only be generated for projects awaiting revision instructions",
+          });
+        }
+
+        // Extract project folder ID
+        const projectFolderId = project.mediaFolderId;
+        if (!projectFolderId) {
+          return res.status(400).json({
+            success: false,
+            message: "No Frame.io folder found for this project",
+          });
+        }
+
+        // Generate Frame.io review link
+        console.log(
+          `🎬 Generating review link for project ${projectId}, folder: ${projectFolderId}`,
         );
-        
-        res.json({ 
-          success: true, 
-          reviewLink,
-          message: 'Review link generated and email sent successfully' 
+        const reviewLink = await createFrameioReviewLink(projectFolderId);
+        console.log(`✅ Review link generated for project ${projectId}`);
+
+        if (!reviewLink) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "No videos found in project or failed to create review link",
+          });
+        }
+
+        // Save review link to database
+        await storage.updateProject(projectId, {
+          updatedAt: new Date(),
         });
-      } catch (emailError) {
-        console.error('Email sending failed:', emailError);
-        // Still return success if review link was generated
-        res.json({ 
-          success: true, 
-          reviewLink,
-          message: 'Review link generated successfully (email delivery failed)' 
+
+        // Try to send email with review link and instructions
+        try {
+          await emailService.sendRevisionInstructionsEmail(
+            req.user!.email,
+            req.user!.firstName,
+            project.title,
+            reviewLink,
+          );
+
+          res.json({
+            success: true,
+            reviewLink,
+            message: "Review link generated and email sent successfully",
+          });
+        } catch (emailError) {
+          console.error("Email sending failed:", emailError);
+          // Still return success if review link was generated
+          res.json({
+            success: true,
+            reviewLink,
+            message:
+              "Review link generated successfully (email delivery failed)",
+          });
+        }
+      } catch (error) {
+        console.error("Error generating review link:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to generate review link",
         });
       }
-    } catch (error) {
-      console.error('Error generating review link:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to generate review link' 
-      });
-    }
-  });
-
+    },
+  );
 
   // Stripe Subscription Routes
 
   // Update existing Trello card with correct subscription tier
-  router.post("/api/trello/update-card-tier", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const user = req.user!;
-      console.log(`🔄 Updating Trello card for user ${user.id} with tier: ${user.subscriptionTier}`);
-      
-      // Get the user's most recent project
-      const projects = await storage.getProjectsByUser(user.id);
-      const latestProject = projects
-        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-      
-      if (!latestProject) {
-        return res.status(404).json({ success: false, message: "No projects found" });
+  router.post(
+    "/api/trello/update-card-tier",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const user = req.user!;
+        console.log(
+          `🔄 Updating Trello card for user ${user.id} with tier: ${user.subscriptionTier}`,
+        );
+
+        // Get the user's most recent project
+        const projects = await storage.getProjectsByUser(user.id);
+        const latestProject = projects.sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )[0];
+
+        if (!latestProject) {
+          return res
+            .status(404)
+            .json({ success: false, message: "No projects found" });
+        }
+
+        console.log(
+          `📂 Latest project: "${latestProject.title}" (ID: ${latestProject.id})`,
+        );
+
+        // Use the automation service to create or update the project card
+        await trelloAutomation.createProjectCard(latestProject.id);
+
+        console.log(
+          `✅ Updated Trello card with correct "${user.subscriptionTier}" subscription label`,
+        );
+
+        res.json({
+          success: true,
+          message: `Updated Trello card for project "${latestProject.title}" with tier: ${user.subscriptionTier}`,
+          projectId: latestProject.id,
+        });
+      } catch (error) {
+        console.error("❌ Error updating Trello card:", error);
+        res
+          .status(500)
+          .json({ success: false, message: "Failed to update Trello card" });
       }
-      
-      console.log(`📂 Latest project: "${latestProject.title}" (ID: ${latestProject.id})`);
-      
-      // Use the automation service to create or update the project card
-      await trelloAutomation.createProjectCard(latestProject.id);
-      
-      console.log(`✅ Updated Trello card with correct "${user.subscriptionTier}" subscription label`);
-      
-      res.json({ 
-        success: true, 
-        message: `Updated Trello card for project "${latestProject.title}" with tier: ${user.subscriptionTier}`,
-        projectId: latestProject.id
-      });
-      
-    } catch (error) {
-      console.error("❌ Error updating Trello card:", error);
-      res.status(500).json({ success: false, message: "Failed to update Trello card" });
-    }
-  });
+    },
+  );
 
   // Check subscription status with Stripe metadata
   router.get(
@@ -2777,49 +3388,69 @@ export async function registerRoutes(app: any): Promise<Server> {
         // Always check with Stripe if user has a customer ID to catch missed subscription updates
         if (user.stripeCustomerId) {
           try {
-            console.log(`🔍 Checking Stripe for latest subscription status for customer: ${user.stripeCustomerId}`);
-            
+            console.log(
+              `🔍 Checking Stripe for latest subscription status for customer: ${user.stripeCustomerId}`,
+            );
+
             // Get all active subscriptions for this customer
             const subscriptions = await stripe.subscriptions.list({
               customer: user.stripeCustomerId,
-              status: 'active',
+              status: "active",
               limit: 1,
             });
 
             if (subscriptions.data.length > 0) {
               const latestSubscription = subscriptions.data[0];
-              console.log(`✅ Found active subscription in Stripe: ${latestSubscription.id}, status: ${latestSubscription.status}`);
-              
+              console.log(
+                `✅ Found active subscription in Stripe: ${latestSubscription.id}, status: ${latestSubscription.status}`,
+              );
+
               // Update our records if they're out of sync
-              if (actualSubscriptionStatus !== 'active' || stripeSubscriptionId !== latestSubscription.id) {
-                console.log(`🔄 Updating local subscription status from ${actualSubscriptionStatus} to active`);
-                
-                const periodStart = new Date((latestSubscription as any).current_period_start * 1000);
-                const periodEnd = new Date((latestSubscription as any).current_period_end * 1000);
-                
+              if (
+                actualSubscriptionStatus !== "active" ||
+                stripeSubscriptionId !== latestSubscription.id
+              ) {
+                console.log(
+                  `🔄 Updating local subscription status from ${actualSubscriptionStatus} to active`,
+                );
+
+                const periodStart = new Date(
+                  (latestSubscription as any).current_period_start * 1000,
+                );
+                const periodEnd = new Date(
+                  (latestSubscription as any).current_period_end * 1000,
+                );
+
                 await storage.updateUserSubscription(user.id, {
-                  subscriptionStatus: 'active',
+                  subscriptionStatus: "active",
                   stripeSubscriptionId: latestSubscription.id,
                   subscriptionPeriodStart: periodStart,
                   subscriptionPeriodEnd: periodEnd,
                 });
-                
-                actualSubscriptionStatus = 'active';
+
+                actualSubscriptionStatus = "active";
                 stripeSubscriptionId = latestSubscription.id;
               }
             } else {
-              console.log(`❌ No active subscriptions found in Stripe for customer: ${user.stripeCustomerId}`);
+              console.log(
+                `❌ No active subscriptions found in Stripe for customer: ${user.stripeCustomerId}`,
+              );
               // If we think they have an active sub but Stripe says no, update our records
-              if (actualSubscriptionStatus === 'active') {
-                console.log(`🔄 Updating local subscription status from active to inactive`);
+              if (actualSubscriptionStatus === "active") {
+                console.log(
+                  `🔄 Updating local subscription status from active to inactive`,
+                );
                 await storage.updateUserSubscription(user.id, {
-                  subscriptionStatus: 'inactive',
+                  subscriptionStatus: "inactive",
                 });
-                actualSubscriptionStatus = 'inactive';
+                actualSubscriptionStatus = "inactive";
               }
             }
           } catch (stripeError) {
-            console.warn("Failed to check Stripe subscription status:", stripeError);
+            console.warn(
+              "Failed to check Stripe subscription status:",
+              stripeError,
+            );
             // Continue with stored values
           }
         }
@@ -2827,18 +3458,20 @@ export async function registerRoutes(app: any): Promise<Server> {
         // If user has active subscription, fetch allowance from Stripe product metadata
         if (actualSubscriptionStatus === "active" && stripeSubscriptionId) {
           try {
-            const subscription = await stripe.subscriptions.retrieve(
-              stripeSubscriptionId,
-            );
+            const subscription =
+              await stripe.subscriptions.retrieve(stripeSubscriptionId);
             const productId = subscription.items.data[0]?.price
               .product as string;
 
             if (productId) {
               const product = await stripe.products.retrieve(productId);
-              
+
               // Map Stripe product ID to correct tier
               const correctTier = getSubscriptionTierFromProductId(productId);
-              const correctAllowance = SUBSCRIPTION_TIERS[correctTier as keyof typeof SUBSCRIPTION_TIERS].allowance;
+              const correctAllowance =
+                SUBSCRIPTION_TIERS[
+                  correctTier as keyof typeof SUBSCRIPTION_TIERS
+                ].allowance;
 
               // Get allowance from Stripe product metadata (fallback to our config)
               if (product.metadata?.allowance) {
@@ -2848,8 +3481,13 @@ export async function registerRoutes(app: any): Promise<Server> {
               }
 
               // Update local storage if tier or allowance is different
-              if (allowanceFromStripe !== user.subscriptionAllowance || correctTier !== user.subscriptionTier) {
-                console.log(`🔄 Updating subscription tier from ${user.subscriptionTier} to ${correctTier} (allowance: ${allowanceFromStripe})`);
+              if (
+                allowanceFromStripe !== user.subscriptionAllowance ||
+                correctTier !== user.subscriptionTier
+              ) {
+                console.log(
+                  `🔄 Updating subscription tier from ${user.subscriptionTier} to ${correctTier} (allowance: ${allowanceFromStripe})`,
+                );
                 await storage.updateUserSubscription(user.id, {
                   subscriptionTier: correctTier,
                   subscriptionAllowance: allowanceFromStripe,
@@ -2877,10 +3515,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           usageInPeriod = projects.filter((project) => {
             const createdAt = new Date(project.createdAt);
-            return (
-              createdAt >= periodStart &&
-              createdAt <= periodEnd
-            ); // Count projects CREATED within the billing period
+            return createdAt >= periodStart && createdAt <= periodEnd; // Count projects CREATED within the billing period
           }).length;
         }
 
@@ -2941,15 +3576,18 @@ export async function registerRoutes(app: any): Promise<Server> {
         if (!customerId) {
           // Generate idempotency key for customer creation based on user email
           const customerIdempotencyKey = `customer_${user.email}`;
-          const customer = await stripe.customers.create({
-            email: user.email,
-            name: `${user.firstName} ${user.lastName}`,
-            metadata: {
-              userId: user.id,
+          const customer = await stripe.customers.create(
+            {
+              email: user.email,
+              name: `${user.firstName} ${user.lastName}`,
+              metadata: {
+                userId: user.id,
+              },
             },
-          }, {
-            idempotencyKey: customerIdempotencyKey,
-          });
+            {
+              idempotencyKey: customerIdempotencyKey,
+            },
+          );
           customerId = customer.id;
           await storage.updateUserStripeInfo(user.id, customerId);
         }
@@ -2957,40 +3595,45 @@ export async function registerRoutes(app: any): Promise<Server> {
         // Create actual Stripe checkout session using your product IDs
         const tierConfig =
           SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS];
-        
+
         // Use centralized URL configuration
         const baseUrl = getAppBaseUrl();
 
         // Resolve price using lookup_key instead of product ID
         const planKey = tierToPlanKey(tier);
         const price = await resolvePriceByLookupKey(planKey);
-        console.log(`✅ Using price ${price.id} for tier ${tier} via lookup_key`);
+        console.log(
+          `✅ Using price ${price.id} for tier ${tier} via lookup_key`,
+        );
 
         // Generate idempotency key for checkout session creation
         // Use combination of user ID, tier, and timestamp (rounded to hour) for reasonable retry window
         const idempotencyKey = `checkout_${user.id}_${tier}_${Math.floor(Date.now() / 3600000)}`;
         console.log(`🔑 Using idempotency key: ${idempotencyKey}`);
 
-        const session = await stripe.checkout.sessions.create({
-          customer: customerId,
-          payment_method_types: ["card"],
-          mode: "subscription",
-          line_items: [
-            {
-              price: price.id, // Use the resolved price ID
-              quantity: 1,
+        const session = await stripe.checkout.sessions.create(
+          {
+            customer: customerId,
+            payment_method_types: ["card"],
+            mode: "subscription",
+            line_items: [
+              {
+                price: price.id, // Use the resolved price ID
+                quantity: 1,
+              },
+            ],
+            success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${baseUrl}/payment-cancelled?checkout=cancelled`,
+            metadata: {
+              userId: user.id,
+              tier: tier,
+              productId: tierConfig.stripeProductId,
             },
-          ],
-          success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${baseUrl}/payment-cancelled?checkout=cancelled`,
-          metadata: {
-            userId: user.id,
-            tier: tier,
-            productId: tierConfig.stripeProductId,
           },
-        }, {
-          idempotencyKey: idempotencyKey,
-        });
+          {
+            idempotencyKey: idempotencyKey,
+          },
+        );
 
         res.json({
           success: true,
@@ -3065,8 +3708,10 @@ export async function registerRoutes(app: any): Promise<Server> {
       try {
         // Get projects directly from database - updatedAt is now maintained by individual actions
         const projects = await storage.getProjectsByUser(req.user!.id);
-        
-        console.log(`Returning ${projects.length} projects using reliable database timestamps`);
+
+        console.log(
+          `Returning ${projects.length} projects using reliable database timestamps`,
+        );
         res.json({
           success: true,
           projects: projects,
@@ -3142,7 +3787,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           req.user!.id,
           validatedData,
         );
-        
+
         // Track project creation timestamp
         await updateProjectTimestamp(project.id, "project created");
 
@@ -3151,39 +3796,52 @@ export async function registerRoutes(app: any): Promise<Server> {
 
         // 🚨 CRITICAL: Frame.io folders are ONLY created when "New Video Request" button is clicked
         // This project creation endpoint should NOT create folders automatically
-        console.log(`🚨 PROJECT CREATED WITHOUT FRAME.IO FOLDERS - folders only created on "New Video Request" button`);
+        console.log(
+          `🚨 PROJECT CREATED WITHOUT FRAME.IO FOLDERS - folders only created on "New Video Request" button`,
+        );
         let frameioConfigured = false;
-        
+
         // Only prepare Frame.io service but don't create folders yet
         try {
           await frameioV4Service.loadServiceAccountToken();
-          
+
           if (frameioV4Service.accessToken) {
-            console.log(`Frame.io V4 service ready for user ${req.user!.id} - folders will be created on first "New Video Request"`);
+            console.log(
+              `Frame.io V4 service ready for user ${req.user!.id} - folders will be created on first "New Video Request"`,
+            );
             await frameioV4Service.initialize();
             frameioConfigured = true;
           } else {
-            console.log("Frame.io V4 OAuth not completed - will need authentication before folder creation");
+            console.log(
+              "Frame.io V4 OAuth not completed - will need authentication before folder creation",
+            );
           }
         } catch (frameioError) {
-          console.error("Frame.io V4 service preparation failed:", frameioError);
+          console.error(
+            "Frame.io V4 service preparation failed:",
+            frameioError,
+          );
         }
 
         // Always return success for project creation
-        const updatedProject = frameioConfigured ? await storage.getProject(project.id) : project;
-        
+        const updatedProject = frameioConfigured
+          ? await storage.getProject(project.id)
+          : project;
+
         res.status(201).json({
           success: true,
           message: "Project created successfully",
           project: updatedProject,
-          frameio: frameioConfigured ? {
-            status: 'ready',
-            note: 'Frame.io V4 service ready - folders will be created on first "New Video Request"'
-          } : {
-            status: 'pending',
-            note: 'Complete Frame.io OAuth to enable folder organization',
-            authUrl: `${req.protocol}://${req.get('host')}/api/auth/frameio`
-          }
+          frameio: frameioConfigured
+            ? {
+                status: "ready",
+                note: 'Frame.io V4 service ready - folders will be created on first "New Video Request"',
+              }
+            : {
+                status: "pending",
+                note: "Complete Frame.io OAuth to enable folder organization",
+                authUrl: `${req.protocol}://${req.get("host")}/api/auth/frameio`,
+              },
         });
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -3206,496 +3864,577 @@ export async function registerRoutes(app: any): Promise<Server> {
   // REMOVED DUPLICATE: Project acceptance endpoint moved to line 1827
 
   // Get video download link endpoint
-  router.get("/api/projects/:id/download-link", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      
-      // Get user ID from authenticated request
-      const userId = req.user?.id;
-      
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Authentication required"
-        });
-      }
-      
-      // Verify project belongs to user
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "Project not found" 
-        });
-      }
-      
-      // Try to get download link from project files first
-      const projectFiles = await storage.getProjectFiles(projectId);
-      const completedVideo = projectFiles.find(file => file.mediaAssetUrl);
-      
-      if (completedVideo?.mediaAssetUrl) {
-        return res.json({ 
-          success: true, 
-          downloadLink: completedVideo.mediaAssetUrl,
-          filename: completedVideo.filename
-        });
-      }
-      
-      // If no stored download link, try to generate one from Frame.io videos
-      if (project.mediaFolderId) {
-        try {
-          await frameioV4Service.loadServiceAccountToken();
-          const frameioVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-          if (frameioVideos && frameioVideos.length > 0) {
-            const latestVideo = frameioVideos[0];
-            const videoId = latestVideo.id || latestVideo.uri?.split('/').pop();
-            
-            // Generate download link for the latest video (V4)
-            const downloadLink = await frameioV4Service.generateAssetDownloadLink(videoId);
-            
-            if (downloadLink) {
-              return res.json({
-                success: true,
-                downloadLink: downloadLink,
-                filename: latestVideo.name
-              });
-            }
-          }
-        } catch (frameioError) {
-          console.error('Error generating download link from Frame.io:', frameioError);
+  router.get(
+    "/api/projects/:id/download-link",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+
+        // Get user ID from authenticated request
+        const userId = req.user?.id;
+
+        if (!userId) {
+          return res.status(401).json({
+            success: false,
+            message: "Authentication required",
+          });
         }
+
+        // Verify project belongs to user
+        const project = await storage.getProject(projectId);
+        if (!project || project.userId !== userId) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        // Try to get download link from project files first
+        const projectFiles = await storage.getProjectFiles(projectId);
+        const completedVideo = projectFiles.find((file) => file.mediaAssetUrl);
+
+        if (completedVideo?.mediaAssetUrl) {
+          return res.json({
+            success: true,
+            downloadLink: completedVideo.mediaAssetUrl,
+            filename: completedVideo.filename,
+          });
+        }
+
+        // If no stored download link, try to generate one from Frame.io videos
+        if (project.mediaFolderId) {
+          try {
+            await frameioV4Service.loadServiceAccountToken();
+            const frameioVideos = await frameioV4Service.getFolderAssets(
+              project.mediaFolderId,
+            );
+            if (frameioVideos && frameioVideos.length > 0) {
+              const latestVideo = frameioVideos[0];
+              const videoId =
+                latestVideo.id || latestVideo.uri?.split("/").pop();
+
+              // Generate download link for the latest video (V4)
+              const downloadLink =
+                await frameioV4Service.generateAssetDownloadLink(videoId);
+
+              if (downloadLink) {
+                return res.json({
+                  success: true,
+                  downloadLink: downloadLink,
+                  filename: latestVideo.name,
+                });
+              }
+            }
+          } catch (frameioError) {
+            console.error(
+              "Error generating download link from Frame.io:",
+              frameioError,
+            );
+          }
+        }
+
+        return res.status(404).json({
+          success: false,
+          message: "No download link available for this project",
+        });
+      } catch (error) {
+        console.error("Get download link error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to get download link",
+        });
       }
-      
-      return res.status(404).json({ 
-        success: false, 
-        message: "No download link available for this project" 
-      });
-    } catch (error) {
-      console.error("Get download link error:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Failed to get download link" 
-      });
-    }
-  });
+    },
+  );
 
   // Direct video download endpoint - triggers file download to user's device
-  router.get("/api/projects/:id/download-video", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      
-      // Get user ID from authenticated request (handle both session and Supabase auth)
-      const userId = req.session?.userId || req.user?.id;
-      
-      if (!userId) {
-        console.error('No user ID found in request:', { session: !!req.session, user: !!req.user });
-        return res.status(401).json({
-          success: false,
-          message: "Authentication required"
-        });
-      }
-      
-      // Verify project belongs to user
-      const project = await storage.getProject(projectId);
-      if (!project || project.userId !== userId) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "Project not found" 
-        });
-      }
-      
-      // Get the latest video from the Frame.io folder
-      if (!project.mediaFolderId) {
-        return res.status(404).json({
-          success: false,
-          message: "No Frame.io folder configured for this project"
-        });
-      }
-      
-      await frameioV4Service.loadServiceAccountToken();
-      const frameioVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-      if (!frameioVideos || frameioVideos.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "No videos found for this project"
-        });
-      }
+  router.get(
+    "/api/projects/:id/download-video",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
 
-      const latestVideo = frameioVideos[0];
-      const videoId = latestVideo.id;
+        // Get user ID from authenticated request (handle both session and Supabase auth)
+        const userId = req.session?.userId || req.user?.id;
 
-      if (!videoId) {
-        return res.status(404).json({
-          success: false,
-          message: "Invalid video ID"
-        });
-      }
-
-      // Get the direct download link from Frame.io V4
-      const downloadLink = await frameioV4Service.generateAssetDownloadLink(videoId);
-
-      if (!downloadLink) {
-        return res.status(404).json({
-          success: false,
-          message: "No download link available"
-        });
-      }
-
-      console.log(`Got download link for video ${videoId}: ${downloadLink}`);
-
-      // Check if it's a direct file URL that we can proxy for download
-      if (downloadLink.includes('.mp4') || downloadLink.includes('.mov') || downloadLink.includes('akamaized') || downloadLink.includes('progressive') || downloadLink.includes('frame.io')) {
-        try {
-          console.log('Attempting to proxy direct video file download...');
-          
-          // Fetch the video file directly
-          const response = await fetch(downloadLink, {
-            method: 'GET',
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+        if (!userId) {
+          console.error("No user ID found in request:", {
+            session: !!req.session,
+            user: !!req.user,
           });
-          
-          if (!response.ok) {
-            console.error(`Failed to fetch video file: ${response.status} ${response.statusText}`);
-            return res.redirect(downloadLink);
-          }
-          
-          // Set headers for file download
-          const filename = `${latestVideo.name || `video_${videoId}`}.mp4`;
-          (res as any).setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-          (res as any).setHeader('Content-Type', 'video/mp4');
-          
-          // Get content length if available
-          const contentLength = response.headers.get('content-length');
-          if (contentLength) {
-            (res as any).setHeader('Content-Length', contentLength);
-          }
-          
-          console.log(`Streaming video file: ${filename} (${contentLength || 'unknown size'})`);
-          
-          // Stream the video file using Node.js streams
-          if (response.body) {
-            const reader = response.body.getReader();
-            
-            const pump = async () => {
-              try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-                  res.write(Buffer.from(value));
+          return res.status(401).json({
+            success: false,
+            message: "Authentication required",
+          });
+        }
+
+        // Verify project belongs to user
+        const project = await storage.getProject(projectId);
+        if (!project || project.userId !== userId) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        // Get the latest video from the Frame.io folder
+        if (!project.mediaFolderId) {
+          return res.status(404).json({
+            success: false,
+            message: "No Frame.io folder configured for this project",
+          });
+        }
+
+        await frameioV4Service.loadServiceAccountToken();
+        const frameioVideos = await frameioV4Service.getFolderAssets(
+          project.mediaFolderId,
+        );
+        if (!frameioVideos || frameioVideos.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "No videos found for this project",
+          });
+        }
+
+        const latestVideo = frameioVideos[0];
+        const videoId = latestVideo.id;
+
+        if (!videoId) {
+          return res.status(404).json({
+            success: false,
+            message: "Invalid video ID",
+          });
+        }
+
+        // Get the direct download link from Frame.io V4
+        const downloadLink =
+          await frameioV4Service.generateAssetDownloadLink(videoId);
+
+        if (!downloadLink) {
+          return res.status(404).json({
+            success: false,
+            message: "No download link available",
+          });
+        }
+
+        console.log(`Got download link for video ${videoId}: ${downloadLink}`);
+
+        // Check if it's a direct file URL that we can proxy for download
+        if (
+          downloadLink.includes(".mp4") ||
+          downloadLink.includes(".mov") ||
+          downloadLink.includes("akamaized") ||
+          downloadLink.includes("progressive") ||
+          downloadLink.includes("frame.io")
+        ) {
+          try {
+            console.log("Attempting to proxy direct video file download...");
+
+            // Fetch the video file directly
+            const response = await fetch(downloadLink, {
+              method: "GET",
+              headers: {
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+              },
+            });
+
+            if (!response.ok) {
+              console.error(
+                `Failed to fetch video file: ${response.status} ${response.statusText}`,
+              );
+              return res.redirect(downloadLink);
+            }
+
+            // Set headers for file download
+            const filename = `${latestVideo.name || `video_${videoId}`}.mp4`;
+            (res as any).setHeader(
+              "Content-Disposition",
+              `attachment; filename="${filename}"`,
+            );
+            (res as any).setHeader("Content-Type", "video/mp4");
+
+            // Get content length if available
+            const contentLength = response.headers.get("content-length");
+            if (contentLength) {
+              (res as any).setHeader("Content-Length", contentLength);
+            }
+
+            console.log(
+              `Streaming video file: ${filename} (${contentLength || "unknown size"})`,
+            );
+
+            // Stream the video file using Node.js streams
+            if (response.body) {
+              const reader = response.body.getReader();
+
+              const pump = async () => {
+                try {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    res.write(Buffer.from(value));
+                  }
+                  res.end();
+                  console.log("✅ Video download completed successfully");
+                } catch (streamError) {
+                  console.error("Error during video streaming:", streamError);
+                  if (!res.headersSent) {
+                    res
+                      .status(500)
+                      .json({ success: false, message: "Stream error" });
+                  }
                 }
-                res.end();
-                console.log('✅ Video download completed successfully');
-              } catch (streamError) {
-                console.error('Error during video streaming:', streamError);
-                if (!res.headersSent) {
-                  res.status(500).json({ success: false, message: 'Stream error' });
-                }
-              }
-            };
-            
-            await pump();
-          } else {
-            throw new Error('No response body available');
+              };
+
+              await pump();
+            } else {
+              throw new Error("No response body available");
+            }
+          } catch (proxyError) {
+            console.error("Error proxying video file:", proxyError);
+            // Fallback to redirect
+            res.redirect(downloadLink);
           }
-        } catch (proxyError) {
-          console.error('Error proxying video file:', proxyError);
-          // Fallback to redirect
+        } else {
+          // Redirect to media platform page for non-direct URLs
+          console.log("Redirecting to media platform page for download");
           res.redirect(downloadLink);
         }
-      } else {
-        // Redirect to media platform page for non-direct URLs
-        console.log('Redirecting to media platform page for download');
-        res.redirect(downloadLink);
+      } catch (error) {
+        console.error("Error downloading video:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to download video",
+        });
       }
-    } catch (error) {
-      console.error("Error downloading video:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to download video"
-      });
-    }
-  });
+    },
+  );
 
   // Create revision payment session endpoint
-  router.post("/api/stripe/create-revision-session", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { projectId } = req.body;
-  
-  
-  
-
-      // Resolve revision price using lookup_key
-      let priceToUse: string;
+  router.post(
+    "/api/stripe/create-revision-session",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
       try {
-        const revisionPrice = await resolvePriceByLookupKey('revision_payment');
-        priceToUse = revisionPrice.id;
-        console.log(`✅ Using revision price ${priceToUse} via lookup_key`);
-        
-        // Verify it's the expected amount ($5)
-        if (revisionPrice.unit_amount !== 500) {
-          console.warn(`⚠️ Revision price amount is ${revisionPrice.unit_amount} cents, expected 500`);
+        const { projectId } = req.body;
+
+        // Resolve revision price using lookup_key
+        let priceToUse: string;
+        try {
+          const revisionPrice =
+            await resolvePriceByLookupKey("revision_payment");
+          priceToUse = revisionPrice.id;
+          console.log(`✅ Using revision price ${priceToUse} via lookup_key`);
+
+          // Verify it's the expected amount ($5)
+          if (revisionPrice.unit_amount !== 500) {
+            console.warn(
+              `⚠️ Revision price amount is ${revisionPrice.unit_amount} cents, expected 500`,
+            );
+          }
+        } catch (error) {
+          console.error("Error resolving revision price:", error);
+          // Fallback to hard-coded price as last resort
+          priceToUse = "price_1Rt2ZhCp6pJe31oC6uMZuOev";
+          console.warn("⚠️ Using fallback hard-coded price ID");
         }
-      } catch (error) {
-        console.error("Error resolving revision price:", error);
-        // Fallback to hard-coded price as last resort
-        priceToUse = 'price_1Rt2ZhCp6pJe31oC6uMZuOev';
-        console.warn("⚠️ Using fallback hard-coded price ID");
-      }
 
-      // Convert to number if it's a string
-      const numericProjectId = typeof projectId === 'string' ? parseInt(projectId, 10) : projectId;
+        // Convert to number if it's a string
+        const numericProjectId =
+          typeof projectId === "string" ? parseInt(projectId, 10) : projectId;
 
-      if (!numericProjectId || typeof numericProjectId !== 'number' || isNaN(numericProjectId)) {
-    
-        return res.status(400).json({
-          success: false,
-          message: "Valid project ID is required",
+        if (
+          !numericProjectId ||
+          typeof numericProjectId !== "number" ||
+          isNaN(numericProjectId)
+        ) {
+          return res.status(400).json({
+            success: false,
+            message: "Valid project ID is required",
+          });
+        }
+
+        // Verify project exists and user has access
+        const project = await storage.getProject(numericProjectId);
+        console.log("Project lookup result:", {
+          projectExists: !!project,
+          projectId: project?.id,
+          projectStatus: project?.status,
+          projectUserId: project?.userId,
+          requestUserId: req.user!.id,
         });
-      }
 
-      // Verify project exists and user has access
-      const project = await storage.getProject(numericProjectId);
-      console.log("Project lookup result:", {
-        projectExists: !!project,
-        projectId: project?.id,
-        projectStatus: project?.status,
-        projectUserId: project?.userId,
-        requestUserId: req.user!.id
-      });
-      
-      if (!project || project.userId !== req.user!.id) {
-        console.log("Project access check failed - no access");
-        return res.status(404).json({
-          success: false,
-          message: "Project not found or access denied",
-        });
-      }
+        if (!project || project.userId !== req.user!.id) {
+          console.log("Project access check failed - no access");
+          return res.status(404).json({
+            success: false,
+            message: "Project not found or access denied",
+          });
+        }
 
-      // Check if project is in correct status for revision request
-      const validRevisionStatuses = ["video is ready", "delivered", "complete"];
-      if (!validRevisionStatuses.includes(project.status.toLowerCase())) {
-    
-        return res.status(400).json({
-          success: false,
-          message: "Project must be delivered or completed to request revisions",
-        });
-      }
+        // Check if project is in correct status for revision request
+        const validRevisionStatuses = [
+          "video is ready",
+          "delivered",
+          "complete",
+        ];
+        if (!validRevisionStatuses.includes(project.status.toLowerCase())) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Project must be delivered or completed to request revisions",
+          });
+        }
 
-      // Use centralized URL configuration (same as subscription flow)
-      const baseUrl = getAppBaseUrl();
-      console.log(`🔗 Revision payment will redirect to: ${baseUrl}`);
-      console.log(`   Environment: NODE_ENV=${process.env.NODE_ENV}, PRODUCTION_URL=${process.env.PRODUCTION_URL}`);
+        // Use centralized URL configuration (same as subscription flow)
+        const baseUrl = getAppBaseUrl();
+        console.log(`🔗 Revision payment will redirect to: ${baseUrl}`);
+        console.log(
+          `   Environment: NODE_ENV=${process.env.NODE_ENV}, PRODUCTION_URL=${process.env.PRODUCTION_URL}`,
+        );
 
-      // Generate idempotency key for revision payment
-      // Use combination of project ID and timestamp (rounded to hour) for retry window
-      const idempotencyKey = `revision_${numericProjectId}_${Math.floor(Date.now() / 3600000)}`;
-      console.log(`🔑 Using idempotency key: ${idempotencyKey}`);
+        // Generate idempotency key for revision payment
+        // Use combination of project ID and timestamp (rounded to hour) for retry window
+        const idempotencyKey = `revision_${numericProjectId}_${Math.floor(Date.now() / 3600000)}`;
+        console.log(`🔑 Using idempotency key: ${idempotencyKey}`);
 
-      // Create Stripe checkout session for revision payment
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        mode: 'payment',
-        line_items: [
+        // Create Stripe checkout session for revision payment
+        const session = await stripe.checkout.sessions.create(
           {
-            price: priceToUse,
-            quantity: 1,
+            payment_method_types: ["card"],
+            mode: "payment",
+            line_items: [
+              {
+                price: priceToUse,
+                quantity: 1,
+              },
+            ],
+            success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`,
+            cancel_url: `${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`,
+            metadata: {
+              projectId: numericProjectId.toString(),
+              userId: req.user!.id,
+              type: "revision_payment",
+            },
           },
-        ],
-        success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`,
-        cancel_url: `${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`,
-        metadata: {
-          projectId: numericProjectId.toString(),
-          userId: req.user!.id,
-          type: 'revision_payment',
-        },
-      }, {
-        idempotencyKey: idempotencyKey,
-      });
+          {
+            idempotencyKey: idempotencyKey,
+          },
+        );
 
-      // Store revision payment record
-      await storage.createRevisionPayment(req.user!.id, {
-        projectId: numericProjectId,
-        stripeCheckoutSessionId: session.id,
-        paymentAmount: 500, // $5.00 in cents
-        currency: 'usd',
-      });
+        // Store revision payment record
+        await storage.createRevisionPayment(req.user!.id, {
+          projectId: numericProjectId,
+          stripeCheckoutSessionId: session.id,
+          paymentAmount: 500, // $5.00 in cents
+          currency: "usd",
+        });
 
-      console.log("✅ Stripe session created successfully:");
-  
-  
-      console.log(`"- Success URL:" ${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`);
-      console.log(`"- Cancel URL:" ${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`);
-      
-      res.json({
-        success: true,
-        sessionUrl: session.url,
-        sessionId: session.id,
-      });
+        console.log("✅ Stripe session created successfully:");
 
-    } catch (error) {
-      console.error("Error creating revision payment session:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create revision payment session",
-      });
-    }
-  });
+        console.log(
+          `"- Success URL:" ${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`,
+        );
+        console.log(
+          `"- Cancel URL:" ${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`,
+        );
+
+        res.json({
+          success: true,
+          sessionUrl: session.url,
+          sessionId: session.id,
+        });
+      } catch (error) {
+        console.error("Error creating revision payment session:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to create revision payment session",
+        });
+      }
+    },
+  );
 
   // API endpoint to check revision payment status - UPDATED TO INCLUDE DATABASE UPDATES
-  router.get("/api/stripe/check-revision-payment", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const sessionId = req.query.session_id as string;
-      const userId = req.user!.id;
-      
-      if (!sessionId) {
-        return res.status(400).json({
-          success: false,
-          message: "Session ID is required",
-        });
-      }
-      
-      // Get revision payment record from database
-      const payment = await storage.getRevisionPayment(sessionId);
-      if (!payment) {
-        return res.status(404).json({
-          success: false,
-          message: "Payment session not found in database"
-        });
-      }
+  router.get(
+    "/api/stripe/check-revision-payment",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const sessionId = req.query.session_id as string;
+        const userId = req.user!.id;
 
-      // Verify this payment belongs to the current user
-      if (payment.userId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied"
-        });
-      }
-      
-      // Retrieve session from Stripe
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      
-      // Check if payment is completed
-      const isCompleted = session.payment_status === 'paid' && session.status === 'complete';
-      
-      // If payment is completed and not already recorded, update the database
-      if (isCompleted && payment.paymentStatus !== 'completed') {
-        console.log(`💳 Recording completed payment for session: ${sessionId}`);
-        
-        // Update the revision payment record
-        await storage.updateRevisionPayment(sessionId, {
-          paymentStatus: 'completed',
-          paidAt: new Date(),
-          stripePaymentIntentId: session.payment_intent as string
-        });
-        
-        // Increment the project's revision count
-        await storage.incrementProjectRevisionCount(payment.projectId);
-        console.log(`📊 Incremented revision count for project ${payment.projectId}`);
-        
-        // Update project status to "awaiting revision instructions"
-        await storage.updateProject(payment.projectId, { 
-          status: 'awaiting revision instructions',
-          updatedAt: new Date()
-        });
-        console.log(`🔄 Updated project ${payment.projectId} status to "awaiting revision instructions"`);
-        
-        // Log the revision for accounting/tracking
-        console.log(`💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`);
-
-        // Move revision card to Done (revision request completes the current revision)
-        try {
-          await trelloAutomation.markProjectComplete(payment.projectId, true);
-          console.log(`✅ PAYMENT CHECK: Moved revision card to Done for project ${payment.projectId}`);
-        } catch (error) {
-          console.error('Failed to move revision Trello card to Done:', error);
+        if (!sessionId) {
+          return res.status(400).json({
+            success: false,
+            message: "Session ID is required",
+          });
         }
+
+        // Get revision payment record from database
+        const payment = await storage.getRevisionPayment(sessionId);
+        if (!payment) {
+          return res.status(404).json({
+            success: false,
+            message: "Payment session not found in database",
+          });
+        }
+
+        // Verify this payment belongs to the current user
+        if (payment.userId !== userId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
+        }
+
+        // Retrieve session from Stripe
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        // Check if payment is completed
+        const isCompleted =
+          session.payment_status === "paid" && session.status === "complete";
+
+        // If payment is completed and not already recorded, update the database
+        if (isCompleted && payment.paymentStatus !== "completed") {
+          console.log(
+            `💳 Recording completed payment for session: ${sessionId}`,
+          );
+
+          // Update the revision payment record
+          await storage.updateRevisionPayment(sessionId, {
+            paymentStatus: "completed",
+            paidAt: new Date(),
+            stripePaymentIntentId: session.payment_intent as string,
+          });
+
+          // Increment the project's revision count
+          await storage.incrementProjectRevisionCount(payment.projectId);
+          console.log(
+            `📊 Incremented revision count for project ${payment.projectId}`,
+          );
+
+          // Update project status to "awaiting revision instructions"
+          await storage.updateProject(payment.projectId, {
+            status: "awaiting revision instructions",
+            updatedAt: new Date(),
+          });
+          console.log(
+            `🔄 Updated project ${payment.projectId} status to "awaiting revision instructions"`,
+          );
+
+          // Log the revision for accounting/tracking
+          console.log(
+            `💰 REVISION PAYMENT RECORDED: Project ${payment.projectId}, Amount: $${payment.paymentAmount / 100}, Session: ${sessionId}`,
+          );
+
+          // Move revision card to Done (revision request completes the current revision)
+          try {
+            await trelloAutomation.markProjectComplete(payment.projectId, true);
+            console.log(
+              `✅ PAYMENT CHECK: Moved revision card to Done for project ${payment.projectId}`,
+            );
+          } catch (error) {
+            console.error(
+              "Failed to move revision Trello card to Done:",
+              error,
+            );
+          }
+        }
+
+        console.log("🔍 Payment status check:", {
+          sessionId: session.id,
+          paymentStatus: session.payment_status,
+          status: session.status,
+          isCompleted,
+        });
+
+        res.json({
+          success: true,
+          completed: isCompleted,
+          sessionId: session.id,
+          projectId: session.metadata?.projectId || payment.projectId,
+          paymentStatus: session.payment_status,
+          status: session.status,
+        });
+      } catch (error) {
+        console.error("Error checking payment status:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to check payment status",
+        });
       }
-      
-      console.log("🔍 Payment status check:", {
-        sessionId: session.id,
-        paymentStatus: session.payment_status,
-        status: session.status,
-        isCompleted
-      });
-      
-      res.json({
-        success: true,
-        completed: isCompleted,
-        sessionId: session.id,
-        projectId: session.metadata?.projectId || payment.projectId,
-        paymentStatus: session.payment_status,
-        status: session.status
-      });
-    } catch (error) {
-      console.error("Error checking payment status:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to check payment status",
-      });
-    }
-  });
+    },
+  );
 
   // IMPORTANT: These routes MUST be defined before Vite middleware to ensure they work
   // Stripe revision payment success/cancel endpoints - these are hit by Stripe after checkout
-  router.get("/stripe/revision-payment-success", async (req: AppRequest, res: AppResponse) => {
-    const sessionId = req.query.session_id as string;
-    const projectId = req.query.project_id as string;
-    
-    console.log("✅ STRIPE REVISION PAYMENT SUCCESS ENDPOINT HIT!");
+  router.get(
+    "/stripe/revision-payment-success",
+    async (req: AppRequest, res: AppResponse) => {
+      const sessionId = req.query.session_id as string;
+      const projectId = req.query.project_id as string;
 
+      console.log("✅ STRIPE REVISION PAYMENT SUCCESS ENDPOINT HIT!");
 
+      console.log(
+        `"✅ Stripe revision payment success callback:" { sessionId, projectId }`,
+      );
 
-
-    console.log(`"✅ Stripe revision payment success callback:" { sessionId, projectId }`);
-    
-    if (!sessionId || !projectId) {
-  
-      return res.redirect("/dashboard");
-    }
-    
-    // Verify the session with Stripe to ensure it's legitimate
-    try {
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      console.log("🔍 Stripe session verification:", {
-        id: session.id,
-        payment_status: session.payment_status,
-        status: session.status,
-        amount_total: session.amount_total,
-        metadata: session.metadata
-      });
-      
-      if (session.payment_status !== 'paid') {
-    
-        return res.redirect(`/dashboard?revision_payment=pending&session_id=${sessionId}&project_id=${projectId}`);
+      if (!sessionId || !projectId) {
+        return res.redirect("/dashboard");
       }
-      
-      // Update project status to "awaiting revision instructions" after successful payment
-      const numericProjectId = Number(projectId);
-      if (!isNaN(numericProjectId)) {
-        try {
-          await storage.updateProject(numericProjectId, {
-            status: 'awaiting revision instructions',
-            updatedAt: new Date(),
-          });
-          await updateProjectTimestamp(numericProjectId, "revision payment completed");
-          console.log("✅ Updated project status to 'awaiting revision instructions'");
-        } catch (err) {
-          console.error("Failed to update project status:", err);
+
+      // Verify the session with Stripe to ensure it's legitimate
+      try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        console.log("🔍 Stripe session verification:", {
+          id: session.id,
+          payment_status: session.payment_status,
+          status: session.status,
+          amount_total: session.amount_total,
+          metadata: session.metadata,
+        });
+
+        if (session.payment_status !== "paid") {
+          return res.redirect(
+            `/dashboard?revision_payment=pending&session_id=${sessionId}&project_id=${projectId}`,
+          );
         }
-      }
-    } catch (error) {
-      console.error("Failed to verify Stripe session:", error);
-      // Continue with redirect anyway - payment can be verified client-side
-    }
-    
-    // Instead of Express redirect, send HTML with client-side redirect
-    // This approach works better in development environments like Replit
-    const redirectUrl = getDashboardUrl() + `?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
 
-    
-    (res as any).send(`
+        // Update project status to "awaiting revision instructions" after successful payment
+        const numericProjectId = Number(projectId);
+        if (!isNaN(numericProjectId)) {
+          try {
+            await storage.updateProject(numericProjectId, {
+              status: "awaiting revision instructions",
+              updatedAt: new Date(),
+            });
+            await updateProjectTimestamp(
+              numericProjectId,
+              "revision payment completed",
+            );
+            console.log(
+              "✅ Updated project status to 'awaiting revision instructions'",
+            );
+          } catch (err) {
+            console.error("Failed to update project status:", err);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to verify Stripe session:", error);
+        // Continue with redirect anyway - payment can be verified client-side
+      }
+
+      // Instead of Express redirect, send HTML with client-side redirect
+      // This approach works better in development environments like Replit
+      const redirectUrl =
+        getDashboardUrl() +
+        `?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
+
+      (res as any).send(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -3793,32 +4532,34 @@ export async function registerRoutes(app: any): Promise<Server> {
       </body>
       </html>
     `);
-  });
-  
-  router.get("/stripe/revision-payment-cancel", async (req: AppRequest, res: AppResponse) => {
-    const sessionId = req.query.session_id as string;
-    const projectId = req.query.project_id as string;
-    
-    console.log("❌ STRIPE REVISION PAYMENT CANCEL ENDPOINT HIT!");
+    },
+  );
 
+  router.get(
+    "/stripe/revision-payment-cancel",
+    async (req: AppRequest, res: AppResponse) => {
+      const sessionId = req.query.session_id as string;
+      const projectId = req.query.project_id as string;
 
+      console.log("❌ STRIPE REVISION PAYMENT CANCEL ENDPOINT HIT!");
 
+      console.log(
+        `"❌ Stripe revision payment cancelled:" { sessionId, projectId }`,
+      );
 
-    console.log(`"❌ Stripe revision payment cancelled:" { sessionId, projectId }`);
-    
-    if (!sessionId || !projectId) {
-  
-      return res.redirect("/dashboard");
-    }
-    
-    // Clear any pending payment from localStorage via cookie
-    // We can't directly clear localStorage from server, but can send a signal
-    
-    // Send HTML with client-side redirect for better reliability
-    const redirectUrl = getDashboardUrl() + `?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
+      if (!sessionId || !projectId) {
+        return res.redirect("/dashboard");
+      }
 
-    
-    (res as any).send(`
+      // Clear any pending payment from localStorage via cookie
+      // We can't directly clear localStorage from server, but can send a signal
+
+      // Send HTML with client-side redirect for better reliability
+      const redirectUrl =
+        getDashboardUrl() +
+        `?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
+
+      (res as any).send(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -3903,461 +4644,527 @@ export async function registerRoutes(app: any): Promise<Server> {
       </body>
       </html>
     `);
-  });
+    },
+  );
 
   // Generate media platform review link and start revision process
-  router.post("/api/projects/:id/generate-review-link", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const userId = req.user!.id;
+  router.post(
+    "/api/projects/:id/generate-review-link",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const userId = req.user!.id;
 
-      console.log(`Generating review link for project ${projectId} by user ${userId}`);
-
-      // Get project details
-      const project = await storage.getProject(projectId);
-      if (!project) {
-        return res.status(404).json({
-          success: false,
-          message: "Project not found",
-        });
-      }
-
-      // Verify ownership
-      if (project.userId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied",
-        });
-      }
-
-      // Check if project is in correct status for review link generation
-      if (project.status.toLowerCase() !== "awaiting revision instructions") {
-        return res.status(400).json({
-          success: false,
-          message: "Project must be awaiting revision instructions to generate review link",
-        });
-      }
-
-      // Get the latest video for review
-      // Get videos from the folder and find latest
-      const folderVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId!);
-      const latestVideo = folderVideos.find(asset => asset.type === 'file' && asset.media_type?.startsWith('video/'));
-      if (!latestVideo) {
-        return res.status(404).json({
-          success: false,
-          message: "No video found for review",
-        });
-      }
-
-      // Create media platform review link using project folder ID
-      const projectFolderId = project.mediaFolderId?.split('/').pop();
-      if (!projectFolderId) {
-        return res.status(400).json({
-          success: false,
-          message: "No media platform folder found for this project",
-        });
-      }
-      
-      const reviewLink = await createFrameioReviewLink(projectFolderId);
-
-      // Store review link in project
-      await storage.updateProject(projectId, {
-        updatedAt: new Date(),
-      });
-
-      // Get user for email
-      const user = await storage.getUser(userId);
-      if (user && user.email) {
-        // Send revision instruction email
-        const emailTemplate = emailService.generateRevisionInstructionEmail(
-          user.email,
-          project.title,
-          reviewLink || '',
-          projectId
+        console.log(
+          `Generating review link for project ${projectId} by user ${userId}`,
         );
 
-        try {
-          await emailService.sendEmail(emailTemplate);
-          console.log(`Revision instruction email sent to ${user.email} for project ${projectId}`);
-        } catch (emailError) {
-          console.error("Failed to send revision instruction email:", emailError);
+        // Get project details
+        const project = await storage.getProject(projectId);
+        if (!project) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
         }
-      }
 
-      res.json({
-        success: true,
-        reviewLink,
-        videoName: latestVideo.name,
-        message: "Review link generated successfully",
-      });
-
-    } catch (error) {
-      console.error("Error generating review link:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to generate review link",
-      });
-    }
-  });
-
-
-  // Get project by ID
-  router.get("/api/projects/:id", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const project = await storage.getProject(projectId);
-
-      if (!project) {
-        return res.status(404).json({
-          success: false,
-          message: "Project not found",
-        });
-      }
-
-      // Check if user owns this project
-      if (project.userId !== req.user!.id) {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied",
-        });
-      }
-
-      // Get project files
-      const files = await storage.getProjectFiles(projectId);
-
-      res.json({
-        success: true,
-        project: {
-          ...project,
-          files,
-        },
-      });
-    } catch (error) {
-      console.error("Get project error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get project",
-      });
-    }
-  });
-
-  // Update project
-  router.put("/api/projects/:id", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const project = await storage.getProject(projectId);
-
-      if (!project) {
-        return res.status(404).json({
-          success: false,
-          message: "Project not found",
-        });
-      }
-
-      // Check if user owns this project
-      if (project.userId !== req.user!.id) {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied",
-        });
-      }
-
-      const validatedData = updateProjectSchema.parse(req.body);
-      const updatedProject = await storage.updateProject(
-        projectId,
-        validatedData,
-      );
-
-      res.json({
-        success: true,
-        message: "Project updated successfully",
-        project: updatedProject,
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid project data",
-          errors: error.errors,
-        });
-      } else {
-        console.error("Update project error:", error);
-        res.status(500).json({
-          success: false,
-          message: "Failed to update project",
-        });
-      }
-    }
-  });
-
-  // Update project status only
-  router.patch("/api/projects/:id/status", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const { status } = req.body;
-      
-      if (!status) {
-        return res.status(400).json({
-          success: false,
-          message: "Status is required",
-        });
-      }
-
-      const project = await storage.getProject(projectId);
-      if (!project) {
-        return res.status(404).json({
-          success: false,
-          message: "Project not found",
-        });
-      }
-
-      // Check if user owns this project
-      if (project.userId !== req.user!.id) {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied",
-        });
-      }
-
-      // IMPORTANT: Prevent duplicate submissions to editor
-      if (status === 'edit in progress' && 
-          (project.status === 'edit in progress' || 
-           project.status === 'video is ready' || 
-           project.status === 'complete' ||
-           project.status === 'revision in progress')) {
-        console.log(`⚠️ Blocking duplicate submission for project ${projectId}. Current status: ${project.status}`);
-        return res.status(400).json({
-          success: false,
-          message: "This project has already been submitted to the editor.",
-          alreadySubmitted: true,
-        });
-      }
-
-      // Prepare update object
-      const updateObject: any = {
-        status,
-        updatedAt: new Date(),
-      };
-
-      // If changing status to "edit in progress", set submission timestamp
-      if (status === 'edit in progress') {
-        updateObject.submittedToEditorAt = new Date();
-        console.log(`📅 Setting submittedToEditorAt timestamp for project ${projectId}: ${updateObject.submittedToEditorAt.toISOString()}`);
-      }
-
-      // Update project status
-      const updatedProject = await storage.updateProject(projectId, updateObject);
-
-      // Update timestamp tracking for "edit in progress" status
-      if (status === 'edit in progress') {
-        await updateProjectTimestamp(projectId, "project sent to editor");
-        
-        // Create Trello card for project submission
-        try {
-          await trelloAutomation.createProjectCard(projectId);
-        } catch (error) {
-          console.error('Failed to create Trello card:', error);
+        // Verify ownership
+        if (project.userId !== userId) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
         }
-      }
 
-      res.json({
-        success: true,
-        message: "Project status updated successfully",
-        project: updatedProject,
-      });
-    } catch (error) {
-      console.error("Update project status error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to update project status",
-      });
-    }
-  });
+        // Check if project is in correct status for review link generation
+        if (project.status.toLowerCase() !== "awaiting revision instructions") {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Project must be awaiting revision instructions to generate review link",
+          });
+        }
 
-  // Sync project to Frame.io V4
-  router.post("/api/projects/:id/sync-frameio", async (req: AppRequest, res: AppResponse) => {
-    try {
-      // Skip auth for this internal endpoint - it's already handled by requireAuth middleware when needed
-      const user = req.user;
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: "Authentication required",
+        // Get the latest video for review
+        // Get videos from the folder and find latest
+        const folderVideos = await frameioV4Service.getFolderAssets(
+          project.mediaFolderId!,
+        );
+        const latestVideo = folderVideos.find(
+          (asset) =>
+            asset.type === "file" && asset.media_type?.startsWith("video/"),
+        );
+        if (!latestVideo) {
+          return res.status(404).json({
+            success: false,
+            message: "No video found for review",
+          });
+        }
+
+        // Create media platform review link using project folder ID
+        const projectFolderId = project.mediaFolderId?.split("/").pop();
+        if (!projectFolderId) {
+          return res.status(400).json({
+            success: false,
+            message: "No media platform folder found for this project",
+          });
+        }
+
+        const reviewLink = await createFrameioReviewLink(projectFolderId);
+
+        // Store review link in project
+        await storage.updateProject(projectId, {
+          updatedAt: new Date(),
         });
-      }
 
-      const projectId = Number(req.params.id);
-      const project = await storage.getProject(projectId);
-
-      if (!project) {
-        return res.status(404).json({
-          success: false,
-          message: "Project not found",
-        });
-      }
-
-      // Check if user owns this project
-      if (project.userId !== user.id) {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied",
-        });
-      }
-
-      // Skip if already synced
-      if (project.mediaFolderId && project.mediaUserFolderId) {
-        return res.json({
-          success: true,
-          message: "Project already synced to Frame.io",
-          project: project,
-        });
-      }
-
-      // Try to configure Frame.io V4 organization structure
-      let frameioConfigured = false;
-      
-      try {
-        await frameioV4Service.loadServiceAccountToken();
-        
-        if (frameioV4Service.accessToken) {
-          console.log(`Syncing project ${projectId} to Frame.io V4 for user ${user.id}`);
-          
-          await frameioV4Service.initialize();
-          
-          // Create virtual folder structure using V4 API
-          const rootProject = await frameioV4Service.getOrCreateRootProject();
-          
-          const userFolderName = `User-${user.email.split('@')[0]}-${user.id.slice(0, 8)}`;
-          const userFolder = await frameioV4Service.createFolder(rootProject.root_asset_id, userFolderName);
-          
-          const projectFolderName = `${project.title}-${project.id.toString().slice(0, 8)}`;
-          const projectFolder = await frameioV4Service.createFolder(userFolder.id, projectFolderName);
-
-          // Store organization structure in database
-          await storage.updateProjectMediaInfo(
-            project.id,
-            projectFolder.id,
-            userFolder.id,
+        // Get user for email
+        const user = await storage.getUser(userId);
+        if (user && user.email) {
+          // Send revision instruction email
+          const emailTemplate = emailService.generateRevisionInstructionEmail(
+            user.email,
+            project.title,
+            reviewLink || "",
+            projectId,
           );
 
-          console.log(
-            `✓ Frame.io V4 sync complete: ${userFolder.id} -> ${projectFolder.id}`,
-          );
-          
-          frameioConfigured = true;
-        } else {
-          throw new Error("Frame.io V4 OAuth not completed");
+          try {
+            await emailService.sendEmail(emailTemplate);
+            console.log(
+              `Revision instruction email sent to ${user.email} for project ${projectId}`,
+            );
+          } catch (emailError) {
+            console.error(
+              "Failed to send revision instruction email:",
+              emailError,
+            );
+          }
         }
-      } catch (frameioError) {
-        console.error("Frame.io V4 sync failed:", frameioError);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to sync with Frame.io",
-          error: frameioError instanceof Error ? frameioError.message : String(frameioError),
-        });
-      }
 
-      // Get updated project
-      const updatedProject = await storage.getProject(project.id);
-      
-      res.json({
-        success: true,
-        message: "Project synced to Frame.io successfully",
-        project: updatedProject,
-      });
-    } catch (error) {
-      console.error("Sync project error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to sync project",
-      });
-    }
-  });
-
-  // Get latest video from project folder
-  router.get("/api/projects/:id/latest-video", requireAuth, async (req: AppRequest, res: AppResponse) => {
-    try {
-      const projectId = Number(req.params.id);
-      const project = await storage.getProject(projectId);
-
-      if (!project) {
-        return res.status(404).json({
-          success: false,
-          message: "Project not found",
-        });
-      }
-
-      // Check if user owns this project (handle both session and Supabase auth)
-      const userId = req.session?.userId || req.user?.claims?.sub;
-      if (project.userId !== String(userId)) {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied",
-        });
-      }
-
-      // Get the latest video from project files in database
-      const projectFiles = await storage.getProjectFiles(projectId);
-      const latestVideo = projectFiles
-        .filter(file => file.mediaAssetId)
-        .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())[0];
-
-      if (latestVideo?.mediaAssetId) {
-        console.log(`Found video in DB for project ${projectId}: ${latestVideo.mediaAssetId}`);
         res.json({
           success: true,
-          videoId: latestVideo.mediaAssetId,
-          filename: latestVideo.filename,
-          uploadDate: latestVideo.uploadDate
+          reviewLink,
+          videoName: latestVideo.name,
+          message: "Review link generated successfully",
         });
-      } else {
-        // If no video in DB, try to get from Frame.io folder directly
-        console.log(`No video in DB for project ${projectId}, checking Frame.io folder`);
-        try {
-          if (project.mediaFolderId) {
-            await frameioV4Service.loadServiceAccountToken();
-            const frameioAssets = await frameioV4Service.getFolderAssets(project.mediaFolderId);
-            if (frameioAssets && frameioAssets.length > 0) {
-              // Get the most recent asset
-              const latestAsset = frameioAssets[0]; // Already sorted by date
-              console.log(`Found video in Frame.io folder: ${latestAsset.name}`);
-              
-              res.json({
-                success: true,
-                videoId: latestAsset.id,
-                filename: latestAsset.name,
-                uploadDate: latestAsset.uploaded_at,
-                directLink: latestAsset.download_url
-              });
-            } else {
-              res.json({
-                success: false,
-                message: "No video found for this project"
-              });
-            }
-          } else {
-            res.json({
-              success: false,
-              message: "No Frame.io folder configured for this project"
-            });
-          }
-        } catch (frameioError) {
-          console.error('Error fetching from Frame.io:', frameioError);
-          res.json({
+      } catch (error) {
+        console.error("Error generating review link:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to generate review link",
+        });
+      }
+    },
+  );
+
+  // Get project by ID
+  router.get(
+    "/api/projects/:id",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const project = await storage.getProject(projectId);
+
+        if (!project) {
+          return res.status(404).json({
             success: false,
-            message: "No video found for this project"
+            message: "Project not found",
+          });
+        }
+
+        // Check if user owns this project
+        if (project.userId !== req.user!.id) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
+        }
+
+        // Get project files
+        const files = await storage.getProjectFiles(projectId);
+
+        res.json({
+          success: true,
+          project: {
+            ...project,
+            files,
+          },
+        });
+      } catch (error) {
+        console.error("Get project error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to get project",
+        });
+      }
+    },
+  );
+
+  // Update project
+  router.put(
+    "/api/projects/:id",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const project = await storage.getProject(projectId);
+
+        if (!project) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        // Check if user owns this project
+        if (project.userId !== req.user!.id) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
+        }
+
+        const validatedData = updateProjectSchema.parse(req.body);
+        const updatedProject = await storage.updateProject(
+          projectId,
+          validatedData,
+        );
+
+        res.json({
+          success: true,
+          message: "Project updated successfully",
+          project: updatedProject,
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          res.status(400).json({
+            success: false,
+            message: "Invalid project data",
+            errors: error.errors,
+          });
+        } else {
+          console.error("Update project error:", error);
+          res.status(500).json({
+            success: false,
+            message: "Failed to update project",
           });
         }
       }
-    } catch (error) {
-      console.error("Get latest video error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get latest video",
-      });
-    }
-  });
+    },
+  );
 
+  // Update project status only
+  router.patch(
+    "/api/projects/:id/status",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const { status } = req.body;
+
+        if (!status) {
+          return res.status(400).json({
+            success: false,
+            message: "Status is required",
+          });
+        }
+
+        const project = await storage.getProject(projectId);
+        if (!project) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        // Check if user owns this project
+        if (project.userId !== req.user!.id) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
+        }
+
+        // IMPORTANT: Prevent duplicate submissions to editor
+        if (
+          status === "edit in progress" &&
+          (project.status === "edit in progress" ||
+            project.status === "video is ready" ||
+            project.status === "complete" ||
+            project.status === "revision in progress")
+        ) {
+          console.log(
+            `⚠️ Blocking duplicate submission for project ${projectId}. Current status: ${project.status}`,
+          );
+          return res.status(400).json({
+            success: false,
+            message: "This project has already been submitted to the editor.",
+            alreadySubmitted: true,
+          });
+        }
+
+        // Prepare update object
+        const updateObject: any = {
+          status,
+          updatedAt: new Date(),
+        };
+
+        // If changing status to "edit in progress", set submission timestamp
+        if (status === "edit in progress") {
+          updateObject.submittedToEditorAt = new Date();
+          console.log(
+            `📅 Setting submittedToEditorAt timestamp for project ${projectId}: ${updateObject.submittedToEditorAt.toISOString()}`,
+          );
+        }
+
+        // Update project status
+        const updatedProject = await storage.updateProject(
+          projectId,
+          updateObject,
+        );
+
+        // Update timestamp tracking for "edit in progress" status
+        if (status === "edit in progress") {
+          await updateProjectTimestamp(projectId, "project sent to editor");
+
+          // Create Trello card for project submission
+          try {
+            await trelloAutomation.createProjectCard(projectId);
+          } catch (error) {
+            console.error("Failed to create Trello card:", error);
+          }
+        }
+
+        res.json({
+          success: true,
+          message: "Project status updated successfully",
+          project: updatedProject,
+        });
+      } catch (error) {
+        console.error("Update project status error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to update project status",
+        });
+      }
+    },
+  );
+
+  // Sync project to Frame.io V4
+  router.post(
+    "/api/projects/:id/sync-frameio",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        // Skip auth for this internal endpoint - it's already handled by requireAuth middleware when needed
+        const user = req.user;
+        if (!user) {
+          return res.status(401).json({
+            success: false,
+            message: "Authentication required",
+          });
+        }
+
+        const projectId = Number(req.params.id);
+        const project = await storage.getProject(projectId);
+
+        if (!project) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        // Check if user owns this project
+        if (project.userId !== user.id) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
+        }
+
+        // Skip if already synced
+        if (project.mediaFolderId && project.mediaUserFolderId) {
+          return res.json({
+            success: true,
+            message: "Project already synced to Frame.io",
+            project: project,
+          });
+        }
+
+        // Try to configure Frame.io V4 organization structure
+        let frameioConfigured = false;
+
+        try {
+          await frameioV4Service.loadServiceAccountToken();
+
+          if (frameioV4Service.accessToken) {
+            console.log(
+              `Syncing project ${projectId} to Frame.io V4 for user ${user.id}`,
+            );
+
+            await frameioV4Service.initialize();
+
+            // Create virtual folder structure using V4 API
+            const rootProject = await frameioV4Service.getOrCreateRootProject();
+
+            const userFolderName = `User-${user.email.split("@")[0]}-${user.id.slice(0, 8)}`;
+            const userFolder = await frameioV4Service.createFolder(
+              rootProject.root_asset_id,
+              userFolderName,
+            );
+
+            const projectFolderName = `${project.title}-${project.id.toString().slice(0, 8)}`;
+            const projectFolder = await frameioV4Service.createFolder(
+              userFolder.id,
+              projectFolderName,
+            );
+
+            // Store organization structure in database
+            await storage.updateProjectMediaInfo(
+              project.id,
+              projectFolder.id,
+              userFolder.id,
+            );
+
+            console.log(
+              `✓ Frame.io V4 sync complete: ${userFolder.id} -> ${projectFolder.id}`,
+            );
+
+            frameioConfigured = true;
+          } else {
+            throw new Error("Frame.io V4 OAuth not completed");
+          }
+        } catch (frameioError) {
+          console.error("Frame.io V4 sync failed:", frameioError);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to sync with Frame.io",
+            error:
+              frameioError instanceof Error
+                ? frameioError.message
+                : String(frameioError),
+          });
+        }
+
+        // Get updated project
+        const updatedProject = await storage.getProject(project.id);
+
+        res.json({
+          success: true,
+          message: "Project synced to Frame.io successfully",
+          project: updatedProject,
+        });
+      } catch (error) {
+        console.error("Sync project error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to sync project",
+        });
+      }
+    },
+  );
+
+  // Get latest video from project folder
+  router.get(
+    "/api/projects/:id/latest-video",
+    requireAuth,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const projectId = Number(req.params.id);
+        const project = await storage.getProject(projectId);
+
+        if (!project) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        // Check if user owns this project (handle both session and Supabase auth)
+        const userId = req.session?.userId || req.user?.claims?.sub;
+        if (project.userId !== String(userId)) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
+        }
+
+        // Get the latest video from project files in database
+        const projectFiles = await storage.getProjectFiles(projectId);
+        const latestVideo = projectFiles
+          .filter((file) => file.mediaAssetId)
+          .sort(
+            (a, b) =>
+              new Date(b.uploadDate).getTime() -
+              new Date(a.uploadDate).getTime(),
+          )[0];
+
+        if (latestVideo?.mediaAssetId) {
+          console.log(
+            `Found video in DB for project ${projectId}: ${latestVideo.mediaAssetId}`,
+          );
+          res.json({
+            success: true,
+            videoId: latestVideo.mediaAssetId,
+            filename: latestVideo.filename,
+            uploadDate: latestVideo.uploadDate,
+          });
+        } else {
+          // If no video in DB, try to get from Frame.io folder directly
+          console.log(
+            `No video in DB for project ${projectId}, checking Frame.io folder`,
+          );
+          try {
+            if (project.mediaFolderId) {
+              await frameioV4Service.loadServiceAccountToken();
+              const frameioAssets = await frameioV4Service.getFolderAssets(
+                project.mediaFolderId,
+              );
+              if (frameioAssets && frameioAssets.length > 0) {
+                // Get the most recent asset
+                const latestAsset = frameioAssets[0]; // Already sorted by date
+                console.log(
+                  `Found video in Frame.io folder: ${latestAsset.name}`,
+                );
+
+                res.json({
+                  success: true,
+                  videoId: latestAsset.id,
+                  filename: latestAsset.name,
+                  uploadDate: latestAsset.uploaded_at,
+                  directLink: latestAsset.download_url,
+                });
+              } else {
+                res.json({
+                  success: false,
+                  message: "No video found for this project",
+                });
+              }
+            } else {
+              res.json({
+                success: false,
+                message: "No Frame.io folder configured for this project",
+              });
+            }
+          } catch (frameioError) {
+            console.error("Error fetching from Frame.io:", frameioError);
+            res.json({
+              success: false,
+              message: "No video found for this project",
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Get latest video error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to get latest video",
+        });
+      }
+    },
+  );
 
   // REMOVED: Legacy Frame.io photo test endpoint - functionality moved to V4 API
 
@@ -4365,7 +5172,7 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.get("/api/assets/*", async (req: AppRequest, res: AppResponse) => {
     try {
       // Add preconnect hint for faster subsequent requests
-      res.set('Link', '<https://storage.googleapis.com>; rel=preconnect');
+      res.set("Link", "<https://storage.googleapis.com>; rel=preconnect");
       // Strip EditingPortfolioAssets prefix and keep the full Objects/ path
       let assetPath = req.params[0] || "";
       if (assetPath.startsWith("EditingPortfolioAssets/")) {
@@ -4433,21 +5240,23 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       // Fetching asset
-      
+
       // Create pending request promise
       const downloadPromise = downloadAsset(assetPath);
       pendingRequests.set(assetPath, downloadPromise);
 
       try {
         const result = await downloadPromise;
-        
+
         // Check file size for large videos (>40MB threshold for memory safety)
         const sizeInMB = result.content.length / (1024 * 1024);
         const isLargeVideo = isVideo && sizeInMB > 40;
-        
+
         if (isLargeVideo) {
-          console.log(`Large video detected (${sizeInMB.toFixed(1)}MB): ${assetPath} - serving without cache`);
-          
+          console.log(
+            `Large video detected (${sizeInMB.toFixed(1)}MB): ${assetPath} - serving without cache`,
+          );
+
           // Serve large videos directly without caching to avoid memory pressure
           (res as any).set({
             "Content-Type": result.contentType,
@@ -4476,7 +5285,9 @@ export async function registerRoutes(app: any): Promise<Server> {
             contentType: result.contentType,
             timestamp: Date.now(),
           });
-          console.log(`Video cached for performance (${sizeInMB.toFixed(1)}MB): ${assetPath}`);
+          console.log(
+            `Video cached for performance (${sizeInMB.toFixed(1)}MB): ${assetPath}`,
+          );
         }
 
         // For new video downloads, serve full content for smooth playback
@@ -4609,8 +5420,8 @@ export async function registerRoutes(app: any): Promise<Server> {
         const uploadSession = await createFrameioUploadSession(
           fileName,
           fileSize,
-          'video/mp4', // Default MIME type, should be passed from frontend
-          project.mediaFolderId || '', // Frame.io folder ID
+          "video/mp4", // Default MIME type, should be passed from frontend
+          project.mediaFolderId || "", // Frame.io folder ID
         );
 
         console.log("Creating upload session...");
@@ -4621,8 +5432,6 @@ export async function registerRoutes(app: any): Promise<Server> {
           completeUri: uploadSession.completeUri,
           assetId: uploadSession.assetId,
         };
-
-    
 
         res.json({
           success: true,
@@ -4646,7 +5455,9 @@ export async function registerRoutes(app: any): Promise<Server> {
     async (req: AppRequest, res: AppResponse) => {
       try {
         console.log("Processing upload completion...");
-        console.log(`Complete upload body keys: ${Object.keys(req.body || {}).join(', ')}`);
+        console.log(
+          `Complete upload body keys: ${Object.keys(req.body || {}).join(", ")}`,
+        );
         console.log("Body received successfully");
 
         const projectId = Number(req.params.id);
@@ -4692,23 +5503,20 @@ export async function registerRoutes(app: any): Promise<Server> {
         }
 
         // Complete the Frame.io upload
-        console.log(
-          "Completing Frame.io upload for asset:",
-          videoUri
-        );
+        console.log("Completing Frame.io upload for asset:", videoUri);
 
         // Get asset details from Frame.io
         const videoDetails = await completeFrameioUpload(
           videoUri,
           fileName,
-          fileSize
+          fileSize,
         );
 
         // Save file record
         const fileRecord = await storage.createProjectFile(projectId, {
           mediaAssetId: videoUri.replace("/videos/", ""),
           filename: fileName,
-  
+
           fileType: "video",
           fileSize: fileSize || 0,
         });
@@ -4719,7 +5527,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             status: "awaiting instructions",
           });
         }
-        
+
         // Track asset upload timestamp
         await updateProjectTimestamp(projectId, "asset uploaded");
 
@@ -4770,7 +5578,9 @@ export async function registerRoutes(app: any): Promise<Server> {
         if (project.mediaFolderId) {
           try {
             await frameioV4Service.loadServiceAccountToken();
-        const rawFrameioVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
+            const rawFrameioVideos = await frameioV4Service.getFolderAssets(
+              project.mediaFolderId,
+            );
             console.log(
               "Frame.io videos fetched:",
               rawFrameioVideos.length,
@@ -5069,7 +5879,10 @@ export async function registerRoutes(app: any): Promise<Server> {
         console.error("Tally submission error:", error);
         res.status(500).json({
           success: false,
-          message: error instanceof Error ? error.message : String(error) || "Failed to record form submission",
+          message:
+            error instanceof Error
+              ? error.message
+              : String(error) || "Failed to record form submission",
         });
       }
     },
@@ -5148,7 +5961,9 @@ export async function registerRoutes(app: any): Promise<Server> {
 
         // Check folder contents using Frame.io V4 API
         await frameioV4Service.loadServiceAccountToken();
-        const folderVideos = await frameioV4Service.getFolderAssets(project.mediaFolderId);
+        const folderVideos = await frameioV4Service.getFolderAssets(
+          project.mediaFolderId,
+        );
 
         res.json({
           success: true,
@@ -5168,40 +5983,43 @@ export async function registerRoutes(app: any): Promise<Server> {
     },
   );
 
-
   // Ensure Frame.io folder structure exists for project
   router.post(
     "/api/projects/:id/ensure-folder-structure",
     (req: AppRequest, res: AppResponse, next: any) => {
-      console.log(`🚨🚨🚨 MAJOR LOG: POST /api/projects/${req.params.id}/ensure-folder-structure ENDPOINT HIT! 🚨🚨🚨`);
+      console.log(
+        `🚨🚨🚨 MAJOR LOG: POST /api/projects/${req.params.id}/ensure-folder-structure ENDPOINT HIT! 🚨🚨🚨`,
+      );
       console.log(`🚨🚨🚨 TIMESTAMP: ${new Date().toISOString()} 🚨🚨🚨`);
-      console.log(`🚨🚨🚨 USER AGENT: ${req.headers['user-agent']} 🚨🚨🚨`);
+      console.log(`🚨🚨🚨 USER AGENT: ${req.headers["user-agent"]} 🚨🚨🚨`);
       next();
     },
     requireAuth,
     async (req: AppRequest, res: AppResponse) => {
-  
       try {
         const projectId = Number(req.params.id);
         const userId = req.user!.id;
 
-        console.log(`🔧 ROUTE CALLED: Ensuring Frame.io folder structure for project ${projectId}, user ${userId}`);
-        console.log(`🔍 DEBUG: Request received at ensure-folder-structure endpoint`);
-    
+        console.log(
+          `🔧 ROUTE CALLED: Ensuring Frame.io folder structure for project ${projectId}, user ${userId}`,
+        );
+        console.log(
+          `🔍 DEBUG: Request received at ensure-folder-structure endpoint`,
+        );
 
         // Verify project exists and user owns it
         const project = await storage.getProject(projectId);
         if (!project) {
-          return res.status(404).json({ 
-            success: false, 
-            message: "Project not found" 
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
           });
         }
 
         if (project.userId !== userId) {
-          return res.status(403).json({ 
-            success: false, 
-            message: "Access denied" 
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
           });
         }
 
@@ -5211,84 +6029,114 @@ export async function registerRoutes(app: any): Promise<Server> {
         let frameioConfigured = false;
         let userFolderId = null;
         let projectFolderId = null;
-        
+
         try {
           // Step 1: Get or create user folder using the CORRECT method
-          console.log(`📁 Step 1: Getting/creating user folder for user ${userId}`);
-          console.log(`🚨🚨🚨 USING getUserFolder() method to ensure correct hierarchy 🚨🚨🚨`);
-          
+          console.log(
+            `📁 Step 1: Getting/creating user folder for user ${userId}`,
+          );
+          console.log(
+            `🚨🚨🚨 USING getUserFolder() method to ensure correct hierarchy 🚨🚨🚨`,
+          );
+
           // Use getUserFolder() which properly manages the Mementiq > User structure
           const userFolder = await frameioV4Service.getUserFolder(userId);
           userFolderId = userFolder.id;
-          console.log(`✅ User folder ready: ${userFolderId} (${userFolder.name})`);
-          console.log(`🚨🚨🚨 USER FOLDER ID: ${userFolderId} - All project folders MUST be created under this! 🚨🚨🚨`);
+          console.log(
+            `✅ User folder ready: ${userFolderId} (${userFolder.name})`,
+          );
+          console.log(
+            `🚨🚨🚨 USER FOLDER ID: ${userFolderId} - All project folders MUST be created under this! 🚨🚨🚨`,
+          );
 
           // Step 2: Get or create project subfolder within user folder using dynamic discovery
-          console.log(`📁 Step 2: Getting/creating project folder for project ${projectId}`);
-          
+          console.log(
+            `📁 Step 2: Getting/creating project folder for project ${projectId}`,
+          );
+
           // Use dynamic folder discovery instead of trusting stored ID
-          const userFolderChildren = await frameioV4Service.getFolderChildren(userFolderId);
-          let projectFolder = userFolderChildren.find((child: any) => 
-            child.type === 'folder' && (
-              child.name === project.title ||
-              child.name === `${project.title}-${project.id.toString().slice(0, 8)}` ||
-              child.name === `Project-${project.id}`
-            )
+          const userFolderChildren =
+            await frameioV4Service.getFolderChildren(userFolderId);
+          let projectFolder = userFolderChildren.find(
+            (child: any) =>
+              child.type === "folder" &&
+              (child.name === project.title ||
+                child.name ===
+                  `${project.title}-${project.id.toString().slice(0, 8)}` ||
+                child.name === `Project-${project.id}`),
           );
 
           if (projectFolder) {
             projectFolderId = projectFolder.id;
-            console.log(`✅ Found existing project folder via discovery: ${projectFolderId}`);
+            console.log(
+              `✅ Found existing project folder via discovery: ${projectFolderId}`,
+            );
             frameioConfigured = true;
-            
+
             // Update database if different from stored value
             if (projectFolderId !== project.mediaFolderId) {
-              console.log(`📁 Updating project ${projectId} database with correct folder ID: ${projectFolderId}`);
+              console.log(
+                `📁 Updating project ${projectId} database with correct folder ID: ${projectFolderId}`,
+              );
               await storage.updateProject(projectId, {
                 mediaFolderId: projectFolderId,
                 mediaUserFolderId: userFolderId,
-                updatedAt: new Date()
+                updatedAt: new Date(),
               });
             }
           }
 
           // Create project folder if not found
           if (!projectFolderId) {
-            console.log(`🚨🚨🚨 CREATING NEW PROJECT FOLDER: ${project.title} 🚨🚨🚨`);
-            console.log(`🚨🚨🚨 HIERARCHY CHECK: User Folder ID = ${userFolderId} 🚨🚨🚨`);
-            console.log(`🚨🚨🚨 HIERARCHY CHECK: Will create project folder with user folder as parent 🚨🚨🚨`);
-            console.log(`🚨🚨🚨 HIERARCHY CHECK: Target hierarchy = User(${userFolderId}) > Project(${project.title}) 🚨🚨🚨`);
-            
+            console.log(
+              `🚨🚨🚨 CREATING NEW PROJECT FOLDER: ${project.title} 🚨🚨🚨`,
+            );
+            console.log(
+              `🚨🚨🚨 HIERARCHY CHECK: User Folder ID = ${userFolderId} 🚨🚨🚨`,
+            );
+            console.log(
+              `🚨🚨🚨 HIERARCHY CHECK: Will create project folder with user folder as parent 🚨🚨🚨`,
+            );
+            console.log(
+              `🚨🚨🚨 HIERARCHY CHECK: Target hierarchy = User(${userFolderId}) > Project(${project.title}) 🚨🚨🚨`,
+            );
+
             const projectFolder = await frameioV4Service.createProjectFolder(
               userFolderId,
               project.title,
-              project.id
+              project.id,
             );
             projectFolderId = projectFolder.id;
-            
-            console.log(`🚨🚨🚨 NEW FOLDER CREATED: Project Folder ID = ${projectFolderId} 🚨🚨🚨`);
-            console.log(`🚨🚨🚨 HIERARCHY VERIFIED: User(${userFolderId}) > Project(${projectFolderId}) 🚨🚨🚨`);
+
+            console.log(
+              `🚨🚨🚨 NEW FOLDER CREATED: Project Folder ID = ${projectFolderId} 🚨🚨🚨`,
+            );
+            console.log(
+              `🚨🚨🚨 HIERARCHY VERIFIED: User(${userFolderId}) > Project(${projectFolderId}) 🚨🚨🚨`,
+            );
             console.log(`🚨🚨🚨 FOLDER NAME: ${projectFolder.name} 🚨🚨🚨`);
-            
+
             // Update project in database with new folder ID
             await storage.updateProject(projectId, {
               mediaFolderId: projectFolderId,
               mediaUserFolderId: userFolderId,
-              updatedAt: new Date()
+              updatedAt: new Date(),
             });
-            
+
             console.log(`✅ Created new project folder: ${projectFolderId}`);
             frameioConfigured = true;
           }
 
           // Step 3: Update project status from draft to waiting for upload if needed
-          if (project.status === 'draft') {
-            console.log(`📝 Advancing project ${projectId} status from 'draft' to 'awaiting instructions'`);
+          if (project.status === "draft") {
+            console.log(
+              `📝 Advancing project ${projectId} status from 'draft' to 'awaiting instructions'`,
+            );
             await storage.updateProject(projectId, {
-              status: 'awaiting instructions',
-              updatedAt: new Date()
+              status: "awaiting instructions",
+              updatedAt: new Date(),
             });
-            
+
             // Log the status change
             // await storage.createProjectStatusLog({ // TODO: Add method to storage
             //   projectId: projectId,
@@ -5302,21 +6150,26 @@ export async function registerRoutes(app: any): Promise<Server> {
           let existingFiles = [];
           let totalStorageUsed = 0;
           let fileCount = 0;
-          
+
           try {
-            existingFiles = await frameioV4Service.getFolderAssets(projectFolderId);
-            
+            existingFiles =
+              await frameioV4Service.getFolderAssets(projectFolderId);
+
             // Calculate storage usage and file count
-            existingFiles.forEach(file => {
-              if (file.type === 'file') {
+            existingFiles.forEach((file) => {
+              if (file.type === "file") {
                 totalStorageUsed += file.filesize || file.file_size || 0;
                 fileCount++;
               }
             });
-            
-            console.log(`📊 Project storage: ${fileCount} files, ${totalStorageUsed} bytes total`);
+
+            console.log(
+              `📊 Project storage: ${fileCount} files, ${totalStorageUsed} bytes total`,
+            );
           } catch (error) {
-            console.log(`⚠️ Could not fetch existing files from project folder: ${error instanceof Error ? error.message : String(error)}`);
+            console.log(
+              `⚠️ Could not fetch existing files from project folder: ${error instanceof Error ? error.message : String(error)}`,
+            );
             existingFiles = [];
           }
 
@@ -5325,7 +6178,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             console.log(`🎯 Frame.io folder structure verified:`, {
               userFolder: userFolderId,
               projectFolder: projectFolderId,
-              configured: frameioConfigured
+              configured: frameioConfigured,
             });
 
             res.json({
@@ -5336,36 +6189,44 @@ export async function registerRoutes(app: any): Promise<Server> {
               projectFolderId,
               folderStructure: {
                 userFolder: userFolderId,
-                projectFolder: projectFolderId
+                projectFolder: projectFolderId,
               },
-              existingFiles: existingFiles.filter(file => file.type === 'file'),
+              existingFiles: existingFiles.filter(
+                (file) => file.type === "file",
+              ),
               fileCount,
               totalStorageUsed,
-              fileUploadLimit: 100
+              fileUploadLimit: 100,
             });
           } else {
             throw new Error("Failed to establish complete folder structure");
           }
-
         } catch (frameioError) {
-          console.error("Frame.io folder structure setup failed:", frameioError);
-          
+          console.error(
+            "Frame.io folder structure setup failed:",
+            frameioError,
+          );
+
           res.json({
             success: true, // Still success, just not configured
             message: "Project created but Frame.io setup needs attention",
             frameioConfigured: false,
-            error: frameioError instanceof Error ? frameioError instanceof Error ? frameioError.message : String(frameioError) : String(frameioError),
+            error:
+              frameioError instanceof Error
+                ? frameioError instanceof Error
+                  ? frameioError.message
+                  : String(frameioError)
+                : String(frameioError),
             userFolderId: null,
-            projectFolderId: project.mediaFolderId || null
+            projectFolderId: project.mediaFolderId || null,
           });
         }
-
       } catch (error) {
         console.error("Error ensuring folder structure:", error);
         res.status(500).json({
           success: false,
           message: "Failed to ensure folder structure",
-          frameioConfigured: false
+          frameioConfigured: false,
         });
       }
     },
@@ -5375,13 +6236,13 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post(
     "/api/upload/frameio",
     requireAuth,
-    upload.single('file'),
+    upload.single("file"),
     async (req: AppRequest, res: AppResponse) => {
       try {
         if (!req.file) {
           return res.status(400).json({
             success: false,
-            message: "No file provided"
+            message: "No file provided",
           });
         }
 
@@ -5389,7 +6250,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         if (!projectId) {
           return res.status(400).json({
             success: false,
-            message: "Project ID required"
+            message: "Project ID required",
           });
         }
 
@@ -5398,14 +6259,14 @@ export async function registerRoutes(app: any): Promise<Server> {
         if (!project) {
           return res.status(404).json({
             success: false,
-            message: "Project not found"
+            message: "Project not found",
           });
         }
 
         if (project.userId !== req.user!.id) {
           return res.status(403).json({
             success: false,
-            message: "Access denied"
+            message: "Access denied",
           });
         }
 
@@ -5414,37 +6275,39 @@ export async function registerRoutes(app: any): Promise<Server> {
         if (req.file.size > maxFileSize) {
           return res.status(413).json({
             success: false,
-            message: "File too large. Maximum size is 10GB."
+            message: "File too large. Maximum size is 10GB.",
           });
         }
 
         await frameioV4Service.loadServiceAccountToken();
-        
+
         // Ensure folder structure exists
         const userFolder = await frameioV4Service.getUserFolder(req.user!.id);
         const projectFolder = await frameioV4Service.createProjectFolder(
-          userFolder.id, 
-          project.title, 
-          project.id
+          userFolder.id,
+          project.title,
+          project.id,
         );
 
         // Upload file to Frame.io
-        console.log(`📤 Uploading file ${req.file.originalname} to Frame.io folder ${projectFolder.id}`);
+        console.log(
+          `📤 Uploading file ${req.file.originalname} to Frame.io folder ${projectFolder.id}`,
+        );
         const uploadResult = await frameioV4Service.uploadFile(
           req.file.buffer,
           req.file.originalname,
           projectFolder.id,
-          req.file.mimetype
+          req.file.mimetype,
         );
-        
+
         const frameioId = uploadResult.id;
-        
+
         // Store file record in database
         const parsedProjectId = parseInt(projectId, 10);
         if (isNaN(parsedProjectId)) {
           return res.status(400).json({
             success: false,
-            message: "Invalid project ID"
+            message: "Invalid project ID",
           });
         }
 
@@ -5453,7 +6316,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           mediaAssetId: frameioId,
           mediaAssetUrl: uploadResult.url,
           filename: uploadResult.name,
-          fileType: req.file.mimetype || 'application/octet-stream',
+          fileType: req.file.mimetype || "application/octet-stream",
           fileSize: req.file.size,
         });
 
@@ -5465,279 +6328,378 @@ export async function registerRoutes(app: any): Promise<Server> {
           fileId: projectFile.id,
           projectFile,
           frameioStatus: uploadResult.status,
-          uploadPartsCount: uploadResult.upload_urls_count
+          uploadPartsCount: uploadResult.upload_urls_count,
         });
-
       } catch (error) {
         console.error("Frame.io upload error:", error);
         res.status(500).json({
           success: false,
-          message: "Upload failed"
+          message: "Upload failed",
         });
       }
-    }
+    },
   );
 
   // Frame.io V4 OAuth endpoints - Manual approach for Adobe's static URI requirement
   router.get("/api/auth/frameio", async (req: AppRequest, res: AppResponse) => {
     try {
-      console.log('=== Manual Frame.io V4 OAuth URL Generation ===');
-      
+      console.log("=== Manual Frame.io V4 OAuth URL Generation ===");
+
       // Since Adobe requires static URIs, provide manual OAuth URL
       const clientId = process.env.ADOBE_CLIENT_ID;
       if (!clientId) {
-        throw new Error('ADOBE_CLIENT_ID not configured');
+        throw new Error("ADOBE_CLIENT_ID not configured");
       }
-      
+
       const state = Math.random().toString(36).substring(7);
-      const host = req.get('host');
-      
+      const host = req.get("host");
+
       // Store state in database to survive Adobe's redirect chain
-      await storage.createOAuthState(state, 'frameio', 10); // 10 minutes expiry
+      await storage.createOAuthState(state, "frameio", 10); // 10 minutes expiry
       console.log(`Database-backed OAuth state created: ${state}`);
-      
+
       console.log(`Current host: ${host}`);
       console.log(`Generated state: ${state}`);
-      
+
       // Use centralized URL configuration for consistent redirect URIs
       const baseUrl = getAppBaseUrl();
       const stableRedirectUri = `${baseUrl}/api/auth/frameio/callback`;
-      
+
       const manualAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(stableRedirectUri)}&response_type=code&scope=openid profile offline_access email additional_info.roles&state=${state}`;
-      
+
       console.log(`Using base URL: ${baseUrl}`);
       console.log(`Current host: ${host}`);
       console.log(`Stable redirect URI: ${stableRedirectUri}`);
       console.log(`Manual OAuth URL: ${manualAuthUrl}`);
-      
+
       res.json({
         success: true,
-        message: 'Manual OAuth configuration required',
+        message: "Manual OAuth configuration required",
         instructions: [
-          '1. Copy the redirect URI below to Adobe Developer Console',
-          '2. Add it as an approved redirect URI in your Frame.io OAuth app',
-          '3. Then visit the OAuth URL to authenticate'
+          "1. Copy the redirect URI below to Adobe Developer Console",
+          "2. Add it as an approved redirect URI in your Frame.io OAuth app",
+          "3. Then visit the OAuth URL to authenticate",
         ],
         redirectUri: stableRedirectUri,
         authUrl: manualAuthUrl,
-        note: 'Adobe requires static redirect URIs - dynamic Replit URLs must be manually configured'
+        note: "Adobe requires static redirect URIs - dynamic Replit URLs must be manually configured",
       });
     } catch (error) {
       console.error("OAuth URL generation failed:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Failed to generate OAuth URL" 
-      });
-    }
-  });
-
-  router.get("/api/auth/frameio/callback", async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { code, state, error } = req.query;
-
-      if (error) {
-        console.error("OAuth authorization error:", error);
-        return res.status(400).json({ 
-          success: false, 
-          message: `OAuth error: ${error}` 
-        });
-      }
-
-      if (!code) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Missing authorization code" 
-        });
-      }
-
-      // Verify state parameter using database-backed storage
-      console.log(`Received OAuth callback state: ${state}`);
-      
-      const isValidState = await storage.validateAndConsumeOAuthState(state as string, 'frameio');
-      
-      if (!isValidState) {
-        console.error("OAuth state validation failed - state not found, expired, or already used");
-        console.error("Please generate a new OAuth URL from /api/auth/frameio");
-        return res.status(400).json({ 
-          success: false, 
-          message: "Invalid or expired OAuth state - please generate a new OAuth URL" 
-        });
-      }
-
-      // Use centralized URL configuration for consistent redirect URI
-      const baseUrl = getAppBaseUrl();
-      const redirectUri = `${baseUrl}/api/auth/frameio/callback`;
-      
-      // Exchange code for access token
-      await frameioV4Service.exchangeCodeForToken(code as string, redirectUri);
-      
-      // Store token in centralized service storage (no user-level dependency)
-      if (frameioV4Service.accessToken) {
-        // Store in centralized service token storage for all users
-        await storage.updateServiceToken(
-          'frameio-v4',
-          frameioV4Service.accessToken,
-          (frameioV4Service as any).refreshTokenValue,
-          (frameioV4Service as any).tokenExpiresAt,
-          'openid'
-        );
-        console.log(`✅ CENTRALIZED SERVICE TOKEN: Frame.io token stored for all users`);
-        console.log("Token will be automatically refreshed before expiration - zero downtime guaranteed");
-      } else {
-        console.warn("Warning: Could not find user to store service account token - token will not persist across restarts");
-      }
-      
-      console.log("Frame.io V4 OAuth flow completed successfully with production persistence");
-      
-      // Redirect to success page
-      res.redirect(getDashboardUrl() + `?frameio_connected=true`);
-    } catch (error) {
-      console.error("OAuth callback error:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "OAuth callback failed" 
-      });
-    }
-  });
-
-  // Direct Frame.io V4 API endpoints for testing the 3 core features
-  router.get("/api/frameio/v4/me", async (req: AppRequest, res: AppResponse) => {
-    try {
-      await frameioV4Service.initialize();
-      const accounts = await frameioV4Service.getAccounts();
-      const user = { id: 'current', display_name: 'Frame.io User', accounts: accounts.data || [] };
-      res.json({ success: true, user });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error instanceof Error ? error.message : String(error) });
-    }
-  });
-
-  router.get("/api/frameio/v4/workspaces", async (req: AppRequest, res: AppResponse) => {
-    try {
-      await frameioV4Service.initialize();
-      const accounts = await frameioV4Service.getAccounts();
-      const workspaces = accounts.data && accounts.data.length > 0 ? 
-        await frameioV4Service.getWorkspaces(accounts.data[0].id) : { data: [] };
-      res.json({ success: true, workspaces });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error instanceof Error ? error.message : String(error) });
-    }
-  });
-
-  router.get("/api/frameio/v4/projects", async (req: AppRequest, res: AppResponse) => {
-    try {
-      await frameioV4Service.initialize();
-      const rootProject = await frameioV4Service.getOrCreateRootProject();
-      res.json({ success: true, rootProject });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error instanceof Error ? error.message : String(error) });
-    }
-  });
-
-  // Feature 1: Test folder creation
-  router.post("/api/frameio/v4/create-folder", async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { name, parentId } = req.body;
-      await frameioV4Service.initialize();
-      const folder = await frameioV4Service.createFolder(name || `Test-Folder-${Date.now()}`, parentId);
-      res.json({ 
-        success: true, 
-        message: "✓ Folder creation works", 
-        folder: { id: folder.id, name: folder.name, type: folder.type }
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: `Folder creation failed: ${error instanceof Error ? error.message : String(error)}` });
-    }
-  });
-
-  // Feature 2: Test upload capability (check if we have access to upload endpoints)
-  router.get("/api/frameio/v4/upload-ready", async (req: AppRequest, res: AppResponse) => {
-    try {
-      await frameioV4Service.initialize();
-      const rootProject = await frameioV4Service.getOrCreateRootProject();
-      
-      // Test if we can access the upload preparation endpoint
-      const testUploadData = {
-        name: "test-upload-check.mp4",
-        type: "file", 
-        filesize: 1024
-      };
-      
-      try {
-        await frameioV4Service.makeRequest('POST', `/assets/${rootProject.root_asset_id}/upload`, testUploadData);
-        res.json({ 
-          success: true, 
-          message: "✓ Upload capability confirmed", 
-          uploadReady: true,
-          rootAssetId: rootProject.root_asset_id
-        });
-      } catch (uploadError) {
-        res.json({ 
-          success: true, 
-          message: "✓ Upload endpoint accessible (test preparation successful)",
-          uploadReady: true,
-          rootAssetId: rootProject.root_asset_id,
-          note: "Upload would work with real file data"
-        });
-      }
-    } catch (error) {
-      res.status(500).json({ success: false, message: `Upload readiness check failed: ${error instanceof Error ? error.message : String(error)}` });
-    }
-  });
-
-  // Feature 3: Test review link creation capability
-  router.post("/api/frameio/v4/create-review-link", async (req: AppRequest, res: AppResponse) => {
-    try {
-      const { assetId } = req.body;
-      
-      if (!assetId) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Need an actual asset ID to create review link. Upload a file first." 
-        });
-      }
-      
-      await frameioV4Service.initialize();
-      const reviewLink = await frameioV4Service.createReviewLink(assetId, "Test Review Link");
-      
-      res.json({ 
-        success: true, 
-        message: "✓ Review link creation works", 
-        reviewLink: { id: reviewLink.id, url: reviewLink.url, name: (reviewLink as any).name }
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: `Review link creation failed: ${error instanceof Error ? error.message : String(error)}` });
-    }
-  });
-
-  // Check Frame.io V4 OAuth status
-  router.get("/api/frameio/oauth-status", async (req: AppRequest, res: AppResponse) => {
-    try {
-      const hasCredentials = !!(process.env.ADOBE_CLIENT_ID || process.env.FRAMEIO_CLIENT_ID) && 
-                            !!(process.env.ADOBE_CLIENT_SECRET || process.env.FRAMEIO_CLIENT_SECRET);
-      const hasAccessToken = !!frameioV4Service.accessToken;
-      
-      res.json({
-        success: true,
-        oauthConfigured: hasCredentials,
-        authenticated: hasAccessToken,
-        authUrl: hasCredentials ? `${getAppBaseUrl()}/api/auth/frameio` : null
-      });
-    } catch (error) {
-      console.error("OAuth status check failed:", error);
       res.status(500).json({
         success: false,
-        message: "Failed to check OAuth status"
+        message: "Failed to generate OAuth URL",
       });
     }
   });
+
+  router.get(
+    "/api/auth/frameio/callback",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { code, state, error } = req.query;
+
+        if (error) {
+          console.error("OAuth authorization error:", error);
+          return res.status(400).json({
+            success: false,
+            message: `OAuth error: ${error}`,
+          });
+        }
+
+        if (!code) {
+          return res.status(400).json({
+            success: false,
+            message: "Missing authorization code",
+          });
+        }
+
+        // Verify state parameter using database-backed storage
+        console.log(`Received OAuth callback state: ${state}`);
+
+        const isValidState = await storage.validateAndConsumeOAuthState(
+          state as string,
+          "frameio",
+        );
+
+        if (!isValidState) {
+          console.error(
+            "OAuth state validation failed - state not found, expired, or already used",
+          );
+          console.error(
+            "Please generate a new OAuth URL from /api/auth/frameio",
+          );
+          return res.status(400).json({
+            success: false,
+            message:
+              "Invalid or expired OAuth state - please generate a new OAuth URL",
+          });
+        }
+
+        // Use centralized URL configuration for consistent redirect URI
+        const baseUrl = getAppBaseUrl();
+        const redirectUri = `${baseUrl}/api/auth/frameio/callback`;
+
+        // Exchange code for access token
+        await frameioV4Service.exchangeCodeForToken(
+          code as string,
+          redirectUri,
+        );
+
+        // Store token in centralized service storage (no user-level dependency)
+        if (frameioV4Service.accessToken) {
+          // Store in centralized service token storage for all users
+          await storage.updateServiceToken(
+            "frameio-v4",
+            frameioV4Service.accessToken,
+            (frameioV4Service as any).refreshTokenValue,
+            (frameioV4Service as any).tokenExpiresAt,
+            "openid",
+          );
+          console.log(
+            `✅ CENTRALIZED SERVICE TOKEN: Frame.io token stored for all users`,
+          );
+          console.log(
+            "Token will be automatically refreshed before expiration - zero downtime guaranteed",
+          );
+        } else {
+          console.warn(
+            "Warning: Could not find user to store service account token - token will not persist across restarts",
+          );
+        }
+
+        console.log(
+          "Frame.io V4 OAuth flow completed successfully with production persistence",
+        );
+
+        // Redirect to success page
+        res.redirect(getDashboardUrl() + `?frameio_connected=true`);
+      } catch (error) {
+        console.error("OAuth callback error:", error);
+        res.status(500).json({
+          success: false,
+          message: "OAuth callback failed",
+        });
+      }
+    },
+  );
+
+  // Direct Frame.io V4 API endpoints for testing the 3 core features
+  router.get(
+    "/api/frameio/v4/me",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        await frameioV4Service.initialize();
+        const accounts = await frameioV4Service.getAccounts();
+        const user = {
+          id: "current",
+          display_name: "Frame.io User",
+          accounts: accounts.data || [],
+        };
+        res.json({ success: true, user });
+      } catch (error) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: error instanceof Error ? error.message : String(error),
+          });
+      }
+    },
+  );
+
+  router.get(
+    "/api/frameio/v4/workspaces",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        await frameioV4Service.initialize();
+        const accounts = await frameioV4Service.getAccounts();
+        const workspaces =
+          accounts.data && accounts.data.length > 0
+            ? await frameioV4Service.getWorkspaces(accounts.data[0].id)
+            : { data: [] };
+        res.json({ success: true, workspaces });
+      } catch (error) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: error instanceof Error ? error.message : String(error),
+          });
+      }
+    },
+  );
+
+  router.get(
+    "/api/frameio/v4/projects",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        await frameioV4Service.initialize();
+        const rootProject = await frameioV4Service.getOrCreateRootProject();
+        res.json({ success: true, rootProject });
+      } catch (error) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: error instanceof Error ? error.message : String(error),
+          });
+      }
+    },
+  );
+
+  // Feature 1: Test folder creation
+  router.post(
+    "/api/frameio/v4/create-folder",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { name, parentId } = req.body;
+        await frameioV4Service.initialize();
+        const folder = await frameioV4Service.createFolder(
+          name || `Test-Folder-${Date.now()}`,
+          parentId,
+        );
+        res.json({
+          success: true,
+          message: "✓ Folder creation works",
+          folder: { id: folder.id, name: folder.name, type: folder.type },
+        });
+      } catch (error) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: `Folder creation failed: ${error instanceof Error ? error.message : String(error)}`,
+          });
+      }
+    },
+  );
+
+  // Feature 2: Test upload capability (check if we have access to upload endpoints)
+  router.get(
+    "/api/frameio/v4/upload-ready",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        await frameioV4Service.initialize();
+        const rootProject = await frameioV4Service.getOrCreateRootProject();
+
+        // Test if we can access the upload preparation endpoint
+        const testUploadData = {
+          name: "test-upload-check.mp4",
+          type: "file",
+          filesize: 1024,
+        };
+
+        try {
+          await frameioV4Service.makeRequest(
+            "POST",
+            `/assets/${rootProject.root_asset_id}/upload`,
+            testUploadData,
+          );
+          res.json({
+            success: true,
+            message: "✓ Upload capability confirmed",
+            uploadReady: true,
+            rootAssetId: rootProject.root_asset_id,
+          });
+        } catch (uploadError) {
+          res.json({
+            success: true,
+            message:
+              "✓ Upload endpoint accessible (test preparation successful)",
+            uploadReady: true,
+            rootAssetId: rootProject.root_asset_id,
+            note: "Upload would work with real file data",
+          });
+        }
+      } catch (error) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: `Upload readiness check failed: ${error instanceof Error ? error.message : String(error)}`,
+          });
+      }
+    },
+  );
+
+  // Feature 3: Test review link creation capability
+  router.post(
+    "/api/frameio/v4/create-review-link",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const { assetId } = req.body;
+
+        if (!assetId) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Need an actual asset ID to create review link. Upload a file first.",
+          });
+        }
+
+        await frameioV4Service.initialize();
+        const reviewLink = await frameioV4Service.createReviewLink(
+          assetId,
+          "Test Review Link",
+        );
+
+        res.json({
+          success: true,
+          message: "✓ Review link creation works",
+          reviewLink: {
+            id: reviewLink.id,
+            url: reviewLink.url,
+            name: (reviewLink as any).name,
+          },
+        });
+      } catch (error) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: `Review link creation failed: ${error instanceof Error ? error.message : String(error)}`,
+          });
+      }
+    },
+  );
+
+  // Check Frame.io V4 OAuth status
+  router.get(
+    "/api/frameio/oauth-status",
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        const hasCredentials =
+          !!(process.env.ADOBE_CLIENT_ID || process.env.FRAMEIO_CLIENT_ID) &&
+          !!(
+            process.env.ADOBE_CLIENT_SECRET || process.env.FRAMEIO_CLIENT_SECRET
+          );
+        const hasAccessToken = !!frameioV4Service.accessToken;
+
+        res.json({
+          success: true,
+          oauthConfigured: hasCredentials,
+          authenticated: hasAccessToken,
+          authUrl: hasCredentials
+            ? `${getAppBaseUrl()}/api/auth/frameio`
+            : null,
+        });
+      } catch (error) {
+        console.error("OAuth status check failed:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to check OAuth status",
+        });
+      }
+    },
+  );
 
   // Mount the router to the app
   app.use(router);
 
   // Create HTTP server
   const httpServer = createServer(app);
-  
+
   return httpServer;
 }
 
@@ -5751,34 +6713,41 @@ async function downloadAsset(
   let finalPath = assetPath;
 
   console.log(`downloadAsset called with: ${assetPath}`);
-  console.log(`PUBLIC_OBJECT_SEARCH_PATHS: ${process.env.PUBLIC_OBJECT_SEARCH_PATHS}`);
+  console.log(
+    `PUBLIC_OBJECT_SEARCH_PATHS: ${process.env.PUBLIC_OBJECT_SEARCH_PATHS}`,
+  );
 
   // Try using PUBLIC_OBJECT_SEARCH_PATHS environment variable first
   const searchPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS;
   if (searchPaths) {
-    const paths = searchPaths.split(',').map(p => p.trim());
+    const paths = searchPaths.split(",").map((p) => p.trim());
     for (const searchPath of paths) {
       // Object Storage client automatically prepends bucket ID, so we need to strip it from searchPath
       // searchPath format: /bucket-id/EditingPortfolioAssets
-      // We need just: EditingPortfolioAssets/Objects/TechStartup.mp4
-      const pathParts = searchPath.split('/').filter(p => p);
-      const pathWithoutBucket = pathParts.slice(1).join('/'); // Remove bucket ID part
+      const pathParts = searchPath.split("/").filter((p) => p);
+      const pathWithoutBucket = pathParts.slice(1).join("/"); // Remove bucket ID part
       const fullPath = `${pathWithoutBucket}/${assetPath}`;
-      
+
       console.log(`Trying to download from Object Storage:
         searchPath: ${searchPath}
         pathWithoutBucket: ${pathWithoutBucket}
         assetPath: ${assetPath}
         fullPath: ${fullPath}`);
-      
+
       try {
         // Try path with search path - use full path including bucket ID
         const bytesResult = await objectStorageClient.downloadAsBytes(fullPath);
-        
-        console.log(`downloadAsBytes result: ok=${bytesResult.ok}, has value=${!!bytesResult.value}, error=${JSON.stringify(bytesResult.error)}`);
-        
+
+        console.log(
+          `downloadAsBytes result: ok=${bytesResult.ok}, has value=${!!bytesResult.value}, error=${JSON.stringify(bytesResult.error)}`,
+        );
+
         // Successfully retrieved from search path
-        if (bytesResult.ok && bytesResult.value && bytesResult.value.length > 0) {
+        if (
+          bytesResult.ok &&
+          bytesResult.value &&
+          bytesResult.value.length > 0
+        ) {
           // Successfully found the asset, now process it
 
           // Check the actual structure of the response
@@ -5794,7 +6763,9 @@ async function downloadAsset(
               bytesResult.value[0] &&
               typeof (bytesResult.value[0] as any).arrayBuffer === "function"
             ) {
-              const arrayBuffer = await (bytesResult.value[0] as any).arrayBuffer();
+              const arrayBuffer = await (
+                bytesResult.value[0] as any
+              ).arrayBuffer();
               content = new Uint8Array(arrayBuffer);
             } else {
               // Try converting the array itself to Uint8Array
@@ -5832,8 +6803,6 @@ async function downloadAsset(
             }
           }
 
-
-          
           // Determine content type based on file extension
           let contentType = "application/octet-stream";
           if (assetPath.toLowerCase().endsWith(".mp4")) {
@@ -5842,7 +6811,10 @@ async function downloadAsset(
             contentType = "video/webm";
           } else if (assetPath.toLowerCase().endsWith(".png")) {
             contentType = "image/png";
-          } else if (assetPath.toLowerCase().endsWith(".jpg") || assetPath.toLowerCase().endsWith(".jpeg")) {
+          } else if (
+            assetPath.toLowerCase().endsWith(".jpg") ||
+            assetPath.toLowerCase().endsWith(".jpeg")
+          ) {
             contentType = "image/jpeg";
           } else if (assetPath.toLowerCase().endsWith(".gif")) {
             contentType = "image/gif";
@@ -5865,11 +6837,8 @@ async function downloadAsset(
     const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
     // Successfully retrieved from direct path
 
-
     if (!bytesResult.ok) {
-      throw new Error(
-        `Object Storage error: bytesResult.error`,
-      );
+      throw new Error(`Object Storage error: bytesResult.error`);
     }
 
     // Check the actual structure of the response
@@ -5888,8 +6857,7 @@ async function downloadAsset(
       content = bytesResult.value;
     } else if (Array.isArray(bytesResult.value)) {
       // Handle array case first - it's an array - let's check what's inside
-  
-  
+
       console.log(
         "First element constructor:",
         bytesResult.value[0]?.constructor?.name,
@@ -5938,8 +6906,6 @@ async function downloadAsset(
         );
       }
     }
-
-
   } catch (bytesError: any) {
     console.log(`First attempt failed for ${assetPath}: ${bytesError.message}`);
 
@@ -5949,15 +6915,11 @@ async function downloadAsset(
       console.log(`Trying fallback path: ${fallbackPath}`);
 
       try {
-    
         const fallbackResult =
           await objectStorageClient.downloadAsBytes(fallbackPath);
-    
 
         if (!fallbackResult.ok) {
-          throw new Error(
-            `Fallback also failed: fallbackResult.error`,
-          );
+          throw new Error(`Fallback also failed: fallbackResult.error`);
         }
 
         console.log(
@@ -6016,4 +6978,3 @@ async function downloadAsset(
 
   return { content, contentType };
 }
-
