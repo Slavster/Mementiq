@@ -57,16 +57,30 @@ export function useVideoPreloader() {
   
   // Aggressively preload video content (start buffering)
   const preloadContent = (videoUrl: string) => {
-    const video = videoElements.current.get(videoUrl);
-    if (video && video.preload !== 'auto') {
+    let video = videoElements.current.get(videoUrl);
+    
+    // Create video element if it doesn't exist
+    if (!video) {
+      video = document.createElement('video');
+      video.src = videoUrl;
+      video.muted = true;
+      videoElements.current.set(videoUrl, video);
+    }
+    
+    if (video.preload !== 'auto') {
       video.preload = 'auto';
       
-      // Also create a blob URL for instant playback
-      fetch(videoUrl)
-        .then(response => response.blob())
-        .then(blob => {
-          const blobUrl = URL.createObjectURL(blob);
-          video.src = blobUrl;
+      // For smaller videos (<20MB), create blob for instant playback
+      // For larger videos, just use preload="auto" to avoid memory issues
+      const isLargeVideo = videoUrl.includes('Conference');
+      
+      if (!isLargeVideo) {
+        // Fetch and create blob URL for instant playback (smaller videos only)
+        fetch(videoUrl, {
+          method: 'HEAD'
+        }).then(() => {
+          // Just trigger the preload, don't create blob for large files
+          video!.load();
           
           setPreloadState(prev => ({
             ...prev,
@@ -76,10 +90,21 @@ export function useVideoPreloader() {
               lastActivity: Date.now()
             }
           }));
-        })
-        .catch(error => {
+        }).catch(error => {
           console.error('Failed to preload video content:', error);
         });
+      } else {
+        // For large videos, just set preload="auto" and let browser handle it
+        video.load();
+        setPreloadState(prev => ({
+          ...prev,
+          [videoUrl]: {
+            status: 'ready',
+            preloadLevel: 'auto',
+            lastActivity: Date.now()
+          }
+        }));
+      }
       
       setPreloadState(prev => ({
         ...prev,
