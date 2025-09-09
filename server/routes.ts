@@ -162,8 +162,23 @@ async function requireProjectAccess(
 }
 
 // Initialize Object Storage client
+// Extract bucket ID from PUBLIC_OBJECT_SEARCH_PATHS if available
+let bucketId = "replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9"; // default for development
+
+const searchPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS;
+if (searchPaths) {
+  // Extract bucket ID from the first search path
+  // Format: /bucket-id/EditingPortfolioAssets
+  const firstPath = searchPaths.split(",")[0].trim();
+  const pathParts = firstPath.split("/").filter((p) => p);
+  if (pathParts.length > 0) {
+    bucketId = pathParts[0];
+    console.log(`Object Storage bucket ID: ${bucketId}`);
+  }
+}
+
 const objectStorageClient = new Client({
-  bucketId: "replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9",
+  bucketId: bucketId,
 });
 
 // In-memory cache for assets (thumbnails only - videos are too large)
@@ -6719,12 +6734,15 @@ async function downloadAsset(
 
   // Special handling for Videos folder - they're at root level, not under EditingPortfolioAssets
   if (assetPath.startsWith("Videos/")) {
+    console.log(`Attempting to download video: ${assetPath}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    
     try {
       // Videos are stored directly at root level (e.g., "Videos/Conference Interviews.mp4")
       const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
       
       console.log(
-        `Direct video path result: ok=${bytesResult.ok}, has value=${!!bytesResult.value}`,
+        `Direct video path result: ok=${bytesResult.ok}, has value=${!!bytesResult.value}, error=${bytesResult.error ? JSON.stringify(bytesResult.error) : 'none'}`,
       );
       
       if (bytesResult.ok && bytesResult.value && bytesResult.value.length > 0) {
@@ -6747,9 +6765,24 @@ async function downloadAsset(
         }
         
         return { content, contentType: "video/mp4" };
+      } else if (!bytesResult.ok) {
+        // Video not found in direct path, log the error
+        console.error(`Video not found in object storage: ${assetPath}`);
+        console.error(`Error details: ${JSON.stringify(bytesResult.error)}`);
+        
+        // In production, throw an error to properly handle 500
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(`Failed to download video from object storage: ${assetPath}`);
+        }
       }
-    } catch (error) {
-      console.log(`Failed to download video from root path ${assetPath}:`, error);
+    } catch (error: any) {
+      console.error(`Failed to download video from root path ${assetPath}:`, error.message || error);
+      console.error(`Full error:`, error);
+      
+      // In production, re-throw to handle 500 properly
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
     }
   }
   
