@@ -28,9 +28,16 @@ if [ -d "dist/public" ]; then
     mkdir -p server
     cp -r dist/public server/
     
-    # Skip copying videos in production - they'll be served from Object Storage
-    # This reduces deployment size and avoids file size limits
-    echo "📹 Skipping video copy - videos will be served from Object Storage"
+    # Copy videos to server/public for static serving
+    # Videos are served as static files for best performance
+    if [ -d "client/public/videos" ]; then
+        echo "📹 Copying portfolio videos for production..."
+        mkdir -p server/public/videos
+        cp -r client/public/videos/* server/public/videos/
+        echo "✅ Videos copied to server/public/videos"
+    else
+        echo "⚠️ No videos directory found at client/public/videos"
+    fi
     
     # Remove source maps from production
     find server/public -name "*.map" -type f -delete
