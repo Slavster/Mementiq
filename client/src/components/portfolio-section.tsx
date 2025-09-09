@@ -40,7 +40,7 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/conference cover.png",
     alt: "Conference Interviews",
     category: "Interview",
-    preview: getVideoUrl("/videos/conference-interviews-fast.mp4"),
+    preview: getVideoUrl("/videos/conference-interviews-compressed.mp4"),
   },
   {
     id: 4,
