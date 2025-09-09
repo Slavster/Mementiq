@@ -162,23 +162,8 @@ async function requireProjectAccess(
 }
 
 // Initialize Object Storage client
-// Extract bucket ID from PUBLIC_OBJECT_SEARCH_PATHS if available
-let bucketId = "replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9"; // default for development
-
-const searchPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS;
-if (searchPaths) {
-  // Extract bucket ID from the first search path
-  // Format: /bucket-id/EditingPortfolioAssets
-  const firstPath = searchPaths.split(",")[0].trim();
-  const pathParts = firstPath.split("/").filter((p) => p);
-  if (pathParts.length > 0) {
-    bucketId = pathParts[0];
-    console.log(`Object Storage bucket ID: ${bucketId}`);
-  }
-}
-
 const objectStorageClient = new Client({
-  bucketId: bucketId,
+  bucketId: "replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9",
 });
 
 // In-memory cache for assets (thumbnails only - videos are too large)
@@ -6732,61 +6717,7 @@ async function downloadAsset(
     `PUBLIC_OBJECT_SEARCH_PATHS: ${process.env.PUBLIC_OBJECT_SEARCH_PATHS}`,
   );
 
-  // Special handling for Videos folder - they're at root level, not under EditingPortfolioAssets
-  if (assetPath.startsWith("Videos/")) {
-    console.log(`Attempting to download video: ${assetPath}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    
-    try {
-      // Videos are stored directly at root level (e.g., "Videos/Conference Interviews.mp4")
-      const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
-      
-      console.log(
-        `Direct video path result: ok=${bytesResult.ok}, has value=${!!bytesResult.value}, error=${bytesResult.error ? JSON.stringify(bytesResult.error) : 'none'}`,
-      );
-      
-      if (bytesResult.ok && bytesResult.value && bytesResult.value.length > 0) {
-        // Process the video content
-        let content: Uint8Array;
-        
-        if (bytesResult.value instanceof Uint8Array) {
-          content = bytesResult.value;
-        } else if (Array.isArray(bytesResult.value)) {
-          if (bytesResult.value[0] instanceof Uint8Array) {
-            content = bytesResult.value[0];
-          } else if (bytesResult.value[0] && typeof (bytesResult.value[0] as any).arrayBuffer === "function") {
-            const arrayBuffer = await (bytesResult.value[0] as any).arrayBuffer();
-            content = new Uint8Array(arrayBuffer);
-          } else {
-            content = new Uint8Array(bytesResult.value as any);
-          }
-        } else {
-          content = new Uint8Array(bytesResult.value as any);
-        }
-        
-        return { content, contentType: "video/mp4" };
-      } else if (!bytesResult.ok) {
-        // Video not found in direct path, log the error
-        console.error(`Video not found in object storage: ${assetPath}`);
-        console.error(`Error details: ${JSON.stringify(bytesResult.error)}`);
-        
-        // In production, throw an error to properly handle 500
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error(`Failed to download video from object storage: ${assetPath}`);
-        }
-      }
-    } catch (error: any) {
-      console.error(`Failed to download video from root path ${assetPath}:`, error.message || error);
-      console.error(`Full error:`, error);
-      
-      // In production, re-throw to handle 500 properly
-      if (process.env.NODE_ENV === 'production') {
-        throw error;
-      }
-    }
-  }
-  
-  // Try using PUBLIC_OBJECT_SEARCH_PATHS environment variable for non-video assets
+  // Try using PUBLIC_OBJECT_SEARCH_PATHS environment variable first
   const searchPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS;
   if (searchPaths) {
     const paths = searchPaths.split(",").map((p) => p.trim());

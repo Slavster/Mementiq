@@ -56,8 +56,12 @@ mkdir -p dist
 cat > dist/server.js << 'EOF'
 #!/usr/bin/env node
 // Production server wrapper - uses tsx to handle TypeScript
-const { spawn } = require('child_process');
-const { join } = require('path');
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 console.log('Starting production server...');
 console.log('Environment:', process.env.NODE_ENV || 'production');
