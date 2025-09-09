@@ -40,7 +40,8 @@ const portfolioItems = [
     thumbnail: "/api/assets/Thumbnails/conference cover.png",
     alt: "Conference Interviews",
     category: "Interview",
-    preview: getVideoUrl("/videos/conference-interviews-fast.mp4"),
+    // Using object storage directly for this large video (47MB)
+    preview: "/api/assets/Videos/Conference Interviews.mp4",
   },
   {
     id: 4,
