@@ -93,6 +93,33 @@ export default function PortfolioSection() {
   const isNavigating = useRef<boolean>(false);
   const scrollThreshold = 100; // Faster scrolling response
   const intersectionRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  
+  // Smart video preloading
+  const { preloadMetadata, preloadContent, getPreloadedVideo, preloadState } = useVideoPreloader();
+  
+  // Detect when portfolio section comes into view
+  const { ref: portfolioRef, hasIntersected } = useIntersectionObserver<HTMLDivElement>({
+    threshold: 0.3, // Trigger when 30% visible
+    rootMargin: '200px', // Start loading 200px before visible
+  });
+  
+  // Preload video metadata when section comes into view
+  useEffect(() => {
+    if (hasIntersected) {
+      // Preload metadata for all videos (very lightweight)
+      portfolioItems.forEach(item => {
+        preloadMetadata(item.preview);
+      });
+      
+      // Preload content for the first video (currently selected)
+      const firstVideo = portfolioItems[selectedVideo];
+      if (firstVideo) {
+        setTimeout(() => {
+          preloadContent(firstVideo.preview);
+        }, 500); // Small delay to prioritize thumbnails first
+      }
+    }
+  }, [hasIntersected, selectedVideo, preloadMetadata, preloadContent]);
 
   const handleVideoClick = (videoId: number) => {
     const video = videoRefs.current[videoId];
@@ -317,7 +344,7 @@ export default function PortfolioSection() {
   };
 
   return (
-    <section id="portfolio" className="py-20 bg-dark">
+    <section id="portfolio" className="py-20 bg-dark" ref={portfolioRef}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-light mb-4">
@@ -377,7 +404,11 @@ export default function PortfolioSection() {
                       Math.abs(offset) > 2 ? 0 : Math.abs(offset) > 1 ? 0.7 : 1,
                   }}
                   onClick={() => handleVideoClick(item.id)}
-                  onMouseEnter={() => setHoveredVideo(item.id)}
+                  onMouseEnter={() => {
+                    setHoveredVideo(item.id);
+                    // Aggressively preload video content on hover
+                    preloadContent(item.preview);
+                  }}
                   onMouseLeave={() => setHoveredVideo(null)}
                 >
                   <div
