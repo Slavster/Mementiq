@@ -4364,6 +4364,8 @@ export async function registerRoutes(app: any): Promise<Server> {
   // Serve Object Storage assets with HTTP Range support for video streaming
   router.get("/api/assets/*", async (req: AppRequest, res: AppResponse) => {
     try {
+      // Add preconnect hint for faster subsequent requests
+      res.set('Link', '<https://storage.googleapis.com>; rel=preconnect');
       // Strip EditingPortfolioAssets prefix and keep the full Objects/ path
       let assetPath = req.params[0] || "";
       if (assetPath.startsWith("EditingPortfolioAssets/")) {
