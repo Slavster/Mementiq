@@ -4,27 +4,11 @@ import { Play, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react"
 import { useVideoPreloader } from "@/hooks/useVideoPreloader";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
-// Use Object Storage URLs in production for better performance and no size limits
-const isProduction = window.location.hostname === 'mementiq.co' || 
-                     window.location.hostname.includes('mementiq') ||
-                     window.location.hostname.includes('.replit.app');
-
-// Map local video names to Object Storage paths
+// Always use static video files - they're properly served with HTTP 206 support
+// and cached efficiently. Object Storage was causing 500 errors for conference video
+// because the files don't exist at the expected paths in Object Storage.
 const getVideoUrl = (localPath: string) => {
-  if (!isProduction) {
-    return localPath; // Use local videos in development
-  }
-  
-  // Map to Object Storage URLs for production - using actual filenames from bucket
-  const videoMap: { [key: string]: string } = {
-    "/videos/travel-video.mp4": "/api/assets/EditingPortfolioAssets/Videos/Travel video.mp4",
-    "/videos/coaching-ad.mp4": "/api/assets/EditingPortfolioAssets/Videos/Coaching Ad 1 - 720.mp4",
-    "/videos/conference-interviews.mp4": "/api/assets/EditingPortfolioAssets/Videos/Conference Interviews.mp4",
-    "/videos/event-promo.mp4": "/api/assets/EditingPortfolioAssets/Videos/Event promo video.mp4",
-    "/videos/product-ad.mp4": "/api/assets/EditingPortfolioAssets/Videos/Product Ad.mp4",
-  };
-  
-  return videoMap[localPath] || localPath;
+  return localPath; // Always use static videos from /videos/ directory
 };
 
 const portfolioItems = [
