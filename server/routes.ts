@@ -4430,12 +4430,12 @@ export async function registerRoutes(app: any): Promise<Server> {
         return (res as any).send(Buffer.from(result.content));
       }
 
-      console.log(`Fetching asset: ${assetPath}`);
+      // Fetching asset
 
       // For large videos (like Conference Interviews 45MB), skip caching and use direct processing
       // This prevents memory issues with buffer conversion for large files
       if (isVideo && assetPath.toLowerCase().includes('conference')) {
-        console.log(`Detected large video - processing without cache: ${assetPath}`);
+        // Detected large video - process without cache to avoid memory pressure
         
         // Use downloadAsset but don't cache the result to avoid memory pressure
         const downloadPromise = downloadAsset(assetPath);
@@ -4445,7 +4445,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           const result = await downloadPromise;
 
           // Don't cache large videos - serve directly
-          console.log(`Serving large video without caching: ${assetPath} (${result.content.length} bytes)`);
+          // Serve large video without caching to avoid memory pressure
 
           (res as any).set({
             "Content-Type": result.contentType,
@@ -4484,9 +4484,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             contentType: result.contentType,
             timestamp: Date.now(),
           });
-          console.log(
-            `Cached video: ${assetPath} (${result.content.length} bytes)`,
-          );
+          // Video cached for performance
         }
 
         // For new video downloads, serve full content for smooth playback
@@ -5754,109 +5752,6 @@ export async function registerRoutes(app: any): Promise<Server> {
 // Frame.io integration handles both video and photo uploads
 // Legacy ImageKit and Vimeo integrations have been fully migrated to Frame.io
 
-async function streamLargeVideo(
-  assetPath: string,
-  req: any,
-  res: any,
-): Promise<void> {
-  console.log(`Streaming large video: ${assetPath}`);
-  
-  // Try using PUBLIC_OBJECT_SEARCH_PATHS environment variable first
-  const searchPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS;
-  if (searchPaths) {
-    const paths = searchPaths.split(',').map(p => p.trim());
-    for (const searchPath of paths) {
-      // The searchPath is the full path like '/replit-objstore-xxx/EditingPortfolioAssets'  
-      // Remove leading slash but keep the full bucket path
-      const cleanSearchPath = searchPath.replace(/^\//, '');
-      const fullPath = `${cleanSearchPath}/${assetPath}`;
-      
-      try {
-        console.log(`Streaming from path: ${fullPath}`);
-        
-        // Use the same approach as downloadAsset - check if file exists first
-        const bytesCheck = await objectStorageClient.downloadAsBytes(fullPath);
-        if (bytesCheck.ok && bytesCheck.value && bytesCheck.value.length > 0) {
-          // File exists, now stream it using signed URL approach
-          const streamResult = await objectStorageClient.downloadAsStream(fullPath);
-        
-          if (streamResult.ok && streamResult.value) {
-          console.log(`Successfully streaming video: ${assetPath}`);
-          
-          // Set video streaming headers
-          res.set({
-            "Content-Type": "video/mp4",
-            "Cache-Control": "public, max-age=3600",
-            "Accept-Ranges": "bytes",
-            "Connection": "keep-alive",
-          });
-          
-          // Handle range requests for video seeking
-          if (req.headers.range) {
-            console.log(`Range request for large video: ${req.headers.range}`);
-            // For now, serve the full stream - browsers will handle range requests
-            res.status(206); // Partial Content
-          }
-          
-          // Pipe the stream directly to the response
-          streamResult.value.pipe(res);
-          
-            // Handle stream events
-            streamResult.value.on('error', (error) => {
-              console.error(`Streaming error for ${assetPath}:`, error);
-              if (!res.headersSent) {
-                res.status(500).send('Streaming error');
-              }
-            });
-            
-            return;
-          }
-        }
-      } catch (streamError) {
-        console.log(`Streaming failed from ${fullPath}:`, streamError);
-        // Continue to next search path
-      }
-    }
-  }
-  
-  // Fallback to direct path streaming
-  try {
-    console.log(`Streaming from direct path: ${assetPath}`);
-    const streamResult = await objectStorageClient.downloadAsStream(assetPath);
-    
-    if (streamResult.ok && streamResult.value) {
-      console.log(`Successfully streaming video from direct path: ${assetPath}`);
-      
-      res.set({
-        "Content-Type": "video/mp4",
-        "Cache-Control": "public, max-age=3600",
-        "Accept-Ranges": "bytes",
-        "Connection": "keep-alive",
-      });
-      
-      if (req.headers.range) {
-        res.status(206);
-      }
-      
-      streamResult.value.pipe(res);
-      
-      streamResult.value.on('error', (error) => {
-        console.error(`Direct streaming error for ${assetPath}:`, error);
-        if (!res.headersSent) {
-          res.status(500).send('Streaming error');
-        }
-      });
-      
-      return;
-    }
-  } catch (directStreamError) {
-    console.error(`Direct streaming failed for ${assetPath}:`, directStreamError);
-  }
-  
-  // If streaming fails completely, throw error
-  throw new Error(`Could not stream large video: ${assetPath}`);
-}
-
 async function downloadAsset(
   assetPath: string,
 ): Promise<{ content: Uint8Array; contentType: string }> {
@@ -5873,14 +5768,12 @@ async function downloadAsset(
       // Build the full path - searchPath already includes EditingPortfolioAssets
       const fullPath = `${cleanSearchPath}/${assetPath}`;
       try {
-        console.log(`Trying path with search path: ${fullPath}`);
+        // Try path with search path
         const bytesResult = await objectStorageClient.downloadAsBytes(fullPath);
-        console.log("BytesResult retrieved successfully from search path");
+        // Successfully retrieved from search path
         
         if (bytesResult.ok && bytesResult.value && bytesResult.value.length > 0) {
           // Successfully found the asset, now process it
-          console.log("Processing...");
-          
           if (!bytesResult.ok) {
             throw new Error(
               `Object Storage error: bytesResult.error`,
@@ -5888,27 +5781,11 @@ async function downloadAsset(
           }
 
           // Check the actual structure of the response
-          console.log("Processing...");
-          console.log(
-            "((BytesResult as any).value instanceof Uint8Array:",
-            bytesResult.value instanceof Uint8Array,
-          );
-          console.log("Checking value type");
-          console.log(
-            "((BytesResult as any).value constructor:",
-            bytesResult.value.constructor.name,
-          );
 
           if (bytesResult.value instanceof Uint8Array) {
             content = bytesResult.value;
           } else if (Array.isArray(bytesResult.value)) {
-            // Handle array case first - it's an array - let's check what's inside
-            console.log("Processing...");
-            console.log("Processing...");
-            console.log(
-              "First element constructor:",
-              bytesResult.value[0]?.constructor?.name,
-            );
+            // Handle array case - check what's inside
 
             if (bytesResult.value[0] instanceof Uint8Array) {
               content = bytesResult.value[0];
@@ -5983,9 +5860,9 @@ async function downloadAsset(
 
   // Fallback to direct path (for backwards compatibility)
   try {
-    console.log("Trying direct path (fallback):", assetPath);
+    // Try direct path as fallback
     const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
-    console.log("BytesResult retrieved successfully");
+    // Successfully retrieved from direct path
     console.log("Processing...");
 
     if (!bytesResult.ok) {
