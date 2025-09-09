@@ -440,7 +440,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "invoice.payment_succeeded": {
             const invoice = event.data.object as Stripe.Invoice;
-            console.log("Processing...");
+  
 
             if ((invoice as any).subscription) {
               const subscription = await stripe.subscriptions.retrieve(
@@ -487,7 +487,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "customer.subscription.updated": {
             const subscription = event.data.object as Stripe.Subscription;
-            console.log("Processing...");
+  
 
             const user = await storage.getUserByStripeCustomerId(
               subscription.customer as string,
@@ -527,7 +527,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "customer.subscription.deleted": {
             const subscription = event.data.object as Stripe.Subscription;
-            console.log("Processing...");
+  
 
             const user = await storage.getUserByStripeCustomerId(
               subscription.customer as string,
@@ -548,7 +548,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
           case "invoice.payment_failed": {
             const invoice = event.data.object as Stripe.Invoice;
-            console.log("Processing...");
+  
 
             if ((invoice as any).subscription) {
               const subscription = await stripe.subscriptions.retrieve(
@@ -819,7 +819,7 @@ export async function registerRoutes(app: any): Promise<Server> {
             }
               });
             } else {
-              console.log("Processing...");
+    
             }
           } catch (error) {
             console.log(`❌ Error searching for public share version: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`);
@@ -883,7 +883,7 @@ export async function registerRoutes(app: any): Promise<Server> {
         console.log(`🚨 ROUTE: Asset ID: ${videoFile.mediaAssetId}`);
         console.log(`🚨 ROUTE: Calling findExistingShareForAsset...`);
         const existingShare = await frameioV4Service.findExistingShareForAsset(accountId, currentProjectFolderId, videoFile.mediaAssetId);
-        console.log("Processing...");
+    
         
         if (existingShare) {
           // Ensure we only return public f.io URLs
@@ -1009,7 +1009,7 @@ export async function registerRoutes(app: any): Promise<Server> {
                 note: 'Recovered existing Frame.io share - no login required'
               });
             } else {
-              console.log("Processing...");
+    
             }
           } catch (recoveryError) {
             console.log(`❌ Resilient recovery failed: ${recoveryError instanceof Error ? recoveryError.message : String(recoveryError)}`);
@@ -1504,7 +1504,7 @@ export async function registerRoutes(app: any): Promise<Server> {
               
               return res.json(frameioFileFormat);
             } else {
-              console.log("Processing...");
+    
             }
           }
         } catch (frameioError) {
@@ -1578,7 +1578,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       
       if (mediaLink && mediaLink.available && mediaLink.url) {
         // Successfully got a streaming URL
-        console.log("Processing...");
+    
         (res as any).setHeader('Cache-Control', 'no-store');
         res.json(mediaLink);
       } else if (mediaLink && !mediaLink.available) {
@@ -1615,7 +1615,7 @@ export async function registerRoutes(app: any): Promise<Server> {
 
       // Handle test/debug session IDs
       if (sessionId.startsWith('cs_test_') && (sessionId.includes('debug') || sessionId.includes('manual'))) {
-        console.log("Processing...");
+    
         
         // For testing, use project 16 (Test 10)
         const project = await storage.getProject(16);
@@ -2492,8 +2492,8 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       console.log("🔔 Trello webhook received");
-      console.log("Processing...");
-      console.log("Processing...");
+  
+  
       
       if (!signature) {
         console.log("❌ Missing webhook signature");
@@ -2508,7 +2508,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
 
       console.log("✅ Webhook signature verified");
-      console.log("Processing...");
+  
       
       const processed = await trelloWebhookService.processWebhook(payload);
       
@@ -3422,9 +3422,9 @@ export async function registerRoutes(app: any): Promise<Server> {
   router.post("/api/stripe/create-revision-session", requireAuth, async (req: AppRequest, res: AppResponse) => {
     try {
       const { projectId } = req.body;
-      console.log("Processing...");
-      console.log("Processing...");
-      console.log("Processing...");
+  
+  
+  
 
       // Resolve revision price using lookup_key
       let priceToUse: string;
@@ -3448,7 +3448,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       const numericProjectId = typeof projectId === 'string' ? parseInt(projectId, 10) : projectId;
 
       if (!numericProjectId || typeof numericProjectId !== 'number' || isNaN(numericProjectId)) {
-        console.log("Processing...");
+    
         return res.status(400).json({
           success: false,
           message: "Valid project ID is required",
@@ -3476,7 +3476,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       // Check if project is in correct status for revision request
       const validRevisionStatuses = ["video is ready", "delivered", "complete"];
       if (!validRevisionStatuses.includes(project.status.toLowerCase())) {
-        console.log("Processing...");
+    
         return res.status(400).json({
           success: false,
           message: "Project must be delivered or completed to request revisions",
@@ -3523,8 +3523,8 @@ export async function registerRoutes(app: any): Promise<Server> {
       });
 
       console.log("✅ Stripe session created successfully:");
-      console.log("Processing...");
-      console.log("Processing...");
+  
+  
       console.log(`"- Success URL:" ${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`);
       console.log(`"- Cancel URL:" ${baseUrl}/payment-cancelled?session_id={CHECKOUT_SESSION_ID}&project_id=${numericProjectId}&type=revision`);
       
@@ -3644,14 +3644,14 @@ export async function registerRoutes(app: any): Promise<Server> {
     const projectId = req.query.project_id as string;
     
     console.log("✅ STRIPE REVISION PAYMENT SUCCESS ENDPOINT HIT!");
-    console.log("Processing...");
-    console.log("Processing...");
-    console.log("Processing...");
-    console.log("Processing...");
+
+
+
+
     console.log(`"✅ Stripe revision payment success callback:" { sessionId, projectId }`);
     
     if (!sessionId || !projectId) {
-      console.log("Processing...");
+  
       return res.redirect("/dashboard");
     }
     
@@ -3667,7 +3667,7 @@ export async function registerRoutes(app: any): Promise<Server> {
       });
       
       if (session.payment_status !== 'paid') {
-        console.log("Processing...");
+    
         return res.redirect(`/dashboard?revision_payment=pending&session_id=${sessionId}&project_id=${projectId}`);
       }
       
@@ -3693,7 +3693,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     // Instead of Express redirect, send HTML with client-side redirect
     // This approach works better in development environments like Replit
     const redirectUrl = getDashboardUrl() + `?revision_payment=success&session_id=${sessionId}&project_id=${projectId}`;
-    console.log("Processing...");
+
     
     (res as any).send(`
       <!DOCTYPE html>
@@ -3780,11 +3780,11 @@ export async function registerRoutes(app: any): Promise<Server> {
             timestamp: Date.now()
           };
           localStorage.setItem('stripe_revision_payment', JSON.stringify(paymentInfo));
-          console.log("Processing...");
+
           
           // Redirect to dashboard with parameters
           const redirectUrl = '${redirectUrl}';
-          console.log("Processing...");
+
           
           setTimeout(() => {
             window.location.href = redirectUrl;
@@ -3800,14 +3800,14 @@ export async function registerRoutes(app: any): Promise<Server> {
     const projectId = req.query.project_id as string;
     
     console.log("❌ STRIPE REVISION PAYMENT CANCEL ENDPOINT HIT!");
-    console.log("Processing...");
-    console.log("Processing...");
-    console.log("Processing...");
-    console.log("Processing...");
+
+
+
+
     console.log(`"❌ Stripe revision payment cancelled:" { sessionId, projectId }`);
     
     if (!sessionId || !projectId) {
-      console.log("Processing...");
+  
       return res.redirect("/dashboard");
     }
     
@@ -3816,7 +3816,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     
     // Send HTML with client-side redirect for better reliability
     const redirectUrl = getDashboardUrl() + `?revision_payment=cancelled&session_id=${sessionId}&project_id=${projectId}`;
-    console.log("Processing...");
+
     
     (res as any).send(`
       <!DOCTYPE html>
@@ -3894,7 +3894,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           
           // Redirect to dashboard
           const redirectUrl = '${redirectUrl}';
-          console.log("Processing...");
+
           
           setTimeout(() => {
             window.location.href = redirectUrl;
@@ -4620,7 +4620,7 @@ export async function registerRoutes(app: any): Promise<Server> {
           assetId: uploadSession.assetId,
         };
 
-        console.log("Processing...");
+    
 
         res.json({
           success: true,
@@ -5178,14 +5178,14 @@ export async function registerRoutes(app: any): Promise<Server> {
     },
     requireAuth,
     async (req: AppRequest, res: AppResponse) => {
-      console.log("Processing...");
+  
       try {
         const projectId = Number(req.params.id);
         const userId = req.user!.id;
 
         console.log(`🔧 ROUTE CALLED: Ensuring Frame.io folder structure for project ${projectId}, user ${userId}`);
         console.log(`🔍 DEBUG: Request received at ensure-folder-structure endpoint`);
-        console.log("Processing...");
+    
 
         // Verify project exists and user owns it
         const project = await storage.getProject(projectId);
@@ -5821,7 +5821,7 @@ async function downloadAsset(
             }
           }
 
-          console.log("Processing...");
+
           
           // Determine content type based on file extension
           let contentType = "application/octet-stream";
@@ -5853,7 +5853,7 @@ async function downloadAsset(
     // Try direct path as fallback
     const bytesResult = await objectStorageClient.downloadAsBytes(assetPath);
     // Successfully retrieved from direct path
-    console.log("Processing...");
+
 
     if (!bytesResult.ok) {
       throw new Error(
@@ -5862,7 +5862,7 @@ async function downloadAsset(
     }
 
     // Check the actual structure of the response
-    console.log("Processing...");
+
     console.log(
       "((BytesResult as any).value instanceof Uint8Array:",
       bytesResult.value instanceof Uint8Array,
@@ -5877,8 +5877,8 @@ async function downloadAsset(
       content = bytesResult.value;
     } else if (Array.isArray(bytesResult.value)) {
       // Handle array case first - it's an array - let's check what's inside
-      console.log("Processing...");
-      console.log("Processing...");
+  
+  
       console.log(
         "First element constructor:",
         bytesResult.value[0]?.constructor?.name,
@@ -5928,7 +5928,7 @@ async function downloadAsset(
       }
     }
 
-    console.log("Processing...");
+
   } catch (bytesError: any) {
     console.log(`First attempt failed for ${assetPath}: ${bytesError.message}`);
 
@@ -5938,10 +5938,10 @@ async function downloadAsset(
       console.log(`Trying fallback path: ${fallbackPath}`);
 
       try {
-        console.log("Processing...");
+    
         const fallbackResult =
           await objectStorageClient.downloadAsBytes(fallbackPath);
-        console.log("Processing...");
+    
 
         if (!fallbackResult.ok) {
           throw new Error(
