@@ -8,12 +8,9 @@ import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 const getVideoUrl = (localPath: string) => {
   // Use R2 for conference video if environment variable is set
   if (localPath.includes('conference') && import.meta.env.VITE_MEDIA_BASE_URL) {
-    const r2Url = `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
-    console.log(`🎥 [R2] Conference video using Cloudflare R2: ${r2Url}`);
-    return r2Url;
+    return `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
   }
   // Use local static files for other videos
-  console.log(`🎥 [Local] Using local video: ${localPath}`);
   return localPath;
 };
 
@@ -244,6 +241,18 @@ export default function PortfolioSection() {
     };
   }, [playingVideo]);
 
+  // Add native wheel event listener with { passive: false } to allow preventDefault
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   const nextVideo = () => {
     if (isNavigating.current) return; // Prevent multiple rapid moves
     
@@ -296,7 +305,7 @@ export default function PortfolioSection() {
     }, 400); // Faster transition
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
 
     // Block all navigation if currently moving
@@ -348,7 +357,6 @@ export default function PortfolioSection() {
 
         <div
           className="relative h-[650px] flex items-center justify-center overflow-hidden"
-          onWheel={handleWheel}
           ref={containerRef}
         >
           <Button
