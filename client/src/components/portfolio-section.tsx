@@ -4,11 +4,14 @@ import { Play, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react"
 import { useVideoPreloader } from "@/hooks/useVideoPreloader";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
-// Always use static video files - they're properly served with HTTP 206 support
-// and cached efficiently. Object Storage was causing 500 errors for conference video
-// because the files don't exist at the expected paths in Object Storage.
+// Helper function to get video URLs - supports R2 streaming for conference video
 const getVideoUrl = (localPath: string) => {
-  return localPath; // Always use static videos from /videos/ directory
+  // Use R2 for conference video if environment variable is set
+  if (localPath.includes('conference') && import.meta.env.VITE_MEDIA_BASE_URL) {
+    return `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
+  }
+  // Use local static files for other videos
+  return localPath;
 };
 
 const portfolioItems = [
@@ -413,7 +416,9 @@ export default function PortfolioSection() {
                       muted
                       loop
                       playsInline
-                      preload={item.id === 3 ? "auto" : "metadata"}
+                      preload="metadata"
+                      controlsList="nodownload"
+                      controls={playingVideo === item.id}
                       src={item.preview}
                       onError={(e) => {
                         console.error(`Video ${item.id} error:`, e);
