@@ -8,9 +8,12 @@ import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 const getVideoUrl = (localPath: string) => {
   // Use R2 for conference video if environment variable is set
   if (localPath.includes('conference') && import.meta.env.VITE_MEDIA_BASE_URL) {
-    return `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
+    const r2Url = `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
+    console.log(`🎥 [R2] Conference video using Cloudflare R2: ${r2Url}`);
+    return r2Url;
   }
   // Use local static files for other videos
+  console.log(`🎥 [Local] Using local video: ${localPath}`);
   return localPath;
 };
 
