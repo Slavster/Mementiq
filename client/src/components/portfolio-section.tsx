@@ -6,12 +6,11 @@ import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
 // Helper function to get video URLs - supports R2 streaming for conference video
 const getVideoUrl = (localPath: string) => {
-  // Temporarily disabled R2 for conference video due to CORS issues
-  // TODO: Fix CORS headers on R2 domain and re-enable
-  // if (localPath.includes('conference') && import.meta.env.VITE_MEDIA_BASE_URL) {
-  //   return `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
-  // }
-  // Use local static files for all videos
+  // Use R2 for conference video if environment variable is set
+  if (localPath.includes('conference') && import.meta.env.VITE_MEDIA_BASE_URL) {
+    return `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
+  }
+  // Use local static files for other videos
   return localPath;
 };
 
@@ -431,6 +430,7 @@ export default function PortfolioSection() {
                       preload="metadata"
                       controlsList="nodownload"
                       controls={playingVideo === item.id}
+                      crossOrigin="anonymous"
                       src={item.preview}
                       onError={(e) => {
                         console.error(`Video ${item.id} error:`, e);
@@ -440,8 +440,18 @@ export default function PortfolioSection() {
                             src: video.src,
                             readyState: video.readyState,
                             networkState: video.networkState,
-                            error: video.error
+                            error: video.error,
+                            errorCode: video.error?.code,
+                            errorMessage: video.error?.message
                           });
+                          // Try to access the R2 URL directly to test CORS
+                          fetch(video.src, { method: 'HEAD' })
+                            .then(response => {
+                              console.log(`[Interview] R2 fetch test - Status: ${response.status}, Headers:`, response.headers);
+                            })
+                            .catch(err => {
+                              console.error(`[Interview] R2 fetch test failed:`, err);
+                            });
                         }
                       }}
                       onLoadedMetadata={() => {

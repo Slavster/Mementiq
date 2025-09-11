@@ -110,6 +110,7 @@ export default function HeroSection() {
                 loop
                 playsInline
                 preload="auto"
+                crossOrigin="anonymous"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 onLoadedData={() => {
