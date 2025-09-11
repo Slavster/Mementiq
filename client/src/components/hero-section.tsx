@@ -70,9 +70,9 @@ export default function HeroSection() {
         <div className="grid grid-cols-1 md:!grid-cols-2 gap-8 md:gap-12 items-start">
           {/* Left half - content */}
           <div className="min-w-0 md:pr-12 flex flex-col justify-start">
-            <p className="text-xl text-gray-300 mb-6 leading-relaxed">
+            <p className="text-2xl text-gray-300 mb-6 leading-relaxed">
               Professional quality, transparently priced, and{" "}
-              <span className="text-accent font-bold text-2xl">
+              <span className="text-accent font-bold">
                 hassle-free video editing <br />
               </span>{" "}
               All at the touch of a button.
