@@ -67,9 +67,9 @@ export default function HeroSection() {
         </h1>
         
         {/* Content area - mobile: stacked, desktop: split left/right */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch lg:h-[500px]">
+        <div className="grid grid-cols-1 md:!grid-cols-2 gap-8 md:gap-12 items-stretch md:h-[500px]">
           {/* Left half - content */}
-          <div className="min-w-0 lg:pr-12 flex flex-col justify-center">
+          <div className="min-w-0 md:pr-12 flex flex-col justify-center">
             <p className="text-xl text-gray-300 mb-6 leading-relaxed">
               Professional quality, transparently priced, and{" "}
               <span className="text-accent font-bold text-2xl">
@@ -99,12 +99,12 @@ export default function HeroSection() {
           </div>
           
           {/* Right half - video */}
-          <div className="min-w-0 lg:h-full flex items-center justify-center">
+          <div className="min-w-0 md:h-full flex items-center justify-center">
             <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full h-full">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
-                className="w-full h-auto aspect-[9/16] lg:h-full lg:w-full lg:aspect-auto object-cover"
+                className="w-full h-auto aspect-[9/16] md:h-full md:w-full md:aspect-auto object-cover"
                 autoPlay
                 muted
                 loop
