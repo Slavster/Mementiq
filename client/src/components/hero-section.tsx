@@ -24,14 +24,16 @@ export default function HeroSection() {
     }
   };
 
-  const toggleVideoPlay = () => {
+  const toggleVideoPlay = async () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        videoRef.current.play();
-        setIsPlaying(true);
+      try {
+        if (isPlaying) {
+          videoRef.current.pause();
+        } else {
+          await videoRef.current.play();
+        }
+      } catch (error) {
+        console.error('Video play failed:', error);
       }
     }
   };
@@ -82,11 +84,16 @@ export default function HeroSection() {
                 muted
                 loop
                 playsInline
-                preload="metadata"
+                preload="auto"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
+                onLoadedData={() => {
+                  // Try to play when data is loaded
+                  if (videoRef.current) {
+                    videoRef.current.play().catch(console.error);
+                  }
+                }}
                 data-testid="hero-video"
-                crossOrigin="anonymous"
                 disablePictureInPicture
                 controls={false}
               />
