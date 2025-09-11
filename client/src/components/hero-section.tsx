@@ -61,11 +61,15 @@ export default function HeroSection() {
     <section className="bg-gradient-to-br from-secondary via-purple-900 to-primary text-white pt-20 pb-12 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="flex flex-col md:flex-row md:flex-nowrap gap-12 items-start">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-6">
-              Bring Your Stories to <span className="text-accent">Life</span>
-            </h1>
+        {/* Title - centered on all screens */}
+        <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-8 text-center">
+          Bring Your Stories to <span className="text-accent">Life</span>
+        </h1>
+        
+        {/* Content area - mobile: stacked, desktop: split left/right */}
+        <div className="flex flex-col lg:flex-row lg:gap-0 gap-12 items-start lg:h-[500px]">
+          {/* Left half - content */}
+          <div className="flex-1 lg:pr-12 lg:flex lg:flex-col lg:justify-center">
             <p className="text-xl text-gray-300 mb-6 leading-relaxed">
               Professional quality, transparently priced, and{" "}
               <span className="text-accent font-bold text-2xl">
@@ -93,12 +97,14 @@ export default function HeroSection() {
               </Button>
             </div>
           </div>
-          <div className="relative flex justify-center md:justify-end md:flex-shrink-0 md:basis-80">
-            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full md:w-80">
+          
+          {/* Right half - video */}
+          <div className="flex-1 lg:h-full flex items-center justify-center">
+            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full lg:w-auto lg:h-full lg:aspect-[9/16]">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
-                className="w-full h-auto aspect-[9/16]"
+                className="w-full h-auto lg:h-full lg:w-auto aspect-[9/16]"
                 autoPlay
                 muted
                 loop
