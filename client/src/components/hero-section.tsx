@@ -40,8 +40,8 @@ export default function HeroSection() {
     <section className="bg-gradient-to-br from-secondary via-purple-900 to-primary text-white pt-32 pb-20 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="flex flex-col lg:flex-row gap-12 items-center">
-          <div className="flex-1">
+        <div className="flex flex-col md:flex-row md:flex-nowrap gap-12 items-start">
+          <div className="flex-1 min-w-0">
             <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-6">
               Bring Your Stories to <span className="text-accent">Life</span>
             </h1>
@@ -72,8 +72,8 @@ export default function HeroSection() {
               </Button>
             </div>
           </div>
-          <div className="relative flex justify-center lg:justify-end lg:flex-shrink-0">
-            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-64 lg:w-72">
+          <div className="relative flex justify-center md:justify-end md:flex-shrink-0 md:basis-72">
+            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-64 md:w-72">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
