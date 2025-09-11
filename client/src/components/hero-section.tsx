@@ -1,14 +1,38 @@
 import { Button } from "@/components/ui/button";
 import { Play, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
+import { useState, useRef } from "react";
+
+// Helper function to get hero video URL from R2
+const getHeroVideoUrl = () => {
+  if (import.meta.env.VITE_MEDIA_BASE_URL) {
+    return `${import.meta.env.VITE_MEDIA_BASE_URL}/VSL_Low.mp4`;
+  }
+  // Fallback - this shouldn't be used since we always want R2
+  return "";
+};
 
 export default function HeroSection() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [, setLocation] = useLocation();
   
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const toggleVideoPlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -50,17 +74,26 @@ export default function HeroSection() {
           </div>
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30">
-              <img
-                src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600"
-                alt="Professional video editing workspace with multiple monitors"
+              <video
+                ref={videoRef}
+                src={getHeroVideoUrl()}
                 className="w-full h-auto"
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                data-testid="hero-video"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
                 <Button
                   size="lg"
+                  onClick={toggleVideoPlay}
                   className="bg-accent/90 backdrop-blur-sm rounded-full p-6 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-yellow-400/30"
+                  data-testid="button-play-hero-video"
                 >
-                  <Play className="h-8 w-8 text-secondary ml-1" />
+                  <Play className={`h-8 w-8 text-secondary ml-1 ${isPlaying ? 'opacity-50' : 'opacity-100'}`} />
                 </Button>
               </div>
             </div>
