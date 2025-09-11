@@ -55,10 +55,10 @@ export default function HeroSection() {
             <p className="text-2xl mb-8 text-left text-[#ffffff] font-semibold">
               For You. For All. Forever.
             </p>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 items-start">
               <Button
                 onClick={() => setLocation('/auth')}
-                className="bg-accent text-secondary px-8 py-4 text-lg font-semibold hover:bg-yellow-500 transition-all duration-200 h-auto transform hover:scale-105"
+                className="bg-accent text-secondary px-8 py-4 text-lg font-semibold hover:bg-yellow-500 transition-all duration-200 h-auto transform hover:scale-105 w-auto"
               >
                 Start Creating
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -66,7 +66,7 @@ export default function HeroSection() {
               <Button
                 onClick={() => scrollToSection("portfolio")}
                 variant="outline"
-                className="border-2 border-accent text-accent px-8 py-4 text-lg font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200 h-auto"
+                className="border-2 border-accent text-accent px-8 py-4 text-lg font-semibold hover:bg-accent hover:text-secondary transition-colors duration-200 h-auto w-auto"
               >
                 View Portfolio
               </Button>
