@@ -86,17 +86,22 @@ export default function HeroSection() {
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 data-testid="hero-video"
+                crossOrigin="anonymous"
+                disablePictureInPicture
+                controls={false}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
-                <Button
-                  size="sm"
-                  onClick={toggleVideoPlay}
-                  className="bg-accent/90 backdrop-blur-sm rounded-full p-4 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-yellow-400/30"
-                  data-testid="button-play-hero-video"
-                >
-                  <Play className={`h-6 w-6 text-secondary ml-1 ${isPlaying ? 'opacity-50' : 'opacity-100'}`} />
-                </Button>
-              </div>
+              {!isPlaying && (
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
+                  <Button
+                    size="sm"
+                    onClick={toggleVideoPlay}
+                    className="bg-accent/90 backdrop-blur-sm rounded-full p-4 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-yellow-400/30"
+                    data-testid="button-play-hero-video"
+                  >
+                    <Play className="h-6 w-6 text-secondary ml-1" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
