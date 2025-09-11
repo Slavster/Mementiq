@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Play, ArrowRight } from "lucide-react";
+import { Play, ArrowRight, Volume2, VolumeX, RotateCcw } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useRef } from "react";
 
@@ -14,6 +14,7 @@ const getHeroVideoUrl = () => {
 
 export default function HeroSection() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [, setLocation] = useLocation();
   
@@ -34,6 +35,24 @@ export default function HeroSection() {
         }
       } catch (error) {
         console.error('Video play failed:', error);
+      }
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const restartVideo = async () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      try {
+        await videoRef.current.play();
+      } catch (error) {
+        console.error('Video restart failed:', error);
       }
     }
   };
@@ -88,27 +107,60 @@ export default function HeroSection() {
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 onLoadedData={() => {
-                  // Try to play when data is loaded
+                  // Try to play when data is loaded and disable text tracks
                   if (videoRef.current) {
+                    // Disable any text tracks (captions/subtitles)
+                    const tracks = videoRef.current.textTracks;
+                    for (let i = 0; i < tracks.length; i++) {
+                      tracks[i].mode = 'disabled';
+                    }
                     videoRef.current.play().catch(console.error);
                   }
                 }}
                 data-testid="hero-video"
                 disablePictureInPicture
                 controls={false}
-              />
-              {!isPlaying && (
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
-                  <Button
-                    size="sm"
-                    onClick={toggleVideoPlay}
-                    className="bg-accent/90 backdrop-blur-sm rounded-full p-4 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-yellow-400/30"
-                    data-testid="button-play-hero-video"
-                  >
-                    <Play className="h-6 w-6 text-secondary ml-1" />
-                  </Button>
-                </div>
-              )}
+              >
+                {/* Explicitly disable any potential captions */}
+              </video>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+                {!isPlaying && (
+                  <div className="flex items-center justify-center h-full">
+                    <Button
+                      size="sm"
+                      onClick={toggleVideoPlay}
+                      className="bg-accent/90 backdrop-blur-sm rounded-full p-4 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-yellow-400/30"
+                      data-testid="button-play-hero-video"
+                    >
+                      <Play className="h-6 w-6 text-secondary ml-1" />
+                    </Button>
+                  </div>
+                )}
+                {isPlaying && (
+                  <div className="absolute bottom-4 right-4 flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={toggleMute}
+                      className="bg-black/50 backdrop-blur-sm rounded-full p-2 hover:bg-black/70 transition-all duration-200"
+                      data-testid="button-mute-hero-video"
+                    >
+                      {isMuted ? (
+                        <VolumeX className="h-4 w-4 text-white" />
+                      ) : (
+                        <Volume2 className="h-4 w-4 text-white" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={restartVideo}
+                      className="bg-black/50 backdrop-blur-sm rounded-full p-2 hover:bg-black/70 transition-all duration-200"
+                      data-testid="button-restart-hero-video"
+                    >
+                      <RotateCcw className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
