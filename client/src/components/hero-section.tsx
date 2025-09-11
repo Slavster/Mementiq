@@ -99,12 +99,12 @@ export default function HeroSection() {
           </div>
           
           {/* Right half - video */}
-          <div className="min-w-0 md:h-full flex items-center justify-center">
-            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full h-full">
+          <div className="min-w-0 flex items-center justify-center">
+            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full max-w-sm">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
-                className="w-full h-auto aspect-[9/16] md:h-full md:w-full md:aspect-auto object-contain"
+                className="w-full h-auto aspect-[9/16]"
                 autoPlay
                 muted
                 loop
