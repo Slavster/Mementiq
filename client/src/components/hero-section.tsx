@@ -73,7 +73,7 @@ export default function HeroSection() {
             </div>
           </div>
           <div className="relative flex justify-center md:justify-end md:flex-shrink-0 md:basis-72">
-            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-64 md:w-72">
+            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full md:w-72">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
