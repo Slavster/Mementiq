@@ -100,7 +100,7 @@ export default function HeroSection() {
           
           {/* Right half - video */}
           <div className="min-w-0 flex items-center justify-center">
-            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full max-w-[224px]">
+            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full max-w-[224px] group">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
@@ -143,7 +143,7 @@ export default function HeroSection() {
                   </div>
                 )}
                 {isPlaying && (
-                  <div className="absolute top-4 right-4 flex gap-2">
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <Button
                       size="sm"
                       onClick={toggleMute}
