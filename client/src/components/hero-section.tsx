@@ -67,7 +67,7 @@ export default function HeroSection() {
         </h1>
         
         {/* Content area - mobile: stacked, desktop: split left/right */}
-        <div className="grid grid-cols-1 md:!grid-cols-2 gap-8 md:gap-12 items-stretch md:h-[500px]">
+        <div className="grid grid-cols-1 md:!grid-cols-2 gap-8 md:gap-12 items-start">
           {/* Left half - content */}
           <div className="min-w-0 md:pr-12 flex flex-col justify-start">
             <p className="text-xl text-gray-300 mb-6 leading-relaxed">
@@ -100,7 +100,7 @@ export default function HeroSection() {
           
           {/* Right half - video */}
           <div className="min-w-0 flex items-center justify-center">
-            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full max-w-sm">
+            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full max-w-md">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
