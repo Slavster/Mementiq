@@ -55,7 +55,7 @@ export default function HeroSection() {
             <p className="text-2xl mb-8 text-left text-[#ffffff] font-semibold">
               For You. For All. Forever.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col gap-4">
               <Button
                 onClick={() => setLocation('/auth')}
                 className="bg-accent text-secondary px-8 py-4 text-lg font-semibold hover:bg-yellow-500 transition-all duration-200 h-auto transform hover:scale-105"
