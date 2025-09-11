@@ -78,6 +78,7 @@ export default function HeroSection() {
                 ref={videoRef}
                 src={getHeroVideoUrl()}
                 className="w-full h-auto aspect-[9/16]"
+                autoPlay
                 muted
                 loop
                 playsInline
