@@ -6,11 +6,12 @@ import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
 // Helper function to get video URLs - supports R2 streaming for conference video
 const getVideoUrl = (localPath: string) => {
-  // Use R2 for conference video if environment variable is set
-  if (localPath.includes('conference') && import.meta.env.VITE_MEDIA_BASE_URL) {
-    return `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
-  }
-  // Use local static files for other videos
+  // Temporarily disabled R2 for conference video due to CORS issues
+  // TODO: Fix CORS headers on R2 domain and re-enable
+  // if (localPath.includes('conference') && import.meta.env.VITE_MEDIA_BASE_URL) {
+  //   return `${import.meta.env.VITE_MEDIA_BASE_URL}/Conference%20Interviews.mp4`;
+  // }
+  // Use local static files for all videos
   return localPath;
 };
 
