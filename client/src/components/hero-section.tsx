@@ -72,12 +72,12 @@ export default function HeroSection() {
               </Button>
             </div>
           </div>
-          <div className="relative">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30">
+          <div className="relative flex justify-center lg:justify-end">
+            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-64 lg:w-72">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
-                className="w-full h-auto"
+                className="w-full h-auto aspect-[9/16]"
                 muted
                 loop
                 playsInline
@@ -88,12 +88,12 @@ export default function HeroSection() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-center justify-center">
                 <Button
-                  size="lg"
+                  size="sm"
                   onClick={toggleVideoPlay}
-                  className="bg-accent/90 backdrop-blur-sm rounded-full p-6 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-yellow-400/30"
+                  className="bg-accent/90 backdrop-blur-sm rounded-full p-4 hover:bg-accent transition-all duration-200 transform hover:scale-110 border border-yellow-400/30"
                   data-testid="button-play-hero-video"
                 >
-                  <Play className={`h-8 w-8 text-secondary ml-1 ${isPlaying ? 'opacity-50' : 'opacity-100'}`} />
+                  <Play className={`h-6 w-6 text-secondary ml-1 ${isPlaying ? 'opacity-50' : 'opacity-100'}`} />
                 </Button>
               </div>
             </div>
