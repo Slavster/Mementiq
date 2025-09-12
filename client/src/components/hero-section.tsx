@@ -61,15 +61,13 @@ export default function HeroSection() {
     <section className="bg-gradient-to-br from-secondary via-purple-900 to-primary text-white pt-20 pb-12 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Title - centered on all screens */}
-        <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-8 text-center">
-          Bring Your Stories to <span className="text-accent">Life</span>
-        </h1>
-        
         {/* Content area - mobile: stacked, desktop: split left/right */}
         <div className="grid grid-cols-1 md:!grid-cols-2 gap-8 md:gap-12 items-start">
           {/* Left half - content */}
           <div className="min-w-0 md:pr-12 flex flex-col justify-start">
+            <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-8">
+              Bring Your Stories to <span className="text-accent">Life</span>
+            </h1>
             <p className="text-2xl text-[#ffffff] font-semibold mb-6 leading-relaxed">
               Professional quality, transparently priced, and{" "}
               <span className="text-accent font-bold">
@@ -100,7 +98,7 @@ export default function HeroSection() {
           
           {/* Right half - video */}
           <div className="min-w-0 flex items-center justify-center">
-            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full max-w-none md:max-w-[224px] group">
+            <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full max-w-none md:max-w-md group">
               <video
                 ref={videoRef}
                 src={getHeroVideoUrl()}
