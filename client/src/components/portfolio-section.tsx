@@ -430,7 +430,6 @@ export default function PortfolioSection() {
                       preload="metadata"
                       controlsList="nodownload"
                       controls={playingVideo === item.id}
-                      crossOrigin="anonymous"
                       src={item.preview}
                       onError={(e) => {
                         console.error(`Video ${item.id} error:`, e);
@@ -440,18 +439,8 @@ export default function PortfolioSection() {
                             src: video.src,
                             readyState: video.readyState,
                             networkState: video.networkState,
-                            error: video.error,
-                            errorCode: video.error?.code,
-                            errorMessage: video.error?.message
+                            error: video.error
                           });
-                          // Try to access the R2 URL directly to test CORS
-                          fetch(video.src, { method: 'HEAD' })
-                            .then(response => {
-                              console.log(`[Interview] R2 fetch test - Status: ${response.status}, Headers:`, response.headers);
-                            })
-                            .catch(err => {
-                              console.error(`[Interview] R2 fetch test failed:`, err);
-                            });
                         }
                       }}
                       onLoadedMetadata={() => {
