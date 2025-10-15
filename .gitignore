@@ -78,6 +78,7 @@ vite.config.ts.*
 # Replit specific (already managed by Replit)
 .replit
 replit.nix
+replit.md
 
 # Local uploads or user content (if any)
 uploads/
