@@ -64,7 +64,7 @@ import { VideoViewingStep } from "@/components/VideoViewingStep";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConsentPopup } from "@/components/ConsentPopup";
 import type { Project } from "@/../../shared/schema";
-import logoImage from "@assets/Mementiq logo - small border_1755766751477.png";
+import logoImage from "@/assets/logo.png";
 
 interface User {
   id: number;
