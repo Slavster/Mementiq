@@ -1,0 +1,8 @@
+Update platform to use Frame.io for all media operations
+
+Replace all references to Vimeo with Frame.io across the backend and routes, unifying the media hosting and upload experience.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 625fda40-91f7-41aa-9a95-1a375893b0b8
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/bb0a5c69-363f-451b-9bc8-306c97c51a42/625fda40-91f7-41aa-9a95-1a375893b0b8/sxpOAzu

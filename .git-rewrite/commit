@@ -1,0 +1,14 @@
+tree 2ffe18a6dc8ea94b17b622401cd619bb11610fed
+parent effe3a2868cb2db5ba30ea2e9f43a8de2e4b08ef
+parent bf1030846964e779c45ee327f07fadbd0cf44745
+author slavsinitsyn <43758993-slavsinitsyn@users.noreply.replit.com> 1754557116 +0000
+committer slavsinitsyn <43758993-slavsinitsyn@users.noreply.replit.com> 1754557116 +0000
+
+Update platform to use Frame.io for all media operations
+
+Replace all references to Vimeo with Frame.io across the backend and routes, unifying the media hosting and upload experience.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 625fda40-91f7-41aa-9a95-1a375893b0b8
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/bb0a5c69-363f-451b-9bc8-306c97c51a42/625fda40-91f7-41aa-9a95-1a375893b0b8/sxpOAzu
