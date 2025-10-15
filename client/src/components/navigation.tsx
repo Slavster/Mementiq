@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useLocation } from "wouter";
-import logoImage from "@assets/Mementiq logo - small border_1755766751477.png";
+import logoImage from "@/assets/logo.png";
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
