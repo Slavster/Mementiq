@@ -16,6 +16,9 @@ server/public
 .env.test.local
 .env.production.local
 .env*.local
+*.env.backup
+*.env.local.backup
+.env.*.backup
 
 # Logs
 logs
