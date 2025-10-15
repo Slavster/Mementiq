@@ -1,0 +1,13 @@
+tree cfce25f79b423d28a01e87e7fc861eb24b545adf
+parent b2d3a52e3db3652398f4f6a0d86936a477812a47
+author slavsinitsyn <43758993-slavsinitsyn@users.noreply.replit.com> 1753952713 +0000
+committer slavsinitsyn <43758993-slavsinitsyn@users.noreply.replit.com> 1753952713 +0000
+
+Improve integration with Tally forms to handle data and editing cases
+
+Parses Tally form submission data, handles existing submissions, and updates iframe `submissionId` prop in `TallyFormStep.tsx`.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: bd4ea2d2-1055-4859-ac62-f6158530e662
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/bb0a5c69-363f-451b-9bc8-306c97c51a42/bd4ea2d2-1055-4859-ac62-f6158530e662/pnhgU6O
