@@ -88,7 +88,7 @@ export default function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Content area - mobile: stacked, desktop: split left/right */}
-        <div className="grid grid-cols-1 md:!grid-cols-2 gap-8 md:gap-12 items-start">
+        <div className="grid grid-cols-1 md:!grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Left half - content */}
           <div className="min-w-0 md:pr-12 flex flex-col justify-center">
             <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-8">
