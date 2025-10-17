@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Play, ArrowRight, Volume2, VolumeX, RotateCcw } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 // Helper function to get hero video URL from R2
 const getHeroVideoUrl = () => {
@@ -56,6 +56,32 @@ export default function HeroSection() {
       }
     }
   };
+
+  // Auto-pause video when scrolled out of view
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    
+    if (!videoElement) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting && !videoElement.paused) {
+            videoElement.pause();
+          }
+        });
+      },
+      {
+        threshold: 0.5, // Pause when less than 50% visible
+      }
+    );
+
+    observer.observe(videoElement);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   return (
     <section className="bg-gradient-to-br from-secondary via-purple-900 to-primary text-white pt-20 pb-12 relative overflow-hidden">
