@@ -17,7 +17,7 @@ export default function HeroSection() {
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [, setLocation] = useLocation();
-  
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -34,7 +34,7 @@ export default function HeroSection() {
           await videoRef.current.play();
         }
       } catch (error) {
-        console.error('Video play failed:', error);
+        console.error("Video play failed:", error);
       }
     }
   };
@@ -52,7 +52,7 @@ export default function HeroSection() {
       try {
         await videoRef.current.play();
       } catch (error) {
-        console.error('Video restart failed:', error);
+        console.error("Video restart failed:", error);
       }
     }
   };
@@ -60,7 +60,7 @@ export default function HeroSection() {
   // Auto-pause video when scrolled out of view
   useEffect(() => {
     const videoElement = videoRef.current;
-    
+
     if (!videoElement) return;
 
     const observer = new IntersectionObserver(
@@ -72,8 +72,8 @@ export default function HeroSection() {
         });
       },
       {
-        threshold: 0.5, // Pause when less than 50% visible
-      }
+        threshold: 0.8, // Pause when less than 80% visible
+      },
     );
 
     observer.observe(videoElement);
@@ -90,7 +90,7 @@ export default function HeroSection() {
         {/* Content area - mobile: stacked, desktop: split left/right */}
         <div className="grid grid-cols-1 md:!grid-cols-2 gap-8 md:gap-12 items-start">
           {/* Left half - content */}
-          <div className="min-w-0 md:pr-12 flex flex-col justify-start">
+          <div className="min-w-0 md:pr-12 flex flex-col justify-center">
             <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-8">
               Bring Your Stories to <span className="text-accent">Life</span>
             </h1>
@@ -106,7 +106,7 @@ export default function HeroSection() {
             </p>
             <div className="flex flex-col gap-4 items-start">
               <Button
-                onClick={() => setLocation('/auth')}
+                onClick={() => setLocation("/auth")}
                 className="bg-accent text-secondary px-8 py-4 text-lg font-semibold hover:bg-yellow-500 transition-all duration-200 h-auto transform hover:scale-105 w-auto"
               >
                 Start Creating
@@ -121,7 +121,7 @@ export default function HeroSection() {
               </Button>
             </div>
           </div>
-          
+
           {/* Right half - video */}
           <div className="min-w-0 flex items-center justify-center">
             <div className="relative rounded-xl overflow-hidden shadow-xl border border-purple-500/30 w-full max-w-none md:max-w-[336px] group">
@@ -142,7 +142,7 @@ export default function HeroSection() {
                     // Disable any text tracks (captions/subtitles)
                     const tracks = videoRef.current.textTracks;
                     for (let i = 0; i < tracks.length; i++) {
-                      tracks[i].mode = 'disabled';
+                      tracks[i].mode = "disabled";
                     }
                     videoRef.current.play().catch(console.error);
                   }
