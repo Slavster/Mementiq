@@ -635,24 +635,6 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
     },
   );
-  // Admin Frame.io test endpoint - force a check and refresh
-  router.post(
-    "/api/admin/frameio/test-refresh",
-    requireAuth,
-    requireAdmin,
-    async (req: AppRequest, res: AppResponse) => {
-      try {
-        console.log("🧪 Admin: Manually triggering token keep-alive check...");
-        const { forceTokenCheck } = await import("./services/tokenKeepAlive");
-        await forceTokenCheck();
-        res.json({ success: true, message: "Token check and refresh triggered. Check server logs and admin email for results." });
-      } catch (error: any) {
-        console.error("Failed to trigger token test:", error);
-        res.status(500).json({ success: false, message: error.message });
-      }
-    },
-  );
-
   // Frame.io webhook endpoint for video upload notifications
   // Generate Frame.io V4 public share link for project video
   router.get(

@@ -122,24 +122,6 @@ export default function AdminSettings() {
     }
   }, [adminCheck, isCheckingAdmin, adminError, isError, setLocation]);
 
-  const testRefreshMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/frameio/test-refresh", { method: "POST" }),
-    onSuccess: () => {
-      toast({
-        title: "Test Triggered",
-        description: "The token keep-alive check was manually triggered. Check your email.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/frameio/status"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Test Failed",
-        description: error?.message || "Failed to trigger token test.",
-        variant: "destructive",
-      });
-    },
-  });
-
   if (isCheckingAdmin) {
     return (
       <div className="min-h-screen bg-dark flex items-center justify-center">
@@ -288,43 +270,14 @@ export default function AdminSettings() {
 
           <div className="bg-dark-lighter border border-charcoal/30 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-light mb-4">Notifications</h2>
-            <div className="space-y-6">
-              <div>
-                <p className="text-sm text-charcoal mb-1">Alert Email</p>
-                <p className="text-light" data-testid="text-notification-email">
-                  {statusData?.notificationEmail || 'Not configured'}
-                </p>
-                <p className="text-xs text-charcoal mt-2">
-                  You will receive email alerts when the Frame.io token is about to expire or needs attention.
-                </p>
-              </div>
-
-              <div className="border-t border-charcoal/30 pt-6">
-                <h3 className="text-sm font-medium text-light mb-3">Testing</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => testRefreshMutation.mutate()}
-                  disabled={testRefreshMutation.isPending}
-                  className="border-charcoal/50 text-charcoal hover:text-light"
-                  data-testid="button-test-refresh"
-                >
-                  {testRefreshMutation.isPending ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Triggering Test...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Trigger Token Check Email
-                    </>
-                  )}
-                </Button>
-                <p className="text-xs text-charcoal mt-2">
-                  This will force the background service to run immediately. If the token is healthy, it will proactively refresh it and log the result. If alerts are needed, they will be sent to the email above.
-                </p>
-              </div>
+            <div>
+              <p className="text-sm text-charcoal mb-1">Alert Email</p>
+              <p className="text-light" data-testid="text-notification-email">
+                {statusData?.notificationEmail || 'Not configured'}
+              </p>
+              <p className="text-xs text-charcoal mt-2">
+                You will receive email alerts when the Frame.io token is about to expire or needs attention.
+              </p>
             </div>
           </div>
         </div>
