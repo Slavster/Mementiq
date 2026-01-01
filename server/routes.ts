@@ -6473,26 +6473,36 @@ export async function registerRoutes(app: any): Promise<Server> {
       const baseUrl = getAppBaseUrl();
       const adminSettingsUrl = `${baseUrl}/admin/settings`;
       
+      const clientId = process.env.ADOBE_CLIENT_ID;
+      if (!clientId) {
+        throw new Error("ADOBE_CLIENT_ID not configured");
+      }
+
+      const state = Math.random().toString(36).substring(7);
+      await storage.createOAuthState(state, "frameio", 10);
+      const stableRedirectUri = `${baseUrl}/api/auth/frameio/callback`;
+      const adobeAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(stableRedirectUri)}&response_type=code&scope=openid profile offline_access email additional_info.roles&state=${state}`;
+      
       const { type } = req.body as { type?: 'expiring' | 'expired' };
       
       if (type === 'expired') {
         await emailService.sendTokenExpiredAlert(
           adminEmail,
-          adminSettingsUrl,
-          "Test: Token has expired (this is a test email)"
+          adobeAuthUrl,
+          "Test: Token has expired (this link takes you directly to Adobe)"
         );
       } else {
         await emailService.sendTokenExpiringAlert(
           adminEmail,
           3, // Days remaining
-          adminSettingsUrl
+          adobeAuthUrl
         );
       }
       
       res.json({
         success: true,
         message: `Test ${type || 'expiring'} email sent to ${adminEmail}`,
-        adminSettingsUrl,
+        adobeAuthUrl,
       });
     } catch (error) {
       console.error("Failed to send test email:", error);

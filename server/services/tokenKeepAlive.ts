@@ -16,18 +16,29 @@ async function checkAndRefreshToken(): Promise<void> {
   try {
     const status = frameioV4Service.getTokenStatus();
     const adminEmail = getAdminNotificationEmail();
-    const adminSettingsUrl = `${getAppBaseUrl()}/admin/settings`;
-    
+    const baseUrl = getAppBaseUrl();
+    const clientId = process.env.ADOBE_CLIENT_ID;
+
+    // Generate Adobe OAuth URL or fallback to admin settings
+    let adobeAuthUrl = `${baseUrl}/admin/settings`;
+    if (clientId) {
+      const state = Math.random().toString(36).substring(7);
+      const { storage: storageLocal } = await import('../storage.js');
+      await storageLocal.createOAuthState(state, "frameio", 10);
+      const stableRedirectUri = `${baseUrl}/api/auth/frameio/callback`;
+      adobeAuthUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(stableRedirectUri)}&response_type=code&scope=openid profile offline_access email additional_info.roles&state=${state}`;
+    }
+
     console.log(`📊 Token status: ${status.status}, Days remaining: ${status.daysRemaining}`);
-    
+
     if (status.status === 'disconnected') {
       console.log('⚠️ Token Keep-Alive: No token available - OAuth required');
-      
+
       if (adminEmail && lastAlertSentDays !== 0) {
         try {
           await emailService.sendTokenExpiredAlert(
             adminEmail,
-            adminSettingsUrl,
+            adobeAuthUrl,
             'No authentication token found. Please reconnect Frame.io.'
           );
           lastAlertSentDays = 0;
@@ -37,20 +48,20 @@ async function checkAndRefreshToken(): Promise<void> {
       }
       return;
     }
-    
+
     if (status.status === 'expired') {
       console.log('🔴 Token Keep-Alive: Token expired, attempting refresh...');
-      
+
       const refreshResult = await frameioV4Service.manualRefresh();
-      
+
       if (!refreshResult.success) {
         console.error('❌ Token refresh failed:', refreshResult.error);
-        
+
         if (adminEmail && lastAlertSentDays !== 0) {
           try {
             await emailService.sendTokenExpiredAlert(
               adminEmail,
-              adminSettingsUrl,
+              adobeAuthUrl,
               refreshResult.error
             );
             lastAlertSentDays = 0;
@@ -64,29 +75,29 @@ async function checkAndRefreshToken(): Promise<void> {
       }
       return;
     }
-    
+
     if (status.status === 'expiring_soon' && status.daysRemaining !== null) {
       console.log(`⚠️ Token Keep-Alive: Token expiring in ${status.daysRemaining} days`);
-      
+
       const refreshResult = await frameioV4Service.manualRefresh();
-      
+
       if (refreshResult.success) {
         console.log('✅ Token proactively refreshed');
         lastAlertSentDays = null;
       } else {
         console.log('⚠️ Proactive refresh failed, sending alert...');
-        
+
         if (adminEmail) {
-          const shouldAlert = 
+          const shouldAlert =
             (status.daysRemaining <= ONE_DAY_WARNING && lastAlertSentDays !== 1) ||
             (status.daysRemaining <= SEVEN_DAYS_WARNING && lastAlertSentDays !== 7 && lastAlertSentDays !== 1);
-          
+
           if (shouldAlert) {
             try {
               await emailService.sendTokenExpiringAlert(
                 adminEmail,
                 status.daysRemaining,
-                adminSettingsUrl
+                adobeAuthUrl
               );
               lastAlertSentDays = status.daysRemaining <= ONE_DAY_WARNING ? 1 : 7;
             } catch (emailError) {
