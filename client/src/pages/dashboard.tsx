@@ -533,6 +533,19 @@ export default function DashboardPage() {
 
         // Refresh projects to ensure we have latest status
         queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      } else if (data.noVideosFound) {
+        // Handle no video files found - user stays on current step
+        toast({
+          title: "Video Files Required",
+          description: data.message || "You must first upload your raw video footage before submitting to the editor. Please check your files in Step 1.",
+          variant: "destructive",
+          duration: 8000,
+        });
+
+        // Close the confirmation dialog but keep user on their current step
+        setShowSendToEditorDialog(false);
+        setPendingProject(null);
+        // Do NOT change currentStep - user stays where they are and can navigate to upload step
       } else {
         toast({
           title: "Failed to send project",

@@ -4920,11 +4920,58 @@ export async function registerRoutes(app: any): Promise<Server> {
           console.log(
             `⚠️ Blocking duplicate submission for project ${projectId}. Current status: ${project.status}`,
           );
-          return res.status(400).json({
+          // Return 200 with success:false so frontend can handle in onSuccess
+          return res.json({
             success: false,
             message: "This project has already been submitted to the editor.",
             alreadySubmitted: true,
           });
+        }
+
+        // IMPORTANT: Validate that Frame.io folder contains at least 1 video before submission
+        if (status === "edit in progress") {
+          if (!project.mediaFolderId) {
+            console.log(
+              `⚠️ Blocking submission for project ${projectId}: No Frame.io folder configured`,
+            );
+            // Return 200 with success:false so frontend can handle in onSuccess
+            return res.json({
+              success: false,
+              message: "You must first upload your raw video footage before submitting to the editor. Please check your files in Step 1.",
+              noVideosFound: true,
+            });
+          }
+
+          try {
+            const videos = await getFolderVideos(project.mediaFolderId);
+            console.log(
+              `🎬 Video validation for project ${projectId}: Found ${videos.length} video(s) in folder ${project.mediaFolderId}`,
+            );
+
+            if (videos.length === 0) {
+              console.log(
+                `⚠️ Blocking submission for project ${projectId}: No video files found in Frame.io folder`,
+              );
+              // Return 200 with success:false so frontend can handle in onSuccess
+              return res.json({
+                success: false,
+                message: "You must first upload your raw video footage before submitting to the editor. Please check your files in Step 1.",
+                noVideosFound: true,
+              });
+            }
+          } catch (videoCheckError) {
+            console.error(
+              `❌ Video validation error for project ${projectId}:`,
+              videoCheckError,
+            );
+            // If Frame.io is unavailable, still block submission to be safe
+            // Return 200 with success:false so frontend can handle in onSuccess
+            return res.json({
+              success: false,
+              message: "Unable to verify your uploaded files. Please try again or contact support if the issue persists.",
+              noVideosFound: true,
+            });
+          }
         }
 
         // Prepare update object
