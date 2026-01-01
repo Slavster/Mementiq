@@ -50,6 +50,7 @@ import {
   PLAN_LOOKUP_KEYS,
   type PlanKey,
 } from "./services/stripe-price-resolver.js";
+import { isAdminEmail, getAdminNotificationEmail } from "./config/admin.js";
 
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -159,6 +160,27 @@ async function requireProjectAccess(
       message: "Failed to verify project access",
     });
   }
+}
+
+// Middleware to verify admin access (requires auth first)
+async function requireAdmin(req: AppRequest, res: AppResponse, next: any) {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: "Authentication required" });
+  }
+  
+  const userEmail = req.user.email;
+  if (!userEmail || typeof userEmail !== 'string') {
+    console.log(`🔒 Admin access denied: No email in user payload`);
+    return res.status(403).json({ success: false, message: "Admin access required" });
+  }
+  
+  if (!isAdminEmail(userEmail)) {
+    console.log(`🔒 Admin access denied for: ${userEmail}`);
+    return res.status(403).json({ success: false, message: "Admin access required" });
+  }
+  
+  console.log(`🔑 Admin access granted for: ${userEmail}`);
+  next();
 }
 
 // Initialize Object Storage client
@@ -5379,6 +5401,17 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireProjectAccess,
     async (req: AppRequest, res: AppResponse) => {
       try {
+        // Check Frame.io token status before attempting upload
+        const tokenStatus = frameioV4Service.getTokenStatus();
+        if (tokenStatus.status === 'disconnected' || tokenStatus.status === 'expired') {
+          console.log('❌ Upload blocked: Frame.io token is', tokenStatus.status);
+          return res.status(503).json({
+            success: false,
+            message: "Upload service is temporarily unavailable. Please try again later.",
+            retryable: true,
+          });
+        }
+
         const projectId = Number(req.params.id);
         const { fileName, fileSize } = req.body;
 
@@ -6339,6 +6372,99 @@ export async function registerRoutes(app: any): Promise<Server> {
       }
     },
   );
+
+  // =====================================================
+  // ADMIN API ENDPOINTS
+  // =====================================================
+
+  // Check if current user is an admin
+  router.get("/api/admin/check", requireAuth, async (req: AppRequest, res: AppResponse) => {
+    const userEmail = req.user?.email || '';
+    const isAdmin = isAdminEmail(userEmail);
+    
+    res.json({
+      success: true,
+      isAdmin,
+    });
+  });
+
+  // Get Frame.io integration status (admin only)
+  router.get("/api/admin/frameio/status", requireAuth, requireAdmin, async (req: AppRequest, res: AppResponse) => {
+    try {
+      const tokenStatus = frameioV4Service.getTokenStatus();
+      
+      res.json({
+        success: true,
+        frameio: tokenStatus,
+        notificationEmail: getAdminNotificationEmail(),
+      });
+    } catch (error) {
+      console.error("Failed to get Frame.io status:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to get integration status",
+      });
+    }
+  });
+
+  // Manually refresh Frame.io token (admin only)
+  router.post("/api/admin/frameio/refresh", requireAuth, requireAdmin, async (req: AppRequest, res: AppResponse) => {
+    try {
+      const result = await frameioV4Service.manualRefresh();
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: "Token refreshed successfully",
+          newStatus: frameioV4Service.getTokenStatus(),
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || "Token refresh failed",
+          requiresReauth: true,
+        });
+      }
+    } catch (error) {
+      console.error("Manual token refresh failed:", error);
+      res.status(500).json({
+        success: false,
+        message: "Token refresh failed",
+        requiresReauth: true,
+      });
+    }
+  });
+
+  // Get OAuth URL for reconnecting Frame.io (admin only)
+  router.get("/api/admin/frameio/reconnect", requireAuth, requireAdmin, async (req: AppRequest, res: AppResponse) => {
+    try {
+      const clientId = process.env.ADOBE_CLIENT_ID;
+      if (!clientId) {
+        throw new Error("ADOBE_CLIENT_ID not configured");
+      }
+
+      const state = Math.random().toString(36).substring(7);
+      
+      // Store state in database
+      await storage.createOAuthState(state, "frameio", 10);
+
+      const baseUrl = getAppBaseUrl();
+      const redirectUri = `${baseUrl}/api/auth/frameio/callback`;
+      const authUrl = `https://ims-na1.adobelogin.com/ims/authorize/v2?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid profile offline_access email additional_info.roles&state=${state}`;
+
+      res.json({
+        success: true,
+        authUrl,
+        redirectUri,
+      });
+    } catch (error) {
+      console.error("Failed to generate reconnect URL:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to generate reconnection URL",
+      });
+    }
+  });
 
   // Frame.io V4 OAuth endpoints - Manual approach for Adobe's static URI requirement
   router.get("/api/auth/frameio", async (req: AppRequest, res: AppResponse) => {

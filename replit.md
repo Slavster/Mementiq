@@ -35,11 +35,15 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **Revision Payment Flow**: Popup-based payment via Stripe with immediate UI feedback and project status updates.
 - **Revision Instructions Interface**: 4-step workflow integrated into video viewing stage.
 - **Trello Integration**: Workflow automation for creating and managing Trello cards for project tracking, including initial project cards, revision cards, editor assignment inheritance, and status updates.
+- **Admin Settings System**: Protected admin-only page at `/admin/settings` for managing Frame.io integration status, token health monitoring, and manual reconnection. Access controlled via email-based authorization (ADMIN_EMAILS environment variable).
+- **Token Keep-Alive Service**: Background service running every 12 hours that proactively refreshes Frame.io OAuth tokens to prevent expiration, with automatic email alerts to admin when tokens are expiring or need attention.
+- **Graceful Upload Error Handling**: Upload endpoints check token status before processing and return user-friendly "Upload service temporarily unavailable" messages instead of cryptic errors when Frame.io integration is down.
 
 ### System Design
 - **Database Schema**: Includes `users`, `email_signups`, `projects`, `project_files`, `photo_files`, `project_status_log`, `revision_payments`, `trello_cards`, and `trello_config`.
 - **API Design**: Share link retrieval endpoint checks for existing project-level share link first.
-- **Frame.io Integration**: Uses V4 API exclusively with OAuth authentication.
+- **Frame.io Integration**: Uses V4 API exclusively with OAuth authentication. Token management via centralized service with automatic keep-alive refresh and admin notifications.
+- **Admin Authorization**: Email-based admin access via ADMIN_EMAILS environment variable. Admin-only routes protected by requireAdmin middleware.
 
 ## External Dependencies
 

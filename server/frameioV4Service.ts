@@ -411,6 +411,94 @@ export class FrameioV4Service {
   }
 
   /**
+   * Get the current token status for admin monitoring
+   */
+  public getTokenStatus(): {
+    status: 'connected' | 'expiring_soon' | 'expired' | 'disconnected';
+    hasToken: boolean;
+    hasRefreshToken: boolean;
+    expiresAt: Date | null;
+    lastRefreshed: Date | null;
+    daysRemaining: number | null;
+  } {
+    const now = new Date();
+    
+    if (!this.accessTokenValue) {
+      return {
+        status: 'disconnected',
+        hasToken: false,
+        hasRefreshToken: !!this.refreshTokenValue,
+        expiresAt: this.tokenExpiresAt,
+        lastRefreshed: null,
+        daysRemaining: null,
+      };
+    }
+
+    if (this.tokenExpiresAt) {
+      const timeRemaining = this.tokenExpiresAt.getTime() - now.getTime();
+      const daysRemaining = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+      
+      if (timeRemaining <= 0) {
+        return {
+          status: 'expired',
+          hasToken: true,
+          hasRefreshToken: !!this.refreshTokenValue,
+          expiresAt: this.tokenExpiresAt,
+          lastRefreshed: null,
+          daysRemaining: 0,
+        };
+      }
+      
+      if (daysRemaining <= 7) {
+        return {
+          status: 'expiring_soon',
+          hasToken: true,
+          hasRefreshToken: !!this.refreshTokenValue,
+          expiresAt: this.tokenExpiresAt,
+          lastRefreshed: null,
+          daysRemaining,
+        };
+      }
+
+      return {
+        status: 'connected',
+        hasToken: true,
+        hasRefreshToken: !!this.refreshTokenValue,
+        expiresAt: this.tokenExpiresAt,
+        lastRefreshed: null,
+        daysRemaining,
+      };
+    }
+
+    return {
+      status: 'connected',
+      hasToken: true,
+      hasRefreshToken: !!this.refreshTokenValue,
+      expiresAt: null,
+      lastRefreshed: null,
+      daysRemaining: null,
+    };
+  }
+
+  /**
+   * Manually trigger a token refresh (for admin use)
+   */
+  public async manualRefresh(): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.refreshTokenValue) {
+        return { success: false, error: 'No refresh token available. Re-authentication required.' };
+      }
+      await this.refreshWithLock();
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error) 
+      };
+    }
+  }
+
+  /**
    * Verify Frame.io organization and profile access when encountering 403 errors.
    */
   private async verifyOrgAccess(): Promise<void> {

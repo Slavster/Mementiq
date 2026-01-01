@@ -41,3 +41,9 @@ defaultBucketID = "replit-objstore-b07cef7e-47a6-4dcc-aca4-da16dd52e2e9"
 
 [agent]
 integrations = ["javascript_object_storage:1.0.0", "javascript_stripe:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+ADMIN_EMAILS = "slav.sinitsyn@gmail.com"
+ADMIN_NOTIFICATION_EMAIL = "mementiq@seraphventures.net"

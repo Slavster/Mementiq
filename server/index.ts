@@ -229,6 +229,13 @@ app.use((req: Request, res: Response, next: any) => {
         console.error('❌ Failed to start asset detection service:', error);
       });
 
+      // Initialize Token Keep-Alive service for Frame.io token management
+      import('./services/tokenKeepAlive.js').then(({ startTokenKeepAlive }) => {
+        startTokenKeepAlive();
+      }).catch(error => {
+        console.error('❌ Failed to start Token Keep-Alive service:', error);
+      });
+
       // Initialize Trello integration on startup
       import('./services/trello-automation.js').then(({ trelloAutomation }) => {
         console.log('🔧 Initializing Trello board configuration...');

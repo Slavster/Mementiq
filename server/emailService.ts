@@ -269,6 +269,140 @@ export class EmailService {
     );
     return await this.sendEmail(emailData);
   }
+
+  generateTokenExpiringEmail(
+    adminEmail: string,
+    daysRemaining: number,
+    adminSettingsUrl: string,
+  ): EmailTemplate {
+    return {
+      to: adminEmail,
+      subject: `⚠️ Frame.io Token Expiring in ${daysRemaining} Days - Action Required`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Token Expiring Soon</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">⚠️ Token Expiring Soon</h1>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333; margin-top: 0;">Frame.io Integration Alert</h2>
+            
+            <p style="font-size: 16px; margin-bottom: 25px;">
+              Your Frame.io authentication token will expire in <strong>${daysRemaining} days</strong>. 
+              To ensure uninterrupted file upload service for your customers, please reconnect Frame.io.
+            </p>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p style="margin: 0; color: #856404;">
+                <strong>What happens if you don't act?</strong><br>
+                Customers will see "Upload temporarily unavailable" when trying to upload files to their projects.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${adminSettingsUrl}" 
+                 style="background: #ed8936; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                🔄 Reconnect Frame.io Now
+              </a>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+  }
+
+  generateTokenExpiredEmail(
+    adminEmail: string,
+    adminSettingsUrl: string,
+    errorMessage?: string,
+  ): EmailTemplate {
+    return {
+      to: adminEmail,
+      subject: `🔴 Frame.io Token Expired - Immediate Action Required`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Token Expired</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">🔴 Token Expired</h1>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333; margin-top: 0;">Frame.io Integration Down</h2>
+            
+            <p style="font-size: 16px; margin-bottom: 25px;">
+              Your Frame.io authentication has expired or failed to refresh. 
+              <strong>File uploads are currently unavailable</strong> for all customers.
+            </p>
+            
+            ${errorMessage ? `
+            <div style="background: #fed7d7; border: 1px solid #fc8181; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p style="margin: 0; color: #c53030;">
+                <strong>Error:</strong> ${errorMessage}
+              </p>
+            </div>
+            ` : ''}
+            
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p style="margin: 0; color: #856404;">
+                <strong>Action Required:</strong><br>
+                Please reconnect Frame.io immediately to restore file upload functionality.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${adminSettingsUrl}" 
+                 style="background: #c53030; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                🔄 Reconnect Frame.io Now
+              </a>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+  }
+
+  async sendTokenExpiringAlert(
+    adminEmail: string,
+    daysRemaining: number,
+    adminSettingsUrl: string,
+  ): Promise<void> {
+    const emailData = this.generateTokenExpiringEmail(
+      adminEmail,
+      daysRemaining,
+      adminSettingsUrl,
+    );
+    await this.sendEmail(emailData);
+    console.log(`📧 Token expiring alert sent to ${adminEmail} (${daysRemaining} days remaining)`);
+  }
+
+  async sendTokenExpiredAlert(
+    adminEmail: string,
+    adminSettingsUrl: string,
+    errorMessage?: string,
+  ): Promise<void> {
+    const emailData = this.generateTokenExpiredEmail(
+      adminEmail,
+      adminSettingsUrl,
+      errorMessage,
+    );
+    await this.sendEmail(emailData);
+    console.log(`📧 Token expired alert sent to ${adminEmail}`);
+  }
 }
 
 export const emailService = new EmailService();

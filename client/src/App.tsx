@@ -12,6 +12,7 @@ import PaymentSuccessPage from "@/pages/payment-success";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
 import PrivacySettingsPage from "@/pages/privacy-settings";
 import TermsOfServicePage from "@/pages/terms-of-service";
+import AdminSettingsPage from "@/pages/admin-settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicyPage} />
       <Route path="/privacy-settings" component={PrivacySettingsPage} />
       <Route path="/terms-of-service" component={TermsOfServicePage} />
+      <Route path="/admin/settings" component={AdminSettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );
