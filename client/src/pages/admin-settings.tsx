@@ -214,7 +214,7 @@ export default function AdminSettings() {
                       <Button
                         onClick={() => refreshMutation.mutate()}
                         disabled={refreshMutation.isPending}
-                        className="bg-accent hover:bg-accent/80 text-dark"
+                        className="bg-accent hover:bg-accent/80 text-black font-semibold"
                         data-testid="button-refresh-token"
                       >
                         {refreshMutation.isPending ? (
@@ -236,7 +236,7 @@ export default function AdminSettings() {
                       disabled={reconnectMutation.isPending || isReconnecting}
                       variant={frameioStatus.status === 'disconnected' || frameioStatus.status === 'expired' ? 'default' : 'outline'}
                       className={frameioStatus.status === 'disconnected' || frameioStatus.status === 'expired' 
-                        ? 'bg-accent hover:bg-accent/80 text-dark' 
+                        ? 'bg-accent hover:bg-accent/80 text-black font-semibold' 
                         : 'border-charcoal/50 text-charcoal hover:text-light'}
                       data-testid="button-reconnect"
                     >
