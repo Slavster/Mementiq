@@ -6664,7 +6664,7 @@ export async function registerRoutes(app: any): Promise<Server> {
     },
   );
 
-  // Check Frame.io V4 OAuth status and authentication health
+  // Check Frame.io V4 OAuth status
   router.get(
     "/api/frameio/oauth-status",
     async (req: AppRequest, res: AppResponse) => {
@@ -6689,88 +6689,6 @@ export async function registerRoutes(app: any): Promise<Server> {
         res.status(500).json({
           success: false,
           message: "Failed to check OAuth status",
-        });
-      }
-    },
-  );
-
-  // Comprehensive Frame.io authentication health check
-  router.get(
-    "/api/frameio/health",
-    async (req: AppRequest, res: AppResponse) => {
-      try {
-        const clientId = process.env.ADOBE_CLIENT_ID || process.env.FRAMEIO_CLIENT_ID || '';
-        const clientSecret = process.env.ADOBE_CLIENT_SECRET || process.env.FRAMEIO_CLIENT_SECRET || '';
-        const hasCredentials = !!(clientId && clientSecret);
-        const hasAccessToken = !!frameioV4Service.accessToken;
-
-        // Test S2S (client_credentials) capability
-        let s2sStatus = 'not_tested';
-        let s2sError: string | null = null;
-
-        if (hasCredentials) {
-          try {
-            const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
-            const response = await fetch(tokenUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: new URLSearchParams({
-                grant_type: 'client_credentials',
-                client_id: clientId,
-                client_secret: clientSecret,
-                scope: 'openid,AdobeID,frameio.read,frameio.write',
-              }),
-            });
-
-            if (response.ok) {
-              s2sStatus = 'available';
-            } else {
-              const errorData = await response.text();
-              s2sStatus = 'unavailable';
-              s2sError = errorData;
-            }
-          } catch (error) {
-            s2sStatus = 'error';
-            s2sError = error instanceof Error ? error.message : String(error);
-          }
-        }
-
-        // Get token expiry info from database
-        const { DatabaseStorage } = await import('./storage.js');
-        const storage = new DatabaseStorage();
-        const serviceToken = await storage.getServiceToken('frameio-v4');
-
-        res.json({
-          success: true,
-          status: hasAccessToken ? 'healthy' : 'authentication_required',
-          credentials: {
-            configured: hasCredentials,
-            clientIdPresent: !!clientId,
-            clientSecretPresent: !!clientSecret,
-          },
-          authentication: {
-            hasValidToken: hasAccessToken,
-            tokenExpiresAt: serviceToken?.expiresAt || null,
-            hasRefreshToken: !!serviceToken?.refreshToken,
-          },
-          serverToServer: {
-            status: s2sStatus,
-            error: s2sError,
-            recommendation: s2sStatus === 'unavailable' 
-              ? 'Enable Server-to-Server credentials in Adobe Developer Console for reliable authentication'
-              : s2sStatus === 'available' 
-                ? 'S2S is available and will be used for token generation'
-                : null,
-          },
-          authUrl: hasCredentials ? `${getAppBaseUrl()}/api/auth/frameio` : null,
-          reAuthRequired: !hasAccessToken && s2sStatus !== 'available',
-        });
-      } catch (error) {
-        console.error("Frame.io health check failed:", error);
-        res.status(500).json({
-          success: false,
-          message: "Failed to check Frame.io health",
-          error: error instanceof Error ? error.message : String(error),
         });
       }
     },

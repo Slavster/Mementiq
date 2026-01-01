@@ -27,7 +27,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **User Authentication**: Supabase Auth (email/password, Google social login, JWT).
 - **Subscription Management**: Stripe integration (three-tier model with usage tracking and project creation limits).
 - **Project Management Dashboard**: Comprehensive project lifecycle management (`draft`, `awaiting instructions`, `edit in progress`, `video is ready`, `complete`, `revision in progress`), with automatic status updates.
-- **Video & Photo Upload System**: Frame.io V4 API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Features dual authentication strategy: Server-to-Server (S2S) client_credentials flow as primary (preferred - no token expiration issues), with OAuth refresh token as fallback.
+- **Video & Photo Upload System**: Frame.io V4 API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Features a centralized, automatically refreshed OAuth token system.
 - **Tally Form Integration**: Mandatory for editing instructions.
 - **Video Delivery Detection**: Automatic background service detects new video uploads, transitions projects to "Video is Ready", and sends notifications.
 - **Public Share Creation**: Frame.io V4 public share system with intelligent share reuse. Share links are generated once during "Video is Ready" and expire after 30 days.
@@ -39,7 +39,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 ### System Design
 - **Database Schema**: Includes `users`, `email_signups`, `projects`, `project_files`, `photo_files`, `project_status_log`, `revision_payments`, `trello_cards`, and `trello_config`.
 - **API Design**: Share link retrieval endpoint checks for existing project-level share link first.
-- **Frame.io Integration**: Uses V4 API exclusively with Adobe IMS authentication. Dual authentication strategy: Server-to-Server (S2S) client_credentials flow as primary (preferred - no token expiration issues), with OAuth refresh token as fallback. Health check endpoint at `/api/frameio/health` provides authentication status and S2S availability.
+- **Frame.io Integration**: Uses V4 API exclusively with OAuth authentication.
 
 ## External Dependencies
 
