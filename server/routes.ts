@@ -6466,6 +6466,43 @@ export async function registerRoutes(app: any): Promise<Server> {
     }
   });
 
+  // Test endpoint to send token alert email (admin only)
+  router.post("/api/admin/frameio/test-email", requireAuth, requireAdmin, async (req: AppRequest, res: AppResponse) => {
+    try {
+      const adminEmail = getAdminNotificationEmail();
+      const baseUrl = getAppBaseUrl();
+      const adminSettingsUrl = `${baseUrl}/admin/settings`;
+      
+      const { type } = req.body as { type?: 'expiring' | 'expired' };
+      
+      if (type === 'expired') {
+        await emailService.sendTokenExpiredAlert(
+          adminEmail,
+          adminSettingsUrl,
+          "Test: Token has expired (this is a test email)"
+        );
+      } else {
+        await emailService.sendTokenExpiringAlert(
+          adminEmail,
+          3, // Days remaining
+          adminSettingsUrl
+        );
+      }
+      
+      res.json({
+        success: true,
+        message: `Test ${type || 'expiring'} email sent to ${adminEmail}`,
+        adminSettingsUrl,
+      });
+    } catch (error) {
+      console.error("Failed to send test email:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to send test email",
+      });
+    }
+  });
+
   // Frame.io V4 OAuth endpoints - Manual approach for Adobe's static URI requirement
   router.get("/api/auth/frameio", async (req: AppRequest, res: AppResponse) => {
     try {
