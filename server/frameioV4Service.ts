@@ -178,14 +178,94 @@ export class FrameioV4Service {
   }
 
   /**
-   * Refresh the access token using the refresh token
+   * Get access token using Server-to-Server (client_credentials) flow.
+   * This is the preferred method as it doesn't require refresh tokens and works indefinitely.
+   * 
+   * @returns true if S2S token was obtained successfully, false otherwise
+   */
+  private async getAccessTokenViaClientCredentials(): Promise<boolean> {
+    if (!this.clientId || !this.clientSecret) {
+      console.log('⚠️ S2S auth not possible: missing client credentials');
+      return false;
+    }
+
+    console.log('=== Attempting Server-to-Server (S2S) Token Generation ===');
+
+    const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
+    
+    try {
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+          scope: 'openid,AdobeID,frameio.read,frameio.write',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`⚠️ S2S token generation failed: ${response.status} - ${errorText}`);
+        
+        // S2S might not be enabled for this project - this is not a critical error
+        // We'll fall back to OAuth refresh token flow
+        return false;
+      }
+
+      const tokenData = await response.json();
+      this.accessTokenValue = tokenData.access_token;
+      
+      // S2S tokens don't have refresh tokens - that's the point!
+      // We just generate a new one when needed
+      
+      // Calculate expiration time (typically 24 hours)
+      if (tokenData.expires_in) {
+        this.tokenExpiresAt = new Date(Date.now() + (tokenData.expires_in * 1000));
+      }
+
+      console.log('=== S2S Token Generation Successful ===');
+      console.log(`Access token obtained: ${this.accessTokenValue?.substring(0, 6)}...${this.accessTokenValue?.substring(this.accessTokenValue.length - 6)}`);
+      console.log(`Expires in: ${tokenData.expires_in} seconds`);
+      console.log(`Expires at: ${this.tokenExpiresAt?.toISOString()}`);
+
+      // Update the centralized service token in database for consistency
+      try {
+        const { DatabaseStorage } = await import('./storage.js');
+        const storage = new DatabaseStorage();
+
+        await storage.updateServiceToken(
+          'frameio-v4',
+          this.accessTokenValue!,
+          undefined, // No refresh token for S2S
+          this.tokenExpiresAt || undefined,
+          'openid,AdobeID,frameio.read,frameio.write'
+        );
+        console.log('✅ S2S token stored in centralized service storage');
+      } catch (error) {
+        console.warn('Failed to update S2S token in centralized storage:', error);
+      }
+
+      return true;
+    } catch (error) {
+      console.log(`⚠️ S2S token generation error: ${error instanceof Error ? error.message : String(error)}`);
+      return false;
+    }
+  }
+
+  /**
+   * Refresh the access token using the refresh token (legacy OAuth flow).
+   * This is the fallback method if S2S is not available.
    */
   private async refreshAccessToken(): Promise<void> {
     if (!this.refreshTokenValue) {
       throw new Error('No refresh token available. Re-authentication required.');
     }
 
-    console.log('=== Refreshing V4 Access Token ===');
+    console.log('=== Refreshing V4 Access Token (OAuth Refresh Flow) ===');
 
     const tokenUrl = 'https://ims-na1.adobelogin.com/ims/token/v3';
     const response = await fetch(tokenUrl, {
@@ -295,21 +375,45 @@ export class FrameioV4Service {
   }
 
   /**
-   * Ensure we have a valid access token, refreshing if necessary.
+   * Ensure we have a valid access token, using S2S first then falling back to OAuth refresh.
    */
   private async ensureValidToken(): Promise<void> {
-    // If token is valid, do nothing
-    if (this.isTokenValid()) {
+    // If token is valid and not expiring soon, do nothing
+    if (this.isTokenValid() && !this.needsRefresh()) {
       return;
     }
 
-    // If token is expired or needs refreshing, attempt to refresh
-    console.log('Access token is expired or needs refreshing, attempting to refresh...');
-    await this.refreshWithLock();
+    console.log('Access token is expired or needs refreshing...');
 
-    // After refresh, check if it was successful
+    // Strategy 1: Try Server-to-Server (client_credentials) flow first
+    // This is the preferred method as it doesn't rely on refresh tokens
+    console.log('🔄 Trying S2S (client_credentials) token generation first...');
+    const s2sSuccess = await this.getAccessTokenViaClientCredentials();
+    
+    if (s2sSuccess && this.isTokenValid()) {
+      console.log('✅ S2S token generation successful - no refresh token needed');
+      return;
+    }
+
+    // Strategy 2: Fall back to OAuth refresh token flow
+    // This is the legacy method that relies on refresh tokens (which can expire)
+    if (this.refreshTokenValue) {
+      console.log('⚠️ S2S not available, falling back to OAuth refresh token flow...');
+      try {
+        await this.refreshWithLock();
+        
+        if (this.accessTokenValue && this.isTokenValid()) {
+          console.log('✅ OAuth refresh successful');
+          return;
+        }
+      } catch (error) {
+        console.error('❌ OAuth refresh failed:', error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    // If we get here, neither method worked
     if (!this.accessTokenValue || !this.isTokenValid()) {
-      throw new Error('Failed to obtain a valid access token after refresh.');
+      throw new Error('Failed to obtain a valid access token. S2S and OAuth refresh both failed. Please check Frame.io credentials.');
     }
   }
 
@@ -340,28 +444,38 @@ export class FrameioV4Service {
       console.log(`Has refresh token: ${!!serviceToken.refreshToken}`);
 
       // Check if token is expired or needs proactive refresh
-      if (!this.isTokenValid()) {
-        console.log('🔄 Service token expired, attempting automatic refresh...');
-        try {
-          await this.refreshWithLock();
-          // Reload the fresh token from storage to ensure consistency
-          const refreshedToken = await storage.getServiceToken('frameio-v4');
-          if (refreshedToken) {
-            this.accessTokenValue = refreshedToken.accessToken;
-            this.tokenExpiresAt = refreshedToken.expiresAt ? new Date(refreshedToken.expiresAt) : null;
+      if (!this.isTokenValid() || this.needsRefresh()) {
+        console.log('🔄 Service token expired or expiring soon, attempting automatic refresh...');
+        
+        // Try S2S first (preferred - no refresh token dependency)
+        console.log('🔄 Trying S2S (client_credentials) token generation...');
+        const s2sSuccess = await this.getAccessTokenViaClientCredentials();
+        
+        if (s2sSuccess && this.isTokenValid()) {
+          console.log('✅ S2S token generation successful on startup');
+        } else if (this.refreshTokenValue) {
+          // Fall back to OAuth refresh if S2S not available
+          console.log('⚠️ S2S not available, trying OAuth refresh...');
+          try {
+            await this.refreshWithLock();
+            // Reload the fresh token from storage to ensure consistency
+            const refreshedToken = await storage.getServiceToken('frameio-v4');
+            if (refreshedToken) {
+              this.accessTokenValue = refreshedToken.accessToken;
+              this.tokenExpiresAt = refreshedToken.expiresAt ? new Date(refreshedToken.expiresAt) : null;
+            }
+            console.log('✅ Service token refreshed via OAuth');
+          } catch (error) {
+            console.log('❌ OAuth refresh also failed:', error instanceof Error ? error.message : String(error));
+            console.log('⚠️ Both S2S and OAuth refresh failed. Frame.io operations may not work.');
+            // Clear potentially invalid tokens if refresh failed
+            this.accessTokenValue = null;
+            this.refreshTokenValue = null;
+            this.tokenExpiresAt = null;
           }
-          console.log('✅ Service token refreshed automatically');
-        } catch (error) {
-          console.log('❌ Failed to refresh token automatically:', error instanceof Error ? error instanceof Error ? error.message : error : String(error));
-          console.log('Manual OAuth re-authentication may be required.');
-          // Clear potentially invalid tokens if refresh failed
-          this.accessTokenValue = null;
-          this.refreshTokenValue = null;
-          this.tokenExpiresAt = null;
+        } else {
+          console.log('⚠️ No refresh token available and S2S failed. Frame.io operations may not work.');
         }
-      } else if (this.needsRefresh()) {
-        console.log('⚠️ Token expires soon - proactively refreshing for uninterrupted service...');
-        await this.refreshWithLock();
       }
 
       // Start proactive refresh monitoring
@@ -375,6 +489,7 @@ export class FrameioV4Service {
 
   /**
    * Start proactive token refresh monitoring
+   * Uses S2S (client_credentials) as primary method, falls back to OAuth refresh
    */
   private startProactiveRefresh(): void {
     // Clear existing timer if any
@@ -385,11 +500,22 @@ export class FrameioV4Service {
     // Check every 5 minutes for token refresh needs
     this.refreshTimer = setInterval(async () => {
       try {
-        // Only refresh if we have a refresh token and it's time to refresh
-        if (this.needsRefresh() && this.refreshTokenValue) {
+        if (this.needsRefresh()) {
           console.log('🔄 Proactive token refresh triggered by monitoring system');
-          await this.refreshWithLock();
-          console.log('✅ Proactive token refresh completed - service continuity maintained');
+          
+          // Try S2S first (preferred - no refresh token dependency)
+          const s2sSuccess = await this.getAccessTokenViaClientCredentials();
+          
+          if (s2sSuccess && this.isTokenValid()) {
+            console.log('✅ Proactive S2S token refresh completed - service continuity maintained');
+          } else if (this.refreshTokenValue) {
+            // Fall back to OAuth refresh
+            console.log('⚠️ S2S not available, trying OAuth refresh...');
+            await this.refreshWithLock();
+            console.log('✅ Proactive OAuth refresh completed');
+          } else {
+            console.log('⚠️ Proactive refresh failed - no S2S and no refresh token');
+          }
         }
       } catch (error) {
         console.error('⚠️ Proactive token refresh failed:', error);
