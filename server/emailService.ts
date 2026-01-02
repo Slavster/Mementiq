@@ -44,14 +44,7 @@ export class EmailService {
       });
 
       if (error) {
-        console.error("❌ Email sending error:", error);
-        console.error("Failed email details:", {
-          from: fromEmail,
-          to: template.to,
-          subject: template.subject,
-          apiKeyExists: !!process.env.RESEND_API_KEY,
-          apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10),
-        });
+        console.error("❌ Email sending error:", error.message);
         throw new Error(`Failed to send email: ${error.message}`);
       }
 
