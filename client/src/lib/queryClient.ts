@@ -59,15 +59,6 @@ export async function apiRequest(
   // Get current Supabase session token
   const { data: { session } } = await supabase.auth.getSession();
   
-  // Log auth state for debugging critical endpoints
-  if (url.includes('/api/projects') || url.includes('/api/subscription') || url.includes('/api/auth/me')) {
-    console.log(`🔐 Auth check for ${method} ${url}:`, {
-      hasSession: !!session,
-      hasToken: !!session?.access_token,
-      tokenExpiry: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A'
-    });
-  }
-  
   const headers: Record<string, string> = {};
   if (body) {
     headers["Content-Type"] = "application/json";
@@ -102,16 +93,6 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     // Get current Supabase session token
     const { data: { session } } = await supabase.auth.getSession();
-    
-    // Log auth state for debugging critical endpoints
-    const url = queryKey[0] as string;
-    if (url.includes('/api/projects') || url.includes('/api/subscription') || url.includes('/api/auth/me')) {
-      console.log(`🔐 Auth check for ${url}:`, {
-        hasSession: !!session,
-        hasToken: !!session?.access_token,
-        tokenExpiry: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A'
-      });
-    }
     
     const headers: Record<string, string> = {};
     if (session?.access_token) {
