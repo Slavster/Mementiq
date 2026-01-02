@@ -74,7 +74,6 @@ async function requireAuth(req: AppRequest, res: AppResponse, next: any) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.log("Missing or invalid auth header:", authHeader);
     return res
       .status(401)
       .json({ success: false, message: "Authentication required" });
