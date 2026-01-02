@@ -42,7 +42,6 @@ export class TrelloService {
     console.log('TRELLO_TOKEN configured:', !!this.token);
     
     if (!this.apiKey || !this.token) {
-      console.error('Missing Trello credentials - API Key:', !!this.apiKey, 'Token:', !!this.token);
       throw new Error('Trello API credentials not configured');
     }
     
