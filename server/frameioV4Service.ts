@@ -336,7 +336,6 @@ export class FrameioV4Service {
       console.log('✅ Centralized service token loaded from database');
       console.log(`Service: ${serviceToken.service}`);
       console.log(`Token expires at: ${serviceToken.expiresAt || 'unknown'}`);
-      console.log(`Has refresh token: ${!!serviceToken.refreshToken}`);
 
       // Check if token is expired or needs proactive refresh
       if (!this.isTokenValid()) {
