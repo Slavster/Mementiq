@@ -629,9 +629,7 @@ export function FrameioUploadInterface({
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  {existingFiles.length > 0
-                    ? "Upload More Files"
-                    : "Upload Files"}
+                  Upload Files
                 </>
               )}
             </Button>
