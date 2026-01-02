@@ -588,6 +588,13 @@ export default function DashboardPage() {
         });
         setShowCreateForm(false);
         setNewProjectTitle("");
+      } else if (data.requiresVerification) {
+        toast({
+          title: "Email Verification Required",
+          description: "Please verify your email address before creating projects. Check your inbox or use the 'Resend Verification Email' button above.",
+          variant: "destructive",
+          duration: 8000,
+        });
       } else if (data.requiresSubscription) {
         toast({
           title: "Subscription Required",
@@ -610,12 +617,23 @@ export default function DashboardPage() {
         });
       }
     },
-    onError: (error) => {
-      toast({
-        title: "Failed to create project",
-        description: `An error occurred: ${error.message || "Please try again."}`,
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      // Check if error is due to verification requirement
+      const errorMessage = error.message || "";
+      if (errorMessage.includes("verify") || errorMessage.includes("verification")) {
+        toast({
+          title: "Email Verification Required",
+          description: "Please verify your email address before creating projects. Check your inbox or use the 'Resend Verification Email' button above.",
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Failed to create project",
+          description: `An error occurred: ${error.message || "Please try again."}`,
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -642,6 +660,7 @@ export default function DashboardPage() {
 
   // Helper function to check if user can create projects
   const canCreateProject = () => {
+    if (!mappedUser.verified) return false;
     if (!subscription) return false;
     if (!subscription.hasActiveSubscription) return false;
     if (subscription.usage >= subscription.allowance) return false;

@@ -106,19 +106,26 @@ export default function AuthPage() {
           variant: "destructive"
         });
       } else {
+        // Show success toast with verification reminder
         toast({
           title: "Account created!",
           description: "Please check your email to verify your account. The verification link expires in 24 hours. Don't forget to check your spam folder!",
           duration: 10000,
         });
-        // Clear form
-        setSignupData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          password: "",
-          company: ""
-        });
+        
+        // If we have a session, redirect to dashboard (user is logged in)
+        if (data?.session) {
+          setLocation('/dashboard');
+        } else {
+          // Clear form if no auto-login (email confirmation required first)
+          setSignupData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            password: "",
+            company: ""
+          });
+        }
       }
     } catch (error: any) {
       toast({
@@ -160,13 +167,13 @@ export default function AuthPage() {
     );
   }
 
-  // Additional check for loading state during Google OAuth
+  // Additional check for loading state during authentication
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
         <div className="text-white text-xl flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          Authenticating with Google...
+          Authenticating...
         </div>
       </div>
     );
