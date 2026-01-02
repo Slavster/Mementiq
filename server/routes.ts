@@ -101,7 +101,7 @@ async function requireAuth(req: AppRequest, res: AppResponse, next: any) {
   next();
 }
 
-// Middleware to check 31-day project access restriction
+// Middleware to check 1-year project access restriction
 async function requireProjectAccess(
   req: AppRequest,
   res: AppResponse,
@@ -132,21 +132,21 @@ async function requireProjectAccess(
       });
     }
 
-    // Check 31-day access restriction
+    // Check 1-year access restriction
     const projectCreatedAt = new Date(project.createdAt);
-    const thirtyOneDaysAfterCreation = new Date(
-      projectCreatedAt.getTime() + 31 * 24 * 60 * 60 * 1000,
+    const oneYearAfterCreation = new Date(
+      projectCreatedAt.getTime() + 365 * 24 * 60 * 60 * 1000,
     );
     const now = new Date();
 
-    if (now > thirtyOneDaysAfterCreation) {
+    if (now > oneYearAfterCreation) {
       return res.status(403).json({
         success: false,
         message:
-          "Project access has expired. You can only manage projects for 31 days after creation.",
+          "Project access has expired. You can only manage projects for 1 year after creation.",
         expired: true,
         createdAt: project.createdAt,
-        expiresAt: thirtyOneDaysAfterCreation.toISOString(),
+        expiresAt: oneYearAfterCreation.toISOString(),
       });
     }
 
