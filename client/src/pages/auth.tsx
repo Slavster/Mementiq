@@ -106,18 +106,7 @@ export default function AuthPage() {
           variant: "destructive"
         });
       } else {
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account before logging in.",
-        });
-        // Clear form
-        setSignupData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          password: "",
-          company: ""
-        });
+        setLocation(`/check-email?email=${encodeURIComponent(signupData.email)}`);
       }
     } catch (error: any) {
       toast({
@@ -159,13 +148,13 @@ export default function AuthPage() {
     );
   }
 
-  // Additional check for loading state during Google OAuth
+  // Additional check for loading state during OAuth
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-secondary via-purple-900 to-primary flex items-center justify-center">
         <div className="text-white text-xl flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          Authenticating with Google...
+          Authenticating...
         </div>
       </div>
     );

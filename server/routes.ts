@@ -2678,6 +2678,105 @@ export async function registerRoutes(app: any): Promise<Server> {
     });
   });
 
+  // Rate limiting for resend verification (in-memory, per email)
+  const resendRateLimits = new Map<string, { count: number; resetAt: number }>();
+  const RESEND_MAX_ATTEMPTS = 5;
+  const RESEND_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+  function cleanupRateLimits() {
+    const now = Date.now();
+    for (const [key, value] of resendRateLimits) {
+      if (now > value.resetAt) {
+        resendRateLimits.delete(key);
+      }
+    }
+  }
+
+  // Cleanup rate limits every 10 minutes
+  setInterval(cleanupRateLimits, 10 * 60 * 1000);
+
+  // Resend verification email (no auth required - user isn't logged in yet)
+  router.post("/api/auth/resend-verification", async (req: AppRequest, res: AppResponse) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: "Email is required",
+        });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Check rate limit
+      const now = Date.now();
+      const rateLimit = resendRateLimits.get(normalizedEmail);
+
+      if (rateLimit) {
+        if (now < rateLimit.resetAt && rateLimit.count >= RESEND_MAX_ATTEMPTS) {
+          const retryAfter = Math.ceil((rateLimit.resetAt - now) / 1000);
+          return res.status(429).json({
+            success: false,
+            message: "Too many requests. Please try again later.",
+            retryAfter,
+          });
+        }
+
+        if (now >= rateLimit.resetAt) {
+          // Reset window
+          resendRateLimits.set(normalizedEmail, {
+            count: 1,
+            resetAt: now + RESEND_WINDOW_MS,
+          });
+        } else {
+          // Increment count
+          rateLimit.count++;
+        }
+      } else {
+        resendRateLimits.set(normalizedEmail, {
+          count: 1,
+          resetAt: now + RESEND_WINDOW_MS,
+        });
+      }
+
+      // Always return success to prevent email enumeration
+      // Actually send the email only if the user exists and is unverified
+      try {
+        const { supabaseAdmin } = await import('./supabase.js');
+        
+        // Try to resend verification email
+        // Supabase will only send if user exists and is unverified
+        const { error } = await supabaseAdmin.auth.resend({
+          type: 'signup',
+          email: normalizedEmail,
+        });
+
+        if (error) {
+          // Log the error but don't reveal it to the user
+          console.log(`Resend verification attempted for ${normalizedEmail}:`, error.message);
+        } else {
+          console.log(`Verification email resent to ${normalizedEmail}`);
+        }
+      } catch (err) {
+        // Log but don't expose internal errors
+        console.error('Resend verification internal error:', err);
+      }
+
+      // Always return success to prevent email enumeration
+      res.json({
+        success: true,
+        message: "If an account exists with this email and is not verified, a new verification link has been sent.",
+      });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({
+        success: false,
+        message: "An error occurred. Please try again later.",
+      });
+    }
+  });
+
   // Email Verification endpoint removed - handled by Supabase
 
   // Get Current User
