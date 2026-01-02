@@ -61,11 +61,22 @@ export default function AuthPage() {
       const { data, error } = await signIn(loginData.email, loginData.password);
       
       if (error) {
-        toast({
-          title: "Login failed",
-          description: error.message,
-          variant: "destructive"
-        });
+        // Check if error is about email not being confirmed
+        const errorMessage = error.message?.toLowerCase() || "";
+        if (errorMessage.includes("email not confirmed") || errorMessage.includes("not confirmed")) {
+          toast({
+            title: "Email verification required",
+            description: "Please check your email and click the verification link before logging in. Check your spam folder if you don't see it!",
+            variant: "destructive",
+            duration: 10000,
+          });
+        } else {
+          toast({
+            title: "Login failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
       } else {
         toast({
           title: "Welcome back!",
@@ -106,18 +117,22 @@ export default function AuthPage() {
           variant: "destructive"
         });
       } else {
-        // Show success toast with verification reminder
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account. The verification link expires in 24 hours. Don't forget to check your spam folder!",
-          duration: 10000,
-        });
-        
         // If we have a session, redirect to dashboard (user is logged in)
         if (data?.session) {
+          toast({
+            title: "Account created!",
+            description: "Welcome! Your account is ready to use.",
+            duration: 5000,
+          });
           setLocation('/dashboard');
         } else {
-          // Clear form if no auto-login (email confirmation required first)
+          // Email confirmation required - show clear instructions
+          toast({
+            title: "Check your email to complete signup!",
+            description: "We've sent a verification link to your email. You must click the link before you can log in. Check your spam folder if you don't see it! The link expires in 24 hours.",
+            duration: 15000,
+          });
+          // Clear form and switch to login tab
           setSignupData({
             firstName: "",
             lastName: "",
