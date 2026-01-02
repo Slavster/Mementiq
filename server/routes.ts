@@ -3754,15 +3754,6 @@ export async function registerRoutes(app: any): Promise<Server> {
     requireAuth,
     async (req: AppRequest, res: AppResponse) => {
       try {
-        // Check email verification before allowing project creation
-        if (!req.user!.verified) {
-          return res.status(403).json({
-            success: false,
-            message: "Please verify your email address before creating projects",
-            requiresVerification: true,
-          });
-        }
-
         // Check subscription status before creating project
         const user = await storage.getUser(req.user!.id);
         if (!user) {
