@@ -34,7 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { signOut, supabase } from "@/lib/supabase";
+import { signOut, supabase, resendVerificationEmail } from "@/lib/supabase";
 import {
   Plus,
   LogOut,
@@ -54,6 +54,8 @@ import {
   RotateCcw,
   ArrowLeft,
   Shield,
+  Mail,
+  Loader2,
 } from "lucide-react";
 
 import TallyFormStep from "@/components/TallyFormStep";
@@ -208,6 +210,9 @@ export default function DashboardPage() {
 
   // Consent popup state
   const [showConsentPopup, setShowConsentPopup] = useState(false);
+  
+  // Verification email resend state
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
 
   // Check for pending revision payments on mount
   useEffect(() => {
@@ -751,6 +756,36 @@ export default function DashboardPage() {
     }
   };
 
+  const handleResendVerificationEmail = async () => {
+    if (!mappedUser.email) return;
+    
+    setIsResendingVerification(true);
+    try {
+      const { error } = await resendVerificationEmail(mappedUser.email);
+      if (error) {
+        toast({
+          title: "Failed to send verification email",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Verification email sent!",
+          description: "Please check your inbox and spam folder. The link expires in 24 hours.",
+          duration: 8000,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Failed to send verification email",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
+
   // Show loading screen while auth is initializing or not ready
   if (authLoading || !authReady) {
     return (
@@ -835,6 +870,42 @@ export default function DashboardPage() {
           </div>
         </div>
       </nav>
+
+      {/* Email Verification Notice */}
+      {!mappedUser.verified && (
+        <div className="bg-yellow-500/10 border-b border-yellow-500/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-yellow-400">
+                <Mail className="h-5 w-5 flex-shrink-0" />
+                <span className="text-sm">
+                  Please verify your email address to secure your account. Check your inbox and spam folder.
+                </span>
+              </div>
+              <Button
+                onClick={handleResendVerificationEmail}
+                disabled={isResendingVerification}
+                variant="outline"
+                size="sm"
+                className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20 hover:border-yellow-400 whitespace-nowrap"
+                data-testid="button-resend-verification"
+              >
+                {isResendingVerification ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Resend Verification Email
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

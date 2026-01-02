@@ -108,7 +108,8 @@ export default function AuthPage() {
       } else {
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account before logging in.",
+          description: "Please check your email to verify your account. The verification link expires in 24 hours. Don't forget to check your spam folder!",
+          duration: 10000,
         });
         // Clear form
         setSignupData({

@@ -91,3 +91,11 @@ export const getCurrentUser = () => {
 export const getSession = () => {
   return supabase.auth.getSession()
 }
+
+export const resendVerificationEmail = async (email: string) => {
+  const { data, error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+  })
+  return { data, error }
+}
