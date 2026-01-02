@@ -166,7 +166,6 @@ export class FrameioV4Service {
     console.log(`Token type: ${tokenData.token_type}`);
     console.log(`Expires in: ${tokenData.expires_in} seconds`);
     console.log(`Expires at: ${this.tokenExpiresAt?.toISOString()}`);
-    console.log(`Has refresh token: ${!!this.refreshTokenValue}`);
   }
 
   /**
