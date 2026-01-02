@@ -24,7 +24,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **Session Management**: Express sessions with PostgreSQL store.
 
 ### Feature Specifications
-- **User Authentication**: Supabase Auth (email/password, Google social login, JWT).
+- **User Authentication**: Supabase Auth (email/password, Google social login, JWT). Includes email verification flow with dedicated `/check-email` page, resend verification with 30-second initial cooldown, exponential backoff (up to 5 minutes), and server-side rate limiting (5 requests/hour per email). No email enumeration leakage.
 - **Subscription Management**: Stripe integration (three-tier model with usage tracking and project creation limits).
 - **Project Management Dashboard**: Comprehensive project lifecycle management (`draft`, `awaiting instructions`, `edit in progress`, `video is ready`, `complete`, `revision in progress`), with automatic status updates.
 - **Video & Photo Upload System**: Frame.io V4 API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Features a centralized, automatically refreshed OAuth token system.
