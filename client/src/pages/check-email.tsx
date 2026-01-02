@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
 import { Mail, Loader2, Clock, AlertCircle, CheckCircle } from "lucide-react";
 
-const INITIAL_COOLDOWN = 30;
+const INITIAL_COOLDOWN = 60; // Match Supabase default 60s cooldown
 const MAX_COOLDOWN = 300;
 const BACKOFF_MULTIPLIER = 2;
 const STORAGE_KEY = "resend_verification_state";
