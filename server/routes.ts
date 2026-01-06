@@ -6522,6 +6522,26 @@ export async function registerRoutes(app: any): Promise<Server> {
   // PROACTIVE TOKEN HEALTH CHECK (for user dashboard visits)
   // =====================================================
 
+  // Helper to send admin notification when user encounters upload service issue
+  const notifyAdminOfUploadIssue = async (reason: string, userEmail?: string) => {
+    try {
+      const adminEmail = getAdminNotificationEmail();
+      if (!adminEmail) return;
+      
+      const baseUrl = getAppBaseUrl();
+      const adminSettingsUrl = `${baseUrl}/admin/settings`;
+      
+      await emailService.sendTokenExpiredAlert(
+        adminEmail,
+        adminSettingsUrl,
+        `User ${userEmail || 'unknown'} encountered upload service issue: ${reason}`
+      );
+      console.log(`📧 Admin notified: user encountered upload issue (${reason})`);
+    } catch (emailError) {
+      console.error('Failed to send admin notification:', emailError);
+    }
+  };
+
   // Trigger proactive token refresh when users visit dashboard
   // This ensures the upload service is ready before they try to upload
   router.post("/api/frameio/ensure-ready", requireAuth, async (req: AppRequest, res: AppResponse) => {
@@ -6550,6 +6570,8 @@ export async function registerRoutes(app: any): Promise<Server> {
           });
         } else {
           console.log(`❌ Proactive token refresh failed: ${refreshResult.error}`);
+          // Notify admin immediately when user hits this issue
+          await notifyAdminOfUploadIssue(`Token refresh failed: ${refreshResult.error}`, req.user?.email);
           // Return 503 Service Unavailable when refresh fails
           return res.status(503).json({
             success: false,
@@ -6573,6 +6595,8 @@ export async function registerRoutes(app: any): Promise<Server> {
       
       // Token is disconnected (needs OAuth)
       console.log(`⚠️ Token disconnected, OAuth required`);
+      // Notify admin immediately when user hits this issue
+      await notifyAdminOfUploadIssue('Token disconnected - OAuth required', req.user?.email);
       // Return 503 Service Unavailable when token is disconnected
       return res.status(503).json({
         success: false,
@@ -6583,6 +6607,9 @@ export async function registerRoutes(app: any): Promise<Server> {
       
     } catch (error) {
       console.error("Error in proactive token check:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Notify admin immediately when user hits this issue
+      await notifyAdminOfUploadIssue(`Error checking token: ${errorMessage}`, req.user?.email);
       // Return 503 Service Unavailable on errors
       return res.status(503).json({
         success: false,

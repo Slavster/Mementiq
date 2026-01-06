@@ -3,7 +3,7 @@ import { emailService } from '../emailService.js';
 import { getAdminNotificationEmail } from '../config/admin.js';
 import { getAppBaseUrl } from '../config/appUrl.js';
 
-const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const SEVEN_DAYS_WARNING = 7;
 const ONE_DAY_WARNING = 1;
 
@@ -133,7 +133,7 @@ export function startTokenKeepAlive(): void {
     return;
   }
   
-  console.log('🚀 Starting Token Keep-Alive service (12-hour cycle)...');
+  console.log('🚀 Starting Token Keep-Alive service (2-hour cycle)...');
   
   setTimeout(() => {
     checkAndRefreshToken().catch(console.error);
@@ -141,7 +141,7 @@ export function startTokenKeepAlive(): void {
   
   keepAliveInterval = setInterval(() => {
     checkAndRefreshToken().catch(console.error);
-  }, TWELVE_HOURS_MS);
+  }, TWO_HOURS_MS);
   
   console.log('✅ Token Keep-Alive service started');
 }
