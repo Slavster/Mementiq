@@ -391,29 +391,7 @@ export class FrameioV4Service {
         }
       } catch (error) {
         console.error('⚠️ Proactive token refresh failed:', error);
-        
-        // Send admin notification on proactive refresh failure
-        try {
-          const { emailService } = await import('./emailService.js');
-          const { getAdminNotificationEmail } = await import('./config/admin.js');
-          const { getAppBaseUrl } = await import('./config/appUrl.js');
-          
-          const adminEmail = getAdminNotificationEmail();
-          if (adminEmail) {
-            const baseUrl = getAppBaseUrl();
-            const adminSettingsUrl = `${baseUrl}/admin/settings`;
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            
-            await emailService.sendTokenExpiredAlert(
-              adminEmail,
-              adminSettingsUrl,
-              `Proactive token refresh failed: ${errorMessage}`
-            );
-            console.log('📧 Admin notified of proactive refresh failure');
-          }
-        } catch (emailError) {
-          console.error('Failed to send admin notification:', emailError);
-        }
+        // Note: No email here - user-triggered checks and 2-hour keep-alive handle notifications
       }
     }, 5 * 60 * 1000); // Check every 5 minutes
 

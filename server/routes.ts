@@ -6522,9 +6522,20 @@ export async function registerRoutes(app: any): Promise<Server> {
   // PROACTIVE TOKEN HEALTH CHECK (for user dashboard visits)
   // =====================================================
 
+  // Rate limiting for admin notifications (max 1 email per hour)
+  let lastUploadIssueEmailSent: Date | null = null;
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+
   // Helper to send admin notification when user encounters upload service issue
   const notifyAdminOfUploadIssue = async (reason: string, userEmail?: string) => {
     try {
+      // Rate limit: only send 1 email per hour
+      const now = new Date();
+      if (lastUploadIssueEmailSent && (now.getTime() - lastUploadIssueEmailSent.getTime()) < ONE_HOUR_MS) {
+        console.log(`⏳ Rate limited: skipping admin notification (last sent ${Math.round((now.getTime() - lastUploadIssueEmailSent.getTime()) / 60000)} min ago)`);
+        return;
+      }
+
       const adminEmail = getAdminNotificationEmail();
       if (!adminEmail) return;
       
@@ -6536,6 +6547,8 @@ export async function registerRoutes(app: any): Promise<Server> {
         adminSettingsUrl,
         `User ${userEmail || 'unknown'} encountered upload service issue: ${reason}`
       );
+      
+      lastUploadIssueEmailSent = now;
       console.log(`📧 Admin notified: user encountered upload issue (${reason})`);
     } catch (emailError) {
       console.error('Failed to send admin notification:', emailError);
