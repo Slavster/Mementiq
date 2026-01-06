@@ -57,6 +57,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
+// Prevent browser caching of API responses to avoid stale data issues
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Apply JSON parsing to all routes except webhook endpoints that need raw bodies
 app.use((req, res, next) => {
   // Skip JSON parsing for webhook endpoints that need raw body for signature verification
