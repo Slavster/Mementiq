@@ -6519,6 +6519,81 @@ export async function registerRoutes(app: any): Promise<Server> {
   );
 
   // =====================================================
+  // PROACTIVE TOKEN HEALTH CHECK (for user dashboard visits)
+  // =====================================================
+
+  // Trigger proactive token refresh when users visit dashboard
+  // This ensures the upload service is ready before they try to upload
+  router.post("/api/frameio/ensure-ready", requireAuth, async (req: AppRequest, res: AppResponse) => {
+    try {
+      console.log(`🔄 User ${req.user?.id} triggered proactive token health check`);
+      
+      // Load the service account token (this will attempt refresh if needed)
+      await frameioV4Service.loadServiceAccountToken();
+      
+      // Get current status
+      const tokenStatus = frameioV4Service.getTokenStatus();
+      
+      // If token is expired or expiring soon, try to refresh it
+      if (tokenStatus.status === 'expired' || tokenStatus.status === 'expiring_soon') {
+        console.log(`⚠️ Token status: ${tokenStatus.status}, attempting proactive refresh...`);
+        const refreshResult = await frameioV4Service.manualRefresh();
+        
+        if (refreshResult.success) {
+          console.log(`✅ Proactive token refresh successful for user ${req.user?.id}`);
+          const newStatus = frameioV4Service.getTokenStatus();
+          return res.json({
+            success: true,
+            uploadServiceReady: true,
+            status: newStatus.status,
+            message: "Upload service is ready"
+          });
+        } else {
+          console.log(`❌ Proactive token refresh failed: ${refreshResult.error}`);
+          // Return 503 Service Unavailable when refresh fails
+          return res.status(503).json({
+            success: false,
+            uploadServiceReady: false,
+            status: 'refresh_failed',
+            message: "Upload service is temporarily unavailable. Please try again later."
+          });
+        }
+      }
+      
+      // Token is connected and healthy
+      if (tokenStatus.status === 'connected') {
+        console.log(`✅ Token healthy for user ${req.user?.id}`);
+        return res.json({
+          success: true,
+          uploadServiceReady: true,
+          status: tokenStatus.status,
+          message: "Upload service is ready"
+        });
+      }
+      
+      // Token is disconnected (needs OAuth)
+      console.log(`⚠️ Token disconnected, OAuth required`);
+      // Return 503 Service Unavailable when token is disconnected
+      return res.status(503).json({
+        success: false,
+        uploadServiceReady: false,
+        status: tokenStatus.status,
+        message: "Upload service is temporarily unavailable. Our team has been notified."
+      });
+      
+    } catch (error) {
+      console.error("Error in proactive token check:", error);
+      // Return 503 Service Unavailable on errors
+      return res.status(503).json({
+        success: false,
+        uploadServiceReady: false,
+        status: 'error',
+        message: "Unable to verify upload service status. Please try again later."
+      });
+    }
+  });
+
+  // =====================================================
   // ADMIN API ENDPOINTS
   // =====================================================
 

@@ -90,6 +90,8 @@ export function FrameioUploadInterface({
   const [existingFiles, setExistingFiles] = useState<ExistingFile[]>([]);
   const [existingFileCount, setExistingFileCount] = useState(0);
   const [existingStorageUsed, setExistingStorageUsed] = useState(0);
+  const [uploadServiceReady, setUploadServiceReady] = useState<boolean | null>(null);
+  const [uploadServiceMessage, setUploadServiceMessage] = useState<string>("");
   const { toast } = useToast();
 
   // Format file size for display
@@ -101,7 +103,7 @@ export function FrameioUploadInterface({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // Check folder structure on component mount
+  // Check upload service status and folder structure on component mount
   React.useEffect(() => {
     console.log(
       `🟢 COMPONENT: FrameioUploadInterface mounted for project ${project.id}`,
@@ -109,6 +111,56 @@ export function FrameioUploadInterface({
     console.log(
       `🟢 COMPONENT: Initial folder setup status: ${folderSetupStatus}`,
     );
+    
+    // Check upload service health before allowing uploads
+    const checkUploadService = async () => {
+      try {
+        const session = await supabase.auth.getSession();
+        if (!session.data.session?.access_token) {
+          setUploadServiceReady(false);
+          setUploadServiceMessage("Please log in to upload files.");
+          return;
+        }
+
+        const response = await fetch("/api/frameio/ensure-ready", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.data.session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        // Handle non-JSON responses
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          console.error("Upload service check returned non-JSON response");
+          setUploadServiceReady(false);
+          setUploadServiceMessage(
+            "Upload service is temporarily unavailable. Please log out, refresh the page (Ctrl+Shift+R), and log back in."
+          );
+          return;
+        }
+
+        const data = await response.json();
+        // Handle both 200 and non-200 responses (503 will have uploadServiceReady: false)
+        setUploadServiceReady(data.uploadServiceReady ?? false);
+        setUploadServiceMessage(data.message || "");
+        
+        if (!data.uploadServiceReady) {
+          console.log("⚠️ Upload service not ready:", data.message);
+        }
+      } catch (error) {
+        console.error("Error checking upload service:", error);
+        // Treat network errors as service unavailable - block uploads to prevent confusing errors
+        setUploadServiceReady(false);
+        setUploadServiceMessage(
+          "Unable to verify upload service. Please log out, refresh the page (Ctrl+Shift+R), and log back in."
+        );
+      }
+    };
+
+    checkUploadService();
+    
     // Run folder structure check silently in background without showing loading popup
     checkFolderStructure();
   }, [project.id]);
@@ -139,6 +191,14 @@ export function FrameioUploadInterface({
       });
 
       console.log(`🔵 CLIENT: Response status: ${response.status}`);
+      
+      // Safely handle non-JSON responses (e.g., HTML error pages)
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error(`🔴 CLIENT: Non-JSON response received (${contentType})`);
+        return; // Silently fail for background check
+      }
+      
       const result = await response.json();
       console.log(`🔵 CLIENT: Response data:`, result);
 
@@ -286,9 +346,28 @@ export function FrameioUploadInterface({
 
       clearInterval(progressInterval);
 
+      // Safely check content type before parsing JSON
+      const contentType = response.headers.get("content-type");
+      const isJson = contentType && contentType.includes("application/json");
+
       if (!response.ok) {
+        // Handle non-JSON error responses (e.g., HTML error pages)
+        if (!isJson) {
+          console.error("Upload failed with non-JSON response:", response.status);
+          throw new Error(
+            "Upload service is temporarily unavailable. Please log out, refresh the page (Ctrl+Shift+R), and log back in. If the issue persists, please try again later."
+          );
+        }
         const errorData = await response.json();
         throw new Error(errorData.message || "Upload failed");
+      }
+
+      // Handle non-JSON success responses (shouldn't happen but be safe)
+      if (!isJson) {
+        console.error("Upload succeeded but returned non-JSON response");
+        throw new Error(
+          "Upload completed but received unexpected response. Please refresh the page and check your uploads."
+        );
       }
 
       const result = await response.json();
@@ -329,6 +408,16 @@ export function FrameioUploadInterface({
   };
 
   const startUpload = async () => {
+    // Defense in depth: Block uploads if service isn't ready
+    if (uploadServiceReady !== true) {
+      toast({
+        title: "Upload service unavailable",
+        description: "Please refresh the page and try again. If the issue persists, log out and log back in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (files.length === 0) {
       toast({
         title: "No files selected",
@@ -423,6 +512,58 @@ export function FrameioUploadInterface({
             <Button variant="outline" onClick={checkFolderStructure}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry Setup
+            </Button>
+            <Button variant="ghost" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show loading while checking upload service status
+  if (uploadServiceReady === null) {
+    console.log(
+      `🟡 UI: Checking upload service status for project ${project.id}`,
+    );
+    return (
+      <Card className="bg-cyan-500/10 border-cyan-500/30">
+        <CardContent className="p-6 text-center">
+          <RefreshCw className="h-12 w-12 text-cyan-500 mx-auto mb-4 animate-spin" />
+          <h3 className="text-lg font-semibold text-cyan-500 mb-2">
+            Preparing Upload Service
+          </h3>
+          <p className="text-gray-400">
+            Checking upload service status. This should only take a moment.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show message if upload service is not ready
+  if (uploadServiceReady === false) {
+    console.log(
+      `🔴 UI: Showing "Upload Service Unavailable" screen for project ${project.id}`,
+    );
+    return (
+      <Card className="bg-yellow-500/10 border-yellow-500/30">
+        <CardContent className="p-6 text-center">
+          <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-yellow-500 mb-2">
+            Upload Service Temporarily Unavailable
+          </h3>
+          <p className="text-gray-400 mb-4">
+            {uploadServiceMessage || "The upload service is being prepared. Please try again in a few moments."}
+          </p>
+          <p className="text-gray-500 text-sm mb-4">
+            If this persists, please try: logging out, refreshing the page (Ctrl+Shift+R or Cmd+Shift+R), and logging back in.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Page
             </Button>
             <Button variant="ghost" onClick={onCancel}>
               Cancel

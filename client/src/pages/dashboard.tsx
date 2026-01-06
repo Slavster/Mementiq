@@ -209,6 +209,63 @@ export default function DashboardPage() {
   // Consent popup state
   const [showConsentPopup, setShowConsentPopup] = useState(false);
 
+  // Upload service status
+  const [uploadServiceReady, setUploadServiceReady] = useState<boolean | null>(null);
+  const [uploadServiceMessage, setUploadServiceMessage] = useState<string>("");
+
+  // Proactive token refresh when user visits dashboard
+  // This ensures Frame.io token is valid before they try to upload
+  useEffect(() => {
+    const ensureUploadServiceReady = async () => {
+      if (!isAuthenticated || !authReady) return;
+      
+      try {
+        console.log("🔄 Dashboard: Proactively checking upload service status...");
+        const session = await supabase.auth.getSession();
+        if (!session.data.session?.access_token) return;
+
+        const response = await fetch("/api/frameio/ensure-ready", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.data.session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        // Handle non-JSON responses gracefully
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          console.error("🔴 Upload service check returned non-JSON response");
+          setUploadServiceReady(false);
+          setUploadServiceMessage("Upload service is temporarily unavailable. Please try again later.");
+          return;
+        }
+
+        const data = await response.json();
+        console.log("📊 Upload service status:", data);
+        
+        // Handle both 200 and non-200 responses (503 will have uploadServiceReady: false)
+        setUploadServiceReady(data.uploadServiceReady ?? false);
+        setUploadServiceMessage(data.message || "");
+        
+        if (data.uploadServiceReady) {
+          console.log("✅ Upload service is ready");
+        } else {
+          console.log("⚠️ Upload service not ready:", data.message);
+        }
+      } catch (error) {
+        console.error("Error checking upload service:", error);
+        // Treat errors as service unavailable 
+        setUploadServiceReady(false);
+        setUploadServiceMessage(
+          "Unable to verify upload service. Please refresh the page or try again later."
+        );
+      }
+    };
+
+    ensureUploadServiceReady();
+  }, [isAuthenticated, authReady]);
+
   // Check for pending revision payments on mount
   useEffect(() => {
     let pollCount = 0;
