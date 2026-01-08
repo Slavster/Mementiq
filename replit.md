@@ -6,6 +6,7 @@ Mementiq is a full-stack web application designed as a professional video editin
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Design Standard: NEVER use blue colors anywhere in the app - all blue instances must be cyan (hsl(180, 85%, 55%)). This is a permanent design requirement.
+Frame.io API: **CRITICAL - Use Frame.io V4 API ONLY. Never reference or use V2 API.** All Frame.io integration must use V4 endpoints exclusively.
 
 ## System Architecture
 
