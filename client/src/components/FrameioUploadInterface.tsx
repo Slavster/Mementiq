@@ -3,6 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   Upload,
@@ -92,7 +102,18 @@ export function FrameioUploadInterface({
   const [existingStorageUsed, setExistingStorageUsed] = useState(0);
   const [uploadServiceReady, setUploadServiceReady] = useState<boolean | null>(null);
   const [uploadServiceMessage, setUploadServiceMessage] = useState<string>("");
+  const [showStagedFilesWarning, setShowStagedFilesWarning] = useState(false);
   const { toast } = useToast();
+
+  const pendingFilesCount = files.filter((f) => f.status === "pending").length;
+
+  const handleContinueClick = () => {
+    if (pendingFilesCount > 0) {
+      setShowStagedFilesWarning(true);
+    } else {
+      onUploadComplete();
+    }
+  };
 
   // Format file size for display
   const formatFileSize = (bytes: number) => {
@@ -797,14 +818,41 @@ export function FrameioUploadInterface({
             </div>
           )}
 
+          {/* Staged files warning dialog */}
+          <AlertDialog open={showStagedFilesWarning} onOpenChange={setShowStagedFilesWarning}>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-700">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">
+                  You have staged files that haven't been uploaded
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-gray-400">
+                  You have {pendingFilesCount} file{pendingFilesCount > 1 ? 's' : ''} staged that {pendingFilesCount > 1 ? 'have' : 'has'}n't been uploaded yet. 
+                  If you continue, {pendingFilesCount > 1 ? 'these files' : 'this file'} will not be included in your project.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-zinc-800 border-zinc-600 text-white hover:bg-zinc-700">
+                  Go Back & Upload
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onUploadComplete}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  Continue Without Uploading
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           {/* Action buttons */}
           <div className="flex gap-3 pt-4">
             {/* Show "Continue to Next Step" if existing files are present */}
             {existingFiles.length > 0 && (
               <Button
-                onClick={onUploadComplete}
+                onClick={handleContinueClick}
                 className="flex-1 bg-green-600 hover:bg-green-700"
                 disabled={isUploading}
+                data-testid="button-continue-next-step"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Continue to Next Step
