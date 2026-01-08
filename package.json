@@ -324,7 +324,7 @@
     "postgres-date": "^2.1.0",
     "postgres-interval": "^3.0.0",
     "postgres-range": "^1.1.4",
-    "preact": "^10.27.0",
+    "preact": "^10.28.2",
     "prettier": "^3.6.2",
     "pretty-bytes": "^6.1.1",
     "prop-types": "^15.8.1",
