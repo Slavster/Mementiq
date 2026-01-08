@@ -5789,10 +5789,10 @@ export async function registerRoutes(app: any): Promise<Server> {
         );
 
         // Save file record
-        const fileRecord = await storage.createProjectFile(projectId, {
+        const fileRecord = await storage.createProjectFile({
+          projectId: projectId,
           mediaAssetId: videoUri.replace("/videos/", ""),
           filename: fileName,
-
           fileType: "video",
           fileSize: fileSize || 0,
         });
