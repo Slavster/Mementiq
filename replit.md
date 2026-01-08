@@ -27,7 +27,7 @@ Design Standard: NEVER use blue colors anywhere in the app - all blue instances 
 - **User Authentication**: Supabase Auth (email/password, Google social login, JWT). Includes email verification flow with dedicated `/check-email` page, resend verification with 60-second initial cooldown, exponential backoff (up to 5 minutes), and server-side rate limiting (5 requests/hour per email). No email enumeration leakage.
 - **Subscription Management**: Stripe integration (three-tier model with usage tracking and project creation limits).
 - **Project Management Dashboard**: Comprehensive project lifecycle management (`draft`, `awaiting instructions`, `edit in progress`, `video is ready`, `complete`, `revision in progress`), with automatic status updates.
-- **Video & Photo Upload System**: Frame.io V4 API for direct client uploads (TUS protocol), media management, review link generation, and hierarchical folder structures (User -> Project). Features a centralized, automatically refreshed OAuth token system.
+- **Video & Photo Upload System**: Frame.io V4 API for direct client uploads using pre-signed S3 URLs (chunked upload flow). Files are uploaded directly from browser to S3, bypassing server/Cloudflare limits (supports up to 5TB files). Uses parallel chunk uploads (5 concurrent) for performance. Features centralized, automatically refreshed OAuth token system.
 - **Tally Form Integration**: Mandatory for editing instructions.
 - **Video Delivery Detection**: Automatic background service detects new video uploads, transitions projects to "Video is Ready", and sends notifications.
 - **Public Share Creation**: Frame.io V4 public share system with intelligent share reuse. Share links are generated once during "Video is Ready" and expire after 30 days.

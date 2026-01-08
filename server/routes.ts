@@ -5625,6 +5625,101 @@ export async function registerRoutes(app: any): Promise<Server> {
     },
   );
 
+  // Create direct S3 upload session (V4 flow - returns pre-signed URLs for client-side upload)
+  // This bypasses server/Cloudflare limits by uploading directly to Frame.io S3
+  router.post(
+    "/api/projects/:id/direct-upload",
+    requireAuth,
+    requireProjectAccess,
+    async (req: AppRequest, res: AppResponse) => {
+      try {
+        // Check Frame.io token status before attempting upload
+        const tokenStatus = frameioV4Service.getTokenStatus();
+        if (tokenStatus.status === 'disconnected' || tokenStatus.status === 'expired') {
+          console.log('❌ Direct upload blocked: Frame.io token is', tokenStatus.status);
+          return res.status(503).json({
+            success: false,
+            message: "Upload service is temporarily unavailable. Please try again later.",
+            retryable: true,
+          });
+        }
+
+        const projectId = Number(req.params.id);
+        const { fileName, fileSize, mimeType } = req.body;
+
+        if (!fileName || !fileSize) {
+          return res.status(400).json({
+            success: false,
+            message: "fileName and fileSize are required",
+          });
+        }
+
+        // Get project and verify ownership
+        const project = await storage.getProject(projectId);
+        if (!project) {
+          return res.status(404).json({
+            success: false,
+            message: "Project not found",
+          });
+        }
+
+        if (project.userId !== req.user!.id) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied",
+          });
+        }
+
+        // Check if project has a media folder
+        if (!project.mediaFolderId) {
+          return res.status(400).json({
+            success: false,
+            message: "Project does not have a media folder configured. Please contact support.",
+          });
+        }
+
+        // Check size limits (10GB per project)
+        const maxSize = 10 * 1024 * 1024 * 1024; // 10GB
+        const currentSize = await getProjectUploadSize(projectId);
+
+        if (currentSize + fileSize > maxSize) {
+          return res.status(400).json({
+            success: false,
+            message: `Upload would exceed 10GB limit for this project. Current: ${Math.round(currentSize / 1024 / 1024)}MB, Requested: ${Math.round(fileSize / 1024 / 1024)}MB`,
+          });
+        }
+
+        console.log(`📤 Creating direct upload session for "${fileName}" (${Math.round(fileSize / 1024 / 1024)}MB)`);
+
+        // Get the pre-signed S3 URLs from Frame.io
+        const uploadData = await frameioV4Service.createFileForDirectUpload(
+          fileName,
+          fileSize,
+          project.mediaFolderId,
+          mimeType || "video/mp4"
+        );
+
+        console.log(`✅ Direct upload ready: ${uploadData.totalParts} parts, chunk size ${Math.round(uploadData.chunkSize / 1024 / 1024)}MB`);
+
+        res.json({
+          success: true,
+          assetId: uploadData.assetId,
+          uploadUrls: uploadData.uploadUrls,
+          chunkSize: uploadData.chunkSize,
+          totalParts: uploadData.totalParts,
+          mimeType: mimeType || "video/mp4",
+        });
+      } catch (error) {
+        console.error("Create direct upload session error:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        res.status(500).json({
+          success: false,
+          message: `Failed to create upload session: ${errorMessage}`,
+        });
+      }
+    },
+  );
+
   // Complete direct media platform upload
   router.post(
     "/api/projects/:id/complete-upload",
@@ -6410,111 +6505,18 @@ export async function registerRoutes(app: any): Promise<Server> {
     },
   );
 
-  // Frame.io video upload endpoint for direct uploads
+  // Legacy Frame.io upload endpoint (DEPRECATED - now uses direct S3 upload)
+  // This endpoint is no longer used as files are uploaded directly to S3 to bypass size limits
   router.post(
     "/api/upload/frameio",
     requireAuth,
-    upload.single("file"),
     async (req: AppRequest, res: AppResponse) => {
-      try {
-        if (!req.file) {
-          return res.status(400).json({
-            success: false,
-            message: "No file provided",
-          });
-        }
-
-        const { projectId } = req.body;
-        if (!projectId) {
-          return res.status(400).json({
-            success: false,
-            message: "Project ID required",
-          });
-        }
-
-        // Verify project exists and user owns it
-        const project = await storage.getProject(Number(projectId));
-        if (!project) {
-          return res.status(404).json({
-            success: false,
-            message: "Project not found",
-          });
-        }
-
-        if (project.userId !== req.user!.id) {
-          return res.status(403).json({
-            success: false,
-            message: "Access denied",
-          });
-        }
-
-        // Check file size (10GB limit)
-        const maxFileSize = 10 * 1024 * 1024 * 1024; // 10GB
-        if (req.file.size > maxFileSize) {
-          return res.status(413).json({
-            success: false,
-            message: "File too large. Maximum size is 10GB.",
-          });
-        }
-
-        await frameioV4Service.loadServiceAccountToken();
-
-        // Ensure folder structure exists
-        const userFolder = await frameioV4Service.getUserFolder(req.user!.id);
-        const projectFolder = await frameioV4Service.createProjectFolder(
-          userFolder.id,
-          project.title,
-          project.id,
-        );
-
-        // Upload file to Frame.io
-        console.log(
-          `📤 Uploading file ${req.file.originalname} to Frame.io folder ${projectFolder.id}`,
-        );
-        const uploadResult = await frameioV4Service.uploadFile(
-          req.file.buffer,
-          req.file.originalname,
-          projectFolder.id,
-          req.file.mimetype,
-        );
-
-        const frameioId = uploadResult.id;
-
-        // Store file record in database
-        const parsedProjectId = parseInt(projectId, 10);
-        if (isNaN(parsedProjectId)) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid project ID",
-          });
-        }
-
-        const projectFile = await storage.createProjectFile({
-          projectId: parsedProjectId,
-          mediaAssetId: frameioId,
-          mediaAssetUrl: uploadResult.url,
-          filename: uploadResult.name,
-          fileType: req.file.mimetype || "application/octet-stream",
-          fileSize: req.file.size,
-        });
-
-        res.json({
-          success: true,
-          message: "File uploaded successfully to Frame.io V4",
-          frameioId: frameioId,
-          frameioUrl: uploadResult.url,
-          fileId: projectFile.id,
-          projectFile,
-          frameioStatus: uploadResult.status,
-          uploadPartsCount: uploadResult.upload_urls_count,
-        });
-      } catch (error) {
-        console.error("Frame.io upload error:", error);
-        res.status(500).json({
-          success: false,
-          message: "Upload failed",
-        });
-      }
+      console.log("⚠️ Legacy /api/upload/frameio endpoint called - this is deprecated");
+      return res.status(410).json({
+        success: false,
+        message: "This upload method is no longer supported. Please refresh the page to use the new direct upload system which supports larger files.",
+        migration: "Use /api/projects/:id/direct-upload endpoint for direct S3 uploads",
+      });
     },
   );
 

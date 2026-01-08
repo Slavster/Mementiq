@@ -318,59 +318,118 @@ export function FrameioUploadInterface({
         ),
       );
 
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append("file", uploadFile.file);
-      formData.append("filename", uploadFile.file.name);
-      formData.append("projectId", project.id.toString());
-
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id && f.status === "uploading"
-              ? { ...f, progress: Math.min(f.progress + 10, 90) }
-              : f,
-          ),
-        );
-      }, 200);
-
-      // Upload to Frame.io via our backend
-      const response = await fetch("/api/upload/frameio", {
+      // Step 1: Get direct upload URLs from our server
+      console.log(`📤 Getting direct upload URLs for ${uploadFile.file.name} (${Math.round(uploadFile.file.size / 1024 / 1024)}MB)`);
+      
+      const sessionResponse = await fetch(`/api/projects/${project.id}/direct-upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session.data.session.access_token}`,
+          "Content-Type": "application/json",
         },
-        body: formData,
+        body: JSON.stringify({
+          fileName: uploadFile.file.name,
+          fileSize: uploadFile.file.size,
+          mimeType: uploadFile.file.type || "video/mp4",
+        }),
       });
 
-      clearInterval(progressInterval);
-
-      // Safely check content type before parsing JSON
-      const contentType = response.headers.get("content-type");
+      const contentType = sessionResponse.headers.get("content-type");
       const isJson = contentType && contentType.includes("application/json");
 
-      if (!response.ok) {
-        // Handle non-JSON error responses (e.g., HTML error pages)
+      if (!sessionResponse.ok) {
         if (!isJson) {
-          console.error("Upload failed with non-JSON response:", response.status);
+          console.error("Direct upload session failed with non-JSON response:", sessionResponse.status);
           throw new Error(
-            "Upload service is temporarily unavailable. Please log out, refresh the page (Ctrl+Shift+R), and log back in. If the issue persists, please try again later."
+            "Upload service is temporarily unavailable. Please log out, refresh the page (Ctrl+Shift+R), and log back in."
           );
         }
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Upload failed");
+        const errorData = await sessionResponse.json();
+        throw new Error(errorData.message || "Failed to start upload");
       }
 
-      // Handle non-JSON success responses (shouldn't happen but be safe)
-      if (!isJson) {
-        console.error("Upload succeeded but returned non-JSON response");
-        throw new Error(
-          "Upload completed but received unexpected response. Please refresh the page and check your uploads."
+      const uploadData = await sessionResponse.json();
+      if (!uploadData.success || !uploadData.uploadUrls) {
+        throw new Error("Failed to get upload URLs from server");
+      }
+
+      console.log(`✅ Got ${uploadData.totalParts} upload URLs, chunk size: ${Math.round(uploadData.chunkSize / 1024 / 1024)}MB`);
+
+      // Step 2: Upload chunks directly to S3 (parallel uploads for speed)
+      const { uploadUrls, chunkSize, assetId, mimeType } = uploadData;
+      const file = uploadFile.file;
+      const totalParts = uploadUrls.length;
+      let completedParts = 0;
+
+      // Upload chunks with parallel uploads (max 5 concurrent)
+      const MAX_CONCURRENT = 5;
+      const uploadChunk = async (index: number, url: string) => {
+        const start = index * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
+        const chunk = file.slice(start, end);
+
+        console.log(`📦 Uploading chunk ${index + 1}/${totalParts} (${Math.round(chunk.size / 1024)}KB)`);
+
+        const response = await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Content-Type": mimeType,
+            "x-amz-acl": "private",
+          },
+          body: chunk,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Chunk ${index + 1} upload failed: ${response.status} - ${errorText}`);
+        }
+
+        completedParts++;
+        const progress = Math.round((completedParts / totalParts) * 95); // Reserve 5% for completion
+
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === uploadFile.id
+              ? { ...f, progress }
+              : f,
+          ),
         );
+
+        console.log(`✅ Chunk ${index + 1}/${totalParts} uploaded (${progress}%)`);
+      };
+
+      // Upload in batches for parallel execution
+      for (let i = 0; i < uploadUrls.length; i += MAX_CONCURRENT) {
+        const batch = uploadUrls.slice(i, i + MAX_CONCURRENT);
+        const batchPromises = batch.map((url: string, batchIndex: number) => 
+          uploadChunk(i + batchIndex, url)
+        );
+        await Promise.all(batchPromises);
       }
 
-      const result = await response.json();
+      // Step 3: Complete the upload on our server
+      console.log(`🔄 Completing upload for asset ${assetId}...`);
+      
+      const completeResponse = await fetch(`/api/projects/${project.id}/complete-upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.data.session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          videoUri: assetId,
+          fileName: uploadFile.file.name,
+          fileSize: uploadFile.file.size,
+        }),
+      });
+
+      if (!completeResponse.ok) {
+        const errorData = await completeResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to complete upload");
+      }
+
+      const result = await completeResponse.json();
+      console.log(`✅ Upload complete: ${uploadFile.file.name}`);
 
       // Update file status to complete
       setFiles((prev) =>
@@ -380,7 +439,7 @@ export function FrameioUploadInterface({
                 ...f,
                 status: "complete" as const,
                 progress: 100,
-                frameioId: result.frameioId,
+                frameioId: assetId,
               }
             : f,
         ),

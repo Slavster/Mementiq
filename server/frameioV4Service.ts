@@ -2029,6 +2029,82 @@ export class FrameioV4Service {
   }
 
   /**
+   * Create file placeholder for direct browser upload (V4 flow)
+   * Returns the pre-signed S3 upload URLs for client-side chunked upload
+   * This allows large files (up to 5TB) to bypass server/Cloudflare limits
+   */
+  async createFileForDirectUpload(filename: string, filesize: number, folderId: string, mimeType: string): Promise<{
+    assetId: string;
+    uploadUrls: string[];
+    chunkSize: number;
+    totalParts: number;
+  }> {
+    await this.initialize();
+
+    try {
+      console.log(`=== V4 Direct Upload Setup: ${filename} to folder ${folderId} ===`);
+      console.log(`File size: ${filesize} bytes, MIME type: ${mimeType}`);
+
+      // Get account ID for the correct V4 endpoint structure
+      const accounts = await this.getAccounts();
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new Error('No Frame.io accounts found');
+      }
+      const accountId = accounts.data[0].id;
+
+      // Create file placeholder using correct V4 endpoint
+      const createFileEndpoint = `/accounts/${accountId}/folders/${folderId}/files`;
+      console.log(`Creating file placeholder via: POST ${createFileEndpoint}`);
+
+      const fileData = await this.makeRequest('POST', createFileEndpoint, {
+        data: {
+          name: filename,
+          media_type: mimeType,
+          file_size: filesize
+        }
+      });
+
+      console.log(`V4 File placeholder created: ${fileData.data.name} (${fileData.data.id})`);
+
+      // Extract upload URLs
+      if (!fileData.data.upload_urls || fileData.data.upload_urls.length === 0) {
+        throw new Error('Frame.io did not return upload URLs');
+      }
+
+      console.log(`Upload URLs provided: ${fileData.data.upload_urls.length} parts`);
+
+      // Extract actual URLs from the upload_urls objects
+      const uploadUrls = fileData.data.upload_urls.map((urlObj: any) => {
+        if (typeof urlObj === 'string') {
+          return urlObj;
+        } else if (urlObj.url) {
+          return urlObj.url;
+        } else if (urlObj.upload_url) {
+          return urlObj.upload_url;
+        } else {
+          console.log(`Unexpected URL object structure:`, urlObj);
+          return Object.values(urlObj)[0];
+        }
+      });
+
+      // Calculate chunk size
+      const chunkSize = Math.ceil(filesize / uploadUrls.length);
+
+      console.log(`Direct upload ready: ${uploadUrls.length} parts, ${chunkSize} bytes per chunk`);
+
+      return {
+        assetId: fileData.data.id,
+        uploadUrls,
+        chunkSize,
+        totalParts: uploadUrls.length
+      };
+    } catch (error) {
+      console.error(`Failed to create V4 direct upload for "${filename}":`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Upload file to Frame.io V4 using correct Adobe Developer API flow
    * 1. Create file placeholder in folder to get pre-signed upload URLs
    * 2. Upload file data to the pre-signed URLs
