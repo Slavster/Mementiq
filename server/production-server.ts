@@ -137,7 +137,7 @@ async function startProductionServer() {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' data: https://fonts.gstatic.com https://r2cdn.perplexity.ai",
-      "connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://*.supabase.co https://api.frame.io https://*.frame.io wss://*.supabase.co https://api.trello.com https://fonts.googleapis.com https://fonts.gstatic.com https://tally.so https://*.tally.so",
+      "connect-src 'self' https://api.stripe.com https://checkout.stripe.com https://*.supabase.co https://api.frame.io https://*.frame.io https://*.s3-accelerate.amazonaws.com wss://*.supabase.co https://api.trello.com https://fonts.googleapis.com https://fonts.gstatic.com https://tally.so https://*.tally.so",
       "frame-src https://js.stripe.com https://checkout.stripe.com https://*.frame.io https://tally.so https://*.tally.so",
       "media-src 'self' blob: https://*.frame.io https://*.frameio.com https://media.mementiq.co",
       "object-src 'none'",
