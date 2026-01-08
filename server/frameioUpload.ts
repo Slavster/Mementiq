@@ -21,7 +21,8 @@ export interface FrameioUploadResponse {
   type: string;
   filetype?: string;
   filesize?: number;
-  parent_id: string;
+  parent_id: string | null;
+  status?: string;  // Frame.io processing status: 'uploading', 'transcoding', 'transcoded', etc.
   upload_completed_at?: string;
   download_url?: string;
   stream_url?: string;
@@ -120,7 +121,10 @@ export async function completeFrameioUpload(
     }
     
     const status = asset.status;
+    const assetParentId = asset.parent_id;
     console.log(`Asset status: ${status}`);
+    console.log(`Asset parent_id: ${assetParentId}`);
+    console.log(`Expected project folder: ${projectFolderId}`);
     
     // Valid statuses after upload: 'uploading', 'transcoding', 'transcoded', 'complete'
     // Invalid status: 'created' means chunks were never uploaded
@@ -128,9 +132,21 @@ export async function completeFrameioUpload(
       throw new Error(`Upload incomplete: asset status is 'created'. The file chunks may not have been uploaded successfully. Please try uploading the file again.`);
     }
     
-    console.log(`✅ Asset verified with status: ${status}`);
+    // STEP 3: Verify folder hierarchy - asset must be in the correct project folder
+    if (projectFolderId && assetParentId) {
+      if (assetParentId !== projectFolderId) {
+        console.error(`❌ Folder hierarchy validation failed!`);
+        console.error(`Asset parent: ${assetParentId}, Expected: ${projectFolderId}`);
+        throw new Error(`Upload validation failed: Asset is not in the correct project folder. Expected folder ${projectFolderId}, but asset is in ${assetParentId}.`);
+      }
+      console.log(`✅ Folder hierarchy verified: asset is in correct project folder`);
+    } else if (projectFolderId && !assetParentId) {
+      console.warn(`⚠️ Could not verify folder hierarchy: asset has no parent_id`);
+    }
+    
+    console.log(`✅ Asset fully verified with status: ${status}`);
 
-    // STEP 3: Build response with verified data (or fallback to frontend data)
+    // STEP 4: Build response with verified data
     const response: FrameioUploadResponse = {
       id: assetId,
       name: asset?.name || fileName,
@@ -138,6 +154,7 @@ export async function completeFrameioUpload(
       filetype: asset?.filetype || asset?.media_type || 'video/mp4',
       filesize: asset?.filesize || asset?.file_size || fileSize,
       parent_id: asset?.parent_id || null,
+      status: status,  // Include Frame.io processing status for frontend
       upload_completed_at: asset?.upload_completed_at || new Date().toISOString(),
       download_url: asset?.download_url || null,
       stream_url: asset?.stream_url || null,
