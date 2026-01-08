@@ -72,33 +72,65 @@ export async function createFrameioUploadSession(
 }
 
 /**
- * Complete Frame.io V4 upload
- * Note: V4 API doesn't have a direct /assets/{id} endpoint, so we use the data
- * already provided by the frontend (assetId, fileName, fileSize) which came from
- * the initial file creation response.
+ * Complete Frame.io V4 upload with verification
+ * Validates that the asset exists and has been uploaded before confirming completion.
  */
 export async function completeFrameioUpload(
   assetId: string,
   fileName: string,
-  fileSize: number
+  fileSize: number,
+  projectFolderId?: string
 ): Promise<FrameioUploadResponse> {
   try {
     console.log(`Completing Frame.io V4 upload for asset: ${assetId}`);
 
-    // For V4 direct uploads, we don't need to fetch the asset - the chunks were
-    // uploaded directly to S3 and Frame.io automatically processes them.
-    // We already have all the required data from the frontend.
+    await frameioV4Service.loadServiceAccountToken();
     
-    // Optionally try to get asset details for additional metadata, but don't fail if unavailable
+    // STEP 1: Verify the asset exists in Frame.io
+    // Try getAssetDetails first (uses /accounts/{id}/assets/{id} endpoint)
     let asset: any = null;
+    let verificationMethod = 'none';
+    
     try {
-      await frameioV4Service.loadServiceAccountToken();
       asset = await frameioV4Service.getAssetDetails(assetId);
+      verificationMethod = 'getAssetDetails';
+      console.log(`✅ Asset verified via getAssetDetails: ${assetId}`);
     } catch (detailsError) {
-      console.log(`Could not fetch asset details (normal for V4): ${assetId}`);
+      console.log(`getAssetDetails failed, trying folder verification...`);
+      
+      // Fallback: Check folder contents to verify asset exists
+      if (projectFolderId) {
+        try {
+          const folderAssets = await frameioV4Service.getFolderAssets(projectFolderId);
+          asset = folderAssets.find((a: any) => a.id === assetId);
+          if (asset) {
+            verificationMethod = 'folderAssets';
+            console.log(`✅ Asset verified via folder contents: ${assetId}`);
+          }
+        } catch (folderError) {
+          console.log(`Folder verification also failed: ${folderError}`);
+        }
+      }
     }
+    
+    // STEP 2: Validate asset was found and check status
+    if (!asset) {
+      // Verification is mandatory - cannot proceed without confirming asset exists
+      throw new Error(`Upload verification failed: Could not locate asset ${assetId} in Frame.io. The upload may have failed or the asset ID is invalid.`);
+    }
+    
+    const status = asset.status;
+    console.log(`Asset status: ${status}`);
+    
+    // Valid statuses after upload: 'uploading', 'transcoding', 'transcoded', 'complete'
+    // Invalid status: 'created' means chunks were never uploaded
+    if (status === 'created') {
+      throw new Error(`Upload incomplete: asset status is 'created'. The file chunks may not have been uploaded successfully. Please try uploading the file again.`);
+    }
+    
+    console.log(`✅ Asset verified with status: ${status}`);
 
-    // Return response using available data - use fetched details if available, otherwise use provided data
+    // STEP 3: Build response with verified data (or fallback to frontend data)
     const response: FrameioUploadResponse = {
       id: assetId,
       name: asset?.name || fileName,
@@ -118,7 +150,9 @@ export async function completeFrameioUpload(
     console.log('Frame.io V4 upload completed:', {
       assetId: response.id,
       name: response.name,
-      filesize: response.filesize
+      filesize: response.filesize,
+      status: asset?.status || 'unknown',
+      verificationMethod
     });
 
     return response;

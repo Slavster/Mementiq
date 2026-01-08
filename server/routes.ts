@@ -5775,14 +5775,17 @@ export async function registerRoutes(app: any): Promise<Server> {
           });
         }
 
-        // Complete the Frame.io upload
+        // Complete the Frame.io upload with verification
         console.log("Completing Frame.io upload for asset:", videoUri);
+        console.log("Project folder for verification:", project.mediaFolderId);
 
-        // Get asset details from Frame.io
+        // Verify and get asset details from Frame.io
+        // Pass the project's mediaFolderId for fallback verification via folder contents
         const videoDetails = await completeFrameioUpload(
           videoUri,
           fileName,
           fileSize,
+          project.mediaFolderId || undefined,
         );
 
         // Save file record
