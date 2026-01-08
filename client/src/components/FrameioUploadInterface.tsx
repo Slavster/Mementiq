@@ -54,7 +54,8 @@ interface UploadFile {
   frameioId?: string;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
+const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB per individual file
+const MAX_PROJECT_SIZE = 10 * 1024 * 1024 * 1024; // 10GB total per project
 const MAX_FILE_COUNT = 100; // Maximum 100 files per project
 const ALLOWED_TYPES = [
   // Video formats
@@ -285,10 +286,23 @@ export function FrameioUploadInterface({
           continue;
         }
 
-        if (newTotalSize + file.size > MAX_FILE_SIZE) {
+        // Check individual file size limit
+        if (file.size > MAX_FILE_SIZE) {
           toast({
-            title: "Storage limit exceeded",
-            description: `Adding ${file.name} would exceed the ${formatFileSize(MAX_FILE_SIZE)} limit`,
+            title: "File too large",
+            description: `${file.name} (${formatFileSize(file.size)}) exceeds the ${formatFileSize(MAX_FILE_SIZE)} per-file limit`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        // Check project total storage limit (existing + staged + new file)
+        const projectedTotal = existingStorageUsed + newTotalSize + file.size;
+        if (projectedTotal > MAX_PROJECT_SIZE) {
+          const remainingSpace = MAX_PROJECT_SIZE - existingStorageUsed - newTotalSize;
+          toast({
+            title: "Project storage limit exceeded",
+            description: `Adding ${file.name} (${formatFileSize(file.size)}) would exceed the ${formatFileSize(MAX_PROJECT_SIZE)} project limit. You have ${formatFileSize(Math.max(0, remainingSpace))} remaining.`,
             variant: "destructive",
           });
           continue;
@@ -310,7 +324,7 @@ export function FrameioUploadInterface({
       // Clear the input
       event.target.value = "";
     },
-    [totalSize, toast],
+    [totalSize, toast, existingStorageUsed, existingFileCount, files],
   );
 
   const removeFile = (fileId: string) => {
@@ -695,9 +709,9 @@ export function FrameioUploadInterface({
               </span>
             </div>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-400">Storage Used</span>
-              <span className="text-sm text-white">
-                {formatFileSize(existingStorageUsed + totalSize)} total
+              <span className="text-sm text-gray-400">Project Storage</span>
+              <span className={`text-sm ${(existingStorageUsed + totalSize) > MAX_PROJECT_SIZE * 0.9 ? 'text-yellow-400' : 'text-white'}`}>
+                {formatFileSize(existingStorageUsed + totalSize)} / {formatFileSize(MAX_PROJECT_SIZE)}
               </span>
             </div>
             <Progress
@@ -757,10 +771,10 @@ export function FrameioUploadInterface({
               </span>
               <span className="text-sm text-gray-400">
                 Supports MP4, AVI, MOV, JPG, PNG, MP3, WAV and other formats
-                (max {formatFileSize(MAX_FILE_SIZE)} per file)
+                (max {formatFileSize(MAX_FILE_SIZE)} per file, {formatFileSize(MAX_PROJECT_SIZE)} per project)
               </span>
               <span className="text-xs text-yellow-400">
-                {existingFileCount + files.length} / {MAX_FILE_COUNT} files used
+                {existingFileCount + files.length} / {MAX_FILE_COUNT} files &bull; {formatFileSize(existingStorageUsed + totalSize)} / {formatFileSize(MAX_PROJECT_SIZE)} used
               </span>
             </label>
           </div>
