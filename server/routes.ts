@@ -6457,6 +6457,35 @@ export async function registerRoutes(app: any): Promise<Server> {
               configured: frameioConfigured,
             });
 
+            // Filter to only show complete, accessible files
+            // Require positive completion indicators before showing any file
+            const COMPLETE_STATUSES = ['transcoding', 'transcoded', 'complete', 'ready', 'processing', 'processed'];
+            const completeFiles = existingFiles.filter((file) => {
+              if (file.type !== "file") return false;
+              
+              const status = file.status?.toLowerCase();
+              
+              // Check for positive completion indicators
+              const hasUploadCompleted = file.upload_completed_at || file.is_upload_complete === true;
+              const hasAccessibleUrl = file.download_url || file.view_url || file.stream_url;
+              const hasKnownCompleteStatus = status && COMPLETE_STATUSES.includes(status);
+              
+              // Definitive incomplete states - never show these
+              if (status === 'created' || status === 'uploading') {
+                console.log(`📁 Filtering out incomplete file: ${file.name} (status: ${status})`);
+                return false;
+              }
+              
+              // Require at least one positive completion indicator
+              if (hasUploadCompleted || hasAccessibleUrl || hasKnownCompleteStatus) {
+                return true;
+              }
+              
+              // No completion indicators found - filter out to be safe
+              console.log(`📁 Filtering out file without completion indicators: ${file.name} (status: ${status || 'unknown'})`);
+              return false;
+            });
+
             res.json({
               success: true,
               message: "Frame.io folder structure verified and ready",
@@ -6467,10 +6496,8 @@ export async function registerRoutes(app: any): Promise<Server> {
                 userFolder: userFolderId,
                 projectFolder: projectFolderId,
               },
-              existingFiles: existingFiles.filter(
-                (file) => file.type === "file",
-              ),
-              fileCount,
+              existingFiles: completeFiles,
+              fileCount: completeFiles.length,
               totalStorageUsed,
               fileUploadLimit: 100,
             });
