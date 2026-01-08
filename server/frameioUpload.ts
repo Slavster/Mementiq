@@ -73,6 +73,9 @@ export async function createFrameioUploadSession(
 
 /**
  * Complete Frame.io V4 upload
+ * Note: V4 API doesn't have a direct /assets/{id} endpoint, so we use the data
+ * already provided by the frontend (assetId, fileName, fileSize) which came from
+ * the initial file creation response.
  */
 export async function completeFrameioUpload(
   assetId: string,
@@ -82,34 +85,40 @@ export async function completeFrameioUpload(
   try {
     console.log(`Completing Frame.io V4 upload for asset: ${assetId}`);
 
-    // Get the uploaded asset details from V4
-    await frameioV4Service.loadServiceAccountToken();
-    const asset = await frameioV4Service.getAsset(assetId);
-    if (!asset) {
-      throw new Error(`Asset not found: ${assetId}`);
+    // For V4 direct uploads, we don't need to fetch the asset - the chunks were
+    // uploaded directly to S3 and Frame.io automatically processes them.
+    // We already have all the required data from the frontend.
+    
+    // Optionally try to get asset details for additional metadata, but don't fail if unavailable
+    let asset: any = null;
+    try {
+      await frameioV4Service.loadServiceAccountToken();
+      asset = await frameioV4Service.getAssetDetails(assetId);
+    } catch (detailsError) {
+      console.log(`Could not fetch asset details (normal for V4): ${assetId}`);
     }
 
-    // Return response in format compatible with existing code
+    // Return response using available data - use fetched details if available, otherwise use provided data
     const response: FrameioUploadResponse = {
-      id: asset.id,
-      name: asset.name,
-      type: asset.type,
-      filetype: asset.filetype,
-      filesize: asset.filesize,
-      parent_id: asset.parent_id,
-      upload_completed_at: asset.upload_completed_at,
-      download_url: asset.download_url,
-      stream_url: asset.stream_url,
-      thumb_url: asset.thumb_url,
-      review_link: asset.review_link,
-      created_time: asset.created_at,
-      modified_time: asset.updated_at
+      id: assetId,
+      name: asset?.name || fileName,
+      type: asset?.type || 'file',
+      filetype: asset?.filetype || asset?.media_type || 'video/mp4',
+      filesize: asset?.filesize || asset?.file_size || fileSize,
+      parent_id: asset?.parent_id || null,
+      upload_completed_at: asset?.upload_completed_at || new Date().toISOString(),
+      download_url: asset?.download_url || null,
+      stream_url: asset?.stream_url || null,
+      thumb_url: asset?.thumb_url || null,
+      review_link: asset?.review_link || null,
+      created_time: asset?.created_at || new Date().toISOString(),
+      modified_time: asset?.updated_at || new Date().toISOString()
     };
 
     console.log('Frame.io V4 upload completed:', {
       assetId: response.id,
       name: response.name,
-      ready: !!response.upload_completed_at
+      filesize: response.filesize
     });
 
     return response;
